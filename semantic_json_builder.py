@@ -1,0 +1,695 @@
+"""
+semantic_json_builder.py
+------------------------
+
+Builds a FULL semantic DICT coaching graph based on the Unified Reporting
+Framework v5.1, Coaching Profile, Coaching Cheat Sheet, and all Tier-2 modules.
+
+Includes:
+ - Authoritative totals
+ - Derived metrics
+ - Extended metrics
+ - Adaptation metrics
+ - Trend metrics
+ - Correlations
+ - Wellness (sanitised)
+ - Thresholds / interpretations / coaching links
+ - Actions
+ - Phase detection
+ - Event previews (stable)
+ - Daily load summaries
+"""
+
+import json
+from datetime import datetime, date, timezone
+import pandas as pd
+from math import isnan
+from coaching_cheat_sheet import CHEAT_SHEET
+from coaching_profile import COACH_PROFILE, REPORT_HEADERS, REPORT_RESOLUTION
+from audit_core.utils import debug
+
+# ---------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------
+
+def handle_missing_data(value, default_value=None):
+    """Convert NaN or None → safe default."""
+    if value is None:
+        return default_value
+    if isinstance(value, float) and isnan(value):
+        return default_value
+    return value
+
+
+def convert_to_str(value):
+    """Convert datetime/Timestamp/date → ISO string."""
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, pd.Timestamp):
+        return value.isoformat()
+    if isinstance(value, date):
+        return value.isoformat()
+    return value
+
+
+def semantic_block_for_metric(name, value, context):
+    """Builds semantic envelope for a single metric."""
+    thresholds = CHEAT_SHEET["thresholds"].get(name, {})
+    interpretation = CHEAT_SHEET["context"].get(name)
+    coaching_link = CHEAT_SHEET["coaching_links"].get(name)
+    profile_desc = COACH_PROFILE["markers"].get(name, {})
+
+    classification = None
+    if thresholds:
+        try:
+            green = thresholds.get("green")
+            amber = thresholds.get("amber")
+
+            if green and green[0] <= float(value) <= green[1]:
+                classification = "green"
+            elif amber and amber[0] <= float(value) <= amber[1]:
+                classification = "amber"
+            else:
+                classification = "red"
+        except Exception:
+            classification = "unknown"
+
+    return {
+        "name": name,
+        "value": convert_to_str(value),
+        "framework": profile_desc.get("framework") or "Unknown",
+        "formula": profile_desc.get("formula"),
+        "thresholds": thresholds,
+        "classification": classification,
+        "interpretation": interpretation,
+        "coaching_implication": coaching_link,
+        "related_metrics": profile_desc.get("criteria", {}),
+    }
+
+def resolve_authoritative_totals(context):
+    report_type = context.get("report_type")
+
+    # 🔒 HARD AUTHORITY (Tier-2 final lock)
+    if report_type in ("season", "summary"):
+        return {
+            "hours": context.get("locked_totalHours")
+                     or context.get("tier2_enforced_totals", {}).get("hours")
+                     or context.get("totalHours")
+                     or 0,
+            "tss": context.get("locked_totalTss")
+                   or context.get("tier2_enforced_totals", {}).get("tss")
+                   or context.get("totalTss")
+                   or 0,
+            "distance_km": context.get("locked_totalDistance")
+                           or context.get("tier2_enforced_totals", {}).get("distance")
+                           or context.get("totalDistance")
+                           or 0,
+        }
+
+    # Weekly / wellness (unchanged)
+    return {
+        "hours": context.get("totalHours", 0),
+        "tss": context.get("totalTss", 0),
+        "distance_km": context.get("totalDistance", 0),
+    }
+
+
+# ---------------------------------------------------------
+# Insights Builder
+# ---------------------------------------------------------
+
+def build_insights(semantic):
+    """
+    Build high-level coaching insights using:
+    - Tier-2 metrics
+    - Coaching Cheat Sheet thresholds
+    - Coaching Profile semantics
+    """
+
+    insights = {}
+    report_type = semantic.get("meta", {}).get("report_type")
+    window = "90d" if report_type in ("season", "summary") else "7d"
+    # Polarisation and load_distribution are always 7-day metrics
+    polarisation_window = "7d"
+
+    # -------------------------------------------------
+    # 1 — Fatigue Trend (derived from semantic metrics)
+    # -------------------------------------------------
+    atl_block = semantic.get("extended_metrics", {}).get("ATL", {})
+    ctl_block = semantic.get("extended_metrics", {}).get("CTL", {})
+
+    atl = atl_block.get("value")
+    ctl = ctl_block.get("value")
+
+    ft = None
+    if isinstance(atl, (int, float)) and isinstance(ctl, (int, float)) and ctl > 0:
+        ft = round(((atl - ctl) / ctl) * 100, 1)
+
+    fatigue_metric = semantic_block_for_metric(
+        "FatigueTrend",
+        ft,
+        semantic
+    )
+
+    insights["fatigue_trend"] = {
+        "value_pct": ft,
+        "window": window,
+        "basis": "ATL vs CTL",
+        "classification": fatigue_metric.get("classification"),
+        "thresholds": fatigue_metric.get("thresholds"),
+        "interpretation": fatigue_metric.get("interpretation"),
+        "coaching_implication": fatigue_metric.get("coaching_implication"),
+    }
+
+    # -------------------------------------------------
+    # 2 — Load Distribution (Intensity Bias)
+    # -------------------------------------------------
+    zones = semantic.get("zones", {}).get("power", {})
+    z1 = zones.get("power_z1", 0)
+    z2 = zones.get("power_z2", 0)
+    z3plus = sum(v for k, v in zones.items() if k not in ("power_z1", "power_z2"))
+
+    z_low = round(z1 + z2, 1)
+    z_high = round(z3plus, 1)
+
+    if z_low >= 70:
+        dist = "endurance-focused"
+    elif z_high >= 30:
+        dist = "threshold-heavy"
+    elif z1 >= 50 and z_high >= 20:
+        dist = "polarised"
+    else:
+        dist = "mixed"
+
+    insights["load_distribution"] = {
+        "zones_pct": {
+            "z1_z2": z_low,
+            "z3_plus": z_high,
+        },
+        "window": polarisation_window,
+        "basis": "time-in-zone (%)",
+        "classification": dist,
+        "interpretation": CHEAT_SHEET["context"].get("Polarisation"),
+    }
+
+    # -------------------------------------------------
+    # 3 — Metabolic Drift (FOxI proxy)
+    # -------------------------------------------------
+    foxi = semantic.get("metrics", {}).get("FOxI", {}).get("value")
+    drift = None
+
+    if isinstance(foxi, (int, float)):
+        drift = round((70 - foxi) / 70, 3)
+
+    insights["metabolic_drift"] = {
+        "value": drift,
+        "window": window,
+        "basis": "FOxI proxy",
+        "interpretation": (
+            "Proxy derived from fat oxidation efficiency. "
+            "Interpret trend direction only, not absolute magnitude."
+        ),
+    }
+
+    # -------------------------------------------------
+    # 4 — Fitness Phase (ACWR)
+    # -------------------------------------------------
+    acwr = semantic.get("metrics", {}).get("ACWR", {}).get("value")
+    phase = "unknown"
+
+    if isinstance(acwr, (int, float)):
+        if acwr < 0.8:
+            phase = "recovery/deload"
+        elif 0.8 <= acwr <= 1.3:
+            phase = "productive/loading"
+        elif acwr > 1.3:
+            phase = "overreaching"
+
+    insights["fitness_phase"] = {
+        "phase": phase,
+        "basis": "ACWR",
+        "window": "rolling",
+        "interpretation": CHEAT_SHEET["context"].get("ACWR"),
+        "coaching_implication": CHEAT_SHEET["coaching_links"].get("ACWR"),
+    }
+
+    return insights
+
+
+
+# ---------------------------------------------------------
+# MAIN BUILDER
+# ---------------------------------------------------------
+
+def build_semantic_json(context):
+    """Build the final semantic graph."""
+
+    # ---------------------------------------------------------
+    # BASE SEMANTIC STRUCTURE
+    # ---------------------------------------------------------
+    semantic = {
+        "meta": {
+            "framework": "Unified Reporting Framework v5.1",
+            "version": "v16.17",
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+
+            # RESOLVED, NOT A PLACEHOLDER
+            "report_type": context.get("report_type"),
+
+            "period": {
+                "start": context.get("period", {}).get("start"),
+                "end": context.get("period", {}).get("end"),
+            },
+
+            "timezone": context.get("timezone"),
+
+            "athlete": {
+                "identity": {},
+                "profile": {}
+            },
+
+            # SINGLE CANONICAL HEADER LOCATION
+            "report_header": {
+                "title": None,
+                "scope": None,
+                "data_sources": None,
+                "intended_use": None
+            }
+        },
+
+        # Metric containers (authoritative Tier-2 only)
+        "metrics": {},
+        "extended_metrics": {},
+        "adaptation_metrics": {},
+        "trend_metrics": {},
+        "correlation_metrics": {},
+
+        # Zones
+        "zones": {
+            "power": context.get("zone_dist_power", {}),
+            "hr": context.get("zone_dist_hr", {}),
+        },
+
+        # Daily load
+        "daily_load": [
+            {
+                "date": row["date"],
+                "tss": float(row["icu_training_load"])
+            }
+            for _, row in getattr(context.get("df_daily"), "iterrows", lambda: [])()
+        ] if context.get("df_daily") is not None else [],
+
+        # Events
+        "events": [],
+
+        "phases": context.get("phases", []),
+        "actions": context.get("actions", []),
+
+        # Wellness
+        "wellness": {
+            k: handle_missing_data(v, None)
+            for k, v in context.get("wellness_summary", {}).items()
+        },
+    }
+    # ---------------------------------------------------------
+    # AUTHORITATIVE TOTALS (Tier-2 ONLY)
+    # ---------------------------------------------------------
+    report_type = semantic["meta"]["report_type"]
+
+    if report_type in ("season", "summary"):
+        semantic["hours"] = handle_missing_data(context.get("locked_totalHours"), 0)
+        semantic["tss"] = handle_missing_data(context.get("locked_totalTss"), 0)
+        semantic["distance_km"] = handle_missing_data(context.get("locked_totalDistance"), 0)
+
+    else:  # weekly
+        semantic["hours"] = handle_missing_data(context.get("totalHours"), 0)
+        semantic["tss"] = handle_missing_data(context.get("totalTss"), 0)
+        semantic["distance_km"] = handle_missing_data(context.get("totalDistance"), 0)
+
+
+    # ---------------------------------------------------------
+    # AUTHORITATIVE Tier-2 metric injection
+    # ---------------------------------------------------------
+    for k in (
+        "extended_metrics",
+        "adaptation_metrics",
+        "trend_metrics",
+        "correlation_metrics",
+    ):
+        if isinstance(context.get(k), dict) and context[k]:
+            semantic[k] = context[k]
+        else:
+            semantic[k] = {}
+
+
+    # ---------------------------------------------------------
+    # 🔗 ATHLETE: identity + profile + context (UNIVERSAL)
+    # ---------------------------------------------------------
+    athlete = context.get("athlete_raw") or context.get("athlete") or {}
+    sports = athlete.get("sportSettings", []) or []
+    primary_sport = sports[0] if sports else {}
+
+    # -----------------------------------------------------
+    # ⚙️ PROFILE (CORE PERFORMANCE MARKERS)
+    # -----------------------------------------------------
+    ftp = None
+    eftp = None
+    lthr = None
+
+    if isinstance(primary_sport, dict):
+        ftp = primary_sport.get("ftp")
+        mmp_model = primary_sport.get("mmp_model", {}) or {}
+        eftp = mmp_model.get("ftp")
+        lthr = primary_sport.get("lthr")
+
+    # Fallbacks
+    ftp = ftp or athlete.get("icu_ftp")
+    eftp = eftp or ftp
+    lthr = lthr or athlete.get("icu_threshold_hr")
+
+    semantic["meta"]["athlete"] = {
+        # -----------------------------------------------------
+        # 🪪 IDENTITY
+        # -----------------------------------------------------
+        "identity": {
+            "id": athlete.get("id"),
+            "name": athlete.get("name") or f"{athlete.get('firstname', '')} {athlete.get('lastname', '')}".strip(),
+            "firstname": athlete.get("firstname"),
+            "lastname": athlete.get("lastname"),
+            "sex": athlete.get("sex"),
+            "dob": athlete.get("icu_date_of_birth"),
+            "country": athlete.get("country"),
+            "city": athlete.get("city"),
+            "timezone": athlete.get("timezone"),
+            "profile_image": athlete.get("profile_medium"),
+        },
+
+        # -----------------------------------------------------
+        # ⚙️ PROFILE (CORE PERFORMANCE MARKERS)
+        # -----------------------------------------------------
+        "profile": {
+            "ftp": ftp,
+            "eftp": eftp,
+            "ftp_kg": (
+                round((ftp or 0) / athlete.get("icu_weight", 1), 2)
+                if ftp and athlete.get("icu_weight") else None
+            ),
+            "weight": athlete.get("icu_weight"),
+            "height": athlete.get("height"),
+            "vo2max": athlete.get("icu_vo2max"),
+            "lthr": lthr,
+            "resting_hr": athlete.get("icu_resting_hr"),
+            "max_hr": athlete.get("icu_max_hr"),
+            "primary_sport": ",".join(primary_sport.get("types", [])) if isinstance(primary_sport, dict) else None,
+        },
+    
+        # -----------------------------------------------------
+        # 🧠 CONTEXT (FOR CHATGPT INTENT ANALYSIS)
+        # -----------------------------------------------------
+        "context": {
+            # 🌐 Data Ecosystem
+            "platforms": {
+                "garmin": athlete.get("icu_garmin_training"),
+                "zwift": athlete.get("zwift_sync_activities"),
+                "wahoo": athlete.get("wahoo_sync_activities"),
+                "strava": athlete.get("strava_sync_activities"),
+                "polar": athlete.get("polar_sync_activities"),
+                "suunto": athlete.get("suunto_sync_activities"),
+                "coros": athlete.get("coros_sync_activities"),
+                "concept2": athlete.get("concept2_sync_activities"),
+            },
+
+            # 💓 Wellness Capabilities
+            "wellness_features": {
+                "garmin_health_enabled": athlete.get("icu_garmin_health"),
+                "wellness_keys": athlete.get("icu_garmin_wellness_keys"),
+                "hrv_available": "hrv" in (athlete.get("icu_garmin_wellness_keys") or []),
+                "weight_sync": athlete.get("icu_weight_sync"),
+                "resting_hr": athlete.get("icu_resting_hr"),
+            },
+
+            # ⚙️ Training Environment
+            "training_environment": {
+                "plan": athlete.get("plan"),
+                "beta_user": athlete.get("beta_user"),
+                "coach_access": athlete.get("icu_coach"),
+                "language": athlete.get("locale"),
+                "timezone": athlete.get("timezone"),
+            },
+
+            # 🚴 Equipment Summary
+            "equipment_summary": {
+                "bike_count": len(athlete.get("bikes", [])),
+                "shoe_count": len(athlete.get("shoes", [])),
+                "primary_bike": next(
+                    (b.get("name") for b in athlete.get("bikes", []) if b.get("primary")), None
+                ),
+                "total_bike_distance_km": sum(
+                    (b.get("distance", 0) or 0) / 1000 for b in athlete.get("bikes", [])
+                ),
+            },
+
+            # 🗓️ Activity Scope
+            "activity_scope": {
+                "primary_sports": [
+                    s.get("types", []) for s in athlete.get("sportSettings", [])
+                ],
+                "active_since": athlete.get("icu_activated"),
+                "last_seen": athlete.get("icu_last_seen"),
+            },
+        },
+    }
+
+
+    # ---------------------------------------------------------
+    # EVENTS (canonical)
+    # ---------------------------------------------------------
+    df_events = context.get("df_events")
+    if isinstance(df_events, pd.DataFrame) and not df_events.empty:
+        semantic["events"] = [
+            {
+                "start_date_local": convert_to_str(row.get("start_date_local")),
+                "name": row.get("name"),
+                "icu_training_load": row.get("icu_training_load"),
+                "moving_time": row.get("moving_time"),
+                "distance": row.get("distance"),
+            }
+            for _, row in df_events.iterrows()
+        ]
+
+    # ---------------------------------------------------------
+    # DERIVED METRICS
+    # ---------------------------------------------------------
+    for metric_name, info in context.get("derived_metrics", {}).items():
+        semantic["metrics"][metric_name] = {
+            "name": metric_name,
+            "value": handle_missing_data(info.get("value"), 0),
+            "classification": info.get("classification", "unknown"),
+            "interpretation": info.get("interpretation", ""),
+            "coaching_implication": info.get("coaching_implication", ""),
+            "related_metrics": info.get("related_metrics", {}),
+        }
+    # ---------------------------------------------------------
+    # Annotate context windows per metric
+    # ---------------------------------------------------------
+    metric_windows = {
+        # Short-term / 7-day metrics
+        "Polarisation": "7d",
+        "PolarisationIndex": "7d",
+        "FatOxEfficiency": "7d",
+        "FOxI": "7d",
+        "MES": "7d",
+        "CUR": "7d",
+        "GR": "7d",
+        "RecoveryIndex": "7d",
+        "StressTolerance": "7d",
+        "ZQI": "7d",
+
+        # Long-term / 90-day metrics
+        "CTL": "90d",
+        "ATL": "90d",
+        "TSB": "90d",
+        "RampRate": "90d",
+        "FatigueTrend": "90d",
+        "AerobicDecay": "90d",
+        "Durability": "90d",
+
+        # Rolling or composite metrics
+        "ACWR": "rolling",
+        "Monotony": "rolling",
+        "Strain": "rolling",
+    }
+
+    for name, metric in semantic["metrics"].items():
+        metric["context_window"] = metric_windows.get(name, "unknown")
+        
+    # SAFETY PATCH: ensure Polarisation is numeric and preserved
+    # ---------------------------------------------------------
+    pol_block = semantic["metrics"].get("Polarisation", {})
+    pol_val = pol_block.get("value")
+
+    try:
+        # Convert safely to float
+        pol_val_f = float(pol_val)
+        # Clamp absurd values only
+        if pol_val_f < 0 or pol_val_f > 5:
+            raise ValueError
+        # Preserve computed Tier-2 value
+        semantic["metrics"]["Polarisation"]["value"] = round(pol_val_f, 3)
+    except Exception:
+        computed_val = context.get("Polarisation") or 0.0
+        debug(context, f"[SEMANTIC] Polarisation invalid ({pol_val}) — using computed {computed_val}")
+        semantic["metrics"]["Polarisation"] = semantic_block_for_metric(
+            "Polarisation", computed_val, context
+        )
+
+
+    # ---------------------------------------------------------
+    # CTL / ATL / TSB RESOLUTION (AUTHORITATIVE + FALLBACK)
+    # ---------------------------------------------------------
+    semantic.setdefault("wellness", {})
+
+    # Prefer already-injected semantic extended metrics (AUTHORITATIVE)
+    ext = semantic.get("extended_metrics", {})
+
+    if isinstance(ext, dict) and all(k in ext for k in ("CTL", "ATL", "TSB")):
+        semantic["wellness"]["CTL"] = ext["CTL"].get("value")
+        semantic["wellness"]["ATL"] = ext["ATL"].get("value")
+        semantic["wellness"]["TSB"] = ext["TSB"].get("value")
+        debug(context, "[SEM] CTL/ATL/TSB sourced from semantic.extended_metrics")
+
+    # Fallback: wellness-derived (Intervals native)
+    else:
+        ws = context.get("wellness_summary", {})
+        semantic["wellness"]["CTL"] = ws.get("ctl")
+        semantic["wellness"]["ATL"] = ws.get("atl")
+        semantic["wellness"]["TSB"] = ws.get("tsb")
+        debug(context, "[SEM] CTL/ATL/TSB sourced from wellness_summary fallback")
+
+    # ---------------------------------------------------------
+    # SECONDARY METRICS
+    # ---------------------------------------------------------
+    secondary_keys = [
+        "FatOxEfficiency", "FOxI", "CUR", "GR", "MES",
+        "StressTolerance", "RecoveryIndex", "ZQI", "Polarisation"
+    ]
+
+    for k in secondary_keys:
+        if k in context and k not in semantic["metrics"]:
+            semantic["metrics"][k] = semantic_block_for_metric(
+                k, context.get(k), context
+            )
+
+    # ---------------------------------------------------------
+    # INSIGHTS
+    # ---------------------------------------------------------
+
+    semantic["insights"] = build_insights(semantic)
+    semantic["insight_view"] = build_insight_view(semantic)
+
+    return apply_report_type_contract(semantic)
+
+def build_insight_view(semantic):
+    """
+    Build API/UI-ready insight view.
+    NO calculations.
+    NO thresholds.
+    NO recomputation.
+    Pure grouping only.
+    """
+
+    metrics = semantic.get("metrics", {})
+    actions = semantic.get("actions", [])
+    phases = semantic.get("phases", [])
+
+    critical, watch, positive = [], [], []
+
+    for name, m in metrics.items():
+        cls = m.get("classification")
+        if cls not in ("red", "amber", "green"):
+            continue
+
+        entry = {
+            "name": name,
+            "value": m.get("value"),
+            "framework": m.get("framework"),
+            "interpretation": m.get("interpretation"),
+            "coaching_implication": m.get("coaching_implication"),
+        }
+
+        if cls == "red":
+            critical.append(entry)
+        elif cls == "amber":
+            watch.append(entry)
+        else:
+            positive.append(entry)
+
+    return {
+        # rich, domain-level insights (your existing output)
+        "summary": semantic.get("insights", {}),
+
+        # UI / API grouped view
+        "critical": critical,
+        "watch": watch,
+        "positive": positive,
+
+        # pass-throughs
+        "actions": actions,
+        "phases": phases,
+    }
+
+
+def apply_report_type_contract(semantic: dict) -> dict:
+    """
+    Enforce report-type-specific semantic exposure.
+    Does NOT recompute anything.
+    """
+
+    report_type = semantic.get("meta", {}).get("report_type")
+    semantic["meta"]["report_header"] = REPORT_HEADERS.get(report_type, {})
+    semantic["meta"]["resolution"] = REPORT_RESOLUTION.get(report_type, {})
+
+    # promote header for rendering
+    semantic["header"] = semantic["meta"]["report_header"]
+
+        # ---------------- WEEKLY ----------------
+    if report_type == "weekly":
+        semantic["phases"] = []
+        return semantic  # full fidelity (minus phases)
+
+    # ---------------- SEASON ----------------
+    if report_type == "season":
+        semantic["events"] = []
+        semantic["zones"] = {}
+        semantic["daily_load"] = []
+        semantic["metrics"] = {
+            k: v for k, v in semantic["metrics"].items()
+            if k in ("ACWR", "RampRate", "TSB")
+        }
+        semantic["insights"] = {
+            k: v for k, v in semantic["insights"].items()
+            if k not in ("load_distribution",)
+        }
+        return semantic
+
+    # ---------------- WELLNESS ----------------
+    if report_type == "wellness":
+        return {
+            "meta": semantic["meta"],
+            "wellness": semantic.get("wellness", {}),
+        }
+
+    # ---------------- SUMMARY ----------------
+    if report_type == "summary":
+        return {
+            "meta": semantic["meta"],
+            "hours": semantic.get("hours"),
+            "tss": semantic.get("tss"),
+            "distance_km": semantic.get("distance_km"),
+            "wellness": semantic.get("wellness"),
+            "insights": semantic.get("insights"),
+            "actions": semantic.get("actions"),
+        }
+
+    return semantic
+
