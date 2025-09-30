@@ -1,0 +1,13 @@
+ruleset_version: v16.1
+framework_version: Unified_Reporting_Framework_v5.1
+modules:
+  - tier0_pre_audit.py
+  - tier1_controller.py
+  - tier2_event_completeness.py
+  - tier2_enforce_event_only_totals.py
+  - tier2_derived_metrics.py
+  - tier2_actions.py
+  - tier2_render_validator.py
+validation:
+  variance_tolerance: 0.02
+  time_variance_tolerance: 0.1

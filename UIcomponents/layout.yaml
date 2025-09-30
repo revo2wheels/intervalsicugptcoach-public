@@ -1,0 +1,30 @@
+render_mode: full
+theme: light
+header:
+  show_profile: true
+  fields: [name, city, country, timezone]
+  image_field: profile_medium
+  style:
+    align: left
+    image_size: 72px
+    font_weight: semibold
+    padding_bottom: 8px
+cards_order:
+  - audit
+  - key_stats
+  - events
+  - quality
+  - sections
+  - efficiency
+  - derived_metrics
+  - recovery
+  - performance
+  - actions
+  - summary
+grid:
+  columns: 2
+  responsive: true
+style:
+  border_radius: 2xl
+  shadow: soft
+  padding: p-4

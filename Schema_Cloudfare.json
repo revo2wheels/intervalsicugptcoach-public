@@ -1,0 +1,174 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Intervals.icu Training Coach Proxy",
+    "version": "5.1.0",
+    "description": "Cloudflare proxy for URF reports. ChatGPT never sees raw activities/wellness."
+  },
+
+  "servers": [
+    { "url": "https://intervalsicugptcoach.clive-a5a.workers.dev" }
+  ],
+
+  "paths": {
+    "/run_weekly": {
+      "get": {
+        "summary": "Generate a weekly URF report (7-day)",
+        "operationId": "runWeeklyReportV2",        
+        "responses": {
+          "200": {
+            "description": "Weekly URF report output",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReportResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/run_season": {
+      "get": {
+        "summary": "Generate a season URF report (90-day block)",
+        "operationId": "runSeasonReportV2",
+        "responses": {
+          "200": {
+            "description": "Season URF report output",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReportResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/run_wellness": {
+      "get": {
+        "summary": "Generate a 42-day wellness URF report",
+        "operationId": "runWellnessReportV2",
+        "responses": {
+          "200": {
+            "description": "Wellness URF report output",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReportResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/run_summary": {
+      "get": {
+        "summary": "Generate a URF high-level summary",
+        "operationId": "runSummaryReportV2",
+        "responses": {
+          "200": {
+            "description": "Summary URF output",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ReportResponse" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+
+  "components": {
+    "schemas": {
+      "ReportResponse": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string" },
+          "report_type": { "type": "string" },
+          "markdown": { "type": ["string", "null"] },
+          "semantic_graph": { "type": ["object", "null"] },
+          "logs": { "type": ["string", "null"] }
+        }
+      }
+    }
+  },
+
+  "x-intents": [
+    {
+      "trigger": [
+        "weekly report",
+        "run weekly report",
+        "generate weekly report",
+        "7 day report",
+        "7-day report",
+        "past week report"
+      ],
+      "action": "runWeeklyReportV2",
+      "x-intent": {
+        "x-intent": "weekly",
+        "strict": true
+      }
+    },
+    {
+      "trigger": [
+        "season report",
+        "90 day report",
+        "block report",
+        "training block report",
+        "run season report"
+      ],
+      "action": "runSeasonReportV2",
+      "x-intent": {
+        "x-intent": "season",
+        "strict": true
+      }
+    },
+    {
+      "trigger": [
+        "wellness report",
+        "42 day wellness",
+        "recovery report",
+        "run wellness report"
+      ],
+      "action": "runWellnessReportV2",
+      "x-intent": {
+        "x-intent": "wellness",
+        "strict": true
+      }
+    },
+    {
+      "trigger": [
+        "summary report",
+        "overview report",
+        "high level summary",
+        "run summary"
+      ],
+      "action": "runSummaryReportV2",
+      "x-intent": {
+        "x-intent": "summary",
+        "strict": true
+      }
+    }
+  ],
+
+  "x-actions": {
+    "runWeeklyReportV2": {
+      "type": "operation",
+      "operationId": "runWeeklyReportV2"
+    },
+    "runSeasonReportV2": {
+      "type": "operation",
+      "operationId": "runSeasonReportV2"
+    },
+    "runWellnessReportV2": {
+      "type": "operation",
+      "operationId": "runWellnessReportV2"
+    },
+    "runSummaryReportV2": {
+      "type": "operation",
+      "operationId": "runSummaryReportV2"
+    }
+  }
+}

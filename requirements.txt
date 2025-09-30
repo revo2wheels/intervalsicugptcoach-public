@@ -1,0 +1,30 @@
+# --- Core Web Framework ---
+fastapi==0.119.1
+uvicorn==0.38.0
+
+# --- Core Libraries (standard dependencies your code uses) ---
+pandas>=2.0.0
+numpy>=1.26.0
+requests>=2.32.0
+python-dateutil>=2.9.0
+pytz>=2024.1
+
+# --- Markdown & Formatting (for reports) ---
+markdownify>=0.13.1
+rich>=13.7.0
+
+# --- Optional: Validation & Config Utilities ---
+pydantic>=2.0.0
+typing-extensions>=4.8.0
+
+# --- If your audit_core or utils depend on these ---
+scipy>=1.12.0
+matplotlib>=3.9.0
+
+# --- Logging and Environment ---
+python-dotenv>=1.0.0
+
+# --- If using GitHub-based module fetching or caching ---
+PyYAML>=6.0.2
+
+# force rebuild 2025-12-04

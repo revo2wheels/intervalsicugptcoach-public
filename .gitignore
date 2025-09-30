@@ -1,0 +1,23 @@
+# Secrets (never commit)
+.env
+.env.*
+*.pem
+*.key
+*.crt
+
+# Local/editor junk
+.vscode/
+.vscodium/
+.DS_Store
+Thumbs.db
+
+# OS / temp
+*.log
+*.tmp
+
+# Python
+__pycache__/
+
+# Root-only generated dirs
+/archive/
+/reports/

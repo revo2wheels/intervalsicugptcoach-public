@@ -1,0 +1,5 @@
+Copyright (c) 2025 revo2wheels. All rights reserved.
+
+This repository and its contents are proprietary.  
+No license is granted for copying, modification, or redistribution.
+Use is permitted for personal viewing and evaluation only.
