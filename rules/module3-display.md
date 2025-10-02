@@ -72,7 +72,8 @@ Summary: {seasonSummary}
 → Uses General Template  
 
 ### 2. Season Report (Block Analysis)
-Trigger: season report | block analysis | any range >7 days  
+Trigger: season report | block analysis | any range >7 days
+Default: If the user requests “42-day season report” without dates, use today−41 → today. 
 Header: Athlete: {id|You} — {start} → {end}  
 Summary: {seasonSummary} (high-level overview of the block: training direction, fatigue/recovery balance, and adaptation trends).  
 Phases (mandatory):  
