@@ -33,9 +33,16 @@
 ### Unit Conversions
 - Validate sec→h and m→km conversions.  
 
-### Dataset Completeness
-- DataFrame min/max dates = requested window.  
-- All discipline categories (Cycling, Running, Swimming, Other) present, even if zero.  
+### Dataset Completeness Rule (Revised)
+- Activities and wellness datasets must fully cover the requested window (start → end).  
+- If data returned is shorter than the requested window:  
+  1. GPT must automatically fetch additional chunks to cover the missing dates.  
+  2. Retry up to 10 times if the missing range fails to load.  
+  3. If still incomplete after retries, halt with:  
+     “Error: dataset incomplete — {missingDays} days missing from {datasetType}.”  
+- ❌ GPT must not ask the user to approve fetching missing ranges. Any prompt for confirmation = audit failure.  
+- All discipline categories (Cycling, Running, Swimming, Other) must be present, even if zero.  
+ 
 
 ### Failure Handling
 - ❌ Any check fails → halt.  
@@ -56,13 +63,15 @@
   3. Concatenate results into a master DataFrame.  
   4. Verify DataFrame row count = sum of API counts across chunks.  
 - Retry Handling:  
-  - If a 7-day fetch fails, retry automatically up to 10 times.  
+  - If a 7-day fetch fails (connector/client error), retry automatically up to 10 times.  
   - If retries succeed, continue concatenation.  
   - ❌ If retries exhausted, halt with:  
     “Error: no data returned after 10 retries (chunk {start} → {end}).”  
 - ❌ If GPT attempts >7 days in one call, or requests user confirmation for chunking or retry, audit fails.  
 - ❌ If GPT ignores the default 42-day window rule and prompts the user for dates instead, audit fails with:  
     “Error: Default 42-day window (today−41 → today) not applied.”  
+- ❌ If any concatenated DataFrame row count mismatches sum of chunks, halt with:  
+    “Error: chunk truncation detected.”  
 
 - Retry Handling:  
   - If a 7-day chunk fetch fails (connector/client error), retry automatically up to 10 times.  
