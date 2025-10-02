@@ -71,12 +71,12 @@ Header: Athlete: {id|You} — {start} → {end}
 Summary: {seasonSummary}  
 → Uses General Template  
 
-### 2. Season (42 days)
-Trigger: season report | last 42 days | block analysis  
+### 2. Season (Block Analysis)
+Trigger: season report | block analysis | any user-specified range longer than 7 days  
 Header: Athlete: {id|You} — {start} → {end}  
 Summary: {seasonSummary}  
 Phases: Build, Overload, Deload, Consolidation with {dates, summary}  
-→ Uses General Template  
+→ Uses General Report Template  
 
 ### 3. Wellness Trend
 Trigger: wellness report | recovery status | wellness trend  
