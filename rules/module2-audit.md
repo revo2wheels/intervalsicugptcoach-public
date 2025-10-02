@@ -74,10 +74,11 @@
     ❌ Halt output and return:
     “Error: Report type requested but only general template applied. Season/Block/Event template required.”
     
-### Default Window Rule
-- If the user requests a 42-day season report without explicit dates:
-  ✅ Always resolve to today−41 → today.
-- ❌ If the report proceeds without applying this default, audit fails with:
-  “Error: Default 42-day window (today−41 → today) not applied.”
+### Default Window Rule (Enforced)
+- If the user requests a “42-day season report” without explicit dates:
+  ✅ Automatically set the window to today−41 → today.  
+- ❌ If GPT requests user input for dates instead of applying this default, audit fails with:  
+  “Error: Default 42-day window (today−41 → today) not applied.”  
+
 
 
