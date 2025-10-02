@@ -6,7 +6,8 @@
 - See **Advanced Markers** for definitions and thresholds.  
 - See **Coaching Heuristics Pack** for full reasoning and coaching context.  
 
-*Quick thresholds for classifying training load, recovery, and quality*  
+*Reports must always show raw values. Validation: Σ(Event km) = Weekly km. Σ(Event TSS) = Weekly TSS. If not equal → flag error*
+*Reports must always include Rest Days as Events. Do not omit. If no activity is logged, insert 🛌 Rest Day for that date.*
 
 ---
 

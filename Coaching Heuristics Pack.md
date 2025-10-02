@@ -22,7 +22,7 @@ This file contains decision rules, training logic, and sport-specific adaptation
   - Green: <1.5  
   - Amber: 1.5–2.0  
   - Red: >2.0  
-
+All aggregation is direct from stored activity fields. Rounding or estimation is prohibited. If mismatch between Event distances and weekly totals, block report output.
 ---
 
 ## 🔄 Recovery & Adaptation Rules  

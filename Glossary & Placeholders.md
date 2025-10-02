@@ -29,6 +29,7 @@
 * `{sleepHoursAvg}` → Average sleep hours.
 * `{sleepScoreAvg}` → Average sleep quality/score if available.
 * `{vo2maxStart}` / `{vo2maxEnd}` → Cycling VO₂max trend.
+Always sum exact values from activities. Do not round. Do not estimate. Weekly totals must equal the sum of listed Events.
 
 ## ⚡ Efficiency & Endurance
 
@@ -55,12 +56,13 @@
 
 ## 📅 Events
 
-* `{trainingEvent}` → Activity event (ride, run, etc.).
-* `{eventDate}` → Date of the event.
-* `{eventDescription}` → Short description (duration, load, conditions).
-* `{wellnessEvent}` → Wellness log event (e.g. poor rating, high stress).
-* `{sleepEvent}` → Sleep-related event (short night, poor sleep).
-* `{sleepDescription}` → Sleep details (hours, quality).
+* `{trainingEvent}` → Activity event (ride, run, etc.).  
+* `{eventDate}` → Date of the event.  
+* `{eventDescription}` → Short description (duration, load, conditions).  
+* `{wellnessEvent}` → Wellness log event (e.g. poor rating, high stress).  
+* `{sleepEvent}` → Sleep-related event (short night, poor sleep).  
+* `{sleepDescription}` → Sleep details (hours, quality).  
+* `{restDayEvent}` → 🛌 Rest Day (no training logged on that date).  
 
 ---
 

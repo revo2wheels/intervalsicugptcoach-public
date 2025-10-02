@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Intervals.icu API (OAuth only, athlete_id=0)",
-    "description": "All endpoints use athlete_id=0 (current athlete). Authentication is via OAuth2 only.",
-    "version": "2.7.3"
+    "title": "Intervals.icu API (OAuth only, athlete_id=0) + Report Schemas",
+    "description": "Merged schema including Intervals.icu API plus report validation for weekly and season summaries with mandatory enforcement rules.",
+    "version": "2.8.0"
   },
   "servers": [
     { "url": "https://intervals.icu/api/v1" }
@@ -34,23 +34,23 @@
               }
             }
           }
-        },
-        "examples": {
-          "basic": {
-            "summary": "Last 7 days of activities",
-            "value": "/athlete/0/activities?oldest=2025-09-17&newest=2025-09-24"
-          },
-          "withFields": {
-            "summary": "Trimmed response with selected fields",
-            "value": "/athlete/0/activities?oldest=2025-01-01&newest=2025-01-31&fields=id,name,type,distance,icu_training_load,pwhr_decoupling"
-          },
-          "summaryOnly": {
-            "summary": "Load summary only",
-            "value": "/athlete/0/activities?oldest=2025-01-01&newest=2025-01-31&summaryOnly=true"
-          },
-          "pagination": {
-            "summary": "Page 2 with 20 results",
-            "value": "/athlete/0/activities?page=2&per_page=20"
+        }
+      }
+    },
+    "/athlete/0/activities.csv": {
+      "get": {
+        "summary": "Export activities as CSV (current athlete only)",
+        "operationId": "listActivitiesCsv",
+        "parameters": [
+          { "name": "oldest", "in": "query", "required": true, "description": "Start date (YYYY-MM-DD).", "schema": { "type": "string", "format": "date" } },
+          { "name": "newest", "in": "query", "required": true, "description": "End date (YYYY-MM-DD).", "schema": { "type": "string", "format": "date" } },
+          { "name": "cols", "in": "query", "description": "Optional comma-separated list of columns to include.", "schema": { "type": "string" } },
+          { "name": "auto", "in": "query", "description": "If true, automatically paginate/chunk.", "schema": { "type": "boolean", "default": false } }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV activities data",
+            "content": { "text/csv": { "schema": { "type": "string" } } }
           }
         }
       }
@@ -80,24 +80,6 @@
               }
             }
           }
-        },
-        "examples": {
-          "basic": {
-            "summary": "Last 7 days of wellness",
-            "value": "/athlete/0/wellness?oldest=2025-09-17&newest=2025-09-24"
-          },
-          "withFields": {
-            "summary": "Trimmed wellness response",
-            "value": "/athlete/0/wellness?oldest=2025-01-01&newest=2025-01-31&fields=date,ctl,atl,form,hrv,restingHr"
-          },
-          "summaryOnly": {
-            "summary": "Load summary only",
-            "value": "/athlete/0/wellness?oldest=2025-01-01&newest=2025-01-31&summaryOnly=true"
-          },
-          "pagination": {
-            "summary": "Page 2 with 100 results",
-            "value": "/athlete/0/wellness?page=2&per_page=100"
-          }
         }
       }
     },
@@ -114,19 +96,7 @@
         "responses": {
           "200": {
             "description": "CSV wellness data",
-            "content": {
-              "text/csv": { "schema": { "type": "string" } }
-            }
-          }
-        },
-        "examples": {
-          "basic": {
-            "summary": "CSV export of January 2025",
-            "value": "/athlete/0/wellness.csv?oldest=2025-01-01&newest=2025-01-31"
-          },
-          "withCols": {
-            "summary": "CSV with selected columns",
-            "value": "/athlete/0/wellness.csv?oldest=2025-01-01&newest=2025-01-31&cols=date,ctl,atl,form,hrv"
+            "content": { "text/csv": { "schema": { "type": "string" } } }
           }
         }
       }
@@ -137,39 +107,140 @@
       "Activity": {
         "type": "object",
         "properties": {
-          "id": { "type": "string", "description": "Unique activity ID" },
-          "name": { "type": "string", "description": "Activity title" },
-          "type": { "type": "string", "description": "Activity type (Ride, Run, Swim, etc.)" },
-          "start_date_local": { "type": "string", "format": "date-time", "description": "Local start date/time" },
-          "distance": { "type": "number", "description": "Total distance (meters)" },
-          "moving_time": { "type": "number", "description": "Moving time (seconds)" },
-          "elapsed_time": { "type": "number", "description": "Elapsed time (seconds)" },
-          "average_heartrate": { "type": ["number","null"], "description": "Average HR (bpm)" },
-          "weighted_average_watts": { "type": ["number","null"], "description": "Weighted avg. power (W)" },
-          "icu_training_load": { "type": ["number","null"], "description": "Training load score (similar to TSS)" },
-          "total_elevation_gain": { "type": ["number","null"], "description": "Elevation gain (meters)" },
-          "rpe": { "type": ["number","null"], "description": "Rate of perceived exertion (1–10)" },
-          "feel": { "type": ["integer","null"], "description": "Subjective feel rating (easy=1 → very hard=5)" },
-          "pwhr_decoupling": { "type": ["number","null"], "description": "Cycling HR drift (power vs HR decoupling, %)" },
-          "pahr_decoupling": { "type": ["number","null"], "description": "Running HR drift (pace vs HR decoupling, %)" }
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "start_date_local": { "type": "string", "format": "date-time" },
+          "distance": { "type": "number" },
+          "moving_time": { "type": "number" },
+          "elapsed_time": { "type": "number" },
+          "average_heartrate": { "type": ["number","null"] },
+          "weighted_average_watts": { "type": ["number","null"] },
+          "icu_training_load": { "type": ["number","null"] },
+          "total_elevation_gain": { "type": ["number","null"] },
+          "rpe": { "type": ["number","null"] },
+          "feel": { "type": ["integer","null"] },
+          "pwhr_decoupling": { "type": ["number","null"] },
+          "pahr_decoupling": { "type": ["number","null"] }
         }
       },
       "Wellness": {
         "type": "object",
         "properties": {
-          "date": { "type": "string", "format": "date", "description": "Date of record" },
-          "ctl": { "type": ["number","null"], "description": "Chronic Training Load (42-day rolling avg)" },
-          "atl": { "type": ["number","null"], "description": "Acute Training Load (7-day rolling avg)" },
-          "form": { "type": ["number","null"], "description": "Form = CTL - ATL (positive=fresh, negative=fatigued)" },
-          "rampRate": { "type": ["number","null"], "description": "Weekly change in CTL" },
-          "ctlLoad": { "type": ["number","null"], "description": "Daily CTL contribution" },
-          "atlLoad": { "type": ["number","null"], "description": "Daily ATL contribution" },
-          "weight": { "type": ["number","null"], "description": "Weight (kg)" },
-          "sleepSecs": { "type": ["number","null"], "description": "Sleep duration (seconds)" },
-          "hrv": { "type": ["number","null"], "description": "HRV (ms, RMSSD or similar)" },
-          "restingHr": { "type": ["number","null"], "description": "Resting HR (bpm)" },
-          "comments": { "type": ["string","null"], "description": "Subjective notes (mood, stress, soreness)" }
+          "date": { "type": "string", "format": "date" },
+          "ctl": { "type": ["number","null"] },
+          "atl": { "type": ["number","null"] },
+          "form": { "type": ["number","null"] },
+          "rampRate": { "type": ["number","null"] },
+          "ctlLoad": { "type": ["number","null"] },
+          "atlLoad": { "type": ["number","null"] },
+          "weight": { "type": ["number","null"] },
+          "sleepSecs": { "type": ["number","null"] },
+          "hrv": { "type": ["number","null"] },
+          "restingHr": { "type": ["number","null"] },
+          "comments": { "type": ["string","null"] }
         }
+      },
+
+      "disciplineBlock": {
+        "type": "object",
+        "properties": {
+          "distanceKm": { "type": "number", "description": "Distance in km (exact, 2 decimals)" },
+          "volumeH": { "type": "number", "description": "Moving time in hours (exact, 1 decimal). Elapsed time not permitted." },
+          "tss": { "type": "number", "description": "Exact SUM of icu_training_load. Must match activity data." }
+        },
+        "required": ["distanceKm","volumeH","tss"],
+        "additionalProperties": false
+      },
+
+      "WeeklyReport": {
+        "type": "object",
+        "properties": {
+          "athlete": { "type": "string" },
+          "dateRange": {
+            "type": "object",
+            "properties": {
+              "start": { "type": "string", "format": "date" },
+              "end": { "type": "string", "format": "date" }
+            },
+            "required": ["start","end"]
+          },
+          "disciplines": {
+            "type": "object",
+            "properties": {
+              "cycling": { "$ref": "#/components/schemas/disciplineBlock" },
+              "running": { "$ref": "#/components/schemas/disciplineBlock" },
+              "swimming": { "$ref": "#/components/schemas/disciplineBlock" },
+              "other": { "$ref": "#/components/schemas/disciplineBlock" }
+            },
+            "required": ["cycling","running","swimming","other"]
+          },
+          "wellness": {
+            "type": "object",
+            "properties": {
+              "ctlStart": { "type": "number" },
+              "ctlEnd": { "type": "number" },
+              "atlStart": { "type": "number" },
+              "atlEnd": { "type": "number" },
+              "formStart": { "type": "number" },
+              "formEnd": { "type": "number" },
+              "hrvStart": { "type": "number" },
+              "hrvEnd": { "type": "number" },
+              "sleepAvgH": { "type": "number" },
+              "weight": { "type": ["number","null"] }
+            },
+            "required": ["ctlStart","ctlEnd","atlStart","atlEnd","formStart","formEnd"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["athlete","dateRange","disciplines","wellness"],
+        "additionalProperties": false,
+        "description": "Weekly report schema. Enforcement rules: no cross-discipline totals, precision enforced (km=2 decimals, h=1 decimal), no elapsed_time, TSS must match activity icu_training_load sums."
+      },
+
+      "SeasonReport": {
+        "type": "object",
+        "properties": {
+          "athlete": { "type": "string" },
+          "dateRange": {
+            "type": "object",
+            "properties": {
+              "start": { "type": "string", "format": "date" },
+              "end": { "type": "string", "format": "date" }
+            },
+            "required": ["start","end"]
+          },
+          "disciplines": {
+            "type": "object",
+            "properties": {
+              "cycling": { "$ref": "#/components/schemas/disciplineBlock" },
+              "running": { "$ref": "#/components/schemas/disciplineBlock" },
+              "swimming": { "$ref": "#/components/schemas/disciplineBlock" },
+              "other": { "$ref": "#/components/schemas/disciplineBlock" }
+            },
+            "required": ["cycling","running","swimming","other"]
+          },
+          "wellness": {
+            "type": "object",
+            "properties": {
+              "ctlStart": { "type": "number" },
+              "ctlEnd": { "type": "number" },
+              "atlStart": { "type": "number" },
+              "atlEnd": { "type": "number" },
+              "formStart": { "type": "number" },
+              "formEnd": { "type": "number" },
+              "hrvStart": { "type": "number" },
+              "hrvEnd": { "type": "number" },
+              "sleepAvgH": { "type": "number" },
+              "weight": { "type": ["number","null"] }
+            },
+            "required": ["ctlStart","ctlEnd","atlStart","atlEnd","formStart","formEnd"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["athlete","dateRange","disciplines","wellness"],
+        "additionalProperties": false,
+        "description": "Season report schema. Enforcement rules identical to WeeklyReport: discipline separation only, no cross-discipline totals, km=2 decimals, h=1 decimal, no elapsed_time, TSS exact sum."
       }
     },
     "securitySchemes": {
@@ -191,4 +262,3 @@
     { "OAuth2": ["read"] }
   ]
 }
-* * *
