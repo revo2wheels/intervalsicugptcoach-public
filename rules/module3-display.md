@@ -71,12 +71,26 @@ Header: Athlete: {id|You} — {start} → {end}
 Summary: {seasonSummary}  
 → Uses General Template  
 
-### 2. Season (Block Analysis)
-Trigger: season report | block analysis | any user-specified range longer than 7 days  
+### 2. Season Report (Block Analysis)
+Trigger: season report | block analysis | any range >7 days  
 Header: Athlete: {id|You} — {start} → {end}  
-Summary: {seasonSummary}  
-Phases: Build, Overload, Deload, Consolidation with {dates, summary}  
-→ Uses General Report Template  
+Summary: {seasonSummary} (high-level overview of the block: training direction, fatigue/recovery balance, and adaptation trends).  
+Phases (mandatory):  
+- Build: {dates, summary}  
+- Overload: {dates, summary}  
+- Deload: {dates, summary}  
+- Consolidation: {dates, summary}  
+Format (mandatory sequence):  
+1. Audit  
+2. Key Stats  
+3. Phases (must appear here, never omitted)  
+4. Events  
+5. Sections  
+Rules:  
+- ❌ Never output a season report in weekly format.  
+- ✅ Always include the four phases with dates, even if approximated.  
+- ✅ Always include a block-level summary at the top.  
+
 
 ### 3. Wellness Trend
 Trigger: wellness report | recovery status | wellness trend  
