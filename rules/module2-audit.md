@@ -46,15 +46,23 @@
   2. Any discipline missing  
   3. Combined totals ≠ sum of subtotals  
 
-### Chunking & Retry Rule (Enforced)
-- Any report window longer than 7 days must be ingested in **weekly chunks** (7-day windows).  
-- Default: If the user requests a “42-day season report” without explicit dates, always resolve to today−41 → today.  
+### Chunking, Retry & Default Rule (Enforced)
+- Any request window longer than 7 days must be split into consecutive 7-day chunks.  
+- Default: If the user requests a “42-day season report” without explicit dates, automatically set the window to today−41 → today.  
 - Each chunk must respect the **Field Lock Rule** (only audit-required fields).  
 - GPT must:  
-  1. Automatically split the requested date range into consecutive 7-day windows.  
-  2. Fetch all chunks without prompting the user.  
-  3. Concatenate all chunks into a master DataFrame.  
-  4. Verify DataFrame row count = sum of API counts across all chunks.  
+  1. Auto-split the requested date range into 7-day windows.  
+  2. Fetch all chunks without user confirmation.  
+  3. Concatenate results into a master DataFrame.  
+  4. Verify DataFrame row count = sum of API counts across chunks.  
+- Retry Handling:  
+  - If a 7-day fetch fails, retry automatically up to 10 times.  
+  - If retries succeed, continue concatenation.  
+  - ❌ If retries exhausted, halt with:  
+    “Error: no data returned after 10 retries (chunk {start} → {end}).”  
+- ❌ If GPT attempts >7 days in one call, or requests user confirmation for chunking or retry, audit fails.  
+- ❌ If GPT ignores the default 42-day window rule and prompts the user for dates instead, audit fails with:  
+    “Error: Default 42-day window (today−41 → today) not applied.”  
 
 - Retry Handling:  
   - If a 7-day chunk fetch fails (connector/client error), retry automatically up to 10 times.  
@@ -73,12 +81,7 @@
   - If only the General Report Template is used without the required type-specific sections (e.g. Phases for Season, Event log for Event):
     ❌ Halt output and return:
     “Error: Report type requested but only general template applied. Season/Block/Event template required.”
-    
-### Default Window Rule (Enforced)
-- If the user requests a “42-day season report” without explicit dates:
-  ✅ Automatically set the window to today−41 → today.  
-- ❌ If GPT requests user input for dates instead of applying this default, audit fails with:  
-  “Error: Default 42-day window (today−41 → today) not applied.”  
+
 
 
 
