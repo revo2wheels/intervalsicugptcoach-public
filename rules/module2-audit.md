@@ -52,4 +52,11 @@
 - After chunk retrieval:  
   - Concatenate all chunks.  
   - Verify DataFrame row count = sum of API counts per chunk.  
-- ❌ If any chunk mismatch → halt with error “chunk truncation detected.”  
+- ❌ If any chunk mismatch → halt with error “chunk truncation detected.”
+- 
+### Template Compliance Rule
+- When a user requests a report and specifies a type (Weekly, Season, Block, Event):
+  - Audit must verify that the correct type-specific template was applied.
+  - If only the General Report Template is used without the required type-specific sections (e.g. Phases for Season, Event log for Event):
+    ❌ Halt output and return:
+    “Error: Report type requested but only general template applied. Season/Block/Event template required.”
