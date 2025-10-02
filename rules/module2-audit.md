@@ -46,21 +46,24 @@
   2. Any discipline missing  
   3. Combined totals ≠ sum of subtotals  
 
-### Chunking & Retry Rule
+### Chunking & Retry Rule (Enforced)
 - Any report window longer than 7 days must be ingested in **weekly chunks** (7-day windows).  
 - Default: If the user requests a “42-day season report” without explicit dates, always resolve to today−41 → today.  
 - Each chunk must respect the **Field Lock Rule** (only audit-required fields).  
 - GPT must:  
   1. Automatically split the requested date range into consecutive 7-day windows.  
-  2. Fetch all chunks without asking user confirmation.  
+  2. Fetch all chunks without prompting the user.  
   3. Concatenate all chunks into a master DataFrame.  
   4. Verify DataFrame row count = sum of API counts across all chunks.  
+
 - Retry Handling:  
   - If a 7-day chunk fetch fails (connector/client error), retry automatically up to 10 times.  
   - If retries succeed, continue concatenation.  
   - ❌ If 10 retries fail for a chunk, halt with:  
     “Error: no data returned after 10 retries (chunk {start} → {end}).”  
-- ❌ If GPT attempts to fetch >7 days in a single call, or prompts the user to confirm chunking/retry, audit fails.  
+
+- ❌ If GPT attempts to fetch >7 days in a single call, audit fails.  
+- ❌ If GPT prompts the user to confirm chunking or retries, audit fails.  
 - ❌ If any concatenated DataFrame row count mismatches sum of chunks, halt with:  
     “Error: chunk truncation detected.”  
 
