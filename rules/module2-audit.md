@@ -46,17 +46,35 @@
   2. Any discipline missing  
   3. Combined totals ≠ sum of subtotals  
 
-### Chunking Rule
-- All season (42-day) requests must be ingested in **weekly chunks** (6 windows).  
+### Chunking & Retry Rule
+- Any report window longer than 7 days must be ingested in **weekly chunks** (7-day windows).  
+- Default: If the user requests a “42-day season report” without explicit dates, always resolve to today−41 → today.  
 - Each chunk must respect the **Field Lock Rule** (only audit-required fields).  
-- After chunk retrieval:  
-  - Concatenate all chunks.  
-  - Verify DataFrame row count = sum of API counts per chunk.  
-- ❌ If any chunk mismatch → halt with error “chunk truncation detected.”
-- 
+- GPT must:  
+  1. Automatically split the requested date range into consecutive 7-day windows.  
+  2. Fetch all chunks without asking user confirmation.  
+  3. Concatenate all chunks into a master DataFrame.  
+  4. Verify DataFrame row count = sum of API counts across all chunks.  
+- Retry Handling:  
+  - If a 7-day chunk fetch fails (connector/client error), retry automatically up to 10 times.  
+  - If retries succeed, continue concatenation.  
+  - ❌ If 10 retries fail for a chunk, halt with:  
+    “Error: no data returned after 10 retries (chunk {start} → {end}).”  
+- ❌ If GPT attempts to fetch >7 days in a single call, or prompts the user to confirm chunking/retry, audit fails.  
+- ❌ If any concatenated DataFrame row count mismatches sum of chunks, halt with:  
+    “Error: chunk truncation detected.”  
+
 ### Template Compliance Rule
 - When a user requests a report and specifies a type (Weekly, Season, Block, Event):
   - Audit must verify that the correct type-specific template was applied.
   - If only the General Report Template is used without the required type-specific sections (e.g. Phases for Season, Event log for Event):
     ❌ Halt output and return:
     “Error: Report type requested but only general template applied. Season/Block/Event template required.”
+    
+### Default Window Rule
+- If the user requests a 42-day season report without explicit dates:
+  ✅ Always resolve to today−41 → today.
+- ❌ If the report proceeds without applying this default, audit fails with:
+  “Error: Default 42-day window (today−41 → today) not applied.”
+
+
