@@ -173,5 +173,51 @@
   },
   "security": [
     { "OAuth2": ["ACTIVITY:READ", "WELLNESS:READ", "SETTINGS:READ"] }
+  ],
+  "x-validation-rules": {
+    "discipline_filter": {
+      "cycling": ["Ride", "VirtualRide"],
+      "running": ["Run", "VirtualRun"],
+      "swimming": ["Swim"],
+      "other": ["*"]
+    },
+    "conversions": {
+      "distanceKm": "distance/1000, round 2 decimals",
+      "volumeH": "moving_time/3600, round 1 decimal",
+      "tss": "sum of icu_training_load, exact"
+    },
+    "precision": {
+      "distanceKm": 2,
+      "volumeH": 1,
+      "tss": 0
+    },
+    "integrity": {
+      "no_elapsed_time": true,
+      "discipline_totals_must_match": true,
+      "no_cross_discipline_sums": true,
+      "halt_on_mismatch": true
+    }
+  },
+  "x-actions": {
+    "run_audit_pipeline": {
+      "type": "python",
+      "entrypoint": "run_audit_pipeline",
+      "args": {
+        "conn": "intervals_icu__jit_plugin",
+        "src": "intervals"
+      }
+    }
+  },
+  "x-intents": [
+    {
+      "trigger": [
+        "weekly report",
+        "check active connection",
+        "run weekly report",
+        "run season report",
+        "run wellness report"
+      ],
+      "action": "run_audit_pipeline"
+    }
   ]
 }

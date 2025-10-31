@@ -8,12 +8,12 @@ Each module is stored separately in the **root directory** of this repository an
 
 | Module | Purpose | File Path |
 |:--|:--|:--|
-| **1. Glossary & Placeholders** | Core tokens, data placeholders, and variable mappings for audits and reports. | [`Glossary & Placeholders.md`](./Glossary%20&%20Placeholders.md) |
-| **2. Coaching Cheat Sheet** | Quick reference thresholds and classification tables (load, recovery, quality). | [`Coaching Cheat Sheet.md`](./Coaching%20Cheat%20Sheet.md) |
-| **3. Coaching Heuristics Pack** | Decision logic, sport-specific heuristics, and phase rules (Seiler, Friel). | [`Coaching Heuristics Pack.md`](./Coaching%20Heuristics%20Pack.md) |
-| **4. Advanced Marker Reference** | Derived metrics and computation definitions (ACWR, Monotony, Strain, Durability, FatOx). | [`Advanced Marker Reference.md`](./Advanced%20Marker%20Reference.md) |
-| **5. Coach Profile** | Coach’s expertise, frameworks, and marker integration models. | [`Coach profile.md`](./Coach%20profile.md) |
-| **6. Unified Reporting Framework** | Standardized output schema for Weekly, Seasonal, and Executive Reports. | [`Unified Reporting Framework.md`](./Unified%20Reporting%20Framework.md) |
+| **1. Glossary & Placeholders** | Core tokens, data placeholders, and variable mappings for audits and reports. | [Glossary & Placeholders.md](https://raw.githubusercontent.com/<org>/<repo>/main/Glossary%20%26%20Placeholders.md) |
+| **2. Coaching Cheat Sheet** | Quick reference thresholds and classification tables (load, recovery, quality). | [Coaching Cheat Sheet.md](https://raw.githubusercontent.com/<org>/<repo>/main/Coaching%20Cheat%20Sheet.md) |
+| **3. Coaching Heuristics Pack** | Decision logic, sport-specific heuristics, and phase rules (Seiler, Friel). | [Coaching Heuristics Pack.md](https://raw.githubusercontent.com/<org>/<repo>/main/Coaching%20Heuristics%20Pack.md) |
+| **4. Advanced Marker Reference** | Derived metrics and computation definitions (ACWR, Monotony, Strain, Durability, FatOx). | [Advanced Marker Reference.md](https://raw.githubusercontent.com/<org>/<repo>/main/Advanced%20Marker%20Reference.md) |
+| **5. Coach Profile** | Coach’s expertise, frameworks, and marker integration models. | [Coach profile.md](https://raw.githubusercontent.com/<org>/<repo>/main/Coach%20profile.md) |
+| **6. Unified Reporting Framework** | Standardized output schema for Weekly, Seasonal, and Executive Reports. | [Unified Reporting Framework.md](https://raw.githubusercontent.com/<org>/<repo>/main/Unified%20Reporting%20Framework.md) |
 
 ---
 
