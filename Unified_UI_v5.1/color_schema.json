@@ -1,0 +1,12 @@
+{
+  "zones": {
+    "z1": "#9ecae1",
+    "z2": "#6baed6",
+    "z3": "#3182bd",
+    "z4": "#08519c",
+    "z5": "#08306b"
+  },
+  "background": "#f8f9fa",
+  "text_primary": "#111",
+  "text_secondary": "#444"
+}

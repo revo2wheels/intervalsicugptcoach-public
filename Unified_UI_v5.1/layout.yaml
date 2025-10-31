@@ -1,0 +1,10 @@
+# Unified_UI_v5.1 minimal schema
+version: 5.1
+sections:
+  - audit
+  - key_stats
+  - events
+  - sections
+  - actions
+  - summary
+derived_metrics: table_only
