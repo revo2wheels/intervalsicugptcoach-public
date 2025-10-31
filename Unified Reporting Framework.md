@@ -70,8 +70,8 @@ Audit: {auditStatus} | Data Integrity: {integrityFlag}
 Displays validated, merged daily sessions after the Event Completeness Rule.  
 Visible only in weekly reports (7-day rolling or calendar-week mode).
 
-| Date | Discipline | Duration (h) | Load (TSS) | RPE | IF | Feel |
-|:--|:--|--:|--:|--:|--:|:--|
+| Date | Discipline | Duration (h) | Load (TSS) | RPE | IF | Feel | Device • Source | 
+|:--|:--|--:|--:|--:|--:|:--|:--|
 {weeklyEventLogBlock}
 
 ---
@@ -89,8 +89,28 @@ Visible only in weekly reports (7-day rolling or calendar-week mode).
   - Duration → 2 decimals
   - Load → integer
 - Appears **only** when `reportType == "weekly"`
+- **Renderer Compliance:**
+  - Event Card generation must validate against Event Log row count.
+  - Device and Source fields required per Ruleset v16.2.
 
 ---
+
+### **Event Cards and Relationship Model**
+
+Each Event Card is a rendered instance of a validated Event Log row (1 : 1 mapping).  
+This establishes a transparent data-to-render chain for audit traceability.
+
+**Chain:**
+API → Tier 1 / Tier 2 Audit → Merged Daily Table → Event Card Renderer → Report Section
+
+**Rules**
+1. Every card maps uniquely to a validated event (`activity_id`).  
+2. Cards inherit all Tier-2 validated fields: date, type, duration, TSS, IF, RPE, feel, device_name, source.  
+3. Card renderers may group visually but never alter numeric values.  
+4. If card count ≠ table row count → ❌ Renderer Halt (`variance > 0 %`).  
+5. Missing provenance defaults to `Unknown • Manual`.  
+6. Device provenance must appear in both table and card layers.
+
 
 ### **Training Quality Section**
 | Zone | Volume (h) | % Total | Notes |
@@ -176,6 +196,7 @@ To avoid ambiguity, the following report triggers and date-window definitions ar
 **Unified Reporting Framework v5.1** — merges General, Weekly, and Season templates.  
 Frameworks: **Seiler 80/20 | San Millán Fat-Oxidation | Friel Periodisation | Banister TRIMP | Foster Load Variability**.  
 Validated with: Glossary, Heuristics Pack, Cheat Sheet, and Coach Profile.
+**Unified Reporting Framework v5.2** — adds device provenance & card relationship layer.
 
 ---
 
