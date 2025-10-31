@@ -1,4 +1,4 @@
-# 📊 Advanced Markers  
+# 📊 Advanced Markers v1.1
 
 🔗 Related files:  
 - See **Glossary & Placeholders** for variable references in reports.  
@@ -9,16 +9,22 @@ Composite and derived training metrics used for deeper analysis.
 
 ---
 
-## 🔑 Load & Stress Metrics  
+## Load & Stress Metrics
 
-### Strain  
-**Definition:** Weekly sum of training load (TSS).  
+### Adaptive Load & Strain Scaling
+All TSS-based metrics scale to athlete volume. Use average weekly hours to select thresholds.
 
-| Status | Threshold | Coaching Insight |
-|--------|-----------|------------------|
-| ✅ Green | <1,800   | Normal weekly training load |
-| ⚠️ Amber | 1,800–2,200 | Heavy block, monitor recovery |
-| ❌ Red   | >2,200   | High overload, illness/injury risk |
+| Athlete Type | Hours/wk | ✅ Green | ⚠️ Amber | ❌ Red |
+|:--|--:|--:|--:|--:|
+| Recreational | 4–7 | <700 | 700–1000 | >1000 |
+| Competitive Amateur | 8–14 | <1200 | 1200–1600 | >1600 |
+| High-Volume / Elite | 15–20 | <1800 | 1800–2200 | >2200 |
+| Professional | >20 | <2200 | 2200–2700 | >2700 |
+
+Apply these scaling rows for:
+- **Weekly Load (TSS)** = total 7-day training load.  
+- **Weekly Strain** = Σ weekly load, used for block monitoring.  
+- **ACWR, Monotony, and Recovery Index** follow same scaled banding.
 
 ---
 
@@ -99,3 +105,50 @@ Composite and derived training metrics used for deeper analysis.
 | ✅ Green | ≥2 quality sessions/week (≥1 long, ≥1 interval) | Balanced stimulus for durability + intensity |
 | ⚠️ Amber | 1 quality session/week | Missing either endurance or intensity |
 | ❌ Red   | 0 quality sessions | Lack of key adaptation stimulus |
+
+## Report Output Template (moved from Final Instructions)
+> Defines the full post-audit report layout and all marker placeholders.
+
+⚠️ Use only **after Audit Enforcement passes**  
+- **Mood Field:** if `{moodTrend}` = null or "no data", omit from report  
+- Row Count Lock  
+- Load First, Filter After  
+- Combined totals = exact sum of subtotals  
+- Cycling, Running, Swimming, Other always present  
+- ❌ Halt if mismatch or missing category  
+
+Knowledge: Strictly follows **Knowledge Reference Rule** (icons, thresholds, definitions, heuristics applied in priority order)
+
+**Audit:** {auditStatus}
+
+### Key Stats
+- **Volume:** {totalHours}h  
+  {ridesKmBlock: ({ridesKm} km ride)}  
+  {runsKmBlock: ({runsKm} km run)}  
+  {swimsKmBlock: ({swimsKm} km swim)}  
+  {otherKmBlock: ({otherKm} km other)}  
+- **Load:** {totalTss} TSS, CTL {ctlStart}→{ctlEnd}, ATL {atlStart}→{atlEnd}, Form {formStart}→{formEnd}  
+- **Recovery:** HRV {hrvStart}→{hrvEnd}, RestHR {restingHrStart}→{restingHrEnd}, Sleep avg {sleepHoursAvg}h  
+- **Fitness:** VO₂max {vo2maxStart}→{vo2maxEnd}, PerfCond {perfCondMin}→{perfCondMax}, Cycling Decoup {avgPwHrDecoupling}%, Running Decoup {avgPaHrDecoupling}%, Polarisation {polarisationIndex}  
+- **Subjective:** Feel ratings {feelingCounts}, RPE avg {avgRpe}, Feel trend {feelTrend}, Mood trend {moodTrend}  
+- **Advanced:** ACWR {acwrRaw} ({acwrEval}), Monotony {monotonyRaw} ({monotonyEval}), Strain {strainRaw} ({strainEval}), Recovery Index {recoveryIndexRaw} ({recoveryIndexEval})
+
+### Events (daily log)
+{dayLogBlock: Mon{event}, Tue{event}, Wed{event}, Thu{event}, Fri{event}, Sat{event}, Sun{event}}
+
+### Sections
+- Load vs Recovery → {summaryText}  
+- Green Flags → ✅ or none  
+- Red/Amber → ❌ / ⚠️ or none  
+- Trends → {metric, dir, window, comment}  
+- Actions → 3 max  
+
+### Unified Metric References
+Include optional derived markers if data present:
+- Training Distribution: classify Polarised / Pyramidal / Threshold-heavy (Z1–Z3 ratio).  
+- Durability Index (>2h decoupling): Stable / Declining / Improving.  
+- VO₂max & PerfCond: trend if logged else “no data”.  
+- Mood / Stress / Soreness: daily trend if wellness logged else “no data”.  
+- Weekly Strain (Scaled): render from Adaptive Load & Strain Scaling.
+
+
