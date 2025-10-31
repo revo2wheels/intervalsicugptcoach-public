@@ -27,6 +27,20 @@
 | Resting HR     | Stable                | +5 bpm               | +10 bpm                        |
 | Sleep (avg)    | >8h                   | 7–8h                 | <7h                            |
 
+
+## Age-Adjusted Load and Recovery Modifiers (Friel Reference)
+
+| Age | ATL Multiplier | ACWR Cap | Recovery Frequency | Notes |
+|:--|:--|:--|:--|:--|
+| < 35 | 1.00 | 1.5 | 4-week | Standard progression |
+| 35–49 | 0.95 | 1.4 | 3–4-week | Slight recovery emphasis |
+| 50–59 | 0.90 | 1.3 | 3-week | Reduce HI frequency by 25 % |
+| 60–69 | 0.85 | 1.2 | 2-week | Maintain intensity, lower volume |
+| ≥ 70 | 0.75 | 1.1 | 2-week | Prioritize recovery, add aerobic maintenance |
+
+**Integration:**  
+Used by the Unified Reporting Framework and Heuristics Pack to weight ATL, cap ACWR, and define recovery microcycle cadence.
+
 ---
 
 ## ⚡ Training Quality  
@@ -36,6 +50,17 @@
 | Polarisation Index             | ≥0.8                         | 0.6–0.8                  | <0.6                    |
 | Durability Index (avgDecoupling) | ≤5%                          | 5–7%                     | >7%                     |
 | Quality Session Balance        | ≥2/week (1 long, 1 interval) | 1/week (missing type)    | 0/week (none logged)    |
+
+---
+
+### 🔥 Fat-Oxidation Efficiency (Zone 2 Quality)
+
+| Metric | Green ✅ | Amber ⚠️ | Red ❌ |
+|:--|:--|:--|:--|
+| **FatOxidation Index** | ≥ 0.80 (optimal fat oxidation) | 0.60 – 0.79 (moderate adaptation) | < 0.60 (glycolytic bias / low durability) |
+
+**Purpose:** Evaluates Zone 2 metabolic efficiency and aerobic durability using IF (0.65–0.75), decoupling %, and HRV trend.  
+**Reference:** Coach Profile / San Millán Framework — included in Weekly and Seasonal Reports → *Training Quality section.*
 
 ---
 
