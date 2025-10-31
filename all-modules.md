@@ -1,3 +1,19 @@
+<!-- Renderer binding block -->
+# 🧭 Module Source Map
+manifest_origin: github
+module_base: https://raw.githubusercontent.com/<org>/<repo>/main/
+
+bindings:
+  Glossary & Placeholders: https://raw.githubusercontent.com/<org>/<repo>/main/Glossary%20%26%20Placeholders.md
+  Coaching Cheat Sheet: https://raw.githubusercontent.com/<org>/<repo>/main/Coaching%20Cheat%20Sheet.md
+  Coaching Heuristics Pack: https://raw.githubusercontent.com/<org>/<repo>/main/Coaching%20Heuristics%20Pack.md
+  Advanced Marker Reference: https://raw.githubusercontent.com/<org>/<repo>/main/Advanced%20Marker%20Reference.md
+  Coach Profile: https://raw.githubusercontent.com/<org>/<repo>/main/Coach%20profile.md
+  Unified Reporting Framework: https://raw.githubusercontent.com/<org>/<repo>/main/Unified%20Reporting%20Framework.md
+  Unified_UI_v5.1: https://raw.githubusercontent.com/<org>/<repo>/main/Unified_UI_v5.1/
+
+---
+
 # 📘 All Modules Index — v16
 This document defines the authoritative reference chain for all rule and knowledge modules used by the **IntervalsICU GPT Coach**.  
 Each module is stored separately in the **root directory** of this repository and is dynamically fetched by the app.
