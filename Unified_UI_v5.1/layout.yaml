@@ -4,7 +4,12 @@ sections:
   - audit
   - key_stats
   - events
+  - quality
   - sections
+  - efficiency
+  - derived_metrics
+  - recovery
+  - performance
   - actions
   - summary
 derived_metrics: table_only
