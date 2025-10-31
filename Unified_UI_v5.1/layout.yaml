@@ -1,5 +1,6 @@
-version: 5.1
-order:
+render_mode: full
+theme: light
+cards_order:
   - audit
   - key_stats
   - events
@@ -11,5 +12,10 @@ order:
   - performance
   - actions
   - summary
-render_mode: full
-derived_metrics: table_only
+grid:
+  columns: 2
+  responsive: true
+style:
+  border_radius: 2xl
+  shadow: soft
+  padding: p-4

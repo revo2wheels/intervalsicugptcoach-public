@@ -2,12 +2,8 @@
   "schema_version": "5.1",
   "card_base_path": "./cards/",
   "icon_pack": "./icon_pack.json",
-  "style": {
-    "font_family": "Inter, Roboto, Helvetica",
-    "border_radius": "2xl",
-    "shadow": "soft",
-    "padding": "p-4"
-  },
+  "layout": "./layout.yaml",
+  "render_mode": "full",
   "mapping": {
     "audit": "audit_card.md",
     "key_stats": "key_stats_card.md",
@@ -22,5 +18,6 @@
     "summary": "summary_card.md"
   }
 }
+
 
 
