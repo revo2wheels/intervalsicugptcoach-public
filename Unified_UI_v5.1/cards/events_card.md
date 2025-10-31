@@ -1,10 +1,16 @@
-## ⚙️ Training Sections
 
-**Load Distribution**  
-Z1–Z2 = {{z1_z2_pct}} % Z3–Z4 = {{z3_z4_pct}} % Z5+ = {{z5_pct}} %  
-→ {{polarisation_comment}}
+## 🗓️ Events
 
-**Intensity & Recovery**  
-ATL ≈ CTL → TSB = {{tsb}} → {{fatigue_status}}  
-Recovery Index = {{recovery_index}} → {{recovery_comment}}  
-Monotony = {{monotony}} → {{monotony_comment}}
+**Training Timeline**
+
+| Date | Type | Session | Duration | TSS | IF | Notes |
+|:--|:--|:--|--:|--:|--:|:--|
+{% for e in events %}
+| {{e.date}} | {{e.type}} | {{e.name}} | {{e.duration}} | {{e.tss}} | {{e.if}} | {{e.comment}} |
+{% endfor %}
+
+**Highlights**
+- 🧩 {{weekly_summary}}
+- 🛌 Rest Days: {{rest_days}}
+- ⏳ Current Day: {{pending_sessions}}
+- 🎯 Best Session: {{best_session.name}} ({{best_session.load}} AU)
