@@ -1,18 +1,16 @@
 {
   "schema_version": "5.1",
   "card_base_path": "./cards/",
-  "style": {
-    "font_family": "Inter, Roboto, Helvetica",
-    "border_radius": "2xl",
-    "shadow": "soft",
-    "padding": "p-4"
-  },
   "mapping": {
     "audit": "audit_card.md",
     "key_stats": "key_stats_card.md",
     "events": "events_card.md",
+    "quality": "quality_card.md",
     "sections": "sections_card.md",
+    "efficiency": "efficiency_card.md",
     "derived_metrics": "derived_metrics_card.md",
+    "recovery": "recovery_card.md",
+    "performance": "performance_card.md",
     "actions": "actions_card.md",
     "summary": "summary_card.md"
   }
