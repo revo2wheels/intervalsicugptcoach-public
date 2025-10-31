@@ -36,7 +36,22 @@
 
 ### Tier 0 — Pre-Audit
 1. Purge cache → fetch fresh `activities` + `wellness` (valid window only).  
-2. Validate data origin → if API response header, metadata, or tag ∈ `[mock, cache, sandbox]` → ❌ halt `"invalid source"`.  
+2. Validate data origin → if API response header, metadata, or tag ∈ `[mock, cache, sandbox]` → ❌ halt `"invalid source"`.
+2.1 Fetch athlete profile context:  
+```python
+profile = getAthleteProfile()
+context["athlete"] = profile["athlete"]
+athlete_tz = profile["athlete"].get("timezone", "Europe/Zurich")
+context["timezone"] = athlete_tz
+# Enforce valid timezone fallback
+if not isinstance(context["timezone"], str) or len(context["timezone"]) < 3:
+    context["timezone"] = "Europe/Zurich"
+activities = listActivities(oldest, newest, timezone=context["timezone"])
+wellness = listWellness(oldest, newest, timezone=context["timezone"])
+df["start_date_local"] = pd.to_datetime(df["start_date"]).dt.tz_convert(context["timezone"])
+df["date"] = df["start_date_local"].dt.date
+daily = df.groupby("date").agg({...})
+```
 3. Retry once on connector error, else ❌ halt.  
 4. Merge and execute full Python audit (Tier1 + Tier2).  
 5. Initialize `auditPartial=False`, `auditFinal=False` at audit start.  
@@ -169,9 +184,9 @@ Do **not** reference or duplicate these files manually — the manifest is the s
 - Rounding: distance 2 dp | time hh:mm:ss | TSS int.  
 - Include 🛌 Rest Day and ⏳ Current Day in logs.  
 - Halt on any variance > 2 % or missing category.
-- render_mode="full"          # Force icon + visual schema rendering
-- output_encoding="utf-8"     # Prevent safe-mode fallback
-- force_icon_pack=True        # Enforce Unified_UI_v5.1 even after ruleset reload
+- render_mode="full"
+- output_encoding="utf-8"
+- force_icon_pack=True
 
 ---
 

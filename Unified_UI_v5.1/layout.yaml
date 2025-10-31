@@ -1,5 +1,14 @@
 render_mode: full
 theme: light
+header:
+  show_profile: true
+  fields: [name, city, country, timezone]
+  image_field: profile_medium
+  style:
+    align: left
+    image_size: 72px
+    font_weight: semibold
+    padding_bottom: 8px
 cards_order:
   - audit
   - key_stats
