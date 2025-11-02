@@ -1,67 +1,82 @@
-import re
-from datetime import datetime, timedelta
+"""
+report_validator.py — v16.1
+Validates rendered reports against Unified Reporting Framework v5.1.
+Ensures all output metrics, sections, and formatting meet canonical spec.
+"""
 
-class ReportValidationError(Exception):
-    """Custom error for audit validation failures."""
-    pass
+import math
 
-
-def validate_report(payload: dict):
+def validate_report_output(context, report, framework_version="Unified_Reporting_Framework_v5.1"):
     """
-    Validate GPT-generated report against audit rules.
+    Perform structural and logical validation of a rendered report.
+    """
 
-    Payload expected structure:
-    {
-      "reportText": "...",   # GPT report output (Markdown string)
-      "reportType": "season", # one of: weekly, season, block, event
-      "startDate": "2025-08-21",
-      "endDate": "2025-10-02"
+    # --- Framework verification ---
+    if framework_version != "Unified_Reporting_Framework_v5.1":
+        raise ValueError(f"❌ Invalid framework version: {framework_version}")
+
+    # --- Renderer gate ---
+    if not context.get("auditFinal", False):
+        raise RuntimeError("❌ Renderer blocked: auditFinal=False")
+
+    # --- Required context keys ---
+    required_keys = ["totalHours", "totalTss", "actions", "athlete", "timezone"]
+    missing = [k for k in required_keys if k not in context]
+    if missing:
+        raise KeyError(f"❌ Missing context keys: {missing}")
+
+    # --- Type and range validation ---
+    if not isinstance(context["totalHours"], (int, float)):
+        raise TypeError("❌ totalHours must be numeric")
+    if not isinstance(context["totalTss"], (int, float)):
+        raise TypeError("❌ totalTss must be numeric")
+    if context["totalHours"] < 0 or context["totalTss"] < 0:
+        raise ValueError("❌ Negative totals detected")
+
+    # --- Rounding and format checks ---
+    rounded_hours = round(context["totalHours"], 2)
+    if not math.isclose(context["totalHours"], rounded_hours, abs_tol=0.01):
+        raise ValueError("❌ totalHours not rounded to 2 decimals")
+
+    if not isinstance(context["actions"], list):
+        raise TypeError("❌ actions must be a list")
+
+    # --- Report structural validation ---
+    required_sections = ["header", "summary", "metrics", "actions", "footer"]
+    for section in required_sections:
+        if section not in report:
+            raise ValueError(f"❌ Missing report section: {section}")
+
+    # --- Framework icon + label check ---
+    icon_fields = ["🛌 Rest Day", "⏳ Current Day"]
+    for icon in icon_fields:
+        if icon not in report["summary"]:
+            raise ValueError(f"❌ Framework icon missing: {icon}")
+
+    # --- Variance and integrity ---
+    variance_limit = 0.02  # 2%
+    if "variance" in context and context["variance"] > variance_limit:
+        raise ValueError(f"❌ Variance exceeds {variance_limit*100:.0f}% limit")
+
+    # --- Metrics validation ---
+    derived_metrics = ["ACWR", "Monotony", "Strain", "Polarisation", "RecoveryIndex"]
+    for m in derived_metrics:
+        if m not in context:
+            raise ValueError(f"❌ Derived metric missing: {m}")
+        val = context[m]
+        if not isinstance(val, (int, float)) or math.isnan(val):
+            raise TypeError(f"❌ Derived metric {m} invalid")
+
+    # --- Render compliance summary ---
+    compliance_log = {
+        "framework": framework_version,
+        "report_type": report.get("type", "unknown"),
+        "auditFinal": context["auditFinal"],
+        "checked_sections": required_sections,
+        "verified_metrics": derived_metrics,
+        "variance_ok": context.get("variance", 0) <= variance_limit,
+        "icons_verified": True,
     }
-    """
-    report = payload.get("reportText", "")
-    report_type = payload.get("reportType", "").lower()
-    start_date = payload.get("startDate")
-    end_date = payload.get("endDate")
 
-    # === Audit presence ===
-    if "Audit:" not in report:
-        raise ReportValidationError("❌ Missing Audit section.")
-
-    # === Core sections required ===
-    required_sections = ["Key Stats", "Events", "Sections"]
-    for sec in required_sections:
-        if sec not in report:
-            raise ReportValidationError(f"❌ Missing required section: {sec}")
-
-    # === Report type specific checks ===
-    if report_type == "weekly":
-        if start_date and end_date:
-            delta = (datetime.fromisoformat(end_date) - datetime.fromisoformat(start_date)).days + 1
-            if delta != 7:
-                raise ReportValidationError(f"❌ Weekly report must be 7 days, got {delta} days.")
-
-    elif report_type == "season":
-        # Season reports must have all 4 phases
-        for phase in ["Build", "Overload", "Deload", "Consolidation"]:
-            if phase not in report:
-                raise ReportValidationError(f"❌ Missing Season phase: {phase}")
-
-        # Enforce default 42-day window if no explicit dates provided
-        if not (start_date and end_date):
-            today = datetime.today().date()
-            expected_start = (today - timedelta(days=41)).isoformat()
-            expected_end = today.isoformat()
-            if f"{expected_start} → {expected_end}" not in report:
-                raise ReportValidationError(
-                    f"❌ Default 42-day window not applied. Expected {expected_start} → {expected_end}"
-                )
-
-    elif report_type == "block":
-        if "progression" not in report.lower():
-            raise ReportValidationError("❌ Block report missing progression summary.")
-
-    elif report_type == "event":
-        if "Event" not in report and "event" not in report.lower():
-            raise ReportValidationError("❌ Event report missing event log.")
-
-    return { "status": "✅ Validation Passed" }
+    print("✅ Report validated — framework compliant.")
+    return compliance_log

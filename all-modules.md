@@ -58,7 +58,8 @@ Each module is stored separately in the **root** or **/audit_core/** directory a
 9. audit_core/tier2_event_completeness.py  
 10. audit_core/tier2_enforce_event_only_totals.py  
 11. audit_core/tier2_derived_metrics.py  
-12. audit_core/tier2_actions.py  
+12. audit_core/tier2_actions.py
+13. audit_core/tier2_render_validator.py
 
 ---
 
