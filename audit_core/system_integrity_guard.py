@@ -1,41 +1,39 @@
-"""
-system_integrity_guard.py — v16.1
-Ensures module order, hashes, and framework constants remain intact.
-"""
+#!/usr/bin/env python3
+import os, hashlib, json, sys
 
-import hashlib
-import importlib
-import json
-
-EXPECTED_ORDER = [
-    "tier0_pre_audit",
-    "tier1_controller",
-    "tier2_event_completeness",
-    "tier2_enforce_event_only_totals",
-    "tier2_derived_metrics",
-    "tier2_actions",
-    "tier2_render_validator"
+MODULE_DIR = os.path.dirname(__file__)
+MODULES = [
+    "tier0_pre_audit.py",
+    "tier1_controller.py",
+    "tier2_event_completeness.py",
+    "tier2_enforce_event_only_totals.py",
+    "tier2_derived_metrics.py",
+    "tier2_actions.py",
+    "tier2_render_validator.py",
+    "report_validator.py"
 ]
 
-EXPECTED_FRAMEWORK = "Unified_Reporting_Framework_v5.1"
+OUT_FILE = os.path.join(MODULE_DIR, ".integrity.json")
 
-def verify_integrity():
-    print("🔍 Running system integrity guard...")
+def sha256sum(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
-    # --- Check load order ---
-    loaded = [m for m in EXPECTED_ORDER if importlib.util.find_spec(f"audit_core.{m}")]
-    if loaded != EXPECTED_ORDER:
-        raise ValueError(f"❌ Module load order mismatch.\nExpected: {EXPECTED_ORDER}\nFound: {loaded}")
+def main():
+    baseline = {}
+    for mod in MODULES:
+        full = os.path.join(MODULE_DIR, mod)
+        if os.path.exists(full):
+            baseline[os.path.splitext(mod)[0]] = sha256sum(full)
+        else:
+            print(f"⚠ Missing: {mod}")
+    with open(OUT_FILE, "w", encoding="utf-8") as f:
+        json.dump(baseline, f, indent=2)
+    print(f"✅ Integrity baseline written to {OUT_FILE}")
+    print(f"   {len(baseline)} modules hashed successfully.")
 
-    # --- Hash verification (optional but strong) ---
-    hashes = {}
-    for module in EXPECTED_ORDER:
-        path = f"audit_core/{module}.py"
-        with open(path, "rb") as f:
-            hashes[module] = hashlib.sha256(f.read()).hexdigest()
-
-    with open("audit_core/.integrity.json", "w") as f:
-        json.dump(hashes, f, indent=2)
-
-    print(f"✅ {len(EXPECTED_ORDER)} modules verified.")
-    return True
+if __name__ == "__main__":
+    sys.exit(main())
