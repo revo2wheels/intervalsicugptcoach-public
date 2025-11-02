@@ -120,7 +120,16 @@ Do **not** duplicate or manually reference these modules.
 ---
 
 ## Output Standards
-- Reports render only when `auditFinal=True`.  
+- Reports render only when `auditFinal=True`.
+All rendered reports must follow the full Unified Reporting Framework v5.1 
+(8-section layout) with these requirements:
+1. Section 1 must include the full Athlete Profile and Context Block fetched live.
+2. Sections 2–8 (Summary, Discipline Breakdown, Metrics Panel, Trend Snapshot, 
+   Actions & Notes, Footer) must be included in every output.
+3. Compact summaries, truncated audits, or compliance-only outputs are prohibited 
+   except during Tier-2 validation.
+4. Render mode default = "text".
+5. Renderer halts on any missing section or absent profile data.
 - Use Unified Reporting Framework v5.1 layout.  
 - Rounding: distance 2 dp | time hh:mm:ss | TSS int.  
 - Include 🛌 Rest Day and ⏳ Current Day in logs.  
