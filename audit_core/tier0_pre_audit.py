@@ -1,26 +1,43 @@
 """
-Tier-0 — Pre-Audit (v16)
-Fetches live activity and wellness data, sets timezone and base context.
+Tier-0 — Pre-Audit (v16.1)
+Fetch live Intervals.icu data (activities + wellness) and set timezone context.
 """
 
+import os
+import requests
 import pandas as pd
-from intervals_icu__jit_plugin import listActivities, listWellness, getAthleteProfile
+
+INTERVALS_API = "https://intervals.icu/api/v1"
+ICU_TOKEN = os.getenv("ICU_OAUTH") or os.getenv("ICU_API_KEY")
 
 def run_tier0_pre_audit(oldest, newest, context):
-    profile = getAthleteProfile()
-    athlete = profile["athlete"]
+    if not ICU_TOKEN:
+        raise EnvironmentError("Missing Intervals.icu token. Set ICU_OAUTH or ICU_API_KEY env var.")
+
+    headers = {"Authorization": f"Bearer {ICU_TOKEN}"}
+
+    # --- Profile ---
+    profile = requests.get(f"{INTERVALS_API}/athlete", headers=headers).json()
+    athlete = profile.get("athlete", profile)
     tz = athlete.get("timezone", "Europe/Zurich")
     context["athlete"] = athlete
     context["timezone"] = tz if isinstance(tz, str) and len(tz) >= 3 else "Europe/Zurich"
 
-    activities = listActivities(oldest=oldest, newest=newest, auto=True)
-    wellness = listWellness(oldest=oldest, newest=newest)
+    # --- Activities ---
+    acts_url = f"{INTERVALS_API}/activities?oldest={oldest}&newest={newest}"
+    df_activities = pd.DataFrame(requests.get(acts_url, headers=headers).json())
 
-    df = pd.DataFrame(activities)
-    df["start_date_local"] = pd.to_datetime(df["start_date"]).dt.tz_convert(context["timezone"])
-    df["date"] = df["start_date_local"].dt.date
-    df_activities = df.copy(deep=True)
+    if "start_date" not in df_activities.columns:
+        raise ValueError("No valid activities returned from Intervals.icu API")
+
+    df_activities["start_date_local"] = pd.to_datetime(df_activities["start_date"]).dt.tz_localize("UTC").dt.tz_convert(context["timezone"])
+    df_activities["date"] = df_activities["start_date_local"].dt.date
+
+    # --- Wellness ---
+    well_url = f"{INTERVALS_API}/athlete/{athlete['id']}/wellness?oldest={oldest}&newest={newest}"
+    wellness = requests.get(well_url, headers=headers).json()
 
     auditPartial = False
     auditFinal = False
     return df_activities, wellness, context, auditPartial, auditFinal
+
