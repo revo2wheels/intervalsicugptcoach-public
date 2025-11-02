@@ -131,7 +131,7 @@ All rendered reports must follow the full Unified Reporting Framework v5.1
 4. Render mode default = "text".
 5. Renderer halts on any missing section or absent profile data.
 - Use Unified Reporting Framework v5.1 layout.  
-- Rounding: distance 2 dp | time hh:mm:ss | TSS int.  
+- No arithmetic rounding; values displayed with distance 2 dp, time hh:mm:ss, TSS integer formatting only.
 - Include 🛌 Rest Day and ⏳ Current Day in logs.  
 - Halt on variance > 2 % or missing category.  
 - render_mode = "full"  
