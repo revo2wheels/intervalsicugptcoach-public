@@ -15,8 +15,8 @@ bindings:
 ---
 
 # 📘 All Modules Index — v16
-This document defines the authoritative reference chain for all rule and knowledge modules used by the **IntervalsICU GPT Coach**.  
-Each module is stored separately in the **root directory** of this repository and is dynamically fetched by the app.
+This document defines the authoritative reference chain for all rule, computation, and knowledge modules used by the **IntervalsICU GPT Coach**.  
+Each module is stored separately in the **root** or **/audit_core/** directory and is dynamically fetched by the app.
 
 ---
 
@@ -33,27 +33,51 @@ Each module is stored separately in the **root directory** of this repository an
 
 ---
 
+## 🧩 Audit Core (Python Modules)
+
+| Module | Function | File Path |
+|:--|:--|:--|
+| **Tier-0 — Pre-Audit** | Fetches athlete context, activities, and wellness; initializes audit state. | [audit_core/tier0_pre_audit.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/audit_core/tier0_pre_audit.py) |
+| **Tier-1 — Audit Controller** | Validates dataset integrity, duplicates, and total time variance. | [audit_core/tier1_controller.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/audit_core/tier1_controller.py) |
+| **Tier-2 Step-2 — Event Completeness** | Ensures each event is valid, builds display-only daily summary. | [audit_core/tier2_event_completeness.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/audit_core/tier2_event_completeness.py) |
+| **Tier-2 Step-3 — Enforce Event-Only Totals** | Computes totalHours and totalTss strictly from event-level data. | [audit_core/tier2_enforce_event_only_totals.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/audit_core/tier2_enforce_event_only_totals.py) |
+| **Tier-2 Step-6 — Derived Metrics** | Calculates ACWR, Monotony, Strain, Polarisation, Recovery Index. | [audit_core/tier2_derived_metrics.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/audit_core/tier2_derived_metrics.py) |
+| **Tier-2 Step-7 — Evaluate Actions** | Generates adaptive coaching actions from verified metrics. | [audit_core/tier2_actions.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/audit_core/tier2_actions.py) |
+
+---
+
 ## 🧩 Load Order
 1. Glossary & Placeholders.md  
 2. Coaching Cheat Sheet.md  
 3. Coaching Heuristics Pack.md  
 4. Advanced Marker Reference.md  
 5. Coach profile.md  
-6. Unified Reporting Framework.md
+6. Unified Reporting Framework.md  
+7. audit_core/tier0_pre_audit.py  
+8. audit_core/tier1_controller.py  
+9. audit_core/tier2_event_completeness.py  
+10. audit_core/tier2_enforce_event_only_totals.py  
+11. audit_core/tier2_derived_metrics.py  
+12. audit_core/tier2_actions.py  
 
 ---
 
 ## ⚙️ Version and Integrity
-- Ruleset Version: v16
-- Framework Version: Unified Reporting Framework v5.1  
-- Audit Requirement: All modules must exist and be accessible.  
-- Failure Condition: Missing file → halt report generation.
+- Ruleset Version: **v16**
+- Framework Version: **Unified Reporting Framework v5.1**
+- Audit Modules: **audit_core v16 chain (Tier-0 → Tier-2)**
+- Halt Condition: any missing or invalid module reference.
 
 ---
 
 ## ✅ Usage
-When called via the loadAllRules operation, each referenced module is fetched individually from the root of the repository.  
-all-modules.md serves as a manifest and version validator, not as a merged file.
+The `loadAllRules` action now fetches all Markdown and Python modules listed here.  
+Audit logic is executed in this strict sequence:
 
----
-📄 *End of Index — v16*
+```python
+from audit_core.tier0_pre_audit import run_tier0_pre_audit
+from audit_core.tier1_controller import run_tier1_controller
+from audit_core.tier2_event_completeness import validate_event_completeness
+from audit_core.tier2_enforce_event_only_totals import enforce_event_only_totals
+from audit_core.tier2_derived_metrics import compute_derived_metrics
+from audit_core.tier2_actions import evaluate_actions

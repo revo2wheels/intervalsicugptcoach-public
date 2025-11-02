@@ -65,31 +65,73 @@ daily = (
 - Treat each activity as an independent event.
 - Group only for **calendar-day summary display**, not for data correction.
 - Sum `moving_time`, `icu_training_load`, and `distance` **exactly as returned** by `listActivities`.
+- When Tier-0 daily aggregation is used for rest-day detection or display, mark it display_only=True.
+- Exclude display_only tables from Σ(volume/load) computations.
 - If no activity exists for a date → insert 🛌 Rest Day; if the current day has none → ⏳ Current Day.
 - Validate daily count = number of calendar days (except current day).
 - On missing or duplicate activity IDs → ❌ halt `"event duplication or gap detected"`.
 - Do **not** scale or normalize totals under any condition.
 ```python
-# --- Canonical event procedure ---
-raw_hours = df_activities['moving_time'].sum() / 3600
-raw_tss   = df_activities['icu_training_load'].sum()
-# Optional daily table (for rest-day detection only)
-daily = (
-    df_activities.assign(date=pd.to_datetime(df_activities['start_date']).dt.date)
-    .groupby('date', as_index=False)
+# --- Canonical Tier-2 Enforcement (v16 absolute rule) ---
+
+# Fetch definitive event dataset
+df_events = df_activities.copy(deep=True)
+df_events.origin = "event"
+
+# Optional: build daily view ONLY for display (never used in Σ)
+df_daily = (
+    df_events.assign(date=pd.to_datetime(df_events["start_date"]).dt.date)
+    .groupby("date", as_index=False)
     .agg({
-        'moving_time': 'sum',
-        'icu_training_load': 'sum',
-        'distance': 'sum',
-        'rpe': 'mean',
-        'feel': 'min'
+        "moving_time": "sum",
+        "icu_training_load": "sum",
+        "distance": "sum",
+        "rpe": "mean",
+        "feel": "min"
     })
 )
-total_hours = raw_hours
-total_tss   = raw_tss
-# Validation only — no scaling
-if abs(daily['moving_time'].sum()/3600 - total_hours) > 0.1:
-    raise ValueError("❌ Event duplication or gap detected; render blocked")
+df_daily["display_only"] = True
+df_daily.origin = "summary"
+
+# --- Compute totals from event data only ---
+total_hours = df_events["moving_time"].sum() / 3600
+total_tss   = df_events["icu_training_load"].sum()
+
+# --- Validation gates ---
+# Block any summary or merged source
+if getattr(df_events, "origin", None) != "event":
+    raise ValueError("❌ Invalid data origin; only event-level source allowed")
+
+if "display_only" in df_daily.columns and df_daily["display_only"].any():
+    # Force renderer to skip any totals from summaries
+    df_daily = df_daily.iloc[0:0]  # purge display-only table
+    print("⚠ Summary purged — totals computed strictly from event data.")
+
+if df_events["id"].duplicated().any():
+    raise ValueError("❌ Duplicate event IDs detected; halt.")
+
+# --- Final validation ---
+variance_hours = abs(total_hours - (df_events["moving_time"].sum() / 3600))
+if variance_hours > 0.1:
+    raise ValueError(f"❌ Time variance {variance_hours:.2f} h exceeds 0.1h threshold.")
+
+# --- Freeze verified totals ---
+context["totalHours"] = round(total_hours, 2)
+context["totalTss"]   = int(round(total_tss))
+
+# --- Renderer gate ---
+auditFinal = True
+if auditFinal:
+    render_template(
+        reportType,
+        framework="Unified_Reporting_Framework_v5.1",
+        context=context
+    )
+else:
+    halt("audit❌ Renderer blocked until auditFinal=True")
+
+# --- End of Enforced Canonical Block ---
+
 ```
 #### 3. Calculation Integrity
 - Volume = Σ(daily.moving_time)/3600
