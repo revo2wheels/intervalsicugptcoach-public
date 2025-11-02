@@ -32,8 +32,8 @@ def main():
             print(f"⚠ Missing: {mod}")
     with open(OUT_FILE, "w", encoding="utf-8") as f:
         json.dump(baseline, f, indent=2)
-    print(f"✅ Integrity baseline written to {OUT_FILE}")
-    print(f"   {len(baseline)} modules hashed successfully.")
+        print(f"Integrity baseline written to {OUT_FILE}")
+        print(f"{len(baseline)} modules hashed successfully.")
 
 if __name__ == "__main__":
     sys.exit(main())
