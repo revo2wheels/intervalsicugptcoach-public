@@ -1,9 +1,68 @@
 """
-Tier-2 Step 4 — Evaluate Coaching Actions (v16.1)
-Applies heuristics to validated derived metrics and outputs recommendations.
+Tier-2 Step 3.5 — Detect Phases (legacy-compatible, reinstated v16.1.1)
+Infers phase segments from validated event-level load data.
+Derived directly from legacy v15.4 inline logic.
+"""
+
+from datetime import datetime, timedelta
+
+def detect_phases(context, events):
+    # --- Extract event dates and loads ---
+    loads = [(e["start_date"], e["icu_training_load"]) for e in events if "icu_training_load" in e]
+    loads.sort(key=lambda x: x[0])
+    if not loads:
+        context["phases"] = [{"phase": "No Data", "start": None, "end": None, "delta": 0.0}]
+        return context
+
+    # --- Compute 7-day rolling TSS average ---
+    avg7 = []
+    for i in range(len(loads)):
+        current_date = datetime.fromisoformat(loads[i][0].replace("Z", "+00:00"))
+        window = [
+            v for d, v in loads
+            if 0 <= (current_date - datetime.fromisoformat(d.replace("Z", "+00:00"))).days <= 7
+        ]
+        avg7.append(sum(window) / len(window))
+
+    # --- Detect inflection points (>±15 % change) ---
+    phases = []
+    start_idx = 0
+    for i in range(1, len(avg7)):
+        prev = avg7[i-1]
+        delta = (avg7[i] - prev) / max(prev, 1)
+        if abs(delta) > 0.15:
+            label = "Build" if delta > 0 else "Deload"
+            phases.append({
+                "phase": label,
+                "start": loads[start_idx][0],
+                "end": loads[i][0],
+                "delta": round(delta, 2)
+            })
+            start_idx = i
+
+    # --- Fallback if no detectable phase transitions ---
+    if not phases:
+        phases.append({
+            "phase": "Continuous Load",
+            "start": loads[0][0],
+            "end": loads[-1][0],
+            "delta": 0.0
+        })
+
+    context["phases"] = phases
+    return context
+
+
+"""
+Tier-2 Step 4 — Evaluate Coaching Actions (v16.1.1)
+Applies heuristics to validated derived metrics, outputs recommendations.
+Now includes automatic phase detection from event-level data.
 """
 
 def evaluate_actions(context):
+    events = context.get("events", [])
+    context = detect_phases(context, events)
+
     actions = []
 
     # --- Polarisation / Intensity Balance ---
