@@ -198,6 +198,12 @@ To avoid ambiguity, the following report triggers and date-window definitions ar
 | **Calendar Week Report** | Monday → Sunday | Fixed ISO week; used for periodised summary blocks. |
 | **Season Report** | user-defined (default 42d) | Multi-week macro analysis of block or periodisation phase. |
 
+> **Tier-0 Pre-Audit Precedence (Patch v16.1-EOD-003)**  
+> Default audit window = **Rolling 7 Days (today − 6 → today)** in the athlete’s local timezone.  
+> Renderer and controller modules must inherit `tier0_context.date_window`.  
+> Calendar-anchored (Mon–Sun) windows activate **only** when `placeholder_override=True`.  
+> This rule ensures consistency between Tier-0 data fetch, Tier-2 validation, and final rendering.
+
 ---
 
 ## 🧭 Version Control
