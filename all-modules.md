@@ -39,7 +39,7 @@ Each module is stored in the **root** or **/audit_core/** directory and dynamica
 |:--|:--|:--|:--|
 <<<<<<< HEAD
 =======
-| **Controller — Report Entry** | run_report | Unified report controller for all report types; executes Tier-0 → Tier-2 chain | [report_controller.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/audit_core/report_controller.py) |
+| **Controller — Report Entry** | run_report | Unified report controller for all report types; executes Tier-0 → Tier-2 chain | [report_controller.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/report_controller.py) |
 >>>>>>> 752a8dace17a636725fe6108492c249373ffab6c
 | **Tier-0 — Pre-Audit** | run_tier0_pre_audit | Fetch athlete context, activities, wellness; initialize audit state | [tier0_pre_audit.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier0_pre_audit.py) |
 | **Tier-1 — Audit Controller** | run_tier1_controller | Validate dataset integrity, duplicates, total time variance | [tier1_controller.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier1_controller.py) |
