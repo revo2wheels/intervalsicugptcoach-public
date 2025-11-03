@@ -48,6 +48,12 @@ def finalize_and_validate_render(context, reportType="weekly"):
     context["totalHours"] = round(float(total_hours), 2)
     context["totalTss"] = int(round(float(total_tss)))
 
+    # --- Icon Pack Injection (v16.1.3-EOD-004) ---
+    from ui_components.cards.icon_pack import ICON_CARDS, render_icon_legend
+    context["icon_pack"] = ICON_CARDS
+    context["force_icon_pack"] = True
+    context["icon_legend"] = render_icon_legend()
+
     # --- Step 2 : Generate Report ---
     report = render_template(
         reportType,
