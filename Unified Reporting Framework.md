@@ -145,7 +145,7 @@ API → Tier 1 / Tier 2 Audit → Merged Daily Table → Event Card Renderer →
 | Consistency Index | {consistencyIndex:.2f} | {consistencyPrev:.2f} | {ΔConsistency:.2f} | {consistencyFlag} |
 | Recovery Index | {recoveryIndex:.2f} | {recoveryPrev:.2f} | {ΔRecovery:.2f} | {recoveryStatus} |
 
-### **Metabolic Efficiency Section (v16.14-RC1)**
+### **Metabolic Efficiency Section**
 | Metric | Value | Units | Interpretation |
 |:--|--:|:--:|:--|
 | **Fat Oxidation Index (FOxI)** | {fat_oxidation_index:.2f} | % | % of total energy from fat oxidation (Z2 steady-state). |
