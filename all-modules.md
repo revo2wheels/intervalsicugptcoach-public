@@ -1,20 +1,20 @@
 <!-- Renderer binding block -->
-# 🧭 Module Source Map
+# 🧭 Module Source Map PUBLIC
 manifest_origin: github
-module_base: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/
+module_base: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/
 
 bindings:
-  Glossary & Placeholders: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/Glossary%20%26%20Placeholders.md
-  Coaching Cheat Sheet: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/Coaching%20Cheat%20Sheet.md
-  Coaching Heuristics Pack: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/Coaching%20Heuristics%20Pack.md
-  Advanced Marker Reference: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/Advanced%20Marker%20Reference.md
-  Coach Profile: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/Coach%20profile.md
-  Unified Reporting Framework: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/Unified%20Reporting%20Framework.md
-  Unified_UI_v5.1: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/Unified_UI_v5.1/
+  Glossary & Placeholders: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Glossary%20%26%20Placeholders.md
+  Coaching Cheat Sheet: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Coaching%20Cheat%20Sheet.md
+  Coaching Heuristics Pack: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Coaching%20Heuristics%20Pack.md
+  Advanced Marker Reference: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Advanced%20Marker%20Reference.md
+  Coach Profile: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Coach%20profile.md
+  Unified Reporting Framework: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Unified%20Reporting%20Framework.md
+  Unified_UI_v5.1: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Unified_UI_v5.1/
 
 ---
 
-# 📘 All Modules Index — v16.1
+# 📘 All Modules Index — v16.1 (Public)
 Authoritative reference for all modules used by the **IntervalsICU GPT Coach v16.1**.  
 Each module is stored in the **root** or **/audit_core/** directory and dynamically loaded.
 
@@ -24,12 +24,12 @@ Each module is stored in the **root** or **/audit_core/** directory and dynamica
 
 | Module | Purpose | File Path |
 |:--|:--|:--|
-| **1. Glossary & Placeholders** | Core tokens, data placeholders, and variable mappings for audits and reports (includes new markers: FatOxidationIndex, W′bal, BenchmarkIndex, SubjectiveReadinessIndex, HybridMode) | [Glossary & Placeholders.md](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/Glossary%20%26%20Placeholders.md) |
-| **2. Coaching Cheat Sheet** | Thresholds and classification tables for load, recovery, and training quality, updated for new markers | [Coaching Cheat Sheet.md](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/Coaching%20Cheat%20Sheet.md) |
-| **3. Coaching Heuristics Pack** | Decision logic, sport-specific heuristics, phase rules (Seiler, Friel, Banister, Foster), including Hybrid Polarised–Sweet Spot rules | [Coaching Heuristics Pack.md](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/Coaching%20Heuristics%20Pack.md) |
-| **4. Advanced Marker Reference** | Derived metrics and computation definitions (ACWR, Monotony, Strain, Polarisation, Durability Index, Recovery Index, FatOxidationIndex, W′, BenchmarkIndex, SubjectiveReadinessIndex, HybridMode) | [Advanced Marker Reference.md](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/Advanced%20Marker%20Reference.md) |
-| **5. Coach Profile** | Coach expertise, frameworks, and marker integration models (including Sandbakk, Skiba, Coggan, Noakes, Hybrid) | [Coach profile.md](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/Coach%20profile.md) |
-| **6. Unified Reporting Framework** | Standardized output schema for Weekly, Seasonal, and Executive Reports, including new markers | [Unified Reporting Framework.md](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/Unified%20Reporting%20Framework.md) |
+| **1. Glossary & Placeholders** | Core tokens, data placeholders, and variable mappings for audits and reports (includes new markers: FatOxidationIndex, W′bal, BenchmarkIndex, SubjectiveReadinessIndex, HybridMode) | [Glossary & Placeholders.md](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Glossary%20%26%20Placeholders.md) |
+| **2. Coaching Cheat Sheet** | Thresholds and classification tables for load, recovery, and training quality, updated for new markers | [Coaching Cheat Sheet.md](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Coaching%20Cheat%20Sheet.md) |
+| **3. Coaching Heuristics Pack** | Decision logic, sport-specific heuristics, phase rules (Seiler, Friel, Banister, Foster), including Hybrid Polarised–Sweet Spot rules | [Coaching Heuristics Pack.md](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Coaching%20Heuristics%20Pack.md) |
+| **4. Advanced Marker Reference** | Derived metrics and computation definitions (ACWR, Monotony, Strain, Polarisation, Durability Index, Recovery Index, FatOxidationIndex, W′, BenchmarkIndex, SubjectiveReadinessIndex, HybridMode) | [Advanced Marker Reference.md](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Advanced%20Marker%20Reference.md) |
+| **5. Coach Profile** | Coach expertise, frameworks, and marker integration models (including Sandbakk, Skiba, Coggan, Noakes, Hybrid) | [Coach profile.md](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Coach%20profile.md) |
+| **6. Unified Reporting Framework** | Standardized output schema for Weekly, Seasonal, and Executive Reports, including new markers | [Unified Reporting Framework.md](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Unified%20Reporting%20Framework.md) |
 
 ---
 
@@ -37,16 +37,17 @@ Each module is stored in the **root** or **/audit_core/** directory and dynamica
 
 | Tier / Step | Module | Function | File Path |
 |:--|:--|:--|:--|
-| **Tier-0 — Pre-Audit** | run_tier0_pre_audit | Fetch athlete context, activities, wellness; initialize audit state | [tier0_pre_audit.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/audit_core/tier0_pre_audit.py) |
-| **Tier-1 — Audit Controller** | run_tier1_controller | Validate dataset integrity, duplicates, total time variance | [tier1_controller.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/audit_core/tier1_controller.py) |
-| **Tier-2 Step-1 — Data Integrity** | validate_data_integrity | Verify API count matches DataFrame count; halt on missing discipline or date gaps | [tier2_data_integrity.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/audit_core/tier2_data_integrity.py) |
-| **Tier-2 Step-2 — Event Completeness** | validate_event_completeness | Ensures each event is valid; builds display-only daily summary | [tier2_event_completeness.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/audit_core/tier2_event_completeness.py) |
-| **Tier-2 Step-3 — Enforce Event-Only Totals** | enforce_event_only_totals | Compute totalHours, totalTss strictly from event-level data | [tier2_enforce_event_only_totals.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/audit_core/tier2_enforce_event_only_totals.py) |
-| **Tier-2 Step-4 — Calculation Integrity** | validate_calculation_integrity | Confirm Σ(moving_time), Σ(TSS), Σ(distance); halt if variance > 0.1 h | [tier2_calc_integrity.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/audit_core/tier2_calc_integrity.py) |
-| **Tier-2 Step-5 — Wellness Validation** | validate_wellness | Align wellness window; refetch/truncate; ignore nulls if load < 40 | [tier2_wellness_validation.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/audit_core/tier2_wellness_validation.py) |
-| **Tier-2 Step-6 — Derived Metrics** | compute_derived_metrics | Calculates ACWR, Monotony, Strain, Polarisation, Recovery Index, FatOxidationIndex, DurabilityIndex, W′, BenchmarkIndex, SubjectiveReadinessIndex, HybridMode | [tier2_derived_metrics.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/audit_core/tier2_derived_metrics.py) |
-| **Tier-2 Step-7 — Evaluate Actions** | evaluate_actions | Generates adaptive coaching actions from verified metrics | [tier2_actions.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/audit_core/tier2_actions.py) |
-| **Tier-2 Step-8 — Render Validator** | finalize_and_validate_render | Validates report sections, placeholders, icons, and derived metrics before release | [tier2_render_validator.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/audit_core/tier2_render_validator.py) |
+| **Controller — Report Entry** | run_report | Unified report controller for all report types; executes Tier-0 → Tier-2 chain | [report_controller.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach/main/audit_core/report_controller.py) |
+| **Tier-0 — Pre-Audit** | run_tier0_pre_audit | Fetch athlete context, activities, wellness; initialize audit state | [tier0_pre_audit.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier0_pre_audit.py) |
+| **Tier-1 — Audit Controller** | run_tier1_controller | Validate dataset integrity, duplicates, total time variance | [tier1_controller.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier1_controller.py) |
+| **Tier-2 Step-1 — Data Integrity** | validate_data_integrity | Verify API count matches DataFrame count; halt on missing discipline or date gaps | [tier2_data_integrity.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier2_data_integrity.py) |
+| **Tier-2 Step-2 — Event Completeness** | validate_event_completeness | Ensures each event is valid; builds display-only daily summary | [tier2_event_completeness.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier2_event_completeness.py) |
+| **Tier-2 Step-3 — Enforce Event-Only Totals** | enforce_event_only_totals | Compute totalHours, totalTss strictly from event-level data | [tier2_enforce_event_only_totals.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier2_enforce_event_only_totals.py) |
+| **Tier-2 Step-4 — Calculation Integrity** | validate_calculation_integrity | Confirm Σ(moving_time), Σ(TSS), Σ(distance); halt if variance > 0.1 h | [tier2_calc_integrity.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier2_calc_integrity.py) |
+| **Tier-2 Step-5 — Wellness Validation** | validate_wellness | Align wellness window; refetch/truncate; ignore nulls if load < 40 | [tier2_wellness_validation.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier2_wellness_validation.py) |
+| **Tier-2 Step-6 — Derived Metrics** | compute_derived_metrics | Calculates ACWR, Monotony, Strain, Polarisation, Recovery Index, FatOxidationIndex, DurabilityIndex, W′, BenchmarkIndex, SubjectiveReadinessIndex, HybridMode | [tier2_derived_metrics.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier2_derived_metrics.py) |
+| **Tier-2 Step-7 — Evaluate Actions** | evaluate_actions | Generates adaptive coaching actions from verified metrics | [tier2_actions.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier2_actions.py) |
+| **Tier-2 Step-8 — Render Validator** | finalize_and_validate_render | Validates report sections, placeholders, icons, and derived metrics before release | [tier2_render_validator.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier2_render_validator.py) |
 
 ---
 
