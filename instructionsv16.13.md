@@ -12,7 +12,7 @@
 
 ---
 
-## Intent Routing Layer (v1.0)
+## Intent Routing Layer (v1.1)
 **Purpose:** Normalize user phrases into report controller calls.  
 **Scope:** All chat, console, and API inputs.  
  **Default:** `run_report(report_type,
