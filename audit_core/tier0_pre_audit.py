@@ -1,7 +1,8 @@
 """
-Tier-0 — Pre-Audit (v16.1-EOD-003)
+Tier-0 — Pre-Audit (v16.1-EOD-004)
 Fetches live Intervals.icu athlete profile, activities, and wellness data.
 Initializes timezone and injects athleteProfile for downstream render.
+Supports both flat and nested 'athlete' JSON payloads.
 """
 
 import os
@@ -26,6 +27,9 @@ def run_tier0_pre_audit(oldest, newest, context):
         raise AuditHalt(f"❌ Failed to fetch athlete profile ({profile_resp.status_code})")
 
     athlete = profile_resp.json()
+    if "athlete" in athlete:                     # handle nested JSON
+        athlete = athlete["athlete"]
+
     if not athlete or "id" not in athlete:
         raise AuditHalt("❌ Invalid athlete profile payload from Intervals.icu")
 
@@ -42,12 +46,12 @@ def run_tier0_pre_audit(oldest, newest, context):
         "id": athlete.get("id"),
         "name": athlete.get("name", "Unknown"),
         "sex": athlete.get("sex", "U"),
-        "age": athlete.get("age", None),
-        "city": athlete.get("city", None),
-        "country": athlete.get("country", None),
+        "age": athlete.get("age"),
+        "city": athlete.get("city"),
+        "country": athlete.get("country"),
         "timezone": context["timezone"],
-        "bio": athlete.get("bio", None),
-        "website": athlete.get("website", None),
+        "bio": athlete.get("bio"),
+        "website": athlete.get("website"),
     }
 
     # --- Step 3: Fetch activities ---
