@@ -1,9 +1,7 @@
 """
-Tier-2 Step 8 — Render Validator (v16.1-EOD-004)
-Runs after actions and ensures rendered output complies with
-Unified Reporting Framework v5.1.
-Adds athleteProfile validation and explicitly refreshes event-only totals
-from enforce_event_only_totals() before rendering.
+Tier-2 Step 8 — Render Validator (v16.1.4-EOD-005)
+Strict event-only enforcement.
+Removes legacy load-weighted duration fallback.
 """
 
 import time
@@ -12,23 +10,22 @@ from audit_core.report_validator import validate_report_output
 from audit_core.report_schema_guard import enforce_report_schema
 from audit_core.tier2_enforce_event_only_totals import enforce_event_only_totals
 
-
 def finalize_and_validate_render(context, reportType="weekly"):
     # --- Renderer Gate ---
     if not context.get("auditFinal", False):
         raise RuntimeError("❌ Renderer blocked: auditFinal=False")
 
-    # --- Mandatory athleteProfile check (v16.1-EOD-004) ---
+    # --- Athlete Profile Check ---
     if "athleteProfile" not in context or not context["athleteProfile"]:
         raise AuditHalt("❌ Missing athleteProfile — Section 1 cannot render")
 
-    # --- Refresh event-only totals from enforcement module ---
+    # --- Refresh Event-Only Totals ---
     try:
         context = enforce_event_only_totals(context)
     except Exception as e:
         raise AuditHalt(f"❌ Event-only totals enforcement failed before render: {e}")
 
-    # --- Duration Formatting Injection (Precision Mode) ---
+    # --- Duration Formatting Injection ---
     if "df_events" in context:
         def fmt_dur(sec):
             return time.strftime("%H:%M:%S", time.gmtime(int(sec)))
@@ -37,18 +34,19 @@ def finalize_and_validate_render(context, reportType="weekly"):
             df["Duration"] = df["moving_time"].apply(fmt_dur)
             context["Duration_total"] = fmt_dur(df["moving_time"].sum())
 
-    # --- Step 1 : Enforce and clean totals ---
+    # --- Step 1 : Enforce and Clean Totals ---
     total_hours = context.get("totalHours")
     total_tss = context.get("totalTss")
     context.pop("dailyTotals", None)
 
+    # --- STRICT: no fallback or normalization ---
     if total_hours is None or total_tss is None:
-        raise AuditHalt("❌ Missing event-only totals for renderer input")
+        raise AuditHalt("❌ Missing event-only totals for renderer input (Σ event.moving_time / 3600)")
 
     context["totalHours"] = round(float(total_hours), 2)
     context["totalTss"] = int(round(float(total_tss)))
 
-    # --- Icon Pack Injection (v16.1.3-EOD-004) ---
+    # --- Icon Pack Injection ---
     from ui_components.cards.icon_pack import ICON_CARDS, render_icon_legend
     context["icon_pack"] = ICON_CARDS
     context["force_icon_pack"] = True
@@ -67,7 +65,7 @@ def finalize_and_validate_render(context, reportType="weekly"):
     # --- Step 4 : Schema Validation ---
     enforce_report_schema(report)
 
-    # --- Step 5 : Cross-check consistency ---
+    # --- Step 5 : Cross-check Consistency ---
     diff_hours = abs(context["totalHours"] - context.get("eventTotals", {}).get("hours", 0))
     diff_tss = abs(context["totalTss"] - context.get("eventTotals", {}).get("tss", 0))
     if diff_hours > 0.1 or diff_tss > 2:
