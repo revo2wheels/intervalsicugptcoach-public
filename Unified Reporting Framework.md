@@ -160,7 +160,7 @@ API → Tier 1 / Tier 2 Audit → Merged Daily Table → Event Card Renderer →
 - Appears in all report types (Weekly, Calendar, Season) where valid data exist.  
 - Values rounded: two decimals (FOxI, GR), one decimal (CUR, MES).  
 - Audit variance limit ≤ 1 %.  
-- Section title in renderer: **“5.5 Metabolic Efficiency (v16.14)”**.  
+- Section title in renderer: **“5.5 Metabolic Efficiency”**.  
 
 **Interpretation Guide**
 - **FOxI ≥ 65 %** → strong aerobic fat oxidation capacity.  
