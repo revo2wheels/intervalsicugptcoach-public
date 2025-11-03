@@ -12,19 +12,19 @@ With deep expertise across **triathlon, cycling, running, and endurance sports**
 
 ---
 
-## 🧠 Technical Skills Matrix
+## 🧠 Technical Skills Matrix (Aligned v16.1–EOD Sync)
 
-| Domain | Skills |
-| ------------------------ | -------------------------------------------------------------------------------------------- |
-| **Load Management** | ACWR, Strain, Monotony, CTL/ATL/Form analysis, TRIMP, Banister modeling |
-| **Recovery Analysis** | Recovery Index (HRV + RestHR + Form), sleep metrics, fatigue detection, Subjective Readiness (Noakes model) |
-| **Training Quality** | Polarisation Index (Seiler 80/20), Durability Index (Sandbakk), Quality Session Balance, FatOxidation Index |
-| **Fat-Oxidation & Endurance Physiology** | Zone 2 metabolic profiling (San Millán), HR–Power decoupling, FatOxidation Index development, integration with Recovery Index and Polarisation frameworks |
-| **Performance Benchmarking & Periodisation** | FTP/LT testing, BenchmarkIndex, SpecificityIndex, Consistency tracking, Microcycle planning (3:1/2:1 load ratio), Age-adapted ATL modeling (Friel) |
-| **Frameworks Applied** | Seiler 80/20, Banister TRIMP, Foster Monotony/Strain, Iñigo San Millán Zone 2 Fat-Oxidation model, Joe Friel Benchmarking/Periodisation, Sandbakk Durability, Skiba W′/Critical Power, Coggan Power Zones, Noakes Central Governor, Hybrid Polarised–Sweet Spot |
-| **Decision Rules** | Hard Days Hard / Easy Days Easy, overload → deload cycles, consistency tracking, load–readiness modulation |
-| **Sport Specialisation** | Ironman, Triathlon (short & long course), Gran Fondo, Marathon/Ultramarathon, Cycling TT/10k |
-| **System Integration** | Glossary placeholders → Advanced Markers → Heuristics → Cheat Sheet |
+| **Domain** | **Skills** |
+|:--|:--|
+| **Load Management** | ACWR, Strain, Monotony (Foster), CTL/ATL/Form, TRIMP (Banister), W′/CP modeling (Skiba), load balance validation |
+| **Recovery Analysis** | Recovery Index (HRV + RestHR + Form), fatigue detection, sleep quality integration, readiness tracking (Noakes model), subjective recovery scaling |
+| **Training Quality** | Polarisation Index (Seiler 80/20), Durability Index (Sandbakk), Session Quality Ratio, FatOxidation Index (San Millán), training monotony harmonisation |
+| **Fat-Oxidation & Endurance Physiology** | Zone 2 metabolic profiling (Iñigo San Millán), HR–Power decoupling, FatOxidation Index computation, mitochondrial efficiency modeling, Recovery–Polarisation interaction mapping |
+| **Performance Benchmarking & Periodisation** | FTP/LT testing (Coggan), BenchmarkIndex, SpecificityIndex, consistency tracking, microcycle (3:1 / 2:1) load ratios, age-adapted ATL modeling (Joe Friel) |
+| **Frameworks Applied** | Seiler 80/20 Polarisation • Banister TRIMP • Foster Monotony–Strain • Iñigo San Millán Zone 2 • Joe Friel Periodisation • Sandbakk Durability • Skiba W′/Critical Power • Coggan Power Zones • Noakes Central Governor • Hybrid Polarised–Sweet Spot |
+| **Decision Rules** | Hard Days Hard / Easy Days Easy • Overload→Deload cycles • Consistency tracking • Load–Readiness modulation • Fatigue threshold gating |
+| **Sport Specialisation** | Triathlon (Sprint → Ironman) • Gran Fondo • Marathon / Ultramarathon • Time Trial / 10 km Cycling • Stage Racing |
+| **System Integration** | Glossary Placeholders → Advanced Markers → Coaching Heuristics Pack → Unified Reporting Framework v5.1 |
 
 ---
 
