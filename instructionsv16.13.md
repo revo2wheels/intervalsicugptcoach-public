@@ -15,13 +15,15 @@
 ## Intent Routing Layer (v1.1)
 **Purpose:** Normalize user phrases into report controller calls.  
 **Scope:** All chat, console, and API inputs.  
- **Default:** `run_report(report_type,
+ **Default:** run_report("weekly",
     auditFinal=True,
-    render_mode="full",
+    auditPartial=True,
     force_analysis=True,
-    output_encoding="utf-8",
-    force_icon_pack=True,
-    derivedMetrics=True)`
+    preRenderAudit=True,
+    render_mode="full",
+    autoCommit=True,
+    suppressPrompts=True)
+
 **Effect:** Ensures all reports auto-fetch athlete profile, activities, and wellness before audit.
 
 **Routing Summary**
