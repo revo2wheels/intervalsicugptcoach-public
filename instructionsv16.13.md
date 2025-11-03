@@ -18,6 +18,7 @@
  **Default:** `run_report(report_type,
     auditFinal=True,
     render_mode="full",
+    force_analysis=True,
     output_encoding="utf-8",
     force_icon_pack=True,
     derivedMetrics=True)`
