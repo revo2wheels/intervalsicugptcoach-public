@@ -21,9 +21,13 @@ def finalize_and_validate_render(context, reportType="weekly"):
 
     # --- Refresh Event-Only Totals ---
     try:
-        context = enforce_event_only_totals(context)
+        df = context.get("df_events")
+        if df is None:
+            raise AuditHalt("❌ Missing df_events for totals enforcement")
+        context = enforce_event_only_totals(df, context)
     except Exception as e:
         raise AuditHalt(f"❌ Event-only totals enforcement failed before render: {e}")
+
 
     # --- Duration Formatting Injection ---
     if "df_events" in context:
