@@ -2,7 +2,7 @@
 
 A deterministic, rules-based audit and reporting engine for [Intervals.icu](https://intervals.icu).  
 It combines live athlete data, evidence-based coaching heuristics, and an automated multi-tier validation chain to generate fully compliant endurance training reports.  
-
+https://github.com/revo2wheels/intervalsicugptcoach-public/blob/main/README.md
 ---
 
 ## 🧭 About  
