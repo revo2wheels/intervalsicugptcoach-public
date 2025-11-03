@@ -1,14 +1,16 @@
 """
-Tier-2 Step 8 — Render Validator (v16.1-EOD-003)
+Tier-2 Step 8 — Render Validator (v16.1-EOD-004)
 Runs after actions and ensures rendered output complies with
 Unified Reporting Framework v5.1.
-Adds athleteProfile validation and keeps event-only totals enforcement active.
+Adds athleteProfile validation and explicitly refreshes event-only totals
+from enforce_event_only_totals() before rendering.
 """
 
 import time
+from audit_core.errors import AuditHalt
 from audit_core.report_validator import validate_report_output
 from audit_core.report_schema_guard import enforce_report_schema
-from audit_core.errors import AuditHalt
+from audit_core.tier2_enforce_event_only_totals import enforce_event_only_totals
 
 
 def finalize_and_validate_render(context, reportType="weekly"):
@@ -16,41 +18,33 @@ def finalize_and_validate_render(context, reportType="weekly"):
     if not context.get("auditFinal", False):
         raise RuntimeError("❌ Renderer blocked: auditFinal=False")
 
-    # --- Mandatory athleteProfile check (new in v16.1-EOD-003) ---
+    # --- Mandatory athleteProfile check (v16.1-EOD-004) ---
     if "athleteProfile" not in context or not context["athleteProfile"]:
         raise AuditHalt("❌ Missing athleteProfile — Section 1 cannot render")
+
+    # --- Refresh event-only totals from enforcement module ---
+    try:
+        context = enforce_event_only_totals(context)
+    except Exception as e:
+        raise AuditHalt(f"❌ Event-only totals enforcement failed before render: {e}")
 
     # --- Duration Formatting Injection (Precision Mode) ---
     if "df_events" in context:
         def fmt_dur(sec):
             return time.strftime("%H:%M:%S", time.gmtime(int(sec)))
-        try:
-            df = context["df_events"]
-            if "moving_time" in df.columns:
-                df["Duration"] = df["moving_time"].apply(fmt_dur)
-                context["Duration_total"] = fmt_dur(df["moving_time"].sum())
-            else:
-                print("⚠️ 'moving_time' column missing — duration formatting skipped.")
-        except Exception as e:
-            print(f"⚠️ Duration formatting skipped: {e}")
+        df = context["df_events"]
+        if "moving_time" in df.columns:
+            df["Duration"] = df["moving_time"].apply(fmt_dur)
+            context["Duration_total"] = fmt_dur(df["moving_time"].sum())
 
-    # --- Step 1 : Enforce event-only totals ---
-    total_hours = (
-        context.get("totalHours")
-        or context.get("eventTotals", {}).get("hours")
-    )
-    total_tss = (
-        context.get("totalTss")
-        or context.get("eventTotals", {}).get("tss")
-    )
-
-    # Purge legacy or derived data
+    # --- Step 1 : Enforce and clean totals ---
+    total_hours = context.get("totalHours")
+    total_tss = context.get("totalTss")
     context.pop("dailyTotals", None)
 
     if total_hours is None or total_tss is None:
         raise AuditHalt("❌ Missing event-only totals for renderer input")
 
-    # Inject clean numeric values
     context["totalHours"] = round(float(total_hours), 2)
     context["totalTss"] = int(round(float(total_tss)))
 
