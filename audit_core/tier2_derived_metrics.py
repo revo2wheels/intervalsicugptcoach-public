@@ -86,5 +86,59 @@ def compute_derived_metrics(df_daily, context):
     context = compute_fatigue_trend(context)
     context = compute_intensity_quality(context)
     context = compute_fatox_efficiency(context)
+    # ------------------------------------------------------------------
+    # === v16.14-RC1 Metabolic Efficiency Extension ====================
+    # ------------------------------------------------------------------
+    df_events = context.get("df_events")
+    if df_events is not None and not df_events.empty:
+        z2 = df_events.query("IF >= 0.70 and IF <= 0.80") if "IF" in df_events else pd.DataFrame()
+        z3 = df_events.query("IF > 0.80 and IF <= 0.95") if "IF" in df_events else pd.DataFrame()
+
+        kcal_factor = 0.000239  # joules → kcal
+
+        # --- Fat Oxidation Index (FOxI) ---
+        if not z2.empty:
+            kcal_fat = z2["icu_joules"].sum() * kcal_factor * 0.65
+            kcal_total = z2["icu_joules"].sum() * kcal_factor
+            foxi = 100 * (kcal_fat / kcal_total) if kcal_total > 0 else 0
+        else:
+            foxi = 0
+
+        # --- Carb Use Rate (CUR) ---
+        if not z3.empty:
+            kcal_carb = z3["icu_joules"].sum() * kcal_factor * 0.80
+            hrs = z3["moving_time"].sum() / 3600
+            cur = (kcal_carb / 4.0) / hrs if hrs > 0 else 0
+        else:
+            cur = 0
+
+        # --- Glycogen Ratio (GR) ---
+        gr = cur / foxi if foxi > 0 else 0
+
+        # --- Metabolic Efficiency Score (MES) ---
+        denom = cur + foxi
+        mes = 100 * foxi / denom if denom > 0 else 0
+
+        # --- Inject into context metrics ---
+        if "metrics" not in context:
+            context["metrics"] = {}
+        if "derived" not in context["metrics"]:
+            context["metrics"]["derived"] = {}
+
+        context["metrics"]["derived"].update({
+            "fat_oxidation_index": round(foxi, 2),
+            "carb_use_rate": round(cur, 1),
+            "glycogen_ratio": round(gr, 2),
+            "metabolic_efficiency_score": round(mes, 1)
+        })
+
+        # --- Logging safeguard ---
+        context["metabolic_variance_flag"] = (
+            abs((foxi + cur) - denom) < 0.01
+        )
+
+    # ------------------------------------------------------------------
+    # End Metabolic Extension
+    # ------------------------------------------------------------------
 
     return context

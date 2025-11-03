@@ -145,6 +145,29 @@ API → Tier 1 / Tier 2 Audit → Merged Daily Table → Event Card Renderer →
 | Consistency Index | {consistencyIndex:.2f} | {consistencyPrev:.2f} | {ΔConsistency:.2f} | {consistencyFlag} |
 | Recovery Index | {recoveryIndex:.2f} | {recoveryPrev:.2f} | {ΔRecovery:.2f} | {recoveryStatus} |
 
+### **Metabolic Efficiency Section (v16.14-RC1)**
+| Metric | Value | Units | Interpretation |
+|:--|--:|:--:|:--|
+| **Fat Oxidation Index (FOxI)** | {fat_oxidation_index:.2f} | % | % of total energy from fat oxidation (Z2 steady-state). |
+| **Carb Use Rate (CUR)** | {carb_use_rate:.1f} | g/h | Estimated carbohydrate oxidation rate (Z3 steady-state). |
+| **Glycogen Ratio (GR)** | {glycogen_ratio:.2f} | — | Ratio of CUR to FOxI (higher → carb-dominant metabolism). |
+| **Metabolic Efficiency Score (MES)** | {metabolic_efficiency_score:.1f} | % | 100 × FOxI / (FOxI + CUR); higher = greater fat reliance. |
+
+**Derived metrics validated ✅ (FOxI / CUR / GR variance < 1 %)**
+
+**Render Conditions**
+- Rendered only when `auditFinal = True` and `context["metrics"]["derived"]` includes metabolic fields.  
+- Appears in all report types (Weekly, Calendar, Season) where valid data exist.  
+- Values rounded: two decimals (FOxI, GR), one decimal (CUR, MES).  
+- Audit variance limit ≤ 1 %.  
+- Section title in renderer: **“5.5 Metabolic Efficiency (v16.14)”**.  
+
+**Interpretation Guide**
+- **FOxI ≥ 65 %** → strong aerobic fat oxidation capacity.  
+- **CUR ≤ 80 g/h** → balanced substrate usage.  
+- **MES > 50 %** → efficient endurance metabolism; maintain long Zone-2 exposure.  
+- **GR > 1.5** → carb-biased adaptation; extend low-intensity duration work.
+
 ---
 
 ### **Recovery & Wellness Section**

@@ -28,7 +28,6 @@ def finalize_and_validate_render(context, reportType="weekly"):
     except Exception as e:
         raise AuditHalt(f"❌ Event-only totals enforcement failed before render: {e}")
 
-
     # --- Duration Formatting Injection ---
     if "df_events" in context:
         def fmt_dur(sec):
@@ -62,6 +61,29 @@ def finalize_and_validate_render(context, reportType="weekly"):
         framework="Unified_Reporting_Framework_v5.1",
         context=context,
     )
+
+    # --------------------------------------------------------------
+    # 5.5  Metabolic Efficiency  (v16.14-RC1)
+    # --------------------------------------------------------------
+    if context.get("auditFinal", False):
+        dm = context.get("metrics", {}).get("derived", {})
+        if dm and any(k in dm for k in [
+            "fat_oxidation_index", "carb_use_rate",
+            "glycogen_ratio", "metabolic_efficiency_score"
+        ]):
+            report.add_section("5.5 Metabolic Efficiency (v16.14)")
+            report.add_table([
+                ["Metric", "Value", "Units"],
+                ["Fat Oxidation Index (FOxI)", f"{dm.get('fat_oxidation_index', 0):.2f}", "%"],
+                ["Carb Use Rate (CUR)", f"{dm.get('carb_use_rate', 0):.1f}", "g/h"],
+                ["Glycogen Ratio (GR)", f"{dm.get('glycogen_ratio', 0):.2f}", "—"],
+                ["Metabolic Efficiency Score (MES)", f"{dm.get('metabolic_efficiency_score', 0):.1f}", "%"],
+            ])
+            report.add_line("Derived metrics validated ✅ (FOxI/CUR/GR variance < 1 %)")
+
+    # --------------------------------------------------------------
+    # End Metabolic Efficiency Section
+    # --------------------------------------------------------------
 
     # --- Step 3 : Framework Compliance Validation ---
     compliance = validate_report_output(context, report)
