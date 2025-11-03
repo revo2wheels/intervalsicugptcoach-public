@@ -21,7 +21,10 @@
 
 ## Data Rules
 - Enforce the **Field Lock Rule** with strict field lists for `listActivities` and `listWellness`.
-- Totals, trends, and date windows follow **Glossary & Placeholders** definitions.
+- Totals and trends compute strictly from Σ(event-level fields).  
+- Date windows still follow Glossary & Placeholders definitions.  
+- Duration = Σ(event.moving_time)/3600.  
+- No derived, daily, or ATL-integrated totals allowed.
 - **No interpolation, estimation, or normalization** of `moving_time`, `distance`, or `icu_training_load`.
 - Derived metrics (ACWR, Monotony, Strain, Polarisation, Recovery Index) compute from the **summed daily dataset**.
 - For analysis periods > 42 days, automatically chunk and fetch data.
@@ -42,9 +45,16 @@
 
 ### Tier 1 — Audit Controller
 - Execute `run_tier1_controller()` from `/audit_core/tier1_controller.py`.
-- Validate dataset count, duplication, and time variance ≤ 0.1 h.  
-- Confirm wellness alignment and discipline totals.  
-- Ignore subjectives if load < 40.  
+- Validate dataset count, duplication, and time variance ≤ 0.1 h.
+- Confirm wellness alignment and discipline totals.
+- Ignore subjectives if load < 40.
+- Compute Σ(event.moving_time)/3600 → `context["eventTotals"]["hours"]`.
+- Compute Σ(event.icu_training_load) → `context["eventTotals"]["tss"]`.
+- Replace all `dailyTotals` references with `eventTotals`.
+- Verify:
+  - |Σ(event.moving_time)/3600 − context["eventTotals"]["hours"]| ≤ 0.1
+  - |Σ(event.icu_training_load) − context["eventTotals"]["tss"]| ≤ 2
+- Halt on mismatch or missing event field.
 - On success → `auditPartial=True`, `auditFinal=False`.
 
 ---
@@ -65,7 +75,9 @@
 
 #### Step 3 — Enforce Event-Only Totals
 - Call `enforce_event_only_totals()` from `/audit_core/tier2_enforce_event_only_totals.py`.  
-- Compute Σ(volume, load) strictly from event-level data.  
+- Compute Σ(volume, load, and duration) strictly from event-level data.  
+- Duration shall not include ATL/CTL smoothing or daily dataset interpolation.  
+- Renderer must reject any derived or normalized duration values
 - Reject any summary-derived input.  
 - Freeze `context["totalHours"]` and `context["totalTss"]`.
 
@@ -124,6 +136,9 @@ Do **not** duplicate or manually reference these modules.
 All rendered reports must follow the full Unified Reporting Framework v5.1 
 (8-section layout) with these requirements:
 1. Section 1 must include the full Athlete Profile and Context Block fetched live.
+  Duration values in all summaries and render sections represent total event moving time only.  
+  No load-based hour conversion or derived exposure permitted.  
+  Renderer variance checks shall compare event-duration sums onl
 2. Sections 2–8 (Summary, Discipline Breakdown, Metrics Panel, Trend Snapshot, 
    Actions & Notes, Footer) must be included in every output.
 3. Compact summaries, truncated audits, or compliance-only outputs are prohibited 
@@ -150,4 +165,5 @@ All rendered reports must follow the full Unified Reporting Framework v5.1
 
 ---
 
-📄 *End of Intervals ICU Training Coach v3 — v16.1 Instructions*
+**Patch ID:** `v16.1-EOD-001`  
+**Purpose:** Remove load-weighted duration from reports and enforce event-only totals.
