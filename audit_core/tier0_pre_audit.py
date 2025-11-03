@@ -1,11 +1,3 @@
-"""
-Tier-0 — Pre-Audit (v16.1-EOD-005a)
-Fetches live Intervals.icu athlete profile, activities, and wellness data.
-Initializes timezone and injects athleteProfile for downstream render.
-Adds deterministic trigger resolver for correct date-window selection.
-Supports both flat and nested 'athlete' JSON payloads.
-"""
-
 import os
 import requests
 import pandas as pd
@@ -17,7 +9,6 @@ ICU_TOKEN = os.getenv("ICU_OAUTH") or os.getenv("ICU_API_KEY")
 
 
 def resolve_report_trigger(user_cmd: str, tz: str):
-    """Standardized resolver for v16.1 trigger rules."""
     today = datetime.now().astimezone().date()
     cmd = user_cmd.lower().strip()
 
@@ -27,14 +18,13 @@ def resolve_report_trigger(user_cmd: str, tz: str):
         end = today
     elif any(k in cmd for k in ["calendar", "monday", "iso week"]):
         mode = "calendar"
-        start = today - timedelta(days=today.weekday())  # Monday
+        start = today - timedelta(days=today.weekday())
         end = start + timedelta(days=6)
     elif any(k in cmd for k in ["season", "block"]):
         mode = "season"
         start = today - timedelta(days=42)
         end = today
     else:
-        # Default = rolling 7-day window
         mode = "rolling"
         start = today - timedelta(days=6)
         end = today
@@ -42,15 +32,24 @@ def resolve_report_trigger(user_cmd: str, tz: str):
     return mode, start, end
 
 
+def fetch_with_retry(url: str, headers: dict, max_retries: int = 2):
+    for attempt in range(max_retries + 1):
+        resp = requests.get(url, headers=headers)
+        if resp.status_code == 200:
+            return resp
+        if attempt < max_retries:
+            continue
+    return resp
+
+
 def run_tier0_pre_audit(user_cmd: str, context: dict):
-    # --- Step 0: Authentication ---
     if not ICU_TOKEN:
         raise EnvironmentError("Missing Intervals.icu token. Set ICU_OAUTH or ICU_API_KEY env var.")
 
     headers = {"Authorization": f"Bearer {ICU_TOKEN}"}
 
-    # --- Step 1: Fetch athlete profile ---
-    profile_resp = requests.get(f"{INTERVALS_API}/athlete", headers=headers)
+    # --- Step 1: Fetch athlete profile with retry ---
+    profile_resp = fetch_with_retry(f"{INTERVALS_API}/athlete", headers)
     if profile_resp.status_code != 200:
         raise AuditHalt(f"❌ Failed to fetch athlete profile ({profile_resp.status_code})")
 
@@ -67,7 +66,6 @@ def run_tier0_pre_audit(user_cmd: str, context: dict):
     tz = athlete.get("timezone", "Europe/Zurich")
     context["timezone"] = tz if isinstance(tz, str) and len(tz) >= 3 else "Europe/Zurich"
 
-    # --- Step 2: Inject athleteProfile ---
     context["athleteProfile"] = {
         "id": athlete.get("id"),
         "name": athlete.get("name", "Unknown"),
@@ -81,15 +79,13 @@ def run_tier0_pre_audit(user_cmd: str, context: dict):
     }
     context["athlete"] = context["athleteProfile"]
 
-    # --- Step 3: Determine date window based on command ---
+    # --- Step 2: Determine date window ---
     mode, oldest, newest = resolve_report_trigger(user_cmd, context["timezone"])
-    context["report_mode"] = mode
-    context["window_start"] = oldest
-    context["window_end"] = newest
+    context.update({"report_mode": mode, "window_start": oldest, "window_end": newest})
 
-    # --- Step 4: Fetch activities ---
+    # --- Step 3: Fetch activities with retry ---
     acts_url = f"{INTERVALS_API}/activities?oldest={oldest}&newest={newest}"
-    acts_resp = requests.get(acts_url, headers=headers)
+    acts_resp = fetch_with_retry(acts_url, headers)
     if acts_resp.status_code != 200:
         raise AuditHalt(f"❌ Failed to fetch activities ({acts_resp.status_code})")
 
@@ -105,22 +101,15 @@ def run_tier0_pre_audit(user_cmd: str, context: dict):
     df_activities["date"] = df_activities["start_date_local"].dt.date
     df_activities["origin"] = "event"
 
-    # --- Step 5: Fetch wellness ---
+    # --- Step 4: Fetch wellness with retry ---
     well_url = f"{INTERVALS_API}/athlete/{athlete['id']}/wellness?oldest={oldest}&newest={newest}"
-    well_resp = requests.get(well_url, headers=headers)
+    well_resp = fetch_with_retry(well_url, headers)
     wellness = well_resp.json() if well_resp.status_code == 200 else []
     if not wellness:
-        print("⚠ No wellness data available for this window")
+        print("⚠ No wellness data available after retry.")
 
-    # --- Step 6: Finalize context ---
-    context["auditPartial"] = False
-    context["auditFinal"] = False
-
-    # Log window to context for render header
-    context["window_summary"] = {
-        "mode": mode,
-        "start": str(oldest),
-        "end": str(newest),
-    }
+    # --- Step 5: Finalize context ---
+    context.update({"auditPartial": False, "auditFinal": False})
+    context["window_summary"] = {"mode": mode, "start": str(oldest), "end": str(newest)}
 
     return df_activities, wellness, context, context["auditPartial"], context["auditFinal"]
