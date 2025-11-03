@@ -1,8 +1,9 @@
 """
-Tier-0 — Pre-Audit (v16.1-EOD-004)
+Tier-0 — Pre-Audit (v16.1-EOD-005)
 Fetches live Intervals.icu athlete profile, activities, and wellness data.
 Initializes timezone and injects athleteProfile for downstream render.
 Supports both flat and nested 'athlete' JSON payloads.
+Adds context["athlete"] alias for renderer compatibility.
 """
 
 import os
@@ -53,6 +54,9 @@ def run_tier0_pre_audit(oldest, newest, context):
         "bio": athlete.get("bio"),
         "website": athlete.get("website"),
     }
+
+    # Provide legacy alias for renderers expecting context["athlete"]
+    context["athlete"] = context["athleteProfile"]
 
     # --- Step 3: Fetch activities ---
     acts_url = f"{INTERVALS_API}/activities?oldest={oldest}&newest={newest}"
