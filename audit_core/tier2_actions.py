@@ -92,6 +92,15 @@ def evaluate_actions(context):
     if abs(context.get("FatMaxDeviation", 1.0)) <= 0.05 and context.get("Decoupling", 1.0) <= 0.05:
         actions.append("✅ FatMax calibration verified (±5 %).")
 
+    # --- Visual Fatigue Flag (v16.1.3 legacy cosmetic) ---
+    ri = context.get("RecoveryIndex", 1.0)
+    if ri < 0.6:
+        context["ui_flag"] = "🔴 Overreached"
+    elif ri < 0.8:
+        context["ui_flag"] = "🟠 Fatigued"
+    else:
+        context["ui_flag"] = "🟢 Normal"
+
     # --- Final status ---
     context["actions"] = actions
     return context
