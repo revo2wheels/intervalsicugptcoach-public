@@ -1,10 +1,52 @@
 """
-Tier-2 Step 3 — Derived Metrics Calculation (v16.1)
-Computes ACWR, Monotony, Strain, Polarisation, RecoveryIndex, FatOxidation, Decoupling, FatMaxDeviation.
+Tier-2 Step 3 — Derived Metrics Calculation (v16.1.3-EOD-003)
+Computes ACWR, Monotony, Strain, Polarisation, RecoveryIndex,
+FatOxidation, Decoupling, FatMaxDeviation, and reinstates advanced
+coaching heuristics: FatigueTrend, IntensityQuality (ZQI), FatOxEfficiency.
 """
 
 import pandas as pd
 import numpy as np
+
+
+def compute_fatigue_trend(context):
+    events = context.get("events", [])
+    if len(events) < 7:
+        context["fatigue_trend"] = 0.0
+        return context
+    tss = [e.get("icu_training_load", 0) for e in events]
+    x = list(range(len(tss)))
+    numerator = len(x) * sum(i * t for i, t in zip(x, tss)) - sum(x) * sum(tss)
+    denominator = len(x) * sum(i**2 for i in x) - (sum(x) ** 2)
+    slope = numerator / denominator if denominator != 0 else 0
+    context["fatigue_trend"] = round(slope, 2)
+    return context
+
+
+def compute_intensity_quality(context):
+    df = context.get("df_events")
+    if df is None or "zone" not in df.columns:
+        context["ZQI"] = 0.0
+        return context
+    high_intensity = df[df["zone"].isin(["Z5", "Z6", "Z7"])]["moving_time"].sum()
+    total = df["moving_time"].sum()
+    context["ZQI"] = round((high_intensity / total) * 100, 1) if total > 0 else 0.0
+    return context
+
+
+def compute_fatox_efficiency(context):
+    events = context.get("events", [])
+    if not events:
+        context["FatOxEfficiency"] = 0.0
+        return context
+    zone2_loads = [e["icu_training_load"] for e in events if e.get("intensity_zone") in ["Z2", "Z3"]]
+    total_loads = [e["icu_training_load"] for e in events]
+    if not zone2_loads or not total_loads:
+        context["FatOxEfficiency"] = 0.0
+    else:
+        context["FatOxEfficiency"] = round(sum(zone2_loads) / sum(total_loads), 2)
+    return context
+
 
 def compute_derived_metrics(df_daily, context):
     if df_daily.empty:
@@ -39,5 +81,10 @@ def compute_derived_metrics(df_daily, context):
     for k in ["ACWR", "Monotony", "Polarisation"]:
         if not np.isfinite(context[k]):
             raise ValueError(f"❌ Derived metric {k} is invalid (non-numeric).")
+
+    # --- Extended heuristics reinstated (v16.1.3-EOD-003) ---
+    context = compute_fatigue_trend(context)
+    context = compute_intensity_quality(context)
+    context = compute_fatox_efficiency(context)
 
     return context
