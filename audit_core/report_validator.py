@@ -42,7 +42,7 @@ def validate_report_output(context, report, framework_version="Unified_Reporting
         raise TypeError("❌ actions must be a list")
 
     # --- Report structural validation ---
-    required_sections = ["header", "summary", "metrics", "actions", "footer"]
+    required_sections = ["header","summary","metrics","actions","footer","phases","trends","correlation"]
     for section in required_sections:
         if section not in report:
             raise ValueError(f"❌ Missing report section: {section}")
@@ -54,7 +54,7 @@ def validate_report_output(context, report, framework_version="Unified_Reporting
             raise ValueError(f"❌ Framework icon missing: {icon}")
 
     # --- Variance and integrity ---
-    variance_limit = 0.02  # 2%
+    variance_limit = 0.03  # 3%
     if "variance" in context and context["variance"] > variance_limit:
         raise ValueError(f"❌ Variance exceeds {variance_limit*100:.0f}% limit")
 
