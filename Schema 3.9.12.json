@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Intervals.icu API + Unified Reporting Framework",
-    "version": "3.9.12",
-    "description": "Full v3.7.0 schema preserved with added /athlete/profile endpoint and its schemas."
+    "version": "3.9.13",
+    "description": "Full schema preserved with added /athlete/profile endpoint and its schemas."
   },
   "servers": [
     { "url": "https://intervals.icu/api/v1" }
@@ -55,31 +55,23 @@
       }
     },
     "/athlete/0/activities.csv": {
-      "get": {
-        "summary": "Export activities as CSV",
-        "operationId": "listActivitiesCsv",
-        "parameters": [
-          { "name": "oldest", "in": "query", "schema": { "type": "string", "format": "date" } },
-          { "name": "newest", "in": "query", "schema": { "type": "string", "format": "date" } },
-          { "name": "auto", "in": "query", "schema": { "type": "boolean" } },
-          { "name": "fields", "in": "query", "schema": { "type": "string" } }
-        ],
-        "responses": { "200": { "description": "CSV download of activities" } }
-      }
-    },
-    "/athlete/0/wellness.csv": {
-      "get": {
-        "summary": "Export wellness data as CSV",
-        "operationId": "listWellnessCsv",
-        "parameters": [
-          { "name": "oldest", "in": "query", "schema": { "type": "string", "format": "date" } },
-          { "name": "newest", "in": "query", "schema": { "type": "string", "format": "date" } },
-          { "name": "auto", "in": "query", "schema": { "type": "boolean" } },
-          { "name": "fields", "in": "query", "schema": { "type": "string" } }
-        ],
-        "responses": { "200": { "description": "CSV download of wellness data" } }
-      }
-    }
+  "get": {
+    "summary": "Export activities as CSV (archival only)",
+    "operationId": "listActivitiesCsv",
+    "x-archivalOnly": true,
+    "deprecated": true,
+    "responses": { "410": { "description": "Deprecated – use chunked JSON" } }
+  }
+},
+"/athlete/0/wellness.csv": {
+  "get": {
+    "summary": "Export wellness data as CSV (archival only)",
+    "operationId": "listWellnessCsv",
+    "x-archivalOnly": true,
+    "deprecated": true,
+    "responses": { "410": { "description": "Deprecated – use chunked JSON" } }
+  }
+}
   },
   "components": {
     "schemas": {
