@@ -65,6 +65,14 @@ Audit: {auditStatus} | Data Integrity: {integrityFlag}
 | Specificity Index | {specificityIndex:.2f} | — | {specificityFlag} |
 | Consistency Index | {consistencyIndex:.2f} | — | {consistencyFlag} |
 
+> **Source Logic (patched v16.1-EOD-002)**  
+- totalHours = Σ(event.moving_time)/3600  
+- totalTss = Σ(event.icu_training_load)  
+- Values derive strictly from validated event-level data, not daily or ATL/CTL aggregates.  
+- ACWR, Monotony, Strain remain computed from the daily load dataset.  
+- Renderer must ignore `dailyTotals` if present and use `context["eventTotals"]`.  
+- Halt if Σ(event) mismatch > 0.1 h or 2 TSS.
+
 ---
 ### **Event Log (Merged Daily View)**
 Displays validated, merged daily sessions after the Event Completeness Rule.  
