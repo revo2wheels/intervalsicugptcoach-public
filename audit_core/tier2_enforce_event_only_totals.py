@@ -34,4 +34,7 @@ def enforce_event_only_totals(df_events, context):
         if diff_hours > 0.1:
             raise AuditHalt(f"❌ Tier-1 vs Tier-2 mismatch >0.1h (Δ={diff_hours:.2f})")
         if diff_tss > 2:
-            raise AuditHalt(f"❌ Tier-1 vs Tier-
+            raise AuditHalt(f"❌ Tier-1 vs Tier-2 mismatch >2 TSS (Δ={diff_tss:.1f})")
+
+    # --- Step 6: Return validated context ---
+    return context
