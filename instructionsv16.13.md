@@ -15,7 +15,12 @@
 ## Intent Routing Layer (v1.0)
 **Purpose:** Normalize user phrases into report controller calls.  
 **Scope:** All chat, console, and API inputs.  
-**Default:** `run_report(report_type, auditFinal=True)`  
+ **Default:** `run_report(report_type,
+    auditFinal=True,
+    render_mode="full",
+    output_encoding="utf-8",
+    force_icon_pack=True,
+    derivedMetrics=True)`
 **Effect:** Ensures all reports auto-fetch athlete profile, activities, and wellness before audit.
 
 **Routing Summary**
@@ -96,7 +101,8 @@
 - Duration = Σ(event.moving_time) only.  
 - No derived exposure or load-based conversion.  
 - Display format: distance 2 dp, time hh:mm:ss, TSS integer.  
-- Include 🛌 Rest Day and ⏳ Current Day icons.  
+- Use full Unified UI Icon Pack via card renderer (🛌, ⏳, ⚙️, 📈, 💤, 🧠) —
+- icons are inherited from card states; no duplication allowed.
 - Variance ≤ 2 %.  
 - `render_mode="full"` | `output_encoding="utf-8"` | `force_icon_pack=True`.  
 
@@ -125,5 +131,6 @@ Do not duplicate any of these modules.
 
 ---
 
-**Patch ID:** `v16.13-EOD-002`  
-**Purpose:** Integrate Intent Routing Layer and remove redundant fetch and render clauses.
+**Patch ID:** `v16.13-EOD-003`
+**Purpose:** Enforce full render context (icons + derived metrics) via Intent Routing Layer v1.1.
+
