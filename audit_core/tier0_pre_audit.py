@@ -131,23 +131,35 @@ def run_tier0_pre_audit(user_cmd: str, context: dict):
     mode, oldest, newest = resolve_report_trigger(user_cmd, context["timezone"])
     context.update({"report_mode": mode, "window_start": oldest, "window_end": newest})
 
-    # --- Step 3: Fetch activities (adaptive chunking) ---
+    # --- Step 3: Fetch activities (adaptive chunking, v16.14-FIX-E) ---
     est_payload_acts = estimate_payload_size((newest - oldest).days + 1, "activities")
     act_chunk_days = 7 if est_payload_acts < 200000 else 3
 
     df_activities_list = []
-    for offset in range(0, (newest - oldest).days + 1, act_chunk_days):
+    total_days = (newest - oldest).days + 1
+
+    for offset in range(0, total_days, act_chunk_days):
         chunk_start = oldest + timedelta(days=offset)
-        chunk_end = min(newest, chunk_start + timedelta(days=act_chunk_days - 1))
+        # FIX: make end exclusive to avoid 1-day overlap between chunks
+        chunk_end = min(newest, chunk_start + timedelta(days=act_chunk_days))
         acts_url = f"{INTERVALS_API}/activities?oldest={chunk_start}&newest={chunk_end}"
         acts_resp = fetch_with_retry(acts_url, headers)
         if acts_resp.status_code != 200:
             raise AuditHalt(f"❌ Failed to fetch activities ({acts_resp.status_code})")
+
         df_chunk = pd.DataFrame(acts_resp.json())
         if not df_chunk.empty:
             df_activities_list.append(df_chunk)
 
     df_activities = pd.concat(df_activities_list, ignore_index=True)
+
+    # --- FIX: Deduplicate by activity ID (prevents inflated totals) ---
+    if "id" in df_activities.columns:
+        before = len(df_activities)
+        df_activities.drop_duplicates(subset=["id"], keep="first", inplace=True)
+        after = len(df_activities)
+        print(f"🧩 Tier-0 deduplication: {before - after} duplicate activities removed.")
+
     if df_activities.empty or "start_date" not in df_activities.columns:
         raise AuditHalt("❌ No valid activities returned from Intervals.icu API")
 
