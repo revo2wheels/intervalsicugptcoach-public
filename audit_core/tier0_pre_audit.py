@@ -153,6 +153,13 @@ def run_tier0_pre_audit(user_cmd: str, context: dict):
 
     df_activities = pd.concat(df_activities_list, ignore_index=True)
 
+    # --- Quick inspection of fetched data ---
+    print(df_activities[["id", "name", "moving_time"]])
+
+    if df_activities.empty or "start_date" not in df_activities.columns:
+        raise AuditHalt("❌ No valid activities returned from Intervals.icu API")
+
+
     # --- FIX: Deduplicate by activity ID (prevents inflated totals) ---
     if "id" in df_activities.columns:
         before = len(df_activities)
