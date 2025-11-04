@@ -77,14 +77,15 @@ def finalize_and_validate_render(context, reportType="weekly"):
         context=context,
     )
 
-    # --- Derived Metrics Injection (unchanged) ---
+    # --- Derived Metrics Injection (merged into Section 5: Efficiency & Adaptation) ---
     if context.get("auditFinal", False):
         dm = context.get("metrics", {}).get("derived", {})
         if dm and any(k in dm for k in [
             "fat_oxidation_index", "carb_use_rate",
             "glycogen_ratio", "metabolic_efficiency_score"
         ]):
-            report.add_section("5.5 Metabolic Efficiency (v16.14)")
+            # append metabolic metrics to efficiency/adaptation section
+            report.add_line("")  # visual separator within section 5
             report.add_table([
                 ["Metric", "Value", "Units"],
                 ["Fat Oxidation Index (FOxI)", f"{dm.get('fat_oxidation_index', 0):.2f}", "%"],
