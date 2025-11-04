@@ -9,6 +9,14 @@ from audit_core.utils import validate_dataset_integrity, validate_wellness_align
 
 
 def run_tier1_controller(df_activities, wellness, context):
+    # --- Tier-1 entry diagnostic ---
+    import sys
+    sys.stderr.write(
+        f"\n[Tier-1 entry] rows={len(df_activities)}  "
+        f"Σ(moving_time)/3600={df_activities['moving_time'].sum()/3600:.2f}\n"
+    )
+    sys.stderr.flush()
+
    # --- Step 1: Dataset integrity ---
     if df_activities.empty:
         raise ValueError("❌ No activity data received")
@@ -96,4 +104,11 @@ def run_tier1_controller(df_activities, wellness, context):
     # --- Step 7: Finalize ---
     context["auditPartial"] = True
     context["auditFinal"] = False
+
+    sys.stderr.write(
+        f"[Tier-1 exit] rows={len(df_activities)}  "
+        f"Σ(moving_time)/3600={df_activities['moving_time'].sum()/3600:.2f}\n"
+    )
+    sys.stderr.flush()
+
     return df_activities, wellness, context
