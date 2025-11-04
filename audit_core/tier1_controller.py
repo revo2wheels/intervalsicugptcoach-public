@@ -91,6 +91,26 @@ def run_tier1_controller(df_activities, wellness, context):
         }
         daily_summary["feel_label"] = daily_summary["feel"].map(feel_map).fillna(daily_summary["feel"].astype(str))
 
+    # --- Inline qualitative translation for subjective 1–5 markers ---
+    label_map = {
+        1: "very low", 2: "low", 3: "moderate", 4: "high", 5: "very high"
+    }
+
+    for col in ["fatigue", "stress", "soreness"]:
+        if col in daily_summary.columns:
+            daily_summary[f"{col}_label"] = daily_summary[col].map(label_map).fillna(daily_summary[col])
+
+    mood_map = {1:"very bad",2:"bad",3:"neutral",4:"good",5:"very good"}
+    motiv_map = {1:"none",2:"low",3:"moderate",4:"good",5:"excellent"}
+    hydr_map = {1:"overhydrated",2:"slightly high",3:"optimal",4:"slightly low",5:"dehydrated"}
+    ready_map = {1:"very poor",2:"poor",3:"fair",4:"good",5:"excellent"}
+
+    for col, cmap in {
+        "mood": mood_map, "motivation": motiv_map, "hydration": hydr_map, "readiness": ready_map
+    }.items():
+        if col in daily_summary.columns:
+            daily_summary[f"{col}_label"] = daily_summary[col].map(cmap).fillna(daily_summary[col])
+
     # --- Step 7: Finalize ---
     context["auditPartial"] = True
     context["auditFinal"] = False
