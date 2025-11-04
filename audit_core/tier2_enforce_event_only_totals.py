@@ -50,7 +50,7 @@ def enforce_event_only_totals(df, context):
     total_distance = (
         df_verified["distance"].sum() / 1000 if "distance" in df_verified else 0
     )
-
+ 
     context["totalHours"] = round(total_hours, 2)
     context["totalTss"] = int(round(total_tss))
     context["totalDistance"] = round(total_distance, 1)
