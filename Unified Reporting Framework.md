@@ -65,8 +65,8 @@ Audit: {auditStatus} | Integrity: {integrityFlag}
 | Metric | Value | Δ | Status |
 |:--|--:|:--:|:--:|
 | Volume (h) | {{ (context["eventTotals"]["hours"] if "eventTotals" in context else 0) | round(2) }} | {{ ΔHours | round(1) }} | — |
-| Load (TSS) | {totalTss} | {ΔTss} | — |
-| Avg IF | {avgIF:.2f} | — | — |
+| Load (TSS) | {{ (context["eventTotals"]["tss"] if "eventTotals" in context else 0) | round(0) }} | {{ ΔTss | round(0) }} | — |
+| Avg IF | {{ context.get("avgIF", 0) | round(2) }} | — | — |
 | ACWR | {acwr:.2f} | — | {acwrFlag} |
 | Monotony | {monotony:.2f} | — | {monotonyFlag} |
 | Strain | {strain:.0f} | — | — |
