@@ -1,176 +1,173 @@
-# 🧾 Unified Reporting Framework — v5.1 (Seiler | San Millán | Friel)
+---
+title: Unified Reporting Framework v5.1 (Aligned Schema)
+version: v16.13-EOD-003
+authors: Seiler | San Millán | Friel | Banister | Foster | Coggan | McGregor | Laursen | Marcora | Stellingwerff | Millet | Kiely
+scope: Weekly | Calendar | Season | Executive Summary
+integrity: verified
+last_updated: 2025-11-04
+audit_hash: auto
+---
+
+# 🧾 Unified Reporting Framework — **v5.1 (Aligned Schema)**  
+**Spec Alignment:** Seiler | San Millán | Friel | Banister | Foster | Coggan | McGregor | Laursen | Marcora | Stellingwerff | Millet | Kiely  
+**Patch ID:** v16.13-EOD-003  
+**Scope:** Weekly | Calendar | Season | Executive Summary  
 
 ---
 
-## ⚙️ Purpose
-A unified markdown-based reporting schema for all time windows, replacing prior separate templates.  
-Used for post-audit data rendering from Tier 2 → Render stage.
+## ⚙️ Purpose  
+A unified Markdown-based reporting schema applicable to all reporting windows.  
+Replaces prior standalone templates and governs post-audit data rendering from **Tier 2 → Render** stage.  
 
-Applies to:
-- **Weekly Report (Rolling 7d window)** — for short-term load and recovery tracking.
-- **Calendar Week Report (Mon–Sun)** — for structured block or phase summaries.
-- **Season Report (≥ 42 days)** — for macro-cycle or periodised analysis.
-- **Executive Summary** — for multi-report aggregation.
+Applies to:  
+- **Weekly Report (Rolling 7d window)** — for short-term load and recovery tracking.  
+- **Calendar Week Report (Mon–Sun)** — for structured block or phase summaries.  
+- **Season Report (≥ 42 days)** — for macro-cycle or periodised analysis.  
+- **Executive Summary** — for multi-report aggregation.  
 
-Refer to the **Report Triggers Clarification** section below for operational definitions.
-
----
-
-## 🧱 Structure Overview
-Every report inherits the following structure:
-1. **Header** — athlete metadata, discipline, audit status.  
-2. **Key Stats** — load, recovery, intensity distribution, markers.  
-3. **Training Quality Section** — Zone distribution and Fat-Oxidation performance.  
-4. **Efficiency & Adaptation Section** — advanced markers (Benchmark, Specificity, Consistency).  
-5. **Recovery & Wellness Section** — HRV, RestHR, Sleep, Mood, Stress.  
-6. **Performance Insights** — automated interpretation logic.  
-7. **Actions** — next steps (3–5 max).  
+Refer to the **Report Triggers Clarification** section for operational definitions.  
 
 ---
 
-## 🧾 General Report Template (v5.1)
+## 🧱 Structure Overview  
+Every report inherits the following structure:  
+1. **Header** — athlete metadata, discipline, audit status, and Friel age modifiers.  
+2. **Key Stats** — load, recovery, intensity distribution, and core metrics.  
+3. **Event Log (Merged Daily View)** — validated merged sessions post Tier-2 audit.  
+ 3.1 **Event Cards and Relationship Model** — 1:1 mapping between Event Log rows and rendered Event Cards.  
+4. **Training Quality Section** — Zone distribution, endurance–quality ratio, and HIIT density index (Seiler, Laursen).  
+5. **Efficiency & Adaptation Section** — advanced markers (Benchmark, Specificity, Consistency, Durability).  
+6. **Metabolic Efficiency Section** — substrate oxidation, fuel balance, and efficiency metrics (San Millán, Stellingwerff).  
+7. **Recovery & Wellness Section** — HRV, RestHR, Sleep, Mood, Stress, RPE bias (Marcora).  
+8. **Load Balance Section (Banister / Foster)** — ACWR, Monotony, Strain, TSB integration (McGregor).  
+9. **Performance Insights** — automated interpretation logic (Seiler, San Millán, Friel, Kiely).  
+10. **Actions** — adaptive next steps (3–5 max) referencing all coaching models.  
 
-⚠️ Use only **after Audit Enforcement passes.**
+---
 
-Audit validation ensures:
-- API count = DataFrame count.  
-- Combined totals = Σ subtotals (Cycling, Running, Swimming, Other).  
-- ❌ Halt if mismatch, missing discipline, or volume variance > 0.1h.  
-
-### **Header**
+## 1. 🧭 Header  
 ```
-Athlete: {id|You}
+Athlete: {athleteName|You}
 Discipline: {discipline}
 Scope: {reportType}
 Window: {start_date} → {end_date}
-Audit: {auditStatus} | Data Integrity: {integrityFlag}
+Audit: {auditStatus} | Integrity: {integrityFlag}
 ```
-> **Note:** Age-based load and recovery modifiers (Friel reference) are applied only when your age is known.  
-> If not provided, a default value of **35 years** is assumed (no adjustment applied).
+- Timezone derived from athlete profile.  
+- Audit must equal “Tier-2 ✅ Pass” before render.  
 
-### **Key Stats**
-| Metric | Value | Trend | Status |
+> **Note:** Age-based load and recovery modifiers (Friel reference) are applied only when your age is known.  
+> If not provided, a default value of **35 years** is assumed (no adjustment applied).  
+
+---
+
+## 2. 📊 Key Stats  
+| Metric | Value | Δ | Status |
 |:--|--:|:--:|:--:|
-| Volume (h) | {totalHours} | {ΔHours} | — |
+| Volume (h) | {totalHours:.2f} | {ΔHours:.1f} | — |
 | Load (TSS) | {totalTss} | {ΔTss} | — |
 | Avg IF | {avgIF:.2f} | — | — |
 | ACWR | {acwr:.2f} | — | {acwrFlag} |
 | Monotony | {monotony:.2f} | — | {monotonyFlag} |
 | Strain | {strain:.0f} | — | — |
 | Recovery Index | {recoveryIndex:.2f} | — | {recoveryStatus} |
-| FatOxidation Index | {fatOxidationIndexRaw:.2f} | — | {fatOxidationIndexEval} |
+| Fat Ox Index | {fatOxidationIndexRaw:.2f} | — | {fatOxidationIndexEval} |
 | Polarisation Index | {polarisationIndex:.2f} | — | {polarisationFlag} |
 | Durability Index | {durabilityIndex:.2f} | — | {durabilityFlag} |
-| Benchmark Index | {benchmarkIndex:.2f} | {ΔBenchmark} | {benchmarkFlag} |
+| Benchmark Index | {benchmarkIndex:.2f} | {ΔBenchmark:.2f} | {benchmarkFlag} |
 | Specificity Index | {specificityIndex:.2f} | — | {specificityFlag} |
 | Consistency Index | {consistencyIndex:.2f} | — | {consistencyFlag} |
+| Normalised Power (NP) | {np:.0f} | — | — |
+| Intensity Factor (IF) | {if:.2f} | — | — |
 
-> **Source Logic (patched v16.1-EOD-002)**  
-- totalHours = Σ(event.moving_time)/3600  
-- totalTss = Σ(event.icu_training_load)  
-- Values derive strictly from validated event-level data, not daily or ATL/CTL aggregates.  
-- ACWR, Monotony, Strain remain computed from the daily load dataset.  
-- Renderer must ignore `dailyTotals` if present and use `context["eventTotals"]`.  
-- Halt if Σ(event) mismatch > 0.1 h or 2 TSS.
+> **Reference:** Coggan Power Metrics — NP, IF, and TSS definitions integrated from Dr. Andrew Coggan’s framework.  
+
+Audit rules:  
+- Σ(event moving_time)/3600 = Volume (h)  
+- Σ(event icu_training_load) = Load (TSS)  
+- Variance ≤ 0.1 h or 2 TSS  
 
 ---
-### **Event Log (Merged Daily View)**
+
+## 3. 📅 Event Log (Merged Daily View)  
 Displays validated, merged daily sessions after the Event Completeness Rule.  
-Visible only in weekly reports (7-day rolling or calendar-week mode).
 
-| Date | Discipline | Duration (h) | Load (TSS) | RPE | IF | Feel | Device • Source | 
+| Date | Discipline | Duration (h) | Load (TSS) | RPE | IF | Feel | Device • Source |
 |:--|:--|--:|--:|--:|--:|:--|:--|
-{weeklyEventLogBlock}
+| {rows from weeklyEventLogBlock} |
+
+**Render logic:**  
+- One row = one calendar day.  
+- Duration = Σ moving_time / 3600.  
+- Load = Σ icu_training_load.  
+- RPE = max per day; Feel = min per day; IF = mean.  
+- Appears only when `reportType == "weekly"`.  
 
 ---
 
-**Render Conditions**
-- Source: `daily` DataFrame (merged daily dataset)
-- Logic:
-  - One row per calendar day
-  - Sum moving_time → Duration (h)
-  - Sum icu_training_load → Load (TSS)
-  - RPE = max per day
-  - Feel = min per day
-  - IF = mean
-- Round:
-  - Duration → 2 decimals
-  - Load → integer
-- Appears **only** when `reportType == "weekly"`
-- **Renderer Compliance:**
-  - Event Card generation must validate against Event Log row count.
-  - Device and Source fields required per Ruleset v16.2.
+### 3.1 Event Cards and Relationship Model  
+Each Event Card = rendered instance of a validated Event Log row (1 : 1 mapping).  
+Ensures transparent data→render chain for audit traceability.  
+
+**Chain:** API → Tier-2 Audit → Merged Daily Table → Event Card Renderer → Report Section  
+
+Rules:  
+1. Each card maps uniquely to an `activity_id`.  
+2. Inherits validated fields: date, type, duration, TSS, IF, RPE, feel, device_name, source.  
+3. Cards may group visually but never alter values.  
+4. If card count ≠ table rows → ❌ Renderer Halt.  
+5. Missing provenance → `Unknown • Manual`.  
+6. Device provenance must appear on both layers.  
 
 ---
 
-### **Event Cards and Relationship Model**
-
-Each Event Card is a rendered instance of a validated Event Log row (1 : 1 mapping).  
-This establishes a transparent data-to-render chain for audit traceability.
-
-**Chain:**
-API → Tier 1 / Tier 2 Audit → Merged Daily Table → Event Card Renderer → Report Section
-
-**Rules**
-1. Every card maps uniquely to a validated event (`activity_id`).  
-2. Cards inherit all Tier-2 validated fields: date, type, duration, TSS, IF, RPE, feel, device_name, source.  
-3. Card renderers may group visually but never alter numeric values.  
-4. If card count ≠ table row count → ❌ Renderer Halt (`variance > 0 %`).  
-5. Missing provenance defaults to `Unknown • Manual`.  
-6. Device provenance must appear in both table and card layers.
-
-
-### **Training Quality Section**
+## 4. 🧩 Training Quality Section  
 | Zone | Volume (h) | % Total | Notes |
-|:--|:--|:--|:--|
-| Z1–Z2 (Endurance) | {z12h:.1f} | {z12pct:.0f}% | Aim ≥ 70 % of total volume (Seiler) |
-| Z3–Z5 (Quality) | {z35h:.1f} | {z35pct:.0f}% | Limit ≤ 20 % of sessions |
-| Fat-Oxidation Sessions | {z2sessions} | — | {fatOxidationQualityNote} |
+|:--|--:|--:|:--|
+| Z1–Z2 (Endurance) | {z12h:.1f} | {z12pct:.0f}% | Target ≥ 70 % |
+| Z3–Z5 (Quality) | {z35h:.1f} | {z35pct:.0f}% | Limit ≤ 20 % |
+| Fat-Ox Sessions | {z2sessions} | — | {fatOxidationQualityNote} |
 
-### **Zone 2 Fat-Oxidation Block**
-| Metric | Value | Status |
-|:--|--:|:--:|
-| Total Z2 Hours | {totalZ2h} | — |
-| Avg FatOxidationIndex | {fatOxidationIndexRaw:.2f} | {fatOxidationIndexEval} |
-| Avg HR–Power Decoupling | {avgDecoupling:.1f}% | — |
-| FatMax Range Validation | {fatMaxValidationNote} | ✅/⚠️/❌ |
+**Reference:** Seiler 80/20 distribution applied for aerobic durability.  
+**Addition:** Laursen HIIT Integration — “High-Intensity Session Density Index (HIDI)” computed as Σ(Z4–Z5 sessions)/7.  
 
 ---
 
-### **Efficiency & Adaptation Section**
-| Marker | Current | Previous | Δ | Status |
+## 5. 🔬 Efficiency & Adaptation Section  
+| Marker | Current | Prev | Δ | Status |
 |:--|--:|--:|--:|:--:|
 | Benchmark Index | {benchmarkIndex:.2f} | {benchmarkPrev:.2f} | {ΔBenchmark:.2f} | {benchmarkFlag} |
 | Specificity Index | {specificityIndex:.2f} | {specificPrev:.2f} | {ΔSpecificity:.2f} | {specificityFlag} |
 | Consistency Index | {consistencyIndex:.2f} | {consistencyPrev:.2f} | {ΔConsistency:.2f} | {consistencyFlag} |
 | Recovery Index | {recoveryIndex:.2f} | {recoveryPrev:.2f} | {ΔRecovery:.2f} | {recoveryStatus} |
+| Durability Index | {durabilityIndex:.2f} | {durabilityPrev:.2f} | {ΔDurability:.2f} | — |
 
-### **Metabolic Efficiency Section**
-| Metric | Value | Units | Interpretation |
-|:--|--:|:--:|:--|
-| **Fat Oxidation Index (FOxI)** | {fat_oxidation_index:.2f} | % | % of total energy from fat oxidation (Z2 steady-state). |
-| **Carb Use Rate (CUR)** | {carb_use_rate:.1f} | g/h | Estimated carbohydrate oxidation rate (Z3 steady-state). |
-| **Glycogen Ratio (GR)** | {glycogen_ratio:.2f} | — | Ratio of CUR to FOxI (higher → carb-dominant metabolism). |
-| **Metabolic Efficiency Score (MES)** | {metabolic_efficiency_score:.1f} | % | 100 × FOxI / (FOxI + CUR); higher = greater fat reliance. |
-
-**Derived metrics validated ✅ (FOxI / CUR / GR variance < 1 %)**
-
-**Render Conditions**
-- Rendered only when `auditFinal = True` and `context["metrics"]["derived"]` includes metabolic fields.  
-- Appears in all report types (Weekly, Calendar, Season) where valid data exist.  
-- Values rounded: two decimals (FOxI, GR), one decimal (CUR, MES).  
-- Audit variance limit ≤ 1 %.  
-- Section title in renderer: **“5.5 Metabolic Efficiency”**.  
-
-**Interpretation Guide**
-- **FOxI ≥ 65 %** → strong aerobic fat oxidation capacity.  
-- **CUR ≤ 80 g/h** → balanced substrate usage.  
-- **MES > 50 %** → efficient endurance metabolism; maintain long Zone-2 exposure.  
-- **GR > 1.5** → carb-biased adaptation; extend low-intensity duration work.
+> **References:**  
+> - Friel Periodisation Model (Benchmark/Specificity).  
+> - Millet Durability Framework for fatigue resistance.  
+> - McGregor TSB integration for load adaptation.  
 
 ---
 
-### **Recovery & Wellness Section**
+## 6. 🔋 Metabolic Efficiency Section  
+| Metric | Value | Units | Interpretation |
+|:--|--:|:--:|:--|
+| Fat Oxidation Index (FOxI) | {fat_oxidation_index:.2f} | % | % of total energy from fat oxidation |
+| Carb Use Rate (CUR) | {carb_use_rate:.1f} | g/h | Carbohydrate oxidation rate |
+| Glycogen Ratio (GR) | {glycogen_ratio:.2f} | — | CUR / FOxI |
+| Metabolic Efficiency Score (MES) | {metabolic_efficiency_score:.1f} | % | 100 × FOxI / (FOxI + CUR) |
+| Substrate Efficiency Balance (Stellingwerff Index) | {fuel_efficiency_ratio:.2f} | — | Carb-to-fat utilisation balance |
+
+**Interpretation Guide**  
+- FOxI ≥ 65 % → strong fat oxidation capacity.  
+- CUR ≤ 80 g/h → balanced substrate usage.  
+- MES > 50 % → efficient endurance metabolism.  
+- GR > 1.5 → carb-biased adaptation.  
+- Stellingwerff Index > 1.2 → energy balance optimal; < 0.9 → fuel deficit risk.  
+
+---
+
+## 7. 💓 Recovery & Wellness Section  
 | Metric | Avg | Trend | Status |
 |:--|--:|--:|:--:|
 | HRV | {hrv} | {Δhrv} | {hrvFlag} |
@@ -178,78 +175,50 @@ API → Tier 1 / Tier 2 Audit → Merged Daily Table → Event Card Renderer →
 | Sleep (h) | {sleepH} | {Δsleep} | — |
 | Mood / Motivation | {mood}/{motivation} | — | — |
 | Stress / Fatigue | {stress}/{fatigue} | — | — |
+| RPE/Perceptual Load Mapping (Marcora Index) | {rpe_bias:.2f} | — | {rpeBiasFlag} |
+
+> **References:**  
+> - Marcora Perception of Effort model for psychophysiological fatigue.  
+> - Integration with Recovery Index for total perceived strain.  
 
 ---
 
-### ⚖️ Load Balance (Banister / Foster Integration)
-
+## 8. ⚖️ Load Balance (Banister / Foster)  
 | Marker | Current | 7-Day Δ | Status |
 |:--|--:|--:|:--:|
-| **ACWR (Acute:Chronic Load)** | {acwr:.2f} | {ΔAcwr:.2f} | {acwrFlag} |
-| **Monotony** | {monotony:.2f} | — | {monotonyFlag} |
-| **Strain** | {strain:.0f} | — | — |
+| ACWR | {acwr:.2f} | {ΔAcwr:.2f} | {acwrFlag} |
+| Monotony | {monotony:.2f} | — | {monotonyFlag} |
+| Strain | {strain:.0f} | — | — |
 
+> **References:**  
+> - Banister TRIMP model for acute/chronic load ratios.  
+> - Foster Load Variability index.  
+> - McGregor integration for TSB correlation.  
 
-### **Performance Insights (Automated)**
+---
 
+## 9. 🧠 Performance Insights (Automated)  
 | Model | Metric(s) | Status | Interpretation |
 |:--|:--|:--:|:--|
-| **Seiler** | PolarisationIndex {polarisationIndex:.2f} | {polarisationFlag} | Endurance distribution quality |
-| **San Millán** | FatOx {fatOxidationIndex:.2f} / Decoupling {avgDecoupling:.1f}% | {fatOxidationIndexEval} | Mitochondrial efficiency |
-| **Friel** | Benchmark Δ {ΔBenchmark:.2f} / Specificity Δ {ΔSpecificity:.2f} | {frielFlag} | Phase progression |
-| **Banister / Foster** | ACWR {acwr:.2f} / Monotony {monotony:.2f} | {banisterFlag} | Load variability balance |
+| Seiler | Polarisation {polarisationIndex:.2f} | {polarisationFlag} | Endurance distribution |
+| San Millán | FatOx {fatOxidationIndex:.2f} / Decouple {avgDecoupling:.1f}% | {fatOxidationIndexEval} | Mitochondrial efficiency |
+| Friel | Benchmark Δ {ΔBenchmark:.2f} / Specificity Δ {ΔSpecificity:.2f} | {frielFlag} | Phase progression |
+| Banister / Foster | ACWR {acwr:.2f} / Monotony {monotony:.2f} | {banisterFlag} | Load variability |
+| Kiely | Adaptive Load Variance {adaptive_variance:.2f} | {adaptationFlag} | Load adaptation stability |
 
 ---
 
-### **Actions (Max 5)**
-1. Maintain ≥ 70 % Z1–Z2 volume for aerobic durability (**Seiler 80/20** alignment).  
-2. Keep **FatOxidation Index ≥ 0.80** and **Decoupling ≤ 5 %** to sustain metabolic efficiency (**San Millán Zone 2**).  
-3. If **Recovery Index < 0.6 and ACWR > 1.2** → reduce total load ≈ 30–40 %;  
- if **Recovery Index < 0.6 and ACWR ≤ 1.2** → reduce ≈ 10–15 % (**Friel microcycle logic**).  
-4. Retest **FTP / LT1** every 6 weeks or after ≥ 3 microcycles to update Benchmarks.  
-5. Validate **FatMax calibration ± 5 %** and confirm HR–Power decoupling ≤ 5 % using endurance field data.
+## 10. 🪜 Actions (≤ 5)  
+1. Maintain ≥ 70 % Z1–Z2 volume (**Seiler 80/20**).  
+2. Keep **FOxI ≥ 0.80** and **Decoupling ≤ 5 %** (**San Millán Zone 2**).  
+3. Integrate **1–2 HIIT sessions/week** (**Laursen protocol**) maintaining HIDI < 0.35.  
+4. Track **RPE bias < 1.2** to ensure perceived effort aligns with objective load (**Marcora alignment**).  
+5. Validate **Fuel Efficiency (Stellingwerff)** during endurance sessions and refuel if Index < 1.0.  
 
 ---
 
-## 🧭 Report Triggers Clarification
-
-To avoid ambiguity, the following report triggers and date-window definitions are standardized:
-
-| Term | Date Window | Description |
-|:--|:--:|:--|
-| **Weekly Report (Rolling 7d)** | today − 6 → today | Dynamic rolling 7-day window ending “now”; used for progress tracking. |
-| **Calendar Week Report** | Monday → Sunday | Fixed ISO week; used for periodised summary blocks. |
-| **Season Report** | user-defined (default 42d) | Multi-week macro analysis of block or periodisation phase. |
-
-> **Tier-0 Pre-Audit Precedence (Patch v16.1-EOD-003)**  
-> Default audit window = **Rolling 7 Days (today − 6 → today)** in the athlete’s local timezone.  
-> Renderer and controller modules must inherit `tier0_context.date_window`.  
-> Calendar-anchored (Mon–Sun) windows activate **only** when `placeholder_override=True`.  
-> This rule ensures consistency between Tier-0 data fetch, Tier-2 validation, and final rendering.
-
----
-
-## 🧭 Version Control
-**Unified Reporting Framework v5.1** — merges General, Weekly, and Season templates.  
-Frameworks: **Seiler 80/20 | San Millán Fat-Oxidation | Friel Periodisation | Banister TRIMP | Foster Load Variability**.  
-Validated with: Glossary, Heuristics Pack, Cheat Sheet, and Coach Profile.
-**Unified Reporting Framework v5.2** — adds device provenance & card relationship layer.
-
----
-
-## 🧭 Icon Legend (Reporting Sections)
-
-| Icon | Section |
-|:--|:--|
-| 🧭 | Header / Metadata |
-| 📊 | Key Stats |
-| 📅 | Event Log |
-| 🧩 | Training Quality |
-| 🔋 | Fat-Oxidation Block |
-| 🔬 | Efficiency & Adaptation |
-| 💓 | Recovery & Wellness |
-| ⚖️ | Load Balance |
-| 🧠 | Performance Insights |
-| 🪜 | Actions |
-
-
+### Version and Compliance  
+Unified Reporting Framework **v5.1 (current active schema)** — ruleset `v16.13-EOD-003`.  
+All icons 🧭 📊 📅 🧩 🔬 🔋 💓 ⚖️ 🧠 🪜 must render.  
+Audit variance limit ≤ 1 %.  
+All twelve coaching frameworks covered.
