@@ -33,6 +33,7 @@ def resolve_report_trigger(user_cmd: str, tz: str):
 
 
 def fetch_with_retry(url: str, headers: dict, max_retries: int = 2):
+    """Low-level retry for individual API calls."""
     for attempt in range(max_retries + 1):
         resp = requests.get(url, headers=headers)
         if resp.status_code == 200:
@@ -42,13 +43,49 @@ def fetch_with_retry(url: str, headers: dict, max_retries: int = 2):
     return resp
 
 
+def estimate_payload_size(days: int, dataset: str):
+    """Heuristic payload size estimator to prevent connector overflow."""
+    if dataset == "wellness":
+        return days * 30000  # wellness heavier
+    else:
+        return days * 12000  # activities lighter
+
+
+def fetch_wellness_chunked(athlete_id, oldest, newest, headers, max_retries=2):
+    """Adaptive and retryable chunked fetch for wellness data."""
+    for meta_attempt in range(max_retries + 1):
+        wellness = []
+        try:
+            est_payload_well = estimate_payload_size((newest - oldest).days + 1, "wellness")
+            well_chunk_days = 3 if est_payload_well > 200000 else 7
+
+            for offset in range(0, (newest - oldest).days + 1, well_chunk_days):
+                chunk_start = oldest + timedelta(days=offset)
+                chunk_end = min(newest, chunk_start + timedelta(days=well_chunk_days - 1))
+                url = f"{INTERVALS_API}/athlete/{athlete_id}/wellness?oldest={chunk_start}&newest={chunk_end}"
+                resp = fetch_with_retry(url, headers)
+                if resp.status_code == 200 and resp.json():
+                    wellness.extend(resp.json())
+
+            if wellness:
+                return wellness
+        except Exception as e:
+            if meta_attempt == max_retries:
+                raise AuditHalt(f"❌ Wellness fetch failed after {max_retries + 1} meta-retries: {e}")
+            continue
+
+    print("⚠ No wellness data available after adaptive chunking.")
+    return []
+
+
 def run_tier0_pre_audit(user_cmd: str, context: dict):
+    """Tier-0: Pre-audit fetch chain with adaptive chunking and meta-retry."""
     if not ICU_TOKEN:
         raise EnvironmentError("Missing Intervals.icu token. Set ICU_OAUTH or ICU_API_KEY env var.")
 
     headers = {"Authorization": f"Bearer {ICU_TOKEN}"}
 
-    # --- Step 1: Fetch athlete profile with retry ---
+    # --- Step 1: Fetch athlete profile ---
     profile_resp = fetch_with_retry(f"{INTERVALS_API}/athlete", headers)
     if profile_resp.status_code != 200:
         raise AuditHalt(f"❌ Failed to fetch athlete profile ({profile_resp.status_code})")
@@ -83,13 +120,23 @@ def run_tier0_pre_audit(user_cmd: str, context: dict):
     mode, oldest, newest = resolve_report_trigger(user_cmd, context["timezone"])
     context.update({"report_mode": mode, "window_start": oldest, "window_end": newest})
 
-    # --- Step 3: Fetch activities with retry ---
-    acts_url = f"{INTERVALS_API}/activities?oldest={oldest}&newest={newest}"
-    acts_resp = fetch_with_retry(acts_url, headers)
-    if acts_resp.status_code != 200:
-        raise AuditHalt(f"❌ Failed to fetch activities ({acts_resp.status_code})")
+    # --- Step 3: Fetch activities (adaptive chunking) ---
+    est_payload_acts = estimate_payload_size((newest - oldest).days + 1, "activities")
+    act_chunk_days = 7 if est_payload_acts < 200000 else 3
 
-    df_activities = pd.DataFrame(acts_resp.json())
+    df_activities_list = []
+    for offset in range(0, (newest - oldest).days + 1, act_chunk_days):
+        chunk_start = oldest + timedelta(days=offset)
+        chunk_end = min(newest, chunk_start + timedelta(days=act_chunk_days - 1))
+        acts_url = f"{INTERVALS_API}/activities?oldest={chunk_start}&newest={chunk_end}"
+        acts_resp = fetch_with_retry(acts_url, headers)
+        if acts_resp.status_code != 200:
+            raise AuditHalt(f"❌ Failed to fetch activities ({acts_resp.status_code})")
+        df_chunk = pd.DataFrame(acts_resp.json())
+        if not df_chunk.empty:
+            df_activities_list.append(df_chunk)
+
+    df_activities = pd.concat(df_activities_list, ignore_index=True)
     if df_activities.empty or "start_date" not in df_activities.columns:
         raise AuditHalt("❌ No valid activities returned from Intervals.icu API")
 
@@ -101,12 +148,8 @@ def run_tier0_pre_audit(user_cmd: str, context: dict):
     df_activities["date"] = df_activities["start_date_local"].dt.date
     df_activities["origin"] = "event"
 
-    # --- Step 4: Fetch wellness with retry ---
-    well_url = f"{INTERVALS_API}/athlete/{athlete['id']}/wellness?oldest={oldest}&newest={newest}"
-    well_resp = fetch_with_retry(well_url, headers)
-    wellness = well_resp.json() if well_resp.status_code == 200 else []
-    if not wellness:
-        print("⚠ No wellness data available after retry.")
+    # --- Step 4: Fetch wellness with adaptive chunking + meta-retry ---
+    wellness = fetch_wellness_chunked(athlete["id"], oldest, newest, headers)
 
     # --- Step 5: Finalize context ---
     context.update({"auditPartial": False, "auditFinal": False})
