@@ -1,7 +1,6 @@
 """
-Tier-1 — Audit Controller (v16.14-Stable)
-Validates dataset integrity before Tier-2.
-Computes first eventTotals but does not enforce canonical totals.
+Tier-1 — Audit Controller (v16.14-Stable+)
+Ensures dataset integrity and enforces Field Lock Rule for moving_time.
 """
 
 import pandas as pd
@@ -10,30 +9,30 @@ from audit_core.utils import validate_dataset_integrity, validate_wellness_align
 
 
 def run_tier1_controller(df_activities, wellness, context):
-    # --- Step 1: Dataset integrity ---
+   # --- Step 1: Dataset integrity ---
     if df_activities.empty:
         raise ValueError("❌ No activity data received")
 
+    # Field Lock enforcement
+    assert "moving_time" in df_activities.columns, "❌ moving_time field missing from dataset"
+    assert df_activities["moving_time"].gt(0).all(), "❌ moving_time contains zero or negative values"
+
     if df_activities["id"].duplicated().any():
         raise ValueError("❌ Duplicate activity IDs detected")
-
-    total_time_h = df_activities["moving_time"].sum() / 3600
-    if total_time_h <= 0:
-        raise ValueError("❌ Invalid total moving time")
 
     # --- Step 2: Basic variance validation ---
     variance_hours = abs(total_time_h - (df_activities["moving_time"].sum() / 3600))
     if variance_hours > 0.1:
         raise ValueError(f"❌ Time variance {variance_hours:.2f} h exceeds 0.1 h threshold")
 
-    # --- Step 3: Derive base event totals (no enforcement yet) ---
+    # --- Step 3: Derive base event totals ---
     event_hours = df_activities["moving_time"].sum() / 3600
     event_tss = df_activities["icu_training_load"].sum()
     context["tier1_eventTotals"] = {"hours": event_hours, "tss": event_tss}
     context.pop("dailyTotals", None)
     context["df_events"] = df_activities
 
-    # --- Step 4: Cross-verification (tolerance only) ---
+    # --- Step 4: Cross-verification ---
     if abs(event_hours - context["tier1_eventTotals"]["hours"]) > 0.1:
         raise AuditHalt("Tier-1: variance >0.1 h within event dataset.")
     if abs(event_tss - context["tier1_eventTotals"]["tss"]) > 2:
@@ -45,20 +44,19 @@ def run_tier1_controller(df_activities, wellness, context):
     else:
         validate_wellness_alignment(df_activities, wellness)
 
-    # --- Step 6: Build merged daily summary for renderer ---
+    # --- Step 6: Daily summary build ---
     df_activities["date"] = pd.to_datetime(df_activities["start_date_local"]).dt.date
     daily_summary = (
         df_activities.groupby("date")
         .agg({
             "icu_training_load": "sum",
             "moving_time": lambda x: round(x.sum() / 3600, 2),
-            "name": lambda x: ", ".join(x.head(2)),  # up to 2 event names/day
+            "name": lambda x: ", ".join(x.head(2)),
         })
         .rename(columns={"icu_training_load": "load", "moving_time": "hours"})
         .reset_index()
     )
 
-    # Attach full wellness fieldset for Unified Framework v5.1
     if wellness and len(wellness) > 0:
         df_well = pd.DataFrame(wellness)[[
             "id", "sleepSecs", "sleepScore", "hrv", "restingHR",
@@ -73,31 +71,25 @@ def run_tier1_controller(df_activities, wellness, context):
 
     context["dailyMerged"] = daily_summary
 
-    # --- Step 6b: Inline qualitative translation for subjective markers ---
-    # RPE + FEEL
-    if "rpe" in daily_summary.columns:
-        rpe_map = {
-            1: "very easy", 2: "easy", 3: "moderate", 4: "somewhat hard",
-            5: "hard", 6: "very hard", 7: "maximal", 8: "maximal+", 9: "extreme", 10: "all out"
-        }
-        daily_summary["rpe_label"] = daily_summary["rpe"].map(rpe_map).fillna(daily_summary["rpe"].astype(str))
-
-    if "feel" in daily_summary.columns:
-        feel_map = {1: "very bad", 2: "bad", 3: "neutral", 4: "good", 5: "very good"}
-        daily_summary["feel_label"] = daily_summary["feel"].map(feel_map).fillna(daily_summary["feel"].astype(str))
-
-    # Subjective 1–5 markers
+    # --- Step 6b: Qualitative label translation (unchanged) ---
+    rpe_map = {
+        1: "very easy", 2: "easy", 3: "moderate", 4: "somewhat hard",
+        5: "hard", 6: "very hard", 7: "maximal", 8: "maximal+", 9: "extreme", 10: "all out"
+    }
+    feel_map = {1: "very bad", 2: "bad", 3: "neutral", 4: "good", 5: "very good"}
     label_map = {1: "very low", 2: "low", 3: "moderate", 4: "high", 5: "very high"}
-    for col in ["fatigue", "stress", "soreness"]:
-        if col in daily_summary.columns:
-            daily_summary[f"{col}_label"] = daily_summary[col].map(label_map).fillna(daily_summary[col])
-
-    # Mood / motivation / hydration / readiness maps
     mood_map = {1: "very bad", 2: "bad", 3: "neutral", 4: "good", 5: "very good"}
     motiv_map = {1: "none", 2: "low", 3: "moderate", 4: "good", 5: "excellent"}
     hydr_map = {1: "overhydrated", 2: "slightly high", 3: "optimal", 4: "slightly low", 5: "dehydrated"}
     ready_map = {1: "very poor", 2: "poor", 3: "fair", 4: "good", 5: "excellent"}
 
+    if "rpe" in daily_summary.columns:
+        daily_summary["rpe_label"] = daily_summary["rpe"].map(rpe_map).fillna(daily_summary["rpe"].astype(str))
+    if "feel" in daily_summary.columns:
+        daily_summary["feel_label"] = daily_summary["feel"].map(feel_map).fillna(daily_summary["feel"].astype(str))
+    for col in ["fatigue", "stress", "soreness"]:
+        if col in daily_summary.columns:
+            daily_summary[f"{col}_label"] = daily_summary[col].map(label_map).fillna(daily_summary[col])
     for col, cmap in {
         "mood": mood_map,
         "motivation": motiv_map,
