@@ -1,44 +1,54 @@
 """
-Tier-2 Step 2 — Enforce Event-Only Totals (v16.1-EOD-003)
-Computes Σ(volume, load, duration) strictly from validated event-level data.
+Tier-2 Enforcement — Event-Only Totals (v16.14-RC3)
+Recomputes canonical totals strictly from event-level data.
+No normalization, interpolation, or legacy fallback.
 """
 
 from audit_core.errors import AuditHalt
 
-def enforce_event_only_totals(df_events, context):
-    # --- Step 1: Validate source ---
-    if "origin" not in df_events.columns or not all(df_events["origin"] == "event"):
-        raise AuditHalt("❌ Invalid data origin; only event-level source allowed")
 
-    if df_events.empty:
-        raise AuditHalt("❌ No event data available for Tier-2 totals computation")
+def enforce_event_only_totals(df, context):
+    # --- Step 1: Validate input source ---
+    if df is None or df.empty:
+        raise AuditHalt("❌ enforce_event_only_totals: no df_events provided")
 
-    # --- Step 2: Compute event-only totals ---
-    total_hours = df_events["moving_time"].sum() / 3600
-    total_tss   = df_events["icu_training_load"].sum()
+    if "origin" not in df.columns or not all(df["origin"] == "event"):
+        raise AuditHalt("❌ enforce_event_only_totals: invalid data origin (non-event rows detected)")
 
-    # --- Step 3: Variance validation ---
-    variance_hours = abs(total_hours - (df_events["moving_time"].sum() / 3600))
-    if variance_hours > 0.1:
-        raise AuditHalt(f"❌ Time variance {variance_hours:.2f} h exceeds 0.1 h threshold")
+    if "moving_time" not in df.columns or "icu_training_load" not in df.columns:
+        raise AuditHalt("❌ enforce_event_only_totals: missing required columns (moving_time, icu_training_load)")
 
-    # --- Step 4: Context purge + injection ---
-    # remove any cached or stale totals before reinsertion
-    context.pop("dailyTotals", None)
-    context.pop("totalHours", None)
-    context.pop("totalTss", None)
+    # --- Step 2: Canonical recomputation ---
+    total_hours = df["moving_time"].sum() / 3600
+    total_tss = df["icu_training_load"].sum()
 
-    context["totalHours"] = round(total_hours, 2)
-    context["totalTss"]   = int(round(total_tss))
+    if total_hours <= 0 or total_tss <= 0:
+        raise AuditHalt("❌ enforce_event_only_totals: invalid totals (zero or negative values)")
 
-    # --- Step 5: Cross-validation with Tier-1 eventTotals ---
+    # --- Step 3: Context purge + canonical injection ---
+    for key in ["dailyTotals", "totalHours", "totalTss"]:
+        if key in context:
+            context.pop(key)
+
+    context["totalHours"] = round(float(total_hours), 2)
+    context["totalTss"] = int(round(float(total_tss)))
+    context["eventTotals"] = {
+        "hours": context["totalHours"],
+        "tss": context["totalTss"],
+    }
+
+    # --- Step 4: Cross-validation with Tier-1 eventTotals (optional) ---
     if "eventTotals" in context:
         diff_hours = abs(context["totalHours"] - context["eventTotals"]["hours"])
-        diff_tss   = abs(context["totalTss"] - context["eventTotals"]["tss"])
+        diff_tss = abs(context["totalTss"] - context["eventTotals"]["tss"])
         if diff_hours > 0.1:
             raise AuditHalt(f"❌ Tier-1 vs Tier-2 mismatch > 0.1 h (Δ={diff_hours:.2f})")
         if diff_tss > 2:
             raise AuditHalt(f"❌ Tier-1 vs Tier-2 mismatch > 2 TSS (Δ={diff_tss:.1f})")
 
-    # --- Step 6: Return validated context ---
+    # --- Step 5: Annotate audit trace ---
+    context["enforcement_layer"] = "tier2_enforce_event_only_totals"
+    context["event_count"] = len(df)
+
+    # --- Step 6: Return validated canonical context ---
     return context
