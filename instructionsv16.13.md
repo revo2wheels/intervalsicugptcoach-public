@@ -1,6 +1,10 @@
 # Intervals ICU Training Coach v3  
 # Instructions ver 16.13 — Unified Reporting Framework v5.1  
 
+ruleset_version: "v16.14"
+rules_endpoint: "https://api.github.com/repos/revo2wheels/intervalsicugptcoach-public/contents/all-modules.md"
+use_schema: true
+
 ---
 
 ## Core Behavior

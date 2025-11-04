@@ -68,6 +68,13 @@ def finalize_and_validate_render(context, reportType="weekly"):
             print(f"⚠ Markdown render fallback: {e}")
             context["event_log_text"] = df_daily.to_string(index=False)
 
+    # --- FIX: Field Lock Enforcement (v5.1 §2.1.3) ---
+    # Ensure canonical Tier-2 totals are bound to summary context before render
+    if "eventTotals" in context:
+        context["summary"] = context.get("summary", {})
+        context["summary"]["hours"] = context["eventTotals"].get("hours", 0)
+        context["summary"]["tss"] = context["eventTotals"].get("tss", 0)
+
     # --- Step 5: Generate Report (no recomputation, uses enforced totals) ---
     report = render_template(
         reportType,
