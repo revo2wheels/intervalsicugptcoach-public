@@ -35,14 +35,21 @@ def enforce_event_only_totals(df, context):
         if diff_tss > 2:
             raise AuditHalt(f"❌ Tier-1 vs Tier-2 mismatch > 2 TSS (Δ={diff_tss:.1f})")
 
-    # --- Step 4: Context purge + canonical injection (v16.14-FIX) ---
+    # --- Step 4: Context purge + canonical injection (v16.14-FIX-B) ---
     for key in ["dailyTotals", "totalHours", "totalTss"]:
         context.pop(key, None)
 
-    # compute canonical event-only totals directly from df_events
-    total_hours = df["moving_time"].sum() / 3600
-    total_tss = df["icu_training_load"].sum()
-    total_distance = df["distance"].sum() / 1000 if "distance" in df else 0
+    # use the verified event-only DataFrame
+    df_verified = context.get("df_event_only", context.get("df_events"))
+
+    if df_verified is None or df_verified.empty:
+        raise AuditHalt("❌ Tier-2: verified df_event_only missing before canonical injection")
+
+    total_hours = df_verified["moving_time"].sum() / 3600
+    total_tss = df_verified["icu_training_load"].sum()
+    total_distance = (
+        df_verified["distance"].sum() / 1000 if "distance" in df_verified else 0
+    )
 
     context["totalHours"] = round(total_hours, 2)
     context["totalTss"] = int(round(total_tss))
@@ -55,6 +62,7 @@ def enforce_event_only_totals(df, context):
         "source": "tier2_enforce_event_only_totals",
     }
     context["enforcement_layer"] = "tier2_enforce_event_only_totals"
+
 
     # --- Step 5: Annotate audit trace ---
     context["enforcement_layer"] = "tier2_enforce_event_only_totals"
