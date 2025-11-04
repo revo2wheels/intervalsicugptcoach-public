@@ -55,6 +55,22 @@ def finalize_and_validate_render(context, reportType="weekly"):
     context["force_icon_pack"] = True
     context["icon_legend"] = render_icon_legend()
 
+        # --- Compact Event Log formatting (v5.1-CompactLayout) ---
+    df_daily = context.get("dailyMerged")
+    if df_daily is not None and not df_daily.empty:
+        import pandas as pd
+        pd.options.display.width = 160
+        pd.options.display.max_colwidth = 14
+        pd.options.display.colheader_justify = "center"
+
+        # compact numeric display
+        fmt = {"float_format": "{:.1f}".format, "col_space": 6, "justify": "center"}
+        try:
+            context["event_log_markdown"] = df_daily.to_markdown(index=False, **fmt)
+        except Exception:
+            # fallback to plain conversion if markdown fails
+            context["event_log_markdown"] = df_daily.to_string(index=False, col_space=6)
+
     # --- Step 2 : Generate Report ---
     report = render_template(
         reportType,
