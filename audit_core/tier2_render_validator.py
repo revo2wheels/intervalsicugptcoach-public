@@ -1,12 +1,12 @@
 """
-Tier-2 Step 8 — Render Validator (v16.1.4-EOD-005 + UICompact Patch v16.14-RC2)
+Tier-2 Step 8 — Render Validator (v16.1.4-EOD-005 + PlainTable Patch v16.14-RC3)
 Strict event-only enforcement.
 Removes legacy load-weighted duration fallback.
-Adds compact UI table rendering for Event Log.
+Adds markdown-compatible Event Log render for plain UI output.
 """
 
 import time
-from html import escape
+import pandas as pd
 from audit_core.errors import AuditHalt
 from audit_core.report_validator import validate_report_output
 from audit_core.report_schema_guard import enforce_report_schema
@@ -45,9 +45,8 @@ def finalize_and_validate_render(context, reportType="weekly"):
     total_tss = context.get("totalTss")
     context.pop("dailyTotals", None)
 
-    # --- STRICT: no fallback or normalization ---
     if total_hours is None or total_tss is None:
-        raise AuditHalt("❌ Missing event-only totals for renderer input (Σ event.moving_time / 3600)")
+        raise AuditHalt("❌ Missing event-only totals for renderer input")
 
     context["totalHours"] = round(float(total_hours), 2)
     context["totalTss"] = int(round(float(total_tss)))
@@ -58,40 +57,18 @@ def finalize_and_validate_render(context, reportType="weekly"):
     context["force_icon_pack"] = True
     context["icon_legend"] = render_icon_legend()
 
-    # --- Compact Event Log UI render (v5.1-UICompact) ---
+    # --- Compact Event Log render (Markdown) ---
     df_daily = context.get("dailyMerged")
     if df_daily is not None and not df_daily.empty:
-        import pandas as pd
         pd.options.display.width = 160
         pd.options.display.max_colwidth = 14
         pd.options.display.colheader_justify = "center"
 
-        def to_ui_table(df):
-            headers = "".join(
-                f"<th class='px-2 py-1 text-center text-xs font-medium'>{escape(str(c))}</th>"
-                for c in df.columns
-            )
-            rows = []
-            for _, row in df.iterrows():
-                cells = "".join(
-                    f"<td class='px-2 py-1 text-center text-xs'>{escape(str(v))}</td>" for v in row
-                )
-                rows.append(f"<tr>{cells}</tr>")
-            table = (
-                "<table class='event-log w-full text-[0.85em] border-collapse table-fixed'>"
-                f"<thead><tr>{headers}</tr></thead>"
-                f"<tbody>{''.join(rows)}</tbody>"
-                "</table>"
-            )
-            return table
-
         try:
-            context["event_log_html"] = to_ui_table(df_daily)
+            context["event_log_text"] = df_daily.to_markdown(index=False, tablefmt="github")
         except Exception as e:
-            print(f"⚠ UI table render fallback: {e}")
-            context["event_log_html"] = df_daily.to_html(
-                index=False, classes="event-log compact", border=0
-            )
+            print(f"⚠ Markdown render fallback: {e}")
+            context["event_log_text"] = df_daily.to_string(index=False)
 
     # --- Step 2 : Generate Report ---
     report = render_template(
@@ -100,9 +77,7 @@ def finalize_and_validate_render(context, reportType="weekly"):
         context=context,
     )
 
-    # --------------------------------------------------------------
-    # 5.5  Metabolic Efficiency  (v16.14-RC1)
-    # --------------------------------------------------------------
+    # --- Derived Metrics Injection (unchanged) ---
     if context.get("auditFinal", False):
         dm = context.get("metrics", {}).get("derived", {})
         if dm and any(k in dm for k in [
@@ -119,23 +94,15 @@ def finalize_and_validate_render(context, reportType="weekly"):
             ])
             report.add_line("Derived metrics validated ✅ (FOxI/CUR/GR variance < 1 %)")
 
-    # --------------------------------------------------------------
-    # End Metabolic Efficiency Section
-    # --------------------------------------------------------------
-
-    # --- Step 3 : Framework Compliance Validation ---
+    # --- Validation Chain ---
     compliance = validate_report_output(context, report)
-
-    # --- Step 4 : Schema Validation ---
     enforce_report_schema(report)
 
-    # --- Step 5 : Cross-check Consistency ---
     diff_hours = abs(context["totalHours"] - context.get("eventTotals", {}).get("hours", 0))
     diff_tss = abs(context["totalTss"] - context.get("eventTotals", {}).get("tss", 0))
     if diff_hours > 0.1 or diff_tss > 2:
         raise AuditHalt(f"❌ Renderer mismatch Δh={diff_hours:.2f}, ΔTSS={diff_tss:.1f}")
 
-    # --- Step 6 : Finalize Compliance Log ---
     compliance.update({
         "schema_validated": True,
         "framework": "Unified_Reporting_Framework_v5.1",
@@ -143,5 +110,5 @@ def finalize_and_validate_render(context, reportType="weekly"):
         "validation_status": "✅ Full Framework + Schema Validation Passed",
     })
 
-    print("✅ Report passed both framework and schema validation (UICompact layout).")
+    print("✅ Report passed both framework and schema validation (Markdown layout).")
     return report, compliance
