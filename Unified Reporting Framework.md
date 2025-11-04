@@ -64,7 +64,7 @@ Audit: {auditStatus} | Integrity: {integrityFlag}
 ## 2. 📊 Key Stats  
 | Metric | Value | Δ | Status |
 |:--|--:|:--:|:--:|
-| Volume (h) | {{ context["eventTotals"]["hours"] if "eventTotals" in context else 0 | round(2) }} | {{ ΔHours | round(1) }} | — |
+| Volume (h) | {{ (context["eventTotals"]["hours"] if "eventTotals" in context else 0) | round(2) }} | {{ ΔHours | round(1) }} | — |
 | Load (TSS) | {totalTss} | {ΔTss} | — |
 | Avg IF | {avgIF:.2f} | — | — |
 | ACWR | {acwr:.2f} | — | {acwrFlag} |
@@ -98,8 +98,8 @@ Displays validated, merged daily sessions after the Event Completeness Rule.
 
 **Render logic:**  
 - One row = one calendar day.  
-- Duration = context["eventTotals"]["hours"]
-- Load = Σ icu_training_load.  
+## Duration = context["eventTotals"]["hours"]
+## Load = Σ icu_training_load.  
 - RPE = max per day; Feel = min per day; IF = mean.  
 - Appears only when `reportType == "weekly"`.  
 
