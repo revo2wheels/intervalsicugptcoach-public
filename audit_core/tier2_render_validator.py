@@ -74,6 +74,9 @@ def finalize_and_validate_render(context, reportType="weekly"):
             print(f"⚠ Markdown render fallback: {e}")
             context["event_log_text"] = df_daily.to_string(index=False)
 
+    # Safety lock: ensure only df_events is used for all Σ computations
+    context["df_all"] = context.get("df_events")
+
     # --- Step 5: Generate Report (no recomputation, uses enforced totals) ---
     report = render_template(
         reportType,
