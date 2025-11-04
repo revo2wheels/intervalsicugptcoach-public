@@ -15,11 +15,12 @@
 ## Intent Routing Layer (v1.1)
 **Purpose:** Normalize user phrases into report controller calls.  
 **Scope:** All chat, console, and API inputs.  
- **Default:** run_report("weekly",
+**Default:** run_report("weekly",
     auditFinal=True,
     auditPartial=True,
     force_analysis=True,
     preRenderAudit=True,
+    tier2_enforce_event_only_totals=True,
     render_mode="full",
     autoCommit=True,
     suppressPrompts=True)
@@ -39,6 +40,7 @@
 - Direct Tier-2 calls disabled for normal users.  
 - All routed reports set `auditFinal=True`.  
 - Tier-0 pre-audit automatically runs all three fetches: `activities`, `wellness`, `profile`.
+- Tier-2 canonical totals (`enforce_event_only_totals`) automatically executed for all report routes when auditFinal=True.
 
 ---
 
