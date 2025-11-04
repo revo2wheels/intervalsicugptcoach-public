@@ -83,18 +83,18 @@ def run_tier0_pre_audit(user_cmd: str, context: dict):
     if not ICU_TOKEN:
         raise EnvironmentError("Missing Intervals.icu token. Set ICU_OAUTH or ICU_API_KEY env var.")
 
-    # --- Enforce clean state before data fetch ---
-    if context:
-        purge_keys = ["eventTotals", "dailyMerged", "df_events", "athleteProfile"]
-        for key in purge_keys:
-            if key in context:
-                del context[key]
-        context["auditPartial"] = False
-        context["auditFinal"] = False
-        context["purge_enforced"] = True
-        print("🧹 Tier-0 purge enforced — previous cache cleared.")
+    # --- Always purge before data fetch ---
+    purge_keys = ["eventTotals", "dailyMerged", "df_events", "athleteProfile"]
+    for key in purge_keys:
+        context.pop(key, None)
+
+    context["auditPartial"] = False
+    context["auditFinal"] = False
+    context["purge_enforced"] = True
+    print("🧹 Tier-0 purge enforced — previous cache cleared.")
 
     headers = {"Authorization": f"Bearer {ICU_TOKEN}"}
+
 
     # --- Step 1: Fetch athlete profile ---
     profile_resp = fetch_with_retry(f"{INTERVALS_API}/athlete", headers)
