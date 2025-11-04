@@ -1,5 +1,5 @@
 """
-Tier-2 Enforcement — Event-Only Totals (v16.14-RC3)
+Tier-2 Enforcement — Event-Only Totals (v16.14-Stable)
 Recomputes canonical totals strictly from event-level data.
 No normalization, interpolation, or legacy fallback.
 """
@@ -25,7 +25,17 @@ def enforce_event_only_totals(df, context):
     if total_hours <= 0 or total_tss <= 0:
         raise AuditHalt("❌ enforce_event_only_totals: invalid totals (zero or negative values)")
 
-    # --- Step 3: Context purge + canonical injection ---
+    # --- Step 3: Compare with Tier-1 snapshot before overwrite ---
+    tier1_totals = context.get("tier1_eventTotals", {}).copy()
+    if tier1_totals:
+        diff_hours = abs(total_hours - tier1_totals.get("hours", 0))
+        diff_tss = abs(total_tss - tier1_totals.get("tss", 0))
+        if diff_hours > 0.1:
+            raise AuditHalt(f"❌ Tier-1 vs Tier-2 mismatch > 0.1 h (Δ={diff_hours:.2f})")
+        if diff_tss > 2:
+            raise AuditHalt(f"❌ Tier-1 vs Tier-2 mismatch > 2 TSS (Δ={diff_tss:.1f})")
+
+    # --- Step 4: Context purge + canonical injection ---
     for key in ["dailyTotals", "totalHours", "totalTss"]:
         if key in context:
             context.pop(key)
@@ -36,15 +46,6 @@ def enforce_event_only_totals(df, context):
         "hours": context["totalHours"],
         "tss": context["totalTss"],
     }
-
-    # --- Step 4: Cross-validation with Tier-1 eventTotals (optional) ---
-    if "eventTotals" in context:
-        diff_hours = abs(context["totalHours"] - context["eventTotals"]["hours"])
-        diff_tss = abs(context["totalTss"] - context["eventTotals"]["tss"])
-        if diff_hours > 0.1:
-            raise AuditHalt(f"❌ Tier-1 vs Tier-2 mismatch > 0.1 h (Δ={diff_hours:.2f})")
-        if diff_tss > 2:
-            raise AuditHalt(f"❌ Tier-1 vs Tier-2 mismatch > 2 TSS (Δ={diff_tss:.1f})")
 
     # --- Step 5: Annotate audit trace ---
     context["enforcement_layer"] = "tier2_enforce_event_only_totals"

@@ -1,7 +1,7 @@
 """
-Tier-1 — Audit Controller (v16.14-RC3)
+Tier-1 — Audit Controller (v16.14-Stable)
 Validates dataset integrity before Tier-2.
-Computes first eventTotals but does not enforce.
+Computes first eventTotals but does not enforce canonical totals.
 """
 
 import pandas as pd
@@ -29,14 +29,14 @@ def run_tier1_controller(df_activities, wellness, context):
     # --- Step 3: Derive base event totals (no enforcement yet) ---
     event_hours = df_activities["moving_time"].sum() / 3600
     event_tss = df_activities["icu_training_load"].sum()
-    context["eventTotals"] = {"hours": event_hours, "tss": event_tss}
+    context["tier1_eventTotals"] = {"hours": event_hours, "tss": event_tss}
     context.pop("dailyTotals", None)
     context["df_events"] = df_activities
 
     # --- Step 4: Cross-verification (tolerance only) ---
-    if abs(event_hours - context["eventTotals"]["hours"]) > 0.1:
+    if abs(event_hours - context["tier1_eventTotals"]["hours"]) > 0.1:
         raise AuditHalt("Tier-1: variance >0.1 h within event dataset.")
-    if abs(event_tss - context["eventTotals"]["tss"]) > 2:
+    if abs(event_tss - context["tier1_eventTotals"]["tss"]) > 2:
         raise AuditHalt("Tier-1: variance >2 TSS within event dataset.")
 
     # --- Step 5: Wellness alignment check ---

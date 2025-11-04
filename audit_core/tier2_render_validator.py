@@ -1,5 +1,5 @@
 """
-Tier-2 Step 8 — Render Validator (v16.14-RC4)
+Tier-2 Step 8 — Render Validator (v16.14-Stable)
 Final validation and schema enforcement.
 Strict event-only verification.
 Removes legacy recomputation, ensures canonical totals from Tier-2.
@@ -31,6 +31,10 @@ def finalize_and_validate_render(context, reportType="weekly"):
     # Verify canonical totals exist
     if "totalHours" not in context or "totalTss" not in context:
         raise AuditHalt("❌ Renderer: totals missing from context (Tier-2 enforcement skipped)")
+
+    # Ensure enforcement provenance
+    if context.get("enforcement_layer") != "tier2_enforce_event_only_totals":
+        raise AuditHalt("❌ Renderer: canonical enforcement layer missing (Tier-2 not finalized)")
 
     # Direct verification (no recalculation stored)
     diff_h = abs((df["moving_time"].sum() / 3600) - context["totalHours"])
