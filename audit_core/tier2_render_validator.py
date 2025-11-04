@@ -75,6 +75,11 @@ def finalize_and_validate_render(context, reportType="weekly"):
         context["summary"]["hours"] = context["eventTotals"].get("hours", 0)
         context["summary"]["tss"] = context["eventTotals"].get("tss", 0)
 
+    # --- FIX EXTENSION: enforce Tier-2 totals for Key Stats & Header (v16.14-A1) ---
+    context["totalHours"] = context["eventTotals"].get("hours", 0)
+    context["totalTss"] = context["eventTotals"].get("tss", 0)
+    context["totalDistance"] = context["eventTotals"].get("distance", 0)
+
     # --- Step 5: Generate Report (no recomputation, uses enforced totals) ---
     report = render_template(
         reportType,
