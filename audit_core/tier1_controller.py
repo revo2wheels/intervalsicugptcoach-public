@@ -77,6 +77,20 @@ def run_tier1_controller(df_activities, wellness, context):
 
     context["dailyMerged"] = daily_summary
 
+    # --- Inline translation of RPE and FEEL to qualitative labels ---
+    if "rpe" in daily_summary.columns:
+        rpe_map = {
+            1: "very easy", 2: "easy", 3: "moderate", 4: "somewhat hard",
+            5: "hard", 6: "very hard", 7: "maximal", 8: "maximal+", 9: "extreme", 10: "all out"
+        }
+        daily_summary["rpe_label"] = daily_summary["rpe"].map(rpe_map).fillna(daily_summary["rpe"].astype(str))
+
+    if "feel" in daily_summary.columns:
+        feel_map = {
+            1: "very bad", 2: "bad", 3: "neutral", 4: "good", 5: "very good"
+        }
+        daily_summary["feel_label"] = daily_summary["feel"].map(feel_map).fillna(daily_summary["feel"].astype(str))
+
     # --- Step 7: Finalize ---
     context["auditPartial"] = True
     context["auditFinal"] = False
