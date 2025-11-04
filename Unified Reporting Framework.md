@@ -64,7 +64,7 @@ Audit: {auditStatus} | Integrity: {integrityFlag}
 ## 2. 📊 Key Stats  
 | Metric | Value | Δ | Status |
 |:--|--:|:--:|:--:|
-| Volume (h) | {totalHours:.2f} | {ΔHours:.1f} | — |
+| Volume (h) | {{ context["eventTotals"]["hours"] if "eventTotals" in context else 0 | round(2) }} | {{ ΔHours | round(1) }} | — |
 | Load (TSS) | {totalTss} | {ΔTss} | — |
 | Avg IF | {avgIF:.2f} | — | — |
 | ACWR | {acwr:.2f} | — | {acwrFlag} |
