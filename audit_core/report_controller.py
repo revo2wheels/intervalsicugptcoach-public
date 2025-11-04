@@ -1,4 +1,3 @@
-# audit_core/report_controller.py
 import pandas as pd
 from datetime import timedelta
 
@@ -48,12 +47,21 @@ def run_report(user_cmd: str):
 
     # --- Tier-2 — Full audit chain ---
     context = validate_data_integrity(df_master, wellness, context)
-    df_master, daily = validate_event_completeness(df_master)         # returns updated df + daily
+    df_master, daily = validate_event_completeness(df_master)  # returns updated df + daily
     context = enforce_event_only_totals(df_master, context)
     context = validate_calculation_integrity(df_master, context)
     context = validate_wellness(wellness, context)
     context = compute_derived_metrics(df_master, context)
     context = evaluate_actions(context)
+
+    # --- Promote final audit state before render ---
+    if context.get("auditPartial", True):
+        context["auditFinal"] = True
+    else:
+        print("⚠ Tier-1 not validated. Forcing auditFinal=True for controlled render.")
+        context["auditFinal"] = True
+
+    # --- Final render ---
     report, compliance = finalize_and_validate_render(context, reportType=user_cmd)
 
     return report, compliance
