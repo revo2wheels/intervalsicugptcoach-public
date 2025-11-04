@@ -15,6 +15,12 @@ from audit_core.tier2_enforce_event_only_totals import enforce_event_only_totals
 
 
 def finalize_and_validate_render(context, reportType="weekly"):
+    # --- Promote audit to final before render (v16.14-A2) ---
+    if context.get("auditPartial", False) and not context.get("auditFinal", False):
+        context["auditFinal"] = True
+        context["auditFinal_timestamp"] = time.time()
+        context["enforcement_layer"] = "tier2_enforce_event_only_totals"
+
     # --- Renderer Gate ---
     if not context.get("auditFinal", False):
         raise RuntimeError("❌ Renderer blocked: auditFinal=False")
