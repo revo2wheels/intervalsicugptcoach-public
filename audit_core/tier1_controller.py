@@ -48,6 +48,30 @@ def run_tier1_controller(df_activities, wellness, context):
     else:
         validate_wellness_alignment(df_activities, wellness)
 
+    # --- Step 6b: Build merged daily summary for renderer ---
+    df_activities["date"] = pd.to_datetime(df_activities["start_date_local"]).dt.date
+    daily_summary = (
+        df_activities.groupby("date")
+        .agg({
+            "icu_training_load": "sum",
+            "moving_time": lambda x: round(x.sum() / 3600, 2),
+            "name": lambda x: ", ".join(x.head(2)),  # up to 2 event names/day
+        })
+        .rename(columns={"icu_training_load": "load", "moving_time": "hours"})
+        .reset_index()
+    )
+
+    # Attach wellness fields if available
+    if wellness and len(wellness) > 0:
+        df_well = pd.DataFrame(wellness)[["id", "sleepSecs", "sleepScore", "hrv", "restingHR"]]
+        df_well.rename(columns={"id": "date"}, inplace=True)
+        df_well["date"] = pd.to_datetime(df_well["date"]).dt.date
+        df_well["sleep_h"] = (df_well["sleepSecs"] / 3600).round(2)
+        df_well.drop(columns=["sleepSecs"], inplace=True)
+        daily_summary = pd.merge(daily_summary, df_well, on="date", how="left")
+
+    context["dailyMerged"] = daily_summary
+
     # --- Step 7: Finalize ---
     context["auditPartial"] = True
     context["auditFinal"] = False
