@@ -98,7 +98,7 @@ Displays validated, merged daily sessions after the Event Completeness Rule.
 
 **Render logic:**  
 - One row = one calendar day.  
-- Duration = Σ moving_time / 3600.  
+- Duration = context["eventTotals"]["hours"]
 - Load = Σ icu_training_load.  
 - RPE = max per day; Feel = min per day; IF = mean.  
 - Appears only when `reportType == "weekly"`.  
