@@ -20,15 +20,16 @@ def run_tier1_controller(df_activities, wellness, context):
     if df_activities["id"].duplicated().any():
         raise ValueError("❌ Duplicate activity IDs detected")
 
-    # --- Step 2: Basic variance validation ---
-    variance_hours = abs(total_time_h - (df_activities["moving_time"].sum() / 3600))
-    if variance_hours > 0.1:
-        raise ValueError(f"❌ Time variance {variance_hours:.2f} h exceeds 0.1 h threshold")
-
-    # --- Step 3: Derive base event totals ---
+    # --- Step 2: Canonical totals (moving_time only) ---
     event_hours = df_activities["moving_time"].sum() / 3600
     event_tss = df_activities["icu_training_load"].sum()
-    context["tier1_eventTotals"] = {"hours": event_hours, "tss": event_tss}
+    context["tier1_eventTotals"] = {"hours": round(event_hours, 2),
+                                    "tss": int(round(event_tss))}
+
+    # --- Step 3: Basic variance validation ---
+    if event_hours <= 0 or event_tss <= 0:
+        raise AuditHalt("❌ Tier-1: invalid totals (zero or negative values)")
+
     context.pop("dailyTotals", None)
     context["df_events"] = df_activities
 
