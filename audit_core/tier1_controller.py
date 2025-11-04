@@ -46,16 +46,16 @@ def run_tier1_controller(df_activities, wellness, context):
 
     # --- Step 6: Daily summary build ---
     df_activities["date"] = pd.to_datetime(df_activities["start_date_local"]).dt.date
-    daily_summary = (
-        df_activities.groupby("date")
-        .agg({
-            "icu_training_load": "sum",
-            "moving_time": lambda x: round(x.sum() / 3600, 2),
-            "name": lambda x: ", ".join(x.head(2)),
-        })
-        .rename(columns={"icu_training_load": "load", "moving_time": "hours"})
-        .reset_index()
-    )
+   # daily_summary = (
+   #     df_activities.groupby("date")
+   #     .agg({
+   #         "icu_training_load": "sum",
+   #         "moving_time": lambda x: round(x.sum() / 3600, 2),
+   #         "name": lambda x: ", ".join(x.head(2)),
+   #    })
+   #     .rename(columns={"icu_training_load": "load", "moving_time": "hours"})
+   #     .reset_index()
+   # )
 
     if wellness and len(wellness) > 0:
         df_well = pd.DataFrame(wellness)[[
