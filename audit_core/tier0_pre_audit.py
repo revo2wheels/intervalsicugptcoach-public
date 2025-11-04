@@ -159,6 +159,10 @@ def run_tier0_pre_audit(user_cmd: str, context: dict):
     df_activities["date"] = df_activities["start_date_local"].dt.date
     df_activities["origin"] = "event"
 
+ # Canonical duration field enforcement (v16.14-FIX-C)
+if "elapsed_time" in df_activities.columns and "moving_time" in df_activities.columns:
+    df_activities["elapsed_time"] = df_activities["moving_time"]
+
     # --- Step 4: Fetch wellness with adaptive chunking + meta-retry ---
     wellness = fetch_wellness_chunked(athlete["id"], oldest, newest, headers)
 
