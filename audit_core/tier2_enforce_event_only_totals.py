@@ -50,7 +50,7 @@ def enforce_event_only_totals(df, context):
     total_distance = (
         df_verified["distance"].sum() / 1000 if "distance" in df_verified else 0
     )
- 
+
     context["totalHours"] = round(total_hours, 2)
     context["totalTss"] = int(round(total_tss))
     context["totalDistance"] = round(total_distance, 1)
@@ -63,6 +63,11 @@ def enforce_event_only_totals(df, context):
     }
     context["enforcement_layer"] = "tier2_enforce_event_only_totals"
 
+    # --- Hard-lock canonical totals (v16.14-FINAL) ---
+    context.setdefault("_locked_totals", True)
+    context["locked_totalHours"] = context["totalHours"]
+    context["locked_totalTss"] = context["totalTss"]
+    context["locked_totalDistance"] = context["totalDistance"]
 
     # --- Step 5: Annotate audit trace ---
     context["enforcement_layer"] = "tier2_enforce_event_only_totals"
