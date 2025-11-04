@@ -131,7 +131,7 @@ def run_tier0_pre_audit(user_cmd: str, context: dict):
     mode, oldest, newest = resolve_report_trigger(user_cmd, context["timezone"])
     context.update({"report_mode": mode, "window_start": oldest, "window_end": newest})
 
-    # --- Step 3: Fetch activities (adaptive chunking, v16.14-FIX-E) ---
+   # --- Step 3: Fetch activities (adaptive chunking, v16.14-FIX-E) ---
     est_payload_acts = estimate_payload_size((newest - oldest).days + 1, "activities")
     act_chunk_days = 7 if est_payload_acts < 200000 else 3
 
@@ -141,7 +141,11 @@ def run_tier0_pre_audit(user_cmd: str, context: dict):
     for offset in range(0, total_days, act_chunk_days):
         chunk_start = oldest + timedelta(days=offset)
         # FIX: make end exclusive to avoid 1-day overlap between chunks
-        chunk_end = min(newest, chunk_start + timedelta(days=act_chunk_days))
+        chunk_end = min(newest, chunk_start + timedelta(days=act_chunk_days)) - timedelta(seconds=1)
+
+        # DEBUG: log each fetch range for verification
+        print(f"[Tier-0 fetch] chunk_start={chunk_start}  chunk_end={chunk_end}")
+
         acts_url = f"{INTERVALS_API}/activities?oldest={chunk_start}&newest={chunk_end}"
         acts_resp = fetch_with_retry(acts_url, headers)
         if acts_resp.status_code != 200:
