@@ -92,21 +92,21 @@
 
 ## Output Standards
 - Reports render **only** when `auditFinal=True`.  
-- Must follow the **8-Section Unified Framework** layout:  
-  1. Athlete Profile & Context  
-  2. Summary  
-  3. Event Register  
-  4. Discipline Breakdown  
-  5. Metrics Panel  
-  6. Wellness Alignment  
-  7. Actions & Notes  
-  8. Compliance Footer  
+- Must follow the **10-Section Unified Framework v5.1** layout:  
+  1. Header 🧭  
+  2. Key Stats 📊  
+  3. Event Log (Merged Daily View) 📅  
+  4. Training Quality Section 🧩  
+  5. Efficiency & Adaptation 🔬  
+  6. Metabolic Efficiency 🔋  
+  7. Recovery & Wellness 💓  
+  8. Load Balance ⚖️  
+  9. Performance Insights 🧠  
+  10. Actions 🪜  
 - Duration = Σ(event.moving_time) only.  
-- No derived exposure or load-based conversion.  
-- Display format: distance 2 dp, time hh:mm:ss, TSS integer.  
-- Use full Unified UI Icon Pack via card renderer (🛌, ⏳, ⚙️, 📈, 💤, 🧠) —
-- icons are inherited from card states; no duplication allowed.
-- Variance ≤ 2 %.  
+- Display format: distance 2 dp | time hh:mm:ss | TSS integer.  
+- Use Unified UI Icon Pack 🧭📊📅🧩🔬🔋💓⚖️🧠🪜 (auto-inherit from card states).  
+- Variance ≤ 1 %.  
 - `render_mode="full"` | `output_encoding="utf-8"` | `force_icon_pack=True`.  
 
 ---
