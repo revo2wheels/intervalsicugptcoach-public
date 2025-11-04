@@ -141,4 +141,26 @@ def compute_derived_metrics(df_daily, context):
     # End Metabolic Extension
     # ------------------------------------------------------------------
 
+    # --- Build Unified Derived Metrics Block for Renderer (v5.1) ---
+    # Compute rolling series for display
+    acwr_series = df_daily["icu_training_load"].rolling(7, min_periods=1).sum() / (
+        df_daily["icu_training_load"].rolling(28, min_periods=7).mean()
+    )
+    mono_series = (
+        df_daily["icu_training_load"].rolling(7, min_periods=1).mean()
+        / df_daily["icu_training_load"].rolling(7, min_periods=1).std()
+    )
+    strain_series = mono_series * df_daily["icu_training_load"].rolling(7, min_periods=1).sum()
+    pol_series = pd.Series([context.get("Polarisation", 0.0)] * len(df_daily))
+    rec_index_series = 1 - (mono_series / 5)
+
+    context["derivedMetrics"] = {
+        "acwr": {"value": context["ACWR"], "trend": acwr_series.tail(7).round(2).tolist(), "window": "7d"},
+        "monotony": {"value": context["Monotony"], "trend": mono_series.tail(7).round(2).tolist(), "window": "7d"},
+        "strain": {"value": context["Strain"], "trend": strain_series.tail(7).round(1).tolist(), "window": "7d"},
+        "polarisation": {"value": context["Polarisation"], "trend": pol_series.tail(7).round(2).tolist(), "window": "7d"},
+        "recoveryIndex": {"value": context["RecoveryIndex"], "trend": rec_index_series.tail(7).round(2).tolist(), "window": "7d"}
+    }
+
+
     return context
