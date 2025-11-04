@@ -74,6 +74,14 @@ def finalize_and_validate_render(context, reportType="weekly"):
             print(f"⚠ Markdown render fallback: {e}")
             context["event_log_text"] = df_daily.to_string(index=False)
 
+    print("🔎 Render pre-flight — totals by source:")
+    if "df_events" in context:
+        print("   df_events Σmoving_time =", context["df_events"]["moving_time"].sum() / 3600)
+    if "dailyMerged" in context:
+        print("   dailyMerged Σmoving_time =", context["dailyMerged"]["moving_time"].sum() / 3600)
+    if "eventTotals" in context:
+        print("   eventTotals(hours) =", context["eventTotals"].get("hours"))
+
     # --- SAFETY PATCH: enforce event-only rows before render ---
     if "dailyMerged" in context:
         dfm = context["dailyMerged"]
