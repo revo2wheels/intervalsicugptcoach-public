@@ -1,14 +1,17 @@
 """
-Tier-2 Step 8 — Render Validator (v16.1.4-EOD-005)
+Tier-2 Step 8 — Render Validator (v16.1.4-EOD-005 + UICompact Patch v16.14-RC2)
 Strict event-only enforcement.
 Removes legacy load-weighted duration fallback.
+Adds compact UI table rendering for Event Log.
 """
 
 import time
+from html import escape
 from audit_core.errors import AuditHalt
 from audit_core.report_validator import validate_report_output
 from audit_core.report_schema_guard import enforce_report_schema
 from audit_core.tier2_enforce_event_only_totals import enforce_event_only_totals
+
 
 def finalize_and_validate_render(context, reportType="weekly"):
     # --- Renderer Gate ---
@@ -55,7 +58,7 @@ def finalize_and_validate_render(context, reportType="weekly"):
     context["force_icon_pack"] = True
     context["icon_legend"] = render_icon_legend()
 
-        # --- Compact Event Log formatting (v5.1-CompactLayout) ---
+    # --- Compact Event Log UI render (v5.1-UICompact) ---
     df_daily = context.get("dailyMerged")
     if df_daily is not None and not df_daily.empty:
         import pandas as pd
@@ -63,13 +66,32 @@ def finalize_and_validate_render(context, reportType="weekly"):
         pd.options.display.max_colwidth = 14
         pd.options.display.colheader_justify = "center"
 
-        # compact numeric display
-        fmt = {"float_format": "{:.1f}".format, "col_space": 6, "justify": "center"}
+        def to_ui_table(df):
+            headers = "".join(
+                f"<th class='px-2 py-1 text-center text-xs font-medium'>{escape(str(c))}</th>"
+                for c in df.columns
+            )
+            rows = []
+            for _, row in df.iterrows():
+                cells = "".join(
+                    f"<td class='px-2 py-1 text-center text-xs'>{escape(str(v))}</td>" for v in row
+                )
+                rows.append(f"<tr>{cells}</tr>")
+            table = (
+                "<table class='event-log w-full text-[0.85em] border-collapse table-fixed'>"
+                f"<thead><tr>{headers}</tr></thead>"
+                f"<tbody>{''.join(rows)}</tbody>"
+                "</table>"
+            )
+            return table
+
         try:
-            context["event_log_markdown"] = df_daily.to_markdown(index=False, **fmt)
-        except Exception:
-            # fallback to plain conversion if markdown fails
-            context["event_log_markdown"] = df_daily.to_string(index=False, col_space=6)
+            context["event_log_html"] = to_ui_table(df_daily)
+        except Exception as e:
+            print(f"⚠ UI table render fallback: {e}")
+            context["event_log_html"] = df_daily.to_html(
+                index=False, classes="event-log compact", border=0
+            )
 
     # --- Step 2 : Generate Report ---
     report = render_template(
@@ -121,5 +143,5 @@ def finalize_and_validate_render(context, reportType="weekly"):
         "validation_status": "✅ Full Framework + Schema Validation Passed",
     })
 
-    print("✅ Report passed both framework and schema validation (event-only mode).")
+    print("✅ Report passed both framework and schema validation (UICompact layout).")
     return report, compliance
