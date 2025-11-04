@@ -8,6 +8,7 @@ from audit_core.errors import AuditHalt
 from audit_core.utils import validate_dataset_integrity, validate_wellness_alignment
 from audit_core.tier2_enforce_event_only_totals import enforce_event_only_totals
 
+
 def run_tier1_controller(df_activities, wellness, context):
     # --- Step 1: Dataset integrity ---
     if df_activities.empty:
@@ -61,9 +62,13 @@ def run_tier1_controller(df_activities, wellness, context):
         .reset_index()
     )
 
-    # Attach wellness fields if available
+    # Attach full wellness fieldset for Unified Framework v5.1
     if wellness and len(wellness) > 0:
-        df_well = pd.DataFrame(wellness)[["id", "sleepSecs", "sleepScore", "hrv", "restingHR"]]
+        df_well = pd.DataFrame(wellness)[[
+            "id", "sleepSecs", "sleepScore", "hrv", "restingHR",
+            "fatigue", "stress", "mood", "motivation",
+            "hydration", "soreness", "injury", "readiness"
+        ]]
         df_well.rename(columns={"id": "date"}, inplace=True)
         df_well["date"] = pd.to_datetime(df_well["date"]).dt.date
         df_well["sleep_h"] = (df_well["sleepSecs"] / 3600).round(2)
