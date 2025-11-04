@@ -170,4 +170,12 @@ if "elapsed_time" in df_activities.columns and "moving_time" in df_activities.co
     context.update({"auditPartial": False, "auditFinal": False})
     context["window_summary"] = {"mode": mode, "start": str(oldest), "end": str(newest)}
 
+import sys
+if "df_activities" in locals():
+    sys.stderr.write(
+        f"\n[Tier-0 diagnostic] Σ(moving_time)/3600 = {df_activities['moving_time'].sum() / 3600:.2f}\n"
+        f"Rows = {len(df_activities)}\n"
+    )
+    sys.stderr.flush()
+
     return df_activities, wellness, context, context["auditPartial"], context["auditFinal"]
