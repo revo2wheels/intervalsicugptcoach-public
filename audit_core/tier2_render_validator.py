@@ -74,6 +74,14 @@ def finalize_and_validate_render(context, reportType="weekly"):
             print(f"⚠ Markdown render fallback: {e}")
             context["event_log_text"] = df_daily.to_string(index=False)
 
+    # --- SAFETY PATCH: enforce event-only rows before render ---
+    if "dailyMerged" in context:
+        dfm = context["dailyMerged"]
+        if "origin" in dfm.columns:
+            context["dailyMerged"] = dfm.query("origin == 'event'").copy()
+        else:
+            context["dailyMerged"] = dfm.drop_duplicates(subset=["id"], keep="first").copy()
+
     # --- Step 5: Generate Report (no recomputation, uses enforced totals) ---
     report = render_template(
         reportType,
