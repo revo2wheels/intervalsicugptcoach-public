@@ -13,17 +13,26 @@ from audit_core.tier2_actions import evaluate_actions
 from audit_core.tier2_render_validator import finalize_and_validate_render
 
 
-def run_report(user_cmd: str):
-    """
-    Unified entry for any report type (season, block, weekly, custom).
-    Supports auto-chunk retrieval for >7-day windows as per v16.1 Data Rules.
-    """
+def run_report(
+    reportType: str = "weekly",
+    auditFinal: bool = True,
+    auditPartial: bool = True,
+    force_analysis: bool = True,
+    preRenderAudit: bool = True,
+    tier2_enforce_event_only_totals: bool = True,
+    render_mode: str = "full",
+    autoCommit: bool = True,
+    suppressPrompts: bool = True,
+    **kwargs
+):
+    print(f"🧭 Running {reportType.title()} Report (auditFinal={auditFinal}, render_mode={render_mode})")
+
     # --- Tier-0 — Ruleset and pre-audit ---
     loadAllRules()
     context = {}
 
     # --- Initial pre-audit ---
-    df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(user_cmd, context)
+    df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(reportType, context)
 
     # --- Auto-chunk mode ---
     start = context["window_start"]
