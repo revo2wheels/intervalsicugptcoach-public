@@ -1,8 +1,7 @@
 """
-Tier-2 Enforcement — Event-Only Totals (v16.14-Independent)
-Recomputes canonical totals strictly from raw Tier-0 event-level data.
-No normalization, interpolation, or legacy fallback.
-Ensures independence from Tier-1 context.
+Tier-2 Enforcement — Event-Only Totals (v16.14-Integrated)
+Computes canonical totals using Tier-2 validated event dataset if available.
+Falls back to raw Tier-0 data only if no DataFrame is passed.
 """
 import os
 print("📁 Tier-2 module loaded from:", os.path.abspath(__file__))
@@ -10,52 +9,55 @@ print("📁 Tier-2 module loaded from:", os.path.abspath(__file__))
 from audit_core.errors import AuditHalt
 
 
-def enforce_event_only_totals(df_unused, context):
-    # --- Step 1: Acquire and validate raw source -----------------------------
-    df_raw = context.get("df_raw_activities")
-    if df_raw is None or df_raw.empty:
-        raise AuditHalt("❌ enforce_event_only_totals: no raw activity dataset in context")
-
-    # --- DEBUG / DIAGNOSTIC INSPECTION ---------------------------------------
-    print("🔍 Tier-2 input shape:", df_raw.shape)
-    if "origin" in df_raw.columns:
-        print("origin counts:\n", df_raw["origin"].value_counts(dropna=False))
+def enforce_event_only_totals(df_events, context):
+    # --- Step 1: Acquire source dataset -------------------------------------
+    if df_events is not None and not df_events.empty:
+        df_source = df_events.copy()
+        source_label = "Tier-2 validated events"
     else:
-        print("⚠️  'origin' column missing in raw data")
+        df_source = context.get("df_raw_activities")
+        source_label = "raw Tier-0 activities (fallback)"
+        if df_source is None or df_source.empty:
+            raise AuditHalt("❌ enforce_event_only_totals: no dataset available from Tier-2 or Tier-0")
 
-    if "type" in df_raw.columns:
-        print("type counts:\n", df_raw["type"].value_counts(dropna=False))
+    print(f"🔍 Tier-2 enforcement source: {source_label} ({df_source.shape[0]} rows)")
 
-    if "moving_time" in df_raw.columns:
-        print("moving_time stats:\n", df_raw["moving_time"].describe())
+    # --- Step 2: Diagnostics -------------------------------------------------
+    if "origin" in df_source.columns:
+        print("origin counts:\n", df_source["origin"].value_counts(dropna=False))
+    else:
+        print("⚠️  'origin' column missing in dataset")
+
+    if "moving_time" in df_source.columns:
+        print("moving_time stats:\n", df_source["moving_time"].describe())
     else:
         print("⚠️  'moving_time' column missing")
 
-
-    # --- Step 2: Build canonical event-only subset ---------------------------
-    #   Always rebuild from raw; ignore any Tier-1 filtered frames.
+    # --- Step 3: Filter to valid event rows ---------------------------------
     df_event_only = (
-        df_raw.copy()
-        .loc[
-            (df_raw["origin"] == "event")
-            & (df_raw["moving_time"] > 120)
-            & (df_raw["icu_training_load"] > 0)
+        df_source.loc[
+            (df_source.get("origin", "event") == "event")
+            & (df_source["moving_time"] > 120)
+            & (df_source["icu_training_load"] > 0)
         ]
         .drop_duplicates(subset=["start_date_local", "elapsed_time"], keep="first")
+        .copy()
     )
 
     if df_event_only.empty:
         raise AuditHalt("❌ enforce_event_only_totals: no valid event rows after filtering")
 
-    # --- Step 3: Canonical recomputation ------------------------------------
+    # --- Step 4: Canonical recomputation ------------------------------------
     event_hours = df_event_only["moving_time"].sum() / 3600
     event_tss = df_event_only["icu_training_load"].sum()
-    event_distance = df_event_only["distance"].sum() / 1000 if "distance" in df_event_only else 0
+    event_distance = (
+        df_event_only["distance"].sum() / 1000 if "distance" in df_event_only else 0
+    )
 
     if event_hours <= 0 or event_tss <= 0:
         raise AuditHalt("❌ enforce_event_only_totals: invalid totals (zero or negative values)")
 
-    # --- Step 4: Compare with Tier-1 snapshot --------------------------------
+    # --- Step 5: Compare vs Tier-1 snapshot ---------------------------------
     tier1_totals = context.get("tier1_eventTotals", {})
     diff_hours = diff_tss = 0
     if tier1_totals:
@@ -64,10 +66,10 @@ def enforce_event_only_totals(df_unused, context):
         if diff_hours > 0.1 or diff_tss > 2:
             context.setdefault("audit_flags", []).append(
                 f"⚠️ Tier-2 correction applied: Δh={diff_hours:.2f}, "
-                f"ΔTSS={diff_tss:.1f} (Tier-1 replaced with event-only recompute)"
+                f"ΔTSS={diff_tss:.1f} (Tier-1 replaced with event totals)"
             )
 
-    # --- Step 5: Canonical injection (always overwrite) ---------------------
+    # --- Step 6: Canonical injection ----------------------------------------
     for key in ["dailyTotals", "totalHours", "totalTss"]:
         context.pop(key, None)
 
@@ -79,21 +81,21 @@ def enforce_event_only_totals(df_unused, context):
         "hours": context["totalHours"],
         "tss": context["totalTss"],
         "distance": context["totalDistance"],
-        "source": "tier2_enforce_event_only_totals",
+        "source": source_label,
     }
     context["df_event_only"] = df_event_only
     context["enforcement_layer"] = "tier2_enforce_event_only_totals"
 
-    # --- Step 6: Hard-lock canonical totals ----------------------------------
-    context.setdefault("_locked_totals", True)
+    # --- Step 7: Hard-lock canonical totals ---------------------------------
+    context["_locked_totals"] = True
     context["locked_totalHours"] = context["totalHours"]
     context["locked_totalTss"] = context["totalTss"]
     context["locked_totalDistance"] = context["totalDistance"]
 
-    # --- Step 7: Annotate audit trace ----------------------------------------
+    # --- Step 8: Trace annotation -------------------------------------------
     context["event_count"] = len(df_event_only)
     context.setdefault("trace", []).append(
-        f"T2 independent recompute executed "
+        f"T2 totals computed from {source_label} "
         f"(Δh={diff_hours:.2f}, ΔTSS={diff_tss:.1f}, events={len(df_event_only)})"
     )
 

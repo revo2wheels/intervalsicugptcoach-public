@@ -1,11 +1,13 @@
+# audit_core/tier0_pre_audit.py — v16.14-OAUTH-STRICT
 import os
+import sys
 import requests
 import pandas as pd
 from datetime import datetime, timedelta
 from audit_core.errors import AuditHalt
 
 INTERVALS_API = "https://intervals.icu/api/v1"
-ICU_TOKEN = os.getenv("ICU_OAUTH") or os.getenv("ICU_API_KEY")
+ICU_TOKEN = os.getenv("ICU_OAUTH")  # OAuth-only
 
 
 def resolve_report_trigger(user_cmd: str, tz: str):
@@ -62,7 +64,7 @@ def fetch_wellness_chunked(athlete_id, oldest, newest, headers, max_retries=2):
             for offset in range(0, (newest - oldest).days + 1, well_chunk_days):
                 chunk_start = oldest + timedelta(days=offset)
                 chunk_end = min(newest, chunk_start + timedelta(days=well_chunk_days - 1))
-                url = f"{INTERVALS_API}/athlete/{athlete_id}/wellness?oldest={chunk_start}&newest={chunk_end}"
+                url = f"{INTERVALS_API}/athlete/0/wellness?oldest={chunk_start}&newest={chunk_end}"
                 resp = fetch_with_retry(url, headers)
                 if resp.status_code == 200 and resp.json():
                     wellness.extend(resp.json())
@@ -78,10 +80,10 @@ def fetch_wellness_chunked(athlete_id, oldest, newest, headers, max_retries=2):
     return []
 
 
-def run_tier0_pre_audit(user_cmd: str, context: dict):
-    """Tier-0: Pre-audit fetch chain with adaptive chunking and meta-retry."""
+def run_tier0_pre_audit(start: str, end: str, context: dict):
+    """Tier-0: OAuth-only Pre-audit fetch chain with adaptive chunking and meta-retry."""
     if not ICU_TOKEN:
-        raise EnvironmentError("Missing Intervals.icu token. Set ICU_OAUTH or ICU_API_KEY env var.")
+        raise EnvironmentError("Missing Intervals.icu OAuth token. Set ICU_OAUTH env var.")
 
     # --- Always purge before data fetch ---
     purge_keys = ["eventTotals", "dailyMerged", "df_events", "athleteProfile"]
@@ -95,15 +97,15 @@ def run_tier0_pre_audit(user_cmd: str, context: dict):
 
     headers = {"Authorization": f"Bearer {ICU_TOKEN}"}
 
-
     # --- Step 1: Fetch athlete profile ---
-    profile_resp = fetch_with_retry(f"{INTERVALS_API}/athlete", headers)
+    profile_url = f"{INTERVALS_API}/athlete/0/profile"
+    print(f"[T0] Fetching athlete profile via OAuth2: {profile_url}")
+    profile_resp = fetch_with_retry(profile_url, headers)
     if profile_resp.status_code != 200:
-        raise AuditHalt(f"❌ Failed to fetch athlete profile ({profile_resp.status_code})")
+        raise AuditHalt(f"❌ Failed to fetch athlete profile ({profile_resp.status_code}) → {profile_resp.text[:200]}")
 
-    athlete = profile_resp.json()
-    if "athlete" in athlete:
-        athlete = athlete["athlete"]
+    profile_json = profile_resp.json()
+    athlete = profile_json.get("athlete", profile_json)
 
     if not athlete or "id" not in athlete:
         raise AuditHalt("❌ Invalid athlete profile payload from Intervals.icu")
@@ -114,24 +116,14 @@ def run_tier0_pre_audit(user_cmd: str, context: dict):
     tz = athlete.get("timezone", "Europe/Zurich")
     context["timezone"] = tz if isinstance(tz, str) and len(tz) >= 3 else "Europe/Zurich"
 
-    context["athleteProfile"] = {
-        "id": athlete.get("id"),
-        "name": athlete.get("name", "Unknown"),
-        "sex": athlete.get("sex", "U"),
-        "age": athlete.get("age"),
-        "city": athlete.get("city"),
-        "country": athlete.get("country"),
-        "timezone": context["timezone"],
-        "bio": athlete.get("bio"),
-        "website": athlete.get("website"),
-    }
-    context["athlete"] = context["athleteProfile"]
+    context["athleteProfile"] = profile_json
+    context["athlete"] = athlete
 
     # --- Step 2: Determine date window ---
-    mode, oldest, newest = resolve_report_trigger(user_cmd, context["timezone"])
+    mode, oldest, newest = resolve_report_trigger("weekly", context["timezone"])
     context.update({"report_mode": mode, "window_start": oldest, "window_end": newest})
 
-    # --- Step 3: Fetch activities (adaptive chunking, v16.14-FIX-E) ---
+    # --- Step 3: Fetch activities ---
     est_payload_acts = estimate_payload_size((newest - oldest).days + 1, "activities")
     act_chunk_days = 7 if est_payload_acts < 200000 else 3
 
@@ -140,16 +132,14 @@ def run_tier0_pre_audit(user_cmd: str, context: dict):
 
     for offset in range(0, total_days, act_chunk_days):
         chunk_start = oldest + timedelta(days=offset)
-        # FIX: make end exclusive to avoid 1-day overlap between chunks
         chunk_end = min(newest, chunk_start + timedelta(days=act_chunk_days)) - timedelta(seconds=1)
 
-        # DEBUG: log each fetch range for verification
         print(f"[Tier-0 fetch] chunk_start={chunk_start}  chunk_end={chunk_end}")
 
-        acts_url = f"{INTERVALS_API}/activities?oldest={chunk_start}&newest={chunk_end}"
+        acts_url = f"{INTERVALS_API}/athlete/0/activities?oldest={chunk_start}&newest={chunk_end}"
         acts_resp = fetch_with_retry(acts_url, headers)
         if acts_resp.status_code != 200:
-            raise AuditHalt(f"❌ Failed to fetch activities ({acts_resp.status_code})")
+            raise AuditHalt(f"❌ Failed to fetch activities ({acts_resp.status_code}) → {acts_resp.text[:200]}")
 
         df_chunk = pd.DataFrame(acts_resp.json())
         if not df_chunk.empty:
@@ -160,29 +150,28 @@ def run_tier0_pre_audit(user_cmd: str, context: dict):
     # --- Quick inspection of fetched data ---
     print(df_activities[["id", "name", "moving_time"]])
 
-    if df_activities.empty or "start_date" not in df_activities.columns:
-        raise AuditHalt("❌ No valid activities returned from Intervals.icu API")
-
-
-    # --- FIX: Deduplicate by activity ID (prevents inflated totals) ---
+    # --- Deduplication ---
     if "id" in df_activities.columns:
         before = len(df_activities)
         df_activities.drop_duplicates(subset=["id"], keep="first", inplace=True)
         after = len(df_activities)
         print(f"🧩 Tier-0 deduplication: {before - after} duplicate activities removed.")
 
-    if df_activities.empty or "start_date" not in df_activities.columns:
-        raise AuditHalt("❌ No valid activities returned from Intervals.icu API")
+    # --- Handle timezone-aware and naive datetime cases safely
+    df_activities["start_date_local"] = pd.to_datetime(df_activities["start_date"], utc=True)
 
-    df_activities["start_date_local"] = (
-        pd.to_datetime(df_activities["start_date"])
-        .dt.tz_localize("UTC")
-        .dt.tz_convert(context["timezone"])
-    )
+    try:
+        df_activities["start_date_local"] = df_activities["start_date_local"].dt.tz_convert(context["timezone"])
+    except TypeError:
+        # Already tz-aware — no conversion needed
+        pass
+
     df_activities["date"] = df_activities["start_date_local"].dt.date
     df_activities["origin"] = "event"
 
-    # Canonical duration field enforcement (v16.14-FIX-C)
+    print(f"[T0] start_date_local created → tz={context['timezone']} rows={len(df_activities)}")
+
+    # Canonical duration field enforcement
     if "elapsed_time" in df_activities.columns and "moving_time" in df_activities.columns:
         df_activities["elapsed_time"] = df_activities["moving_time"]
 
@@ -193,12 +182,17 @@ def run_tier0_pre_audit(user_cmd: str, context: dict):
     context.update({"auditPartial": False, "auditFinal": False})
     context["window_summary"] = {"mode": mode, "start": str(oldest), "end": str(newest)}
 
-    import sys
-    if "df_activities" in locals():
-        sys.stderr.write(
-            f"\n[Tier-0 diagnostic] Σ(moving_time)/3600 = {df_activities['moving_time'].sum() / 3600:.2f}\n"
-            f"Rows = {len(df_activities)}\n"
-        )
-        sys.stderr.flush()
+    sys.stderr.write(
+        f"\n[Tier-0 diagnostic] Σ(moving_time)/3600 = {df_activities['moving_time'].sum() / 3600:.2f}\n"
+        f"Rows = {len(df_activities)}\n"
+    )
+    sys.stderr.flush()
+
+    # Normalize wellness payload to DataFrame for Tier-1 compatibility
+    if isinstance(wellness, list):
+        if len(wellness) > 0:
+            wellness = pd.DataFrame(wellness)
+        else:
+            wellness = pd.DataFrame(columns=["date", "fatigue", "sleep", "hrv", "recovery"])
 
     return df_activities, wellness, context, context["auditPartial"], context["auditFinal"]

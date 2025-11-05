@@ -44,9 +44,35 @@ def validate_event_completeness(df_activities, df_wellness=None, context=None):
     df_valid = pd.DataFrame(valid_rows).reset_index(drop=True)
 
     # --- Build daily completeness summary ---
+    df_valid = df_valid.copy()
+
+    # Normalize optional columns safely before aggregation
+    # Handle RPE: Intervals.icu can return icu_rpe or session_rpe
+    if "rpe" not in df_valid.columns:
+        if "icu_rpe" in df_valid.columns:
+            df_valid["rpe"] = df_valid["icu_rpe"]
+        elif "session_rpe" in df_valid.columns:
+            df_valid["rpe"] = df_valid["session_rpe"]
+        else:
+            df_valid["rpe"] = pd.NA  # fallback placeholder
+
+    # Handle missing 'feel'
+    if "feel" not in df_valid.columns:
+        df_valid["feel"] = pd.NA
+
+    # Handle missing 'distance' (e.g. indoor training)
+    if "distance" not in df_valid.columns:
+        df_valid["distance"] = 0
+
+    # Convert start_date_local → date (safe timezone handling)
+    df_valid["date"] = pd.to_datetime(df_valid["start_date_local"], errors="coerce").dt.date
+
+    # Drop rows where date could not be parsed
+    df_valid = df_valid.dropna(subset=["date"])
+
+    # --- Perform daily aggregation ---
     daily = (
-        df_valid.assign(date=pd.to_datetime(df_valid["start_date_local"]).dt.date)
-        .groupby("date", as_index=False)
+        df_valid.groupby("date", as_index=False)
         .agg({
             "moving_time": "sum",
             "icu_training_load": "sum",
@@ -56,8 +82,12 @@ def validate_event_completeness(df_activities, df_wellness=None, context=None):
         })
     )
 
+    # Preserve original audit context fields
     df_valid["origin"] = "event"
     daily["display_only"] = True
+
+    print(f"[T2] Daily completeness summary built — {len(daily)} rows")
+
 
     # --- Wellness merge & HRV correlation (legacy logic) ---
     if df_wellness is not None and "hrv" in df_wellness.columns:
@@ -90,4 +120,4 @@ def validate_event_completeness(df_activities, df_wellness=None, context=None):
         context["eventCompleteness_checked"] = True
         context["dedup_method"] = "elapsed-time overlap (v16.1.3)"
 
-    return df_valid, daily, context
+    return df_valid, daily

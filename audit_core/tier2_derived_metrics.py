@@ -90,9 +90,18 @@ def compute_derived_metrics(df_daily, context):
     # === v16.14-RC1 Metabolic Efficiency Extension ====================
     # ------------------------------------------------------------------
     df_events = context.get("df_events")
+
     if df_events is not None and not df_events.empty:
-        z2 = df_events.query("IF >= 0.70 and IF <= 0.80") if "IF" in df_events else pd.DataFrame()
-        z3 = df_events.query("IF > 0.80 and IF <= 0.95") if "IF" in df_events else pd.DataFrame()
+        if "IF" in df_events.columns:
+            # Coerce IF column to numeric in case it's a string from the API
+            df_events["IF"] = pd.to_numeric(df_events["IF"], errors="coerce")
+
+            # Apply the same zone logic safely
+            z2 = df_events.query("0.70 <= IF <= 0.80")
+            z3 = df_events.query("0.80 < IF <= 0.95")
+        else:
+            z2 = pd.DataFrame()
+            z3 = pd.DataFrame()
 
         kcal_factor = 0.000239  # joules → kcal
 
