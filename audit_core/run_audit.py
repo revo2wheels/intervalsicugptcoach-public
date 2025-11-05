@@ -88,7 +88,7 @@ def main():
     if "totalHours" not in context or "totalTss" not in context:
         print("⚙️  Enforcing canonical totals before finalization …")
         try:
-            context = tier2_enforce_event_only_totals.enforce_event_only_totals(None, context)
+            context = tier2_enforce_event_only_totals.enforce_event_only_totals(df_events, context)
         except Exception as e:
             print(f"⚠️  Tier-2 enforcement fallback failed: {e}")
 
