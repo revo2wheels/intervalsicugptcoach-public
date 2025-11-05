@@ -50,9 +50,73 @@ Name: moving_time, dtype: float64
    df_events Σmoving_time = 9.786388888888888
    dailyMerged has no time-like column
    eventTotals(hours) = 9.79
+
+[Tier-2 context diagnostic]
+derived_metrics: False
+load_metrics: False
+adaptation_metrics: False
+trend_metrics: False
+correlation_metrics: False
 [Renderer shim] Delegating to render_report() in render_unified_report.py
 ✅ Report validated — framework compliant.
 ✅ Report schema validated.
+
+[DEBUG] Context keys available before finalize_and_validate_render() return:
+  - ACWR
+  - Decoupling
+  - Duration_total
+  - FatMaxDeviation
+  - FatOxEfficiency
+  - FatOxidation
+  - ICON_CARDS
+  - Monotony
+  - Polarisation
+  - RecoveryIndex
+  - Strain
+  - ZQI
+  - _locked_totals
+  - actions
+  - athlete
+  - athleteProfile
+  - auditFinal
+  - auditPartial
+  - dailyMerged
+  - derivedMetrics
+  - df_event_only
+  - df_events
+  - enforcement_layer
+  - eventTotals
+  - event_count
+  - event_log_text
+  - fatigue_trend
+  - force_icon_pack
+  - header
+  - icon_pack
+  - locked_totalDistance
+  - locked_totalHours
+  - locked_totalTss
+  - metabolic_variance_flag
+  - metrics
+  - phases
+  - purge_enforced
+  - report_mode
+  - tier1_eventTotals
+  - timezone
+  - totalDistance
+  - totalHours
+  - totalTss
+  - trace
+  - ui_flag
+  - weeks_since_last_FTP
+  - window_end
+  - window_start
+  - window_summary
+[DEBUG] End of context key list
+
+[WARN] ⚠️ Missing or empty section in context: derived_metrics
+[WARN] ⚠️ Missing or empty section in context: load_metrics
+[WARN] ⚠️ Missing or empty section in context: adaptation_metrics
+[WARN] ⚠️ Missing or empty section in context: trend_metrics
 ✅ Report passed framework + schema validation (event-only, markdown).
 
 ```
@@ -63,7 +127,7 @@ Name: moving_time, dtype: float64
 **Athlete:** Clive King
 **Period:** ? → ?
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-05T17:33:00.620943
+**Generated:** 2025-11-05T18:06:04.090222
 
 ---
 
@@ -134,6 +198,6 @@ _No adaptation data._
 _No event preview available._
 
 ---
-✅ **Audit Completed:** 2025-11-05T17:33:00.620986
+✅ **Audit Completed:** 2025-11-05T18:06:04.090315
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 

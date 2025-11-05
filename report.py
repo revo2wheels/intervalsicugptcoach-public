@@ -24,7 +24,6 @@ def generate_full_report(output_path="report_full.md"):
             auditFinal=True,
             force_analysis=True,
             preRenderAudit=True,
-            tier2_enforce_event_only_totals=True,
             render_mode="full",
         )
 

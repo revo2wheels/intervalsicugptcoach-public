@@ -8,7 +8,8 @@ FRAMEWORK_SCHEMA = {
     "summary": ["totalHours", "totalTss", "variance", "zones"],
     "metrics": ["ACWR", "Monotony", "Strain", "Polarisation", "RecoveryIndex"],
     "actions": ["list"],
-    "footer": ["framework", "version"]
+    "footer": ["framework", "version"],
+    "extended_metrics": ["ReadinessIndex", "RecoveryScore", "Flags"]
 }
 
 def enforce_report_schema(report):

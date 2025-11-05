@@ -11,7 +11,7 @@ from audit_core.utils import validate_wellness_alignment as validate_wellness
 from audit_core.tier2_derived_metrics import compute_derived_metrics
 from audit_core.tier2_actions import evaluate_actions
 from audit_core.tier2_render_validator import finalize_and_validate_render
-
+from audit_core.tier2_extended_metrics import compute_extended_metrics
 
 def run_report(
     reportType: str = "weekly",
@@ -52,6 +52,43 @@ def run_report(
         context
     )
 
+    # Run Tier-0 pre-audit to get live data
+    df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
+        str(start_date),
+        str(end_date),
+        context
+    )
+
+    # --- Merge static schema with live athlete data ---
+    from athlete_profile import ATHLETE_PROFILE
+    from coach_profile import COACH_PROFILE
+    from coaching_heuristics import HEURISTICS_TABLES
+    from coaching_cheat_sheet import CHEAT_SHEET_RULES
+
+    context["knowledge"] = {
+        "athlete_profile": ATHLETE_PROFILE,
+        "coach_profile": COACH_PROFILE,
+        "heuristics": HEURISTICS_TABLES,
+        "cheatsheet": CHEAT_SHEET_RULES,
+    }
+
+    # Normalize athlete profile into schema
+    athlete = context.get("athlete", {})
+    profile_ref = ATHLETE_PROFILE.copy()
+    profile_ref.update({
+        "athlete_id": athlete.get("id"),
+        "name": athlete.get("name"),
+        "discipline": athlete.get("sport", "cycling"),
+        "ftp": athlete.get("ftp"),
+        "weight": athlete.get("weight"),
+        "hr_rest": athlete.get("resting_hr"),
+        "hr_max": athlete.get("max_hr"),
+        "timezone": context.get("timezone"),
+        "updated": athlete.get("updated"),
+    })
+    context["athleteProfile"] = profile_ref
+
+
     # --- Auto-chunk mode ---
     start = context["window_start"]
     end = context["window_end"]
@@ -72,24 +109,28 @@ def run_report(
     df_master, wellness, context = run_tier1_controller(df_master, wellness, context)
 
     # --- Tier-2 — Full audit chain ---
-    # Data integrity and totals enforcement
-    df_master, daily = validate_event_completeness(df_master)  # returns updated df + daily
+    df_master, daily = validate_event_completeness(df_master)
     context = enforce_event_only_totals(df_master, context)
     validate_calculation_integrity(df_master)
     validate_wellness(df_master, wellness)
     context = compute_derived_metrics(df_master, context)
     context = evaluate_actions(context)
 
-    # --- Promote final audit state before render ---
-    if context.get("auditPartial", True):
-        context["auditFinal"] = True
-    else:
-        print("⚠ Tier-1 not validated. Forcing auditFinal=True for controlled render.")
-        context["auditFinal"] = True
+    # --- Tier-2 extended analytics ---
+    from audit_core.tier2_load_metrics import compute_load_metrics
+    from audit_core.tier2_adaptation_metrics import compute_adaptation_metrics
+    from audit_core.tier2_trend_analysis import build_trend_analysis
+    from audit_core.tier2_correlations import compute_correlations
+    context = compute_load_metrics(context)
+    context = compute_adaptation_metrics(context)
+    context = build_trend_analysis(context)
+    context = compute_correlations(context)
+
+    # --- Promote final audit state ---
+    context["auditFinal"] = True
 
     # --- Final render ---
     report, compliance = finalize_and_validate_render(context, reportType=reportType)
-
     return report, compliance
 
 

@@ -116,8 +116,26 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     tz = athlete.get("timezone", "Europe/Zurich")
     context["timezone"] = tz if isinstance(tz, str) and len(tz) >= 3 else "Europe/Zurich"
 
-    context["athleteProfile"] = profile_json
-    context["athlete"] = athlete
+   # --- Merge static schema with live athlete data ---
+    from athlete_profile import ATHLETE_PROFILE
+
+    athlete = context.get("athlete", {})
+    merged_profile = ATHLETE_PROFILE.copy()
+    merged_profile.update({
+        "athlete_id": athlete.get("id"),
+        "name": athlete.get("name"),
+        "discipline": athlete.get("sport", "cycling"),
+        "ftp": athlete.get("ftp"),
+        "weight": athlete.get("weight"),
+        "hr_rest": athlete.get("resting_hr"),
+        "hr_max": athlete.get("max_hr"),
+        "timezone": context.get("timezone"),
+        "updated": athlete.get("updated"),
+    })
+
+context["athleteProfile"] = merged_profile
+context["athlete"] = athlete
+
 
     # --- Step 2: Determine date window ---
     mode, oldest, newest = resolve_report_trigger("weekly", context["timezone"])
