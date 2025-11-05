@@ -204,26 +204,29 @@ def render_report(data):
 
     # Add synthetic summary section for validator compatibility
     report["summary"] = {
-        "total_hours": ctx.get("totalHours", "—"),
-        "total_tss": ctx.get("totalTss", "—"),
-        "event_count": ctx.get("event_count", "—"),
+        "totalHours": ctx.get("totalHours", "—"),
+        "totalTss": ctx.get("totalTss", "—"),
+        "eventCount": ctx.get("event_count", "—"),
         "period": f"{start} → {end}",
         "athlete": name,
+        "variance": ctx.get("variance", 0.0),
+        "zones": ctx.get("zone_dist", {}),  # ✅ add this
         "🛌 Rest Day": ICON_CARDS.get("recovery", "🛌"),
         "⏳ Current Day": ICON_CARDS.get("info", "⏳"),
     }
 
-    # Add metrics section for validator compatibility
+    # --- METRICS (schema-compliant) ---
     report["metrics"] = {
-        "derived_metrics": ctx.get("derived_metrics", {}),
-        "load_metrics": ctx.get("load_metrics", {}),
-        "adaptation_metrics": ctx.get("adaptation_metrics", {}),
-        "wellness_summary": ctx.get("wellness_summary", {}),
+        "ACWR": ctx.get("ACWR", {"value": "—"}),
+        "Monotony": ctx.get("Monotony", {"value": "—"}),         # ✅ required
+        "Strain": ctx.get("Strain", {"value": "—"}),             # ✅ required
+        "Polarisation": ctx.get("Polarisation", {"value": "—"}), # ✅ required
+        "RecoveryIndex": ctx.get("RecoveryIndex", {"value": "—"})# ✅ required
     }
 
     # Add actions section for validator compatibility
     report["actions"] = {
-        "recommended": ctx.get("actions", []),
+        "list": ctx.get("actions", []),
         "performance_flags": ctx.get("performance", {}),
         "notes": "Auto-generated validation placeholder for coaching actions."
     }
@@ -249,11 +252,10 @@ def render_report(data):
         "note": "No correlation data available — placeholder for validator compliance."
     })
 
-    # Add footer section for validator compatibility
+    # --- FOOTER (schema-compliant) ---
     report["footer"] = {
-        "timestamp": datetime.utcnow().isoformat(),
         "framework": "URF v5.1",
-        "note": "Report successfully generated and validated."
+        "version": "v16.14",
     }
 
     return report

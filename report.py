@@ -17,9 +17,9 @@ def generate_full_report(output_path="report_full.md"):
     """Run the weekly report and save both logs + markdown output."""
     buffer = io.StringIO()
 
-    # Capture all printed output during the report execution
+    # Capture all printed output during report execution
     with redirect_stdout(buffer):
-        report = run_report(
+        report, compliance = run_report(
             "weekly",
             auditFinal=True,
             force_analysis=True,
@@ -28,11 +28,11 @@ def generate_full_report(output_path="report_full.md"):
             render_mode="full",
         )
 
-    # Collect captured log text and markdown body
+    # Extract log and markdown data
     log_output = buffer.getvalue()
     md_output = report.get("markdown", "")
 
-    # Combine into a single Markdown file
+    # Combine everything into one markdown file
     full_output = (
         "# 🧾 Full Weekly Audit Report\n\n"
         "## Execution Logs\n\n"
@@ -41,7 +41,7 @@ def generate_full_report(output_path="report_full.md"):
         + md_output
     )
 
-    # Write to file
+    # Write to disk
     output_file = Path(output_path)
     output_file.write_text(full_output, encoding="utf-8")
 
