@@ -12,7 +12,7 @@ from audit_core.errors import AuditHalt
 from audit_core.report_validator import validate_report_output
 from audit_core.report_schema_guard import enforce_report_schema
 from audit_core.tier2_enforce_event_only_totals import enforce_event_only_totals
-
+from audit_core.template_renderer import render_template
 
 def finalize_and_validate_render(context, reportType="weekly"):
     # --- Promote audit to final before render (v16.14-A2) ---
@@ -100,10 +100,20 @@ def finalize_and_validate_render(context, reportType="weekly"):
     # --- SAFETY PATCH: enforce event-only rows before render ---
     if "dailyMerged" in context:
         dfm = context["dailyMerged"]
+
         if "origin" in dfm.columns:
             context["dailyMerged"] = dfm.query("origin == 'event'").copy()
-        else:
+
+        elif "id" in dfm.columns:
             context["dailyMerged"] = dfm.drop_duplicates(subset=["id"], keep="first").copy()
+
+        elif "date" in dfm.columns:
+            context["dailyMerged"] = dfm.drop_duplicates(subset=["date"], keep="first").copy()
+
+        else:
+            print("⚠ No suitable key column found in dailyMerged; skipping deduplication.")
+            context["dailyMerged"] = dfm.copy()
+
 
     # --- Step 5: Generate Report (no recomputation, uses enforced totals) ---
     report = render_template(
