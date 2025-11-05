@@ -79,8 +79,6 @@ use_schema: true
 - Validate dataset count, duplication, and time variance ≤ 0.1 h.  
 - Confirm wellness alignment and discipline totals.  
 - Ignore subjective fields if load < 40.  
-- Compute Σ(moving_time)/3600 → `context["eventTotals"]["hours"]`.  
-- Compute Σ(icu_training_load) → `context["eventTotals"]["tss"]`.  
 - Verify both within tolerance (≤ 0.1 h / ≤ 2 TSS).  
 - On success → `auditPartial=True`.  
 
