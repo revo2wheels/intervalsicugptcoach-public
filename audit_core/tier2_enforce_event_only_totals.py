@@ -4,6 +4,8 @@ Recomputes canonical totals strictly from raw Tier-0 event-level data.
 No normalization, interpolation, or legacy fallback.
 Ensures independence from Tier-1 context.
 """
+import os
+print("📁 Tier-2 module loaded from:", os.path.abspath(__file__))
 
 from audit_core.errors import AuditHalt
 
