@@ -14,6 +14,22 @@ def enforce_event_only_totals(df_unused, context):
     if df_raw is None or df_raw.empty:
         raise AuditHalt("❌ enforce_event_only_totals: no raw activity dataset in context")
 
+    # --- DEBUG / DIAGNOSTIC INSPECTION ---------------------------------------
+    print("🔍 Tier-2 input shape:", df_raw.shape)
+    if "origin" in df_raw.columns:
+        print("origin counts:\n", df_raw["origin"].value_counts(dropna=False))
+    else:
+        print("⚠️  'origin' column missing in raw data")
+
+    if "type" in df_raw.columns:
+        print("type counts:\n", df_raw["type"].value_counts(dropna=False))
+
+    if "moving_time" in df_raw.columns:
+        print("moving_time stats:\n", df_raw["moving_time"].describe())
+    else:
+        print("⚠️  'moving_time' column missing")
+
+
     # --- Step 2: Build canonical event-only subset ---------------------------
     #   Always rebuild from raw; ignore any Tier-1 filtered frames.
     df_event_only = (
