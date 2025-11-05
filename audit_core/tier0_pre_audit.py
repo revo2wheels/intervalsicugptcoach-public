@@ -1,4 +1,4 @@
-# audit_core/tier0_pre_audit.py — v16.14-OAUTH-STRICT
+# audit_core/tier0_pre_audit.py — v16.14-OAUTH-STRICT + Canonical TZ Enforcement
 import os
 import sys
 import requests
@@ -157,23 +157,48 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         after = len(df_activities)
         print(f"🧩 Tier-0 deduplication: {before - after} duplicate activities removed.")
 
-    # --- Handle timezone-aware and naive datetime cases safely
-    df_activities["start_date_local"] = pd.to_datetime(df_activities["start_date"], utc=True)
+    # --- Canonical timezone & date window normalization --------------------
+    context.setdefault("timezone", "Europe/Zurich")
+    tz = context["timezone"]
 
-    try:
-        df_activities["start_date_local"] = df_activities["start_date_local"].dt.tz_convert(context["timezone"])
-    except TypeError:
-        # Already tz-aware — no conversion needed
-        pass
+    # Normalize timestamps (force UTC then convert to canonical tz)
+    df_activities["start_date_local"] = pd.to_datetime(
+        df_activities["start_date"], utc=True, errors="coerce"
+    ).dt.tz_convert(tz)
 
+    # Strictly enforce local date slicing (include end day fully)
+    start_date = pd.to_datetime(start).date()
+    end_date = pd.to_datetime(end).date()
+    before_rows = len(df_activities)
+    df_activities = df_activities[
+        (df_activities["start_date_local"].dt.date >= start_date)
+        & (df_activities["start_date_local"].dt.date <= end_date)
+    ]
+    sliced_rows = len(df_activities)
+    print(f"[T0] Canonical slice → {sliced_rows}/{before_rows} rows retained "
+          f"({start_date}–{end_date}, tz={tz})")
+
+    # Deduplicate again after slicing
+    before = len(df_activities)
+    df_activities.drop_duplicates(subset=["id"], keep="first", inplace=True)
+    dropped = before - len(df_activities)
+    if dropped > 0:
+        print(f"[T0] Post-slice deduplication removed {dropped} duplicates.")
+
+    # Final canonical columns
     df_activities["date"] = df_activities["start_date_local"].dt.date
     df_activities["origin"] = "event"
 
-    print(f"[T0] start_date_local created → tz={context['timezone']} rows={len(df_activities)}")
+    print(f"[T0] start_date_local finalized → tz={tz} rows={len(df_activities)}")
 
     # Canonical duration field enforcement
     if "elapsed_time" in df_activities.columns and "moving_time" in df_activities.columns:
         df_activities["elapsed_time"] = df_activities["moving_time"]
+
+    # --- Diagnostic summary -------------------------------------------------
+    total_hours = df_activities["moving_time"].sum() / 3600
+    total_tss = df_activities["icu_training_load"].sum()
+    print(f"[T0] Canonical totals → Σ(moving_time)/3600={total_hours:.2f}  Σ(TSS)={total_tss:.1f}")
 
     # --- Step 4: Fetch wellness with adaptive chunking + meta-retry ---
     wellness = fetch_wellness_chunked(athlete["id"], oldest, newest, headers)
@@ -183,8 +208,7 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     context["window_summary"] = {"mode": mode, "start": str(oldest), "end": str(newest)}
 
     sys.stderr.write(
-        f"\n[Tier-0 diagnostic] Σ(moving_time)/3600 = {df_activities['moving_time'].sum() / 3600:.2f}\n"
-        f"Rows = {len(df_activities)}\n"
+        f"\n[Tier-0 diagnostic] Σ(moving_time)/3600 = {total_hours:.2f}\nRows = {len(df_activities)}\n"
     )
     sys.stderr.flush()
 
