@@ -133,9 +133,8 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         "updated": athlete.get("updated"),
     })
 
-context["athleteProfile"] = merged_profile
-context["athlete"] = athlete
-
+    context["athleteProfile"] = merged_profile
+    context["athlete"] = athlete
 
     # --- Step 2: Determine date window ---
     mode, oldest, newest = resolve_report_trigger("weekly", context["timezone"])
