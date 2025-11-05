@@ -131,7 +131,7 @@ def run_tier0_pre_audit(user_cmd: str, context: dict):
     mode, oldest, newest = resolve_report_trigger(user_cmd, context["timezone"])
     context.update({"report_mode": mode, "window_start": oldest, "window_end": newest})
 
-   # --- Step 3: Fetch activities (adaptive chunking, v16.14-FIX-E) ---
+    # --- Step 3: Fetch activities (adaptive chunking, v16.14-FIX-E) ---
     est_payload_acts = estimate_payload_size((newest - oldest).days + 1, "activities")
     act_chunk_days = 7 if est_payload_acts < 200000 else 3
 
@@ -182,8 +182,8 @@ def run_tier0_pre_audit(user_cmd: str, context: dict):
     df_activities["date"] = df_activities["start_date_local"].dt.date
     df_activities["origin"] = "event"
 
- # Canonical duration field enforcement (v16.14-FIX-C)
-if "elapsed_time" in df_activities.columns and "moving_time" in df_activities.columns:
+    # Canonical duration field enforcement (v16.14-FIX-C)
+    if "elapsed_time" in df_activities.columns and "moving_time" in df_activities.columns:
     df_activities["elapsed_time"] = df_activities["moving_time"]
 
     # --- Step 4: Fetch wellness with adaptive chunking + meta-retry ---
@@ -193,12 +193,12 @@ if "elapsed_time" in df_activities.columns and "moving_time" in df_activities.co
     context.update({"auditPartial": False, "auditFinal": False})
     context["window_summary"] = {"mode": mode, "start": str(oldest), "end": str(newest)}
 
-import sys
-if "df_activities" in locals():
-    sys.stderr.write(
-        f"\n[Tier-0 diagnostic] Σ(moving_time)/3600 = {df_activities['moving_time'].sum() / 3600:.2f}\n"
-        f"Rows = {len(df_activities)}\n"
-    )
-    sys.stderr.flush()
+    import sys
+    if "df_activities" in locals():
+        sys.stderr.write(
+            f"\n[Tier-0 diagnostic] Σ(moving_time)/3600 = {df_activities['moving_time'].sum() / 3600:.2f}\n"
+            f"Rows = {len(df_activities)}\n"
+        )
+        sys.stderr.flush()
 
     return df_activities, wellness, context, context["auditPartial"], context["auditFinal"]
