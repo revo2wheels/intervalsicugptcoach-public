@@ -49,6 +49,19 @@ Each module is stored in the **root** or **/audit_core/** directory and dynamica
 | **Tier-2 Step-7 — Evaluate Actions** | evaluate_actions | Generates adaptive coaching actions from verified metrics | [tier2_actions.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier2_actions.py) |
 | **Tier-2 Step-8 — Render Validator** | finalize_and_validate_render | Validates report sections, placeholders, icons, and derived metrics before release | [tier2_render_validator.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier2_render_validator.py) |
 
+
+## 🔒 Private Extensions (Local / Private Sync)
+
+| Tier / Step | Module | Function | File Path | Purpose / Notes |
+|:--|:--|:--|:--|:--|
+| **Controller — Local Entry** | `report_controller.py` | `run_report(context, **kwargs)` | [audit_core/report_controller.py](audit_core/report_controller.py) | Unified private controller integrating OAuth2, local schema guard, and preRenderAudit pipeline. Mirrors public controller signature. |
+| **Utility — Dataset Integrity** | `utils.py` | `validate_dataset_integrity(df)` | [audit_core/utils.py](audit_core/utils.py) | Local replacement for `tier2_calc_integrity.py`. Verifies dataset fields and NaNs; enforces Σ(moving_time), Σ(TSS) integrity. |
+| **Utility — Wellness Alignment** | `utils.py` | `validate_wellness_alignment(activity_df, wellness_df)` | [audit_core/utils.py](audit_core/utils.py) | Consolidated wellness validator replacing `tier2_wellness_validation.py`. Aligns wellness window with activities. |
+| **Tier-2 Enforcement (Merged)** | `tier2_enforce_event_only_totals.py` | `validate_data_integrity(context)` / `enforce_event_only_totals(context)` | [audit_core/tier2_enforce_event_only_totals.py](audit_core/tier2_enforce_event_only_totals.py) | Data integrity and event-only total enforcement merged into single module. Maintains canonical Σ(event_hours) and Σ(event_TSS). |
+| **System Integrity Guard** | `system_integrity_guard.py` | `verify_environment()` | [audit_core/system_integrity_guard.py](audit_core/system_integrity_guard.py) | Ensures environment, imports, and schema alignment. Auto-runs in debug/diagnostic mode. |
+| **Report Schema Guard** | `report_schema_guard.py` | `validate_report_schema(report_json)` | [audit_core/report_schema_guard.py](audit_core/report_schema_guard.py) | Validates rendered JSON/Markdown structure against Unified Reporting Framework v5.1 Schema. |
+| **Renderer (Private)** | `render_unified_report.py` | `render_full_report(context)` | [render_unified_report.py](render_unified_report.py) | Local renderer override with extended context propagation and section diagnostics. |
+
 ---
 
 # 🧩 Load Order — v16.14-Stable  
