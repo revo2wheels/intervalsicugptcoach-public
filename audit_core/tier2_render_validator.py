@@ -56,11 +56,15 @@ def finalize_and_validate_render(context, reportType="weekly"):
         df["Duration"] = df["moving_time"].apply(fmt_dur)
         context["Duration_total"] = fmt_dur(df["moving_time"].sum())
 
-    # --- Step 3: Icon Pack Injection ---
-    from ui_components.cards.icon_pack import ICON_CARDS, render_icon_legend
+    # --- Step 3: Icon Pack Injection (safe fallback, cards only) ---
+    try:
+        from ui_components.cards.icon_pack import ICON_CARDS
+    except ModuleNotFoundError:
+        print("⚠ ui_components not found — using empty ICON_CARDS reference.")
+        ICON_CARDS = {}
+
     context["icon_pack"] = ICON_CARDS
     context["force_icon_pack"] = True
-    context["icon_legend"] = render_icon_legend()
 
     # --- Step 4: Compact Event Log render (Markdown) ---
     df_daily = context.get("dailyMerged")
@@ -75,12 +79,23 @@ def finalize_and_validate_render(context, reportType="weekly"):
             context["event_log_text"] = df_daily.to_string(index=False)
 
     print("🔎 Render pre-flight — totals by source:")
-    if "df_events" in context:
+    if "df_events" in context and "moving_time" in context["df_events"].columns:
         print("   df_events Σmoving_time =", context["df_events"]["moving_time"].sum() / 3600)
+
     if "dailyMerged" in context:
-        print("   dailyMerged Σmoving_time =", context["dailyMerged"]["moving_time"].sum() / 3600)
+        dfm = context["dailyMerged"]
+        if "moving_time" in dfm.columns:
+            print("   dailyMerged Σmoving_time =", dfm["moving_time"].sum() / 3600)
+        elif "duration" in dfm.columns:
+            print("   dailyMerged Σduration (h) =", dfm["duration"].sum())
+        elif "hours" in dfm.columns:
+            print("   dailyMerged Σhours =", dfm["hours"].sum())
+        else:
+            print("   dailyMerged has no time-like column")
+
     if "eventTotals" in context:
         print("   eventTotals(hours) =", context["eventTotals"].get("hours"))
+
 
     # --- SAFETY PATCH: enforce event-only rows before render ---
     if "dailyMerged" in context:

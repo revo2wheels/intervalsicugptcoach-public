@@ -32,7 +32,25 @@ def run_report(
     context = {}
 
     # --- Initial pre-audit ---
-    df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(reportType, context)
+    from datetime import datetime, timedelta
+
+    # Determine date window
+    if reportType.lower() == "weekly":
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=7)
+    elif reportType.lower() == "season":
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=42)
+    else:
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=7)
+
+    # Run Tier-0 pre-audit
+    df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
+        str(start_date),
+        str(end_date),
+        context
+    )
 
     # --- Auto-chunk mode ---
     start = context["window_start"]
@@ -54,11 +72,11 @@ def run_report(
     df_master, wellness, context = run_tier1_controller(df_master, wellness, context)
 
     # --- Tier-2 — Full audit chain ---
-    context = validate_data_integrity(df_master, wellness, context)
+    # Data integrity and totals enforcement
     df_master, daily = validate_event_completeness(df_master)  # returns updated df + daily
     context = enforce_event_only_totals(df_master, context)
-    context = validate_calculation_integrity(df_master, context)
-    context = validate_wellness(wellness, context)
+    validate_calculation_integrity(df_master)
+    validate_wellness(df_master, wellness)
     context = compute_derived_metrics(df_master, context)
     context = evaluate_actions(context)
 
@@ -70,7 +88,7 @@ def run_report(
         context["auditFinal"] = True
 
     # --- Final render ---
-    report, compliance = finalize_and_validate_render(context, reportType=user_cmd)
+    report, compliance = finalize_and_validate_render(context, reportType=reportType)
 
     return report, compliance
 
