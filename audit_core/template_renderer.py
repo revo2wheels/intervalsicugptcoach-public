@@ -10,33 +10,28 @@ from render_unified_report import Report
 def render_template(report_type: str, framework: str, context: dict):
     """
     Dispatches rendering call to render_unified_report.py.
-    Wraps any legacy return types into a Report-compatible object.
+    Handles both positional-only and keyword-based signatures.
     """
+    import importlib
     try:
         renderer = importlib.import_module("render_unified_report")
     except ModuleNotFoundError:
         print("⚠ render_unified_report.py not found — returning context only.")
-        report = Report()
-        report["context"] = context
-        report.add_line("⚠ render_unified_report.py missing")
-        return report
+        return context
 
     for candidate in ("render_unified_report", "render_report", "main"):
         if hasattr(renderer, candidate):
             func = getattr(renderer, candidate)
             print(f"[Renderer shim] Delegating to {candidate}() in render_unified_report.py")
             try:
-                result = func(context=context, report_type=report_type)
-            except TypeError:
-                try:
-                    result = func(context, report_type)
-                except Exception as e:
-                    print(f"⚠ Renderer call failed: {e}")
-                    result = context
-            break
-    else:
-        print("⚠ No valid renderer entry found — returning context only.")
-        result = context
+                # Correct call signature for your renderer
+                return func({"context": context, "type": report_type})
+            except Exception as e:
+                print(f"⚠ Renderer call failed: {e}")
+                return context
+
+    print("⚠ No valid renderer entry found — returning context only.")
+    return context
 
     # --- Normalize to Report object ---
     if isinstance(result, Report):
