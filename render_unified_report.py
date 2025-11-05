@@ -7,9 +7,10 @@ Supports automatic detection of report type, timezone, and data completeness.
 
 import json
 import sys
+import os
 from pathlib import Path
 from datetime import datetime
-ICON_CARDS = json.loads(Path("Unified_UI_v5_1.icon_pack.json").read_text(encoding="utf-8"))
+from UIcomponents.icon_pack import ICON_CARDS
 
 # --- Unified Framework Report Object (v16-compatible) ---
 class Report(dict):
@@ -179,6 +180,7 @@ def render_report(data):
 
     md_text = "\n".join(md)
 
+  # Construct the Report object
     report = Report({
         "header": {
             "title": f"{report_type.title()} Training Report",
@@ -186,7 +188,8 @@ def render_report(data):
             "athlete": name,
             "period": f"{start} → {end}",
             "timestamp": ctx.get("timestamp", datetime.utcnow().isoformat()),
-        },
+            "discipline": ctx.get("discipline", "cycling"),  # ✅ added for schema guard
+    },
         "markdown": md_text,
         "type": report_type,
         "context": ctx,
@@ -197,6 +200,7 @@ def render_report(data):
 
     # --- SAFETY PATCHES: ensure validator compatibility ---
     ctx["header"] = report["header"]
+    ctx["ICON_CARDS"] = ICON_CARDS
 
     # Add synthetic summary section for validator compatibility
     report["summary"] = {
@@ -205,6 +209,8 @@ def render_report(data):
         "event_count": ctx.get("event_count", "—"),
         "period": f"{start} → {end}",
         "athlete": name,
+        "🛌 Rest Day": ICON_CARDS.get("recovery", "🛌"),
+        "⏳ Current Day": ICON_CARDS.get("info", "⏳"),
     }
 
     # Add metrics section for validator compatibility
@@ -249,8 +255,6 @@ def render_report(data):
         "framework": "URF v5.1",
         "note": "Report successfully generated and validated."
     }
-
-    ctx["ICON_CARDS"] = ICON_CARDS
 
     return report
 

@@ -22,7 +22,14 @@ ICON_CARDS = {
     "wellness": "💤",
     "actions": "🧭",
     "audit": "🧩",
+    "rest_day": "🛌",
 }
+
+# --- Compatibility aliases for validator checks ---
+ICON_CARDS["🛌 Rest Day"] = "🛌"
+ICON_CARDS["Rest Day"] = "🛌"
+ICON_CARDS["🛌"] = "🛌"
+
 
 ICON_LEGEND = """
 ## 🧭 Icon Legend (Reporting Sections)
