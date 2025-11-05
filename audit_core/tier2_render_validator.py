@@ -167,5 +167,17 @@ def finalize_and_validate_render(context, reportType="weekly"):
         "validation_status": "✅ Full Framework + Schema Validation Passed",
     })
 
+    # === Context completeness diagnostic ===
+    print("\n[DEBUG] Context keys available before finalize_and_validate_render() return:")
+    for k in sorted(context.keys()):
+        print(f"  - {k}")
+    print("[DEBUG] End of context key list\n")
+
+    for section in ["derived_metrics", "load_metrics", "adaptation_metrics", "actions", "trend_metrics"]:
+        value = context.get(section)
+        if not value:
+            print(f"[WARN] ⚠️ Missing or empty section in context: {section}")
+
     print("✅ Report passed framework + schema validation (event-only, markdown).")
     return report, compliance
+
