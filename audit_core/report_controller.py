@@ -4,11 +4,10 @@ from datetime import timedelta
 from api_github_com__jit_plugin import loadAllRules
 from audit_core.tier0_pre_audit import run_tier0_pre_audit
 from audit_core.tier1_controller import run_tier1_controller
-from audit_core.tier2_enforce_event_only_totals import validate_data_integrity
 from audit_core.tier2_event_completeness import validate_event_completeness
 from audit_core.tier2_enforce_event_only_totals import enforce_event_only_totals
-from audit_core.utils import validate_dataset_integrity as validate_calculation_integrity
-from audit_core.utils import validate_wellness_alignment as validate_wellness
+from audit_core.utils import utils as validate_calculation_integrity
+from audit_core.utils import utils as validate_wellness
 from audit_core.tier2_derived_metrics import compute_derived_metrics
 from audit_core.tier2_actions import evaluate_actions
 from audit_core.tier2_render_validator import finalize_and_validate_render

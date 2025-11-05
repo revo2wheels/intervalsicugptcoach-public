@@ -91,14 +91,13 @@ _Compliant with Unified Reporting Framework v5.1 §2.1.3 and Audit Chain v16.14_
 |:--:|:--|:--|:--|
 | **12** | `audit_core/tier0_pre_audit.py` | `run_tier0_pre_audit(context)` | Fetches live data via `intervals_icu__jit_plugin.listActivities()` and initializes context. **Defines `totalHours = Σ(moving_time)/3600`** and `totalTss = Σ(icu_training_load)`. |
 | **13** | `audit_core/tier1_controller.py` | `run_tier1_controller(context)` | Validates dataset integrity, duplicates, and total consistency. Writes verified totals to `context["eventTotals"]`. |
-| **14** | `audit_core/tier2_data_integrity.py` | `validate_data_integrity(context)` | Ensures row counts match API results, variance ≤ 0.1 h. |
-| **15** | `audit_core/tier2_event_completeness.py` | `validate_event_completeness(context)` | Detects missing days, rest days (🛌), and current day (⏳). |
-| **16** | `audit_core/tier2_enforce_event_only_totals.py` | `enforce_event_only_totals(context)` | Computes canonical `Σ(moving_time)` and `Σ(icu_training_load)`; updates `context["eventTotals"]["hours"]` and provenance key `enforcement_layer="tier2_enforce_event_only_totals"`. |
-| **17** | `audit_core/tier2_calc_integrity.py` | `validate_calculation_integrity(context)` | Confirms Tier-1 and Tier-2 totals align (Δh ≤ 0.1 / ΔTSS ≤ 2). Halts otherwise. |
-| **18** | `audit_core/tier2_wellness_validation.py` | `validate_wellness(context)` | Aligns wellness entries with activity dates; ignores nulls if load < 40. |
-| **19** | `audit_core/tier2_derived_metrics.py` | `compute_derived_metrics(context)` | Computes ACWR, Monotony, Strain, Polarisation, Recovery Index. |
-| **20** | `audit_core/tier2_actions.py` | `evaluate_actions(context)` | Generates adaptive actions based on derived metrics. |
-| **21** | `audit_core/tier2_render_validator.py` | `finalize_and_validate_render(context, reportType)` | Final report assembly. **Rebinds `summary.hours` and `totalHours` from verified event-only totals before template render.** Validates schema and icons, returns Markdown/HTML. |
+| **14** | `audit_core/tier2_event_completeness.py` | `validate_event_completeness(context)` | Detects missing days, rest days (🛌), and current day (⏳). |
+| **15** | `audit_core/tier2_enforce_event_only_totals.py` | `enforce_event_only_totals(context)` | Computes canonical `Σ(moving_time)` and `Σ(icu_training_load)`; updates `context["eventTotals"]["hours"]` and provenance key `enforcement_layer="tier2_enforce_event_only_totals"`. |
+| **16** | `audit_core/tier2_calc_integrity.py` | `validate_calculation_integrity(context)` | Confirms Tier-1 and Tier-2 totals align (Δh ≤ 0.1 / ΔTSS ≤ 2). Halts otherwise. |
+| **17** | `audit_core/tier2_wellness_validation.py` | `validate_wellness(context)` | Aligns wellness entries with activity dates; ignores nulls if load < 40. |
+| **18** | `audit_core/tier2_derived_metrics.py` | `compute_derived_metrics(context)` | Computes ACWR, Monotony, Strain, Polarisation, Recovery Index. |
+| **19** | `audit_core/tier2_actions.py` | `evaluate_actions(context)` | Generates adaptive actions based on derived metrics. |
+| **20** | `audit_core/tier2_render_validator.py` | `finalize_and_validate_render(context, reportType)` | Final report assembly. **Rebinds `summary.hours` and `totalHours` from verified event-only totals before template render.** Validates schema and icons, returns Markdown/HTML. |
 
 ---
 
