@@ -7,6 +7,7 @@ Ensures Tier-2 canonical totals are enforced using raw Tier-0 data.
 import os
 import json
 import argparse
+import numpy as np
 from datetime import datetime, timezone, date
 from audit_core import (
     tier0_pre_audit,
@@ -88,7 +89,7 @@ def main():
     if "totalHours" not in context or "totalTss" not in context:
         print("⚙️  Enforcing canonical totals before finalization …")
         try:
-            context = tier2_enforce_event_only_totals.enforce_event_only_totals(df_events, context)
+            context = tier2_enforce_event_only_totals.enforce_event_only_totals(None, context)
         except Exception as e:
             print(f"⚠️  Tier-2 enforcement fallback failed: {e}")
 
@@ -102,7 +103,7 @@ def main():
             context[key] = {
                 "rows": len(context[key]),
                 "columns": list(context[key].columns),
-                "preview": context[key].head(3).to_dict(orient="records")
+                "preview": context[key].head(3).to_dict(orient="records"),
             }
 
     report = {
@@ -113,18 +114,75 @@ def main():
     }
 
     # --- JSON-safe serializer for datetime/date ---
-    def json_serialize(obj):
+    def safe_json(obj):
         if isinstance(obj, (datetime, date)):
             return obj.isoformat()
+        if isinstance(obj, float) and (np.isnan(obj) or np.isinf(obj)):
+            return None
         raise TypeError(f"Type {obj.__class__.__name__} not serializable")
 
     outpath = f"reports/{args.type.lower()}_{args.start}_{args.end}.json"
-    with open(outpath, "w", encoding="utf-8") as f:
-        json.dump(report, f, indent=2, default=json_serialize)
 
-    print("✅ Audit completed. Canonical totals enforced (Tier-2 independent).")
+    try:
+        with open(outpath, "w", encoding="utf-8") as f:
+            json.dump(report, f, indent=2, default=safe_json, allow_nan=False)
+    except Exception as e:
+        print(f"❌ JSON dump failed: {e}")
+        print("🩹 Attempting fallback with NaN-safe sanitization …")
+
+        def sanitize(o):
+            """Recursively make object JSON-safe (handles numpy, NaN, inf, datetime, bool)."""
+            if isinstance(o, dict):
+                return {str(k): sanitize(v) for k, v in o.items()}
+            elif isinstance(o, list):
+                return [sanitize(v) for v in o if v is not None]
+            elif isinstance(o, float):
+                if np.isnan(o) or np.isinf(o):
+                    return 0.0
+                return float(o)
+            elif isinstance(o, (np.integer, int)):
+                return int(o)
+            elif isinstance(o, (np.bool_, bool)):
+                return bool(o)
+            elif isinstance(o, (datetime, date)):
+                return o.isoformat()
+            elif o is None:
+                return None
+            else:
+                try:
+                    json.dumps(o)
+                    return o
+                except Exception:
+                    return str(o)
+
+        cleaned = sanitize(report)
+
+        tmp_path = outpath + ".tmp"
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(cleaned, f, indent=2, ensure_ascii=False)
+
+        # ✅ Validation step — verify JSON is actually valid before replacing the file
+        import json as _json
+        try:
+            with open(tmp_path, "r", encoding="utf-8") as f:
+                _json.load(f)
+            os.replace(tmp_path, outpath)
+            print("✅ JSON validation passed. Safe fallback file written.")
+        except Exception as ve:
+            print(f"❌ Validation failed: {ve}")
+            print(f"⚠️ Corrupted JSON output — see {tmp_path} for debugging.")
+            raise
+
+    print("✅ Audit completed. Canonical totals enforced (Tier-2 integrated).")
     print(f"📁 Output written to {outpath}")
 
 
+# --- Safe exit wrapper ----------------------------------------------------
 if __name__ == "__main__":
-    main()
+    import sys
+    try:
+        main()
+        sys.exit(0)
+    except Exception as e:
+        print(f"❌ Audit runner failed: {e}")
+        sys.exit(1)

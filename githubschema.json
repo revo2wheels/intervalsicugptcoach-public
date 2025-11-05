@@ -1,0 +1,75 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Rules Loader + Validator",
+    "description": "Fetch the full v16 ruleset from a public mirror GitHub repository and validate reports.",
+    "version": "16.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.github.com/repos/revo2wheels/intervalsicugptcoach-public/contents"
+    }
+  ],
+  "paths": {
+    "/all-modules.md": {
+      "get": {
+        "summary": "Fetch the full v16 ruleset",
+        "operationId": "loadAllRules",
+        "security": [
+          {
+            "oauth2": ["repo"]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rules file content (Base64-encoded from GitHub API)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "type": "string" },
+                    "path": { "type": "string" },
+                    "sha": { "type": "string" },
+                    "content": { "type": "string" },
+                    "encoding": { "type": "string" }
+                  },
+                  "required": ["content", "encoding"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {},
+    "securitySchemes": {
+      "oauth2": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://github.com/login/oauth/authorize",
+            "tokenUrl": "https://github.com/login/oauth/access_token",
+            "scopes": {
+              "repo": "Full control of private repositories"
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-postprocessors": [
+    {
+      "name": "report_validator",
+      "entrypoint": "report_validator.validate_report",
+      "config": {
+        "report_type_field": "reportType",
+        "start_date_field": "startDate",
+        "end_date_field": "endDate",
+        "text_field": "reportText"
+      }
+    }
+  ]
+}
