@@ -10,6 +10,24 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
+# --- Unified Framework Report Object (v16-compatible) ---
+
+class Report(dict):
+    """Lightweight object to hold report data and render helpers."""
+    def add_line(self, text: str):
+        """Append a markdown line to report."""
+        self.setdefault("lines", []).append(text)
+        return self
+
+    def add_table(self, rows):
+        """Append a markdown table (list of lists)."""
+        self.setdefault("tables", []).append(rows)
+        return self
+
+    def add_section(self, title: str, content: str):
+        """Append a titled markdown section."""
+        self.setdefault("sections", []).append({"title": title, "content": content})
+        return self
 
 def safe_get(d, *keys, default="—"):
     """Safely traverse nested dicts."""
@@ -159,7 +177,22 @@ def render_report(data):
     md.append(f"**Framework:** URF v5.1 · Core: v16.14 · Enforcement: {ctx.get('enforcement_layer', '—')}")
     md.append("\n")
 
-    return "\n".join(md)
+    md_text = "\n".join(md)
+
+    report = Report()
+    report["header"] = {
+        "title": f"{report_type.title()} Training Report",
+        "framework": "Unified_Reporting_Framework_v5.1",
+        "athlete": name,
+        "period": f"{start} → {end}",
+        "timestamp": ctx.get("timestamp", datetime.utcnow().isoformat()),
+    }
+    report["markdown"] = md_text
+    report["type"] = report_type
+    report["context"] = ctx
+    report.add_line("✅ Report rendered successfully")
+
+    return report
 
 
 def main():
