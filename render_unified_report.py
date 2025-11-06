@@ -96,14 +96,31 @@ def render_report(data):
     else:
         md.append("_No derived metrics available._")
 
-    # === 5️⃣ Zone Distribution ===
-    md.append(section("⚙️ Training Zone Distribution"))
-    zones = ctx.get("zone_dist", {})
-    if zones:
-        rows = [[z, zones[z].get("desc", ""), f"{zones[z].get('pct', 0)} %"] for z in zones]
-        md.append(table(["Zone", "Description", "% Time"], rows))
+    ## ⚙️ Training Zone Distributions
+
+    # --- Power Zones ---
+    power = ctx.get("zone_dist_power", {})
+    if power:
+        md.append("### Power Zones")
+        md.append(table(["Zone", "% Time"], [[z, f"{v:.1f}"] for z, v in power.items()]))
     else:
-        md.append("_Zone data not available._")
+        md.append("_No power zone data available._")
+
+    # --- Heart Rate Zones ---
+    hr = ctx.get("zone_dist_hr", {})
+    if hr:
+        md.append("\n### Heart Rate Zones")
+        md.append(table(["Zone", "% Time"], [[z, f"{v:.1f}"] for z, v in hr.items()]))
+    else:
+        md.append("_No HR zone data available._")
+
+    # --- Pace Zones ---
+    pace = ctx.get("zone_dist_pace", {})
+    if pace:
+        md.append("\n### Pace Zones")
+        md.append(table(["Zone", "% Time"], [[z, f"{v:.1f}"] for z, v in pace.items()]))
+    else:
+        md.append("_No pace zone data available._")
 
     # === 6️⃣ Outlier Events ===
     md.append(section("⚠️ Outlier Events"))
