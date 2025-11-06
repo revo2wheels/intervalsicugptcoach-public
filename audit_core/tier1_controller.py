@@ -84,6 +84,25 @@ def run_tier1_controller(df_activities, wellness, context):
 
     context["dailyMerged"] = daily_summary
 
+    # --- Step 6b: Build training zone distribution (Z1–Z7) ---
+    zone_cols = [c for c in df_activities.columns if c.lower().startswith("z")]
+    if zone_cols:
+        try:
+            zone_sums = df_activities[zone_cols].sum(numeric_only=True)
+            total = zone_sums.sum()
+            if total > 0:
+                zone_dist = (zone_sums / total * 100).round(1).to_dict()
+                context["zone_dist"] = zone_dist
+            else:
+                context["zone_dist"] = {}
+        except Exception as e:
+            print(f"⚠ Failed to compute zone distribution: {e}")
+            context["zone_dist"] = {}
+    else:
+        print("⚠ No zone columns (Z1–Z7) found in dataset")
+        context["zone_dist"] = {}
+
+
     # --- Step 7: Qualitative label translation ---
     rpe_map = {1: "very easy", 2: "easy", 3: "moderate", 4: "somewhat hard",
                5: "hard", 6: "very hard", 7: "maximal", 8: "maximal+",
@@ -113,5 +132,25 @@ def run_tier1_controller(df_activities, wellness, context):
         f"Σ(moving_time)/3600={df_activities['moving_time'].sum()/3600:.2f}\n"
     )
     sys.stderr.flush()
+    # --- Step 9: Detect outlier events ---
+    try:
+        if "icu_training_load" in df_activities.columns:
+            mean_tss = df_activities["icu_training_load"].mean()
+            std_tss = df_activities["icu_training_load"].std()
+            outliers = df_activities[
+                (df_activities["icu_training_load"] > mean_tss + 3 * std_tss)
+                | (df_activities["icu_training_load"] < mean_tss - 3 * std_tss)
+            ]
+            if not outliers.empty:
+                context["outliers"] = outliers[
+                    ["date", "name", "icu_training_load", "moving_time"]
+                ].to_dict("records")
+            else:
+                context["outliers"] = []
+        else:
+            context["outliers"] = []
+    except Exception as e:
+        print(f"⚠ Outlier detection failed: {e}")
+        context["outliers"] = []
 
     return df_activities, wellness, context

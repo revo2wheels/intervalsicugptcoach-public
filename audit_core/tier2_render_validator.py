@@ -58,9 +58,9 @@ def finalize_and_validate_render(context, reportType="weekly"):
 
     # --- Step 3: Icon Pack Injection (safe fallback, cards only) ---
     try:
-        from ui_components.cards.icon_pack import ICON_CARDS
+        from uicomponents.cards.icon_pack import ICON_CARDS
     except ModuleNotFoundError:
-        print("⚠ ui_components not found — using empty ICON_CARDS reference.")
+        print("⚠ uicomponents not found — using empty ICON_CARDS reference.")
         ICON_CARDS = {}
 
     context["icon_pack"] = ICON_CARDS
@@ -155,15 +155,28 @@ def finalize_and_validate_render(context, reportType="weekly"):
     context.setdefault("metrics", {})["efficiency"] = eff
 
     # --- Step 8: Validation Chain (framework + schema) ---
-        # --- Ensure derived metrics are in report for validator ---
+    # Ensure full metrics block exists and sync derived from context if missing
     if "metrics" not in report:
         report["metrics"] = {}
-    if "derived_metrics" not in report["metrics"]:
-        # sync from context if available
-        report["metrics"]["derived_metrics"] = context.get("derived_metrics", {})
 
+    metrics_block = report["metrics"]
+
+    # Normalize derived metrics
+    if "derived" not in metrics_block:
+        metrics_block["derived"] = context.get("metrics", {}).get("derived_metrics", {})
+
+    # Normalize all Tier-2 metric groups (safe empty defaults)
+    for key in ["load", "adaptation", "trend", "correlation"]:
+        if key not in metrics_block:
+            metrics_block[key] = context.get(f"{key}_metrics", {})
+
+    # Write back normalized metrics to report
+    report["metrics"] = metrics_block
+
+    # Run validation and schema enforcement
     compliance = validate_report_output(context, report)
     enforce_report_schema(report)
+
 
     # --- Step 9: Final consistency check ---
     diff_hours = abs(context["totalHours"] - context.get("eventTotals", {}).get("hours", 0))

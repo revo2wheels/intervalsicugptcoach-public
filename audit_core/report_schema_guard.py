@@ -6,10 +6,9 @@ Schema-level validation of report output fields.
 FRAMEWORK_SCHEMA = {
     "header": ["athlete", "period", "discipline"],
     "summary": ["totalHours", "totalTss", "variance", "zones"],
-    "metrics": ["ACWR", "Monotony", "Strain", "Polarisation", "RecoveryIndex"],
+    "metrics": ["derived", "load", "adaptation", "trend", "correlation"],
     "actions": ["list"],
-    "footer": ["framework", "version"],
-    "extended_metrics": ["ReadinessIndex", "RecoveryScore", "Flags"]
+    "footer": ["framework", "version"]
 }
 
 def enforce_report_schema(report):

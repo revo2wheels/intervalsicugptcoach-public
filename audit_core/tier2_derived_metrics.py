@@ -8,6 +8,7 @@ Includes robust handling for missing zone or load columns.
 
 import numpy as np
 import pandas as pd
+import math
 from datetime import timedelta
 
 from coaching_profile import COACH_PROFILE
@@ -176,5 +177,21 @@ def compute_derived_metrics(df_events, context):
     for key in ["ACWR", "Monotony", "Strain", "Polarisation", "RecoveryIndex"]:
         if key not in context["metrics"]["derived_metrics"]:
             context["metrics"]["derived_metrics"][key] = 0.0
+
+    # --- Sync and sanitize derived metrics for validator ---
+    derived = context.get("derived_metrics", {})
+
+    # Promote derived metrics to top-level
+    for key, val in derived.items():
+        try:
+            # convert safely to float
+            context[key] = float(val)
+            if math.isnan(context[key]):
+                context[key] = 0.0
+        except (TypeError, ValueError):
+            # fallback if invalid type
+            context[key] = 0.0
+
+    print("[DEBUG] Derived metrics synced:", {k: context[k] for k in ["ACWR", "Monotony", "Strain", "Polarisation", "RecoveryIndex"] if k in context})
 
     return context

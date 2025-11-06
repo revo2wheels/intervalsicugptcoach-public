@@ -52,13 +52,6 @@ def run_report(
         context
     )
 
-    # Run Tier-0 pre-audit to get live data
-    df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
-        str(start_date),
-        str(end_date),
-        context
-    )
-
     # --- Merge static schema with live athlete and coaching data ---
     from athlete_profile import ATHLETE_PROFILE
     from coaching_profile import COACH_PROFILE, get_profile_metrics

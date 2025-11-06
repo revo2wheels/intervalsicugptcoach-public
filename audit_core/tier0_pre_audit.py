@@ -78,7 +78,12 @@ def fetch_wellness_chunked(athlete_id, oldest, newest, headers, max_retries=2):
 
     print("⚠ No wellness data available after adaptive chunking.")
     return []
-
+    # --- Wellness summarization (only if data exists) ---
+    if wellness:
+        df_well = pd.DataFrame(wellness)
+        numeric_cols = df_well.select_dtypes(include="number").columns
+        context["wellness_summary"] = df_well[numeric_cols].mean(numeric_only=True).round(2).to_dict()
+        context["wellness_df"] = df_well
 
 def run_tier0_pre_audit(start: str, end: str, context: dict):
     """Tier-0: OAuth-only Pre-audit fetch chain with adaptive chunking and meta-retry."""
