@@ -5,7 +5,7 @@ Defines athlete-specific parameter fields.
 Values are dynamically populated at runtime from athlete profile context.
 """
 
-PROFILE_FIELDS = {
+ATHLETE_PROFILE = {
     # --- Athlete Identification ---
     "athlete_id": None,
     "name": None,

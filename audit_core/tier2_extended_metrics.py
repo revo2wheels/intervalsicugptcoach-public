@@ -5,9 +5,9 @@ Builds on Tier-2 Step 3 (Derived Metrics Calculation).
 """
 
 from audit_core.tier2_derived_metrics import compute_derived_metrics
-from audit_core.tier3_coaching_profile import get_profile_metrics
-from audit_core.tier3_heuristics import derive_trends, derive_correlations
-from audit_core.tier3_cheat_sheet import summarize_load_block
+from coaching_profile import COACH_PROFILE, get_profile_metrics
+from coaching_heuristics import HEURISTICS, derive_trends, derive_correlations
+from coaching_cheat_sheet import CHEAT_SHEET, summarize_load_block
 
 
 def compute_extended_metrics(df_daily, context):

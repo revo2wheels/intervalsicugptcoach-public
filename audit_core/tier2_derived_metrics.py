@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 from datetime import timedelta
 
-from coaching_profile import PROFILE_DATA
+from coaching_profile import COACH_PROFILE
 from coaching_heuristics import HEURISTICS
 from coaching_cheat_sheet import CHEAT_SHEET
 
