@@ -155,6 +155,13 @@ def finalize_and_validate_render(context, reportType="weekly"):
     context.setdefault("metrics", {})["efficiency"] = eff
 
     # --- Step 8: Validation Chain (framework + schema) ---
+        # --- Ensure derived metrics are in report for validator ---
+    if "metrics" not in report:
+        report["metrics"] = {}
+    if "derived_metrics" not in report["metrics"]:
+        # sync from context if available
+        report["metrics"]["derived_metrics"] = context.get("derived_metrics", {})
+
     compliance = validate_report_output(context, report)
     enforce_report_schema(report)
 
@@ -184,5 +191,6 @@ def finalize_and_validate_render(context, reportType="weekly"):
             print(f"[WARN] ⚠️ Missing or empty section in context: {section}")
 
     print("✅ Report passed framework + schema validation (event-only, markdown).")
+    report["metrics"].setdefault("derived_metrics", context.get("derived_metrics", {}))
     return report, compliance
 

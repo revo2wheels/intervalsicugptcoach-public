@@ -113,18 +113,13 @@ def run_report(
     context = enforce_event_only_totals(df_master, context)
     validate_calculation_integrity(df_master)
     validate_wellness(df_master, wellness)
+
+    # --- Tier-2 core metrics ---
     context = compute_derived_metrics(df_master, context)
     context = evaluate_actions(context)
 
     # --- Tier-2 extended analytics ---
-    from audit_core.tier2_load_metrics import compute_load_metrics
-    from audit_core.tier2_adaptation_metrics import compute_adaptation_metrics
-    from audit_core.tier2_trend_analysis import build_trend_analysis
-    from audit_core.tier2_correlations import compute_correlations
-    context = compute_load_metrics(context)
-    context = compute_adaptation_metrics(context)
-    context = build_trend_analysis(context)
-    context = compute_correlations(context)
+    context = compute_extended_metrics(df_master, context)
 
     # --- Promote final audit state ---
     context["auditFinal"] = True

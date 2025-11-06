@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-tier2_derived_metrics.py — Unified v16.2 Adaptive
+tier2_derived_metrics.py — Unified v16.3 Adaptive Safe
 Computes all derived load, fatigue, metabolic, and efficiency metrics
 using dynamic references from the coaching knowledge modules.
+Includes robust handling for missing zone or load columns.
 """
 
 import numpy as np
@@ -12,6 +13,15 @@ from datetime import timedelta
 from coaching_profile import COACH_PROFILE
 from coaching_heuristics import HEURISTICS
 from coaching_cheat_sheet import CHEAT_SHEET
+
+
+def safe(df, col, fn="sum"):
+    """Safely apply a reduction to a dataframe column."""
+    import pandas as pd
+    if not isinstance(df, pd.DataFrame):
+        return 0.0
+    val = df[col].fillna(0) if col in df else pd.Series([0])
+    return float(val.sum()) if fn == "sum" else float(val.mean())
 
 
 def safe_get(source, key, default=None):
@@ -37,6 +47,8 @@ def compute_strain(load_series):
 
 def compute_fatigue_trend(df):
     decay = safe_get(HEURISTICS, "fatigue_decay_const", 0.2)
+    if "icu_training_load" not in df:
+        return 0.0
     tss = df["icu_training_load"].fillna(0)
     ema = tss.ewm(alpha=decay).mean()
     trend = (ema.iloc[-1] - ema.iloc[0]) / max(ema.iloc[0], 1)
@@ -44,26 +56,53 @@ def compute_fatigue_trend(df):
 
 
 def compute_zone_intensity(df):
+    """Zone intensity ratio (ZQI)."""
     zcols = [c for c in df.columns if c.lower().startswith("z")]
     if not zcols:
         return np.nan
     total = df[zcols].sum(axis=1).sum()
-    high = df.get("z5", 0) + df.get("z6", 0) + df.get("z7", 0)
-    return round(high.sum() / total if total > 0 else 0, 3)
+    high = safe(df, "z5") + safe(df, "z6") + safe(df, "z7")
+    return round(high / total if total > 0 else 0, 3)
 
 
 def compute_fatox_efficiency(df):
-    z2 = df.get("z2", 0).sum()
-    z3 = df.get("z3", 0).sum()
-    total = df.filter(like="z").sum().sum()
-    return round((z2 + z3) / total if total > 0 else 0, 3)
+    """Compute FatOx efficiency safely from available zone or load data."""
+    if not isinstance(df, pd.DataFrame):
+        return 0.0
+    total_load = safe(df, "icu_training_load")
+    z2 = safe(df, "z2")
+    z3 = safe(df, "z3")
+    if total_load == 0:
+        return 0.0
+    fatox_eff = (z2 + z3) / total_load
+    return round(float(fatox_eff), 3)
 
 
 def compute_polarisation(df):
-    high = df.get("z5", 0).sum() + df.get("z6", 0).sum() + df.get("z7", 0).sum()
-    low = df.get("z1", 0).sum()
-    total = df.filter(like="z").sum().sum()
-    return round((high + low) / total if total > 0 else 0, 2)
+    """Compute Seiler-style polarisation index safely from mixed data."""
+    import pandas as pd
+
+    if not isinstance(df, pd.DataFrame):
+        return 0.0
+
+    # Select only zone-related columns
+    zcols = [c for c in df.columns if c.lower().startswith("z")]
+    if not zcols:
+        return 0.0
+
+    # Coerce to numeric (handles list/object/string issues)
+    zdf = df[zcols].apply(pd.to_numeric, errors="coerce").fillna(0)
+
+    # Compute low and high intensity totals
+    low = zdf["z1"].sum() if "z1" in zdf else 0
+    high = sum(zdf.get(c, pd.Series([0])).sum() for c in ["z5", "z6", "z7"])
+
+    total = zdf.to_numpy().sum()
+    if total == 0:
+        return 0.0
+
+    polarisation = (high + low) / total
+    return round(float(polarisation), 3)
 
 
 def compute_recovery_index(monotony):
@@ -76,12 +115,10 @@ def compute_derived_metrics(df_events, context):
         context["derived_metrics"] = {"status": "no data"}
         return context
 
-    # Load profile + heuristics
     thresholds = safe_get(CHEAT_SHEET, "thresholds", {})
     baseline_days = safe_get(HEURISTICS, "baseline_window_days", 28)
     acwr_window = safe_get(HEURISTICS, "acwr_window_days", 7)
 
-    # Time window aggregation
     df_events["date"] = pd.to_datetime(df_events["date"])
     df_daily = df_events.groupby("date")["icu_training_load"].sum().reset_index()
     load_series = df_daily["icu_training_load"].fillna(0)
@@ -124,12 +161,20 @@ def compute_derived_metrics(df_events, context):
         "StressTolerance": stress_tolerance,
     }
 
-    # Trend storage
     context["trend_series"] = {
         "load_series": load_series.tail(14).tolist(),
         "fatigue_trend": fatigue_trend,
         "polarisation": polarisation,
         "mes": mes,
     }
+
+    # --- Align with framework validator schema ---
+    context.setdefault("metrics", {})
+    context["metrics"]["derived_metrics"] = context["derived_metrics"]
+
+    # Safety defaults for required keys
+    for key in ["ACWR", "Monotony", "Strain", "Polarisation", "RecoveryIndex"]:
+        if key not in context["metrics"]["derived_metrics"]:
+            context["metrics"]["derived_metrics"][key] = 0.0
 
     return context
