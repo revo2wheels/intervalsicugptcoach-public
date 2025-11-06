@@ -13,7 +13,7 @@ from pathlib import Path
 from audit_core.report_controller import run_report
 
 
-def generate_full_report(output_path="report_full.md"):
+def generate_full_report(output_path="reports.report_full.md"):
     """Run the weekly report and save both logs + markdown output."""
     buffer = io.StringIO()
 

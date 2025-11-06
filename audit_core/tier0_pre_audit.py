@@ -97,42 +97,54 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
 
     headers = {"Authorization": f"Bearer {ICU_TOKEN}"}
 
-    # --- Step 1: Fetch athlete profile ---
+        # --- Step 1: Fetch athlete profile ---
     profile_url = f"{INTERVALS_API}/athlete/0/profile"
     print(f"[T0] Fetching athlete profile via OAuth2: {profile_url}")
+
     profile_resp = fetch_with_retry(profile_url, headers)
     if profile_resp.status_code != 200:
-        raise AuditHalt(f"❌ Failed to fetch athlete profile ({profile_resp.status_code}) → {profile_resp.text[:200]}")
+        raise AuditHalt(
+            f"❌ Failed to fetch athlete profile ({profile_resp.status_code}) → {profile_resp.text[:200]}"
+        )
 
+    # Parse and extract athlete data
     profile_json = profile_resp.json()
     athlete = profile_json.get("athlete", profile_json)
 
-    if not athlete or "id" not in athlete:
-        raise AuditHalt("❌ Invalid athlete profile payload from Intervals.icu")
+    # --- Safety enforcement: ensure valid ID for downstream wellness fetch ---
+    if not isinstance(athlete, dict):
+        raise AuditHalt("❌ Invalid athlete profile format — expected dictionary payload")
 
+    # Default to current athlete (id=0) if missing
+    if "id" not in athlete or athlete["id"] in [None, "", "unknown"]:
+        print("⚠️ No athlete.id found — assigning default ID 0 (current athlete).")
+        athlete["id"] = 0
+
+    # Validate source data origin
     if athlete.get("source") in ["mock", "cache", "sandbox"]:
         raise AuditHalt("❌ Tier-0 halted: invalid data origin (mock/cache/sandbox)")
 
+    # Assign timezone with fallback
     tz = athlete.get("timezone", "Europe/Zurich")
     context["timezone"] = tz if isinstance(tz, str) and len(tz) >= 3 else "Europe/Zurich"
 
-   # --- Merge static schema with live athlete data ---
+    # --- Merge static schema with live athlete data ---
     from athlete_profile import ATHLETE_PROFILE
 
-    athlete = context.get("athlete", {})
     merged_profile = ATHLETE_PROFILE.copy()
     merged_profile.update({
-        "athlete_id": athlete.get("id"),
-        "name": athlete.get("name"),
+        "athlete_id": athlete.get("id", 0),
+        "name": athlete.get("name", "Unknown Athlete"),
         "discipline": athlete.get("sport", "cycling"),
-        "ftp": athlete.get("ftp"),
-        "weight": athlete.get("weight"),
-        "hr_rest": athlete.get("resting_hr"),
-        "hr_max": athlete.get("max_hr"),
-        "timezone": context.get("timezone"),
+        "ftp": athlete.get("ftp", None),
+        "weight": athlete.get("weight", None),
+        "hr_rest": athlete.get("resting_hr", None),
+        "hr_max": athlete.get("max_hr", None),
+        "timezone": context.get("timezone", "Europe/Zurich"),
         "updated": athlete.get("updated"),
     })
 
+    # Store in context for all downstream tiers
     context["athleteProfile"] = merged_profile
     context["athlete"] = athlete
 

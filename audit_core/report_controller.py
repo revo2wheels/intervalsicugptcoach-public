@@ -59,17 +59,17 @@ def run_report(
         context
     )
 
-    # --- Merge static schema with live athlete data ---
+    # --- Merge static schema with live athlete and coaching data ---
     from athlete_profile import ATHLETE_PROFILE
-    from coach_profile import COACH_PROFILE
-    from coaching_heuristics import HEURISTICS_TABLES
-    from coaching_cheat_sheet import CHEAT_SHEET_RULES
+    from coaching_profile import COACH_PROFILE, get_profile_metrics
+    from coaching_heuristics import HEURISTICS, derive_trends, derive_correlations
+    from coaching_cheat_sheet import CHEAT_SHEET, summarize_load_block
 
     context["knowledge"] = {
         "athlete_profile": ATHLETE_PROFILE,
         "coach_profile": COACH_PROFILE,
-        "heuristics": HEURISTICS_TABLES,
-        "cheatsheet": CHEAT_SHEET_RULES,
+        "heuristics": HEURISTICS,
+        "cheatsheet": CHEAT_SHEET,
     }
 
     # Normalize athlete profile into schema
