@@ -70,9 +70,9 @@ def run_tier1_controller(df_activities, wellness, context):
     if isinstance(wellness, (list, pd.DataFrame)) and len(wellness) > 0:
         df_well = pd.DataFrame(wellness)
         keep_cols = [
-            "id", "sleepSecs", "sleepScore", "hrv", "restingHR",
-            "fatigue", "stress", "mood", "motivation",
-            "hydration", "soreness", "injury", "readiness"
+        "id", "ctl", "atl", "tsb", "sleepSecs", "sleepScore", "hrv", "restingHR",
+        "fatigue", "stress", "mood", "motivation",
+        "hydration", "soreness", "injury", "readiness"
         ]
         df_well = df_well[[c for c in keep_cols if c in df_well.columns]]
         df_well.rename(columns={"id": "date"}, inplace=True)
@@ -83,6 +83,57 @@ def run_tier1_controller(df_activities, wellness, context):
         daily_summary = df_well.copy()
 
     context["dailyMerged"] = daily_summary
+
+    # --- Step 6a: Append training load metrics (CTL / ATL / TSB) if present ---
+    if isinstance(df_well, pd.DataFrame) and not df_well.empty:
+        df_well.columns = [c.strip().lower() for c in df_well.columns]
+        load_cols = [c for c in ["ctl", "atl", "tsb"] if c in df_well.columns]
+        if load_cols:
+            print(f"[DEBUG-T1] merging load metrics from wellness: {load_cols}")
+            # --- Normalize merge keys to timezone-naive daily dates ---
+            df_well["date"] = (
+                pd.to_datetime(df_well["date"])
+                .dt.tz_localize(None)
+                .dt.floor("D")
+            )
+            df_activities["date"] = (
+                pd.to_datetime(df_activities["start_date_local"])
+                .dt.tz_localize(None)
+                .dt.floor("D")
+            )
+            df_activities = df_activities.merge(
+                df_well[["date"] + load_cols], on="date", how="left"
+            )
+            # --- Step 6a.1: derive TSB if ctl/atl exist but tsb missing ---
+            if "ctl" in df_activities.columns and "atl" in df_activities.columns:
+                if "tsb" not in df_activities.columns:
+                    df_activities["tsb"] = (df_activities["ctl"] - df_activities["atl"]).round(2)
+                    print("[DEBUG-T1] derived TSB column added from CTL-ATL.")
+                else:
+                    print("[DEBUG-T1] TSB already present.")
+            else:
+                print("[DEBUG-T1] cannot derive TSB — ctl/atl missing.")
+            # --- Step 6a.2: promote CTL/ATL/TSB to context for Tier-2 ---
+            if all(c in df_activities.columns for c in ["ctl", "atl", "tsb"]):
+                context["ctl"] = float(df_activities["ctl"].mean(skipna=True).round(2))
+                context["atl"] = float(df_activities["atl"].mean(skipna=True).round(2))
+                context["tsb"] = float(df_activities["tsb"].mean(skipna=True).round(2))
+                print(f"[DEBUG-T1] promoted CTL={context['ctl']} ATL={context['atl']} TSB={context['tsb']} to context.")
+            else:
+                print("[DEBUG-T1] cannot promote CTL/ATL/TSB — missing column(s).")
+            # --- Step 6a.3: inject nested load_metrics dict for Tier-2/Renderer ---
+            context["load_metrics"] = {
+                "CTL": {"value": round(context.get("ctl", 0), 2), "status": "ok"},
+                "ATL": {"value": round(context.get("atl", 0), 2), "status": "ok"},
+                "TSB": {"value": round(context.get("tsb", 0), 2), "status": "ok"},
+            }
+            print("[DEBUG-T1] injected load_metrics for renderer:", context["load_metrics"])
+
+            print("[DEBUG-T1] sample merged CTL/ATL/TSB:", df_activities[["date"] + load_cols].head())
+        else:
+            print("[DEBUG-T1] no ctl/atl/tsb columns found in wellness data.")
+    else:
+        print("[DEBUG-T1] no valid wellness DataFrame to merge.")
 
     # --- Step 6b: Build training zone distribution (Z1–Z7) ---
     zone_cols = [c for c in df_activities.columns if c.lower().startswith("z")]

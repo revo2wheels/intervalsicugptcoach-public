@@ -194,4 +194,21 @@ def compute_derived_metrics(df_events, context):
 
     print("[DEBUG] Derived metrics synced:", {k: context[k] for k in ["ACWR", "Monotony", "Strain", "Polarisation", "RecoveryIndex"] if k in context})
 
+    # --- Preserve CTL/ATL/TSB from earlier tiers ---
+    existing_load = context.get("load_metrics", {}).copy()
+
+    # --- Build unified load metrics ---
+    context["load_metrics"] = {
+        "CTL": existing_load.get("CTL", {"value": 0, "status": "ok"}),
+        "ATL": existing_load.get("ATL", {"value": 0, "status": "ok"}),
+        "TSB": existing_load.get("TSB", {"value": 0, "status": "ok"}),
+        "ACWR": {"value": acwr, "status": "ok"},
+        "Monotony": {"value": monotony, "status": "ok"},
+        "Strain": {"value": strain, "status": "ok"},
+        "Polarisation": {"value": polarisation, "status": "ok"},
+        "RecoveryIndex": {"value": recovery_index, "status": "ok"},
+    }
+
+    print("[DEBUG-T2X] post-extended load_metrics:", context["load_metrics"])
     return context
+

@@ -15,6 +15,7 @@ from audit_core.tier2_enforce_event_only_totals import enforce_event_only_totals
 from audit_core.template_renderer import render_template
 
 def finalize_and_validate_render(context, reportType="weekly"):
+    print("[DEBUG-FINALIZER-ENTRY] load_metrics:", context.get("load_metrics"))
     # --- Promote audit to final before render (v16.14-A2) ---
     if context.get("auditPartial", False) and not context.get("auditFinal", False):
         context["auditFinal"] = True
@@ -58,7 +59,7 @@ def finalize_and_validate_render(context, reportType="weekly"):
 
     # --- Step 3: Icon Pack Injection (safe fallback, cards only) ---
     try:
-        from uicomponents.cards.icon_pack import ICON_CARDS
+        from uicomponents.icon_pack import ICON_CARDS
     except ModuleNotFoundError:
         print("⚠ uicomponents not found — using empty ICON_CARDS reference.")
         ICON_CARDS = {}
@@ -119,8 +120,9 @@ def finalize_and_validate_render(context, reportType="weekly"):
     for key in ["derived_metrics","load_metrics","adaptation_metrics","trend_metrics","correlation_metrics"]:
         print(f"{key}:", key in context)
 
-
+    
     # --- Step 5: Generate Report (no recomputation, uses enforced totals) ---
+    print("[DEBUG-FINALIZER] pre-render load_metrics:", context.get("load_metrics"))
     report = render_template(
         reportType,
         framework="Unified_Reporting_Framework_v5.1",

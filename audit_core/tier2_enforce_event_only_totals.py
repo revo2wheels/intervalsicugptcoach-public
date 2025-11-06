@@ -98,5 +98,13 @@ def enforce_event_only_totals(df_events, context):
         f"T2 totals computed from {source_label} "
         f"(Δh={diff_hours:.2f}, ΔTSS={diff_tss:.1f}, events={len(df_event_only)})"
     )
+    # --- Final load_metrics sync ---
+    if all(k in context for k in ["ctl", "atl", "tsb"]):
+        context["load_metrics"] = {
+            "CTL": {"value": round(context.get("ctl", 0), 2), "status": "ok"},
+            "ATL": {"value": round(context.get("atl", 0), 2), "status": "ok"},
+            "TSB": {"value": round(context.get("tsb", 0), 2), "status": "ok"},
+        }
+        print("[DEBUG-T2] enforced load_metrics sync in context:", context["load_metrics"])
 
     return context

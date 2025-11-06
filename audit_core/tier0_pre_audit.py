@@ -53,10 +53,11 @@ def estimate_payload_size(days: int, dataset: str):
         return days * 12000  # activities lighter
 
 
-def fetch_wellness_chunked(athlete_id, oldest, newest, headers, max_retries=2):
+def fetch_wellness_chunked(athlete_id, oldest, newest, headers, context=None, max_retries=2):
     """Adaptive and retryable chunked fetch for wellness data."""
+    wellness = []
+
     for meta_attempt in range(max_retries + 1):
-        wellness = []
         try:
             est_payload_well = estimate_payload_size((newest - oldest).days + 1, "wellness")
             well_chunk_days = 3 if est_payload_well > 200000 else 7
@@ -64,26 +65,24 @@ def fetch_wellness_chunked(athlete_id, oldest, newest, headers, max_retries=2):
             for offset in range(0, (newest - oldest).days + 1, well_chunk_days):
                 chunk_start = oldest + timedelta(days=offset)
                 chunk_end = min(newest, chunk_start + timedelta(days=well_chunk_days - 1))
-                url = f"{INTERVALS_API}/athlete/0/wellness?oldest={chunk_start}&newest={chunk_end}"
+                url = f"{INTERVALS_API}/athlete/{athlete_id}/wellness?oldest={chunk_start}&newest={chunk_end}"
                 resp = fetch_with_retry(url, headers)
                 if resp.status_code == 200 and resp.json():
                     wellness.extend(resp.json())
 
             if wellness:
-                return wellness
+                df_well = pd.DataFrame(wellness)
+                return df_well
+
         except Exception as e:
             if meta_attempt == max_retries:
                 raise AuditHalt(f"❌ Wellness fetch failed after {max_retries + 1} meta-retries: {e}")
             continue
 
     print("⚠ No wellness data available after adaptive chunking.")
-    return []
-    # --- Wellness summarization (only if data exists) ---
-    if wellness:
-        df_well = pd.DataFrame(wellness)
-        numeric_cols = df_well.select_dtypes(include="number").columns
-        context["wellness_summary"] = df_well[numeric_cols].mean(numeric_only=True).round(2).to_dict()
-        context["wellness_df"] = df_well
+    if "id" in df_well.columns and "date" not in df_well.columns:
+        df_well.rename(columns={"id": "date"}, inplace=True)
+    return pd.DataFrame(columns=["date", "ctl", "atl", "tsb"])
 
 def run_tier0_pre_audit(start: str, end: str, context: dict):
     """Tier-0: OAuth-only Pre-audit fetch chain with adaptive chunking and meta-retry."""
@@ -235,7 +234,14 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     print(f"[T0] Canonical totals → Σ(moving_time)/3600={total_hours:.2f}  Σ(TSS)={total_tss:.1f}")
 
     # --- Step 4: Fetch wellness with adaptive chunking + meta-retry ---
-    wellness = fetch_wellness_chunked(athlete["id"], oldest, newest, headers)
+    # --- Step 4: Fetch wellness with adaptive chunking + meta-retry ---
+    wellness = fetch_wellness_chunked(athlete["id"], oldest, newest, headers, context)
+
+    # --- Debug inspection ---
+    print("[DEBUG] wellness raw:", type(wellness), len(wellness))
+    if isinstance(wellness, pd.DataFrame):
+        print("[DEBUG] wellness columns:", wellness.columns.tolist())
+        print("[DEBUG] wellness head:\n", wellness.head())
 
     # --- Step 5: Finalize context ---
     context.update({"auditPartial": False, "auditFinal": False})

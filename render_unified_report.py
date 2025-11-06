@@ -60,7 +60,7 @@ def render_report(data):
     tz = ctx.get("timezone", "n/a")
     start, end = data.get("window", ["?", "?"])
     report_type = data.get("type", "Weekly")
-
+    print("[DEBUG-RENDER] incoming load_metrics:", json.dumps(ctx.get("load_metrics", {}), indent=2))   
     md = []
 
     # === 1️⃣ HEADER / META ===
@@ -120,13 +120,17 @@ def render_report(data):
     md.append(f"- Rest Days: {well.get('rest_days', '—')}")
     md.append(f"- Resting HR: {well.get('rhr', '—')} bpm")
     md.append(f"- HRV Trend: {well.get('hrv_trend', '—')}")
-    md.append(f"- ATL: {well.get('atl', '—')} · CTL: {well.get('ctl', '—')} · TSB: {well.get('tsb', '—')}")
+    load = ctx.get("load_metrics", {})
+    atl = load.get("ATL", {}).get("value", well.get("atl", "—"))
+    ctl = load.get("CTL", {}).get("value", well.get("ctl", "—"))
+    tsb = load.get("TSB", {}).get("value", well.get("tsb", "—"))
+    md.append(f"- ATL: {atl} · CTL: {ctl} · TSB: {tsb}")
 
     # === 8️⃣ Load & Stress Chain ===
     md.append(section("⚖️ Load & Stress Chain"))
     load = ctx.get("load_metrics", {})
     if load:
-        rows = [[k, v, load[k].get("status", "✅")] if isinstance(v, dict) else [k, v, "✅"] for k, v in load.items()]
+        rows = [[k, v.get("value", v), v.get("status", "✅")] for k, v in load.items()]
         md.append(table(["Metric", "Value", "Status"], rows))
     else:
         md.append("_Load metrics unavailable._")

@@ -111,10 +111,24 @@ def run_report(
     context = compute_derived_metrics(df_master, context)
     context = evaluate_actions(context)
 
+    # --- PATCH: Hard-lock load_metrics before Tier-2 render ---
+    if "load_metrics" in context and context["load_metrics"]:
+        context["_locked_load_metrics"] = context["load_metrics"].copy()
+        print("[PATCH-LOCK] Preserved load_metrics before validator:",
+            context["_locked_load_metrics"])
+
     # --- Tier-2 extended analytics ---
     context = compute_extended_metrics(df_master, context)
+    print("[PATCH-LOCKPOSTEXTENDED] Preserved load_metrics after extended:",
+            context["_locked_load_metrics"])
 
-    # --- Promote final audit state ---
+    # ✅ Restore locked metrics back into live context before rendering
+    if "_locked_load_metrics" in context:
+        context["load_metrics"] = context["_locked_load_metrics"].copy()
+        print("[PATCH-RESTORE] Reinstated locked load_metrics before finalizer:",
+            context["load_metrics"])
+
+     # --- Promote final audit state ---
     context["auditFinal"] = True
 
     # --- Final render ---
