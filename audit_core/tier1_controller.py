@@ -5,9 +5,63 @@ and enforces Field Lock Rule for moving_time.
 """
 
 import pandas as pd
+import numpy as np
 from audit_core.errors import AuditHalt
 from audit_core.utils import validate_dataset_integrity, validate_wellness_alignment
 
+def collect_zone_distributions(df_activities, athlete_profile, context):
+    """Compute separate zone distributions for Power, HR, and Pace."""
+
+    import numpy as np
+    import pandas as pd
+
+    if df_activities is None or df_activities.empty:
+        print("⚠ collect_zone_distributions: empty df_activities")
+        context["zone_dist_power"] = {}
+        context["zone_dist_hr"] = {}
+        context["zone_dist_pace"] = {}
+        return context
+
+    # --- Initialize output ---
+    context["zone_dist_power"] = {}
+    context["zone_dist_hr"] = {}
+    context["zone_dist_pace"] = {}
+
+    def compute_zone_dist(cols, label):
+        if not cols:
+            return {}
+        subset = df_activities[cols].select_dtypes(include=[np.number])
+        total = subset.sum().sum()
+        if total <= 0:
+            return {}
+        dist = (subset.sum() / total * 100).round(1).to_dict()
+        print(f"[DEBUG-ZONES] {label} zones computed: {dist}")
+        return dist
+
+    # --- POWER ZONES ---
+    power_cols = [c for c in df_activities.columns if c.lower().startswith("power_z")]
+    if power_cols:
+        context["zone_dist_power"] = compute_zone_dist(power_cols, "Power")
+
+    # --- HEART RATE ZONES ---
+    hr_cols = [c for c in df_activities.columns if c.lower().startswith("hr_z")]
+    if hr_cols:
+        context["zone_dist_hr"] = compute_zone_dist(hr_cols, "HR")
+
+    # --- PACE ZONES ---
+    pace_cols = [c for c in df_activities.columns if c.lower().startswith("pace_z")]
+    if pace_cols:
+        context["zone_dist_pace"] = compute_zone_dist(pace_cols, "Pace")
+
+    # --- Fallback using athlete profile if no explicit zone data ---
+    if not any([context["zone_dist_power"], context["zone_dist_hr"], context["zone_dist_pace"]]):
+        print("⚠ No zone columns found — using athlete profile thresholds if available.")
+        if athlete_profile:
+            context["zone_dist_power"] = athlete_profile.get("power_zones", {})
+            context["zone_dist_hr"] = athlete_profile.get("hr_zones", {})
+            context["zone_dist_pace"] = athlete_profile.get("pace_zones", {})
+
+    return context
 
 def run_tier1_controller(df_activities, wellness, context):
     # --- Tier-1 entry diagnostic ---
@@ -135,24 +189,15 @@ def run_tier1_controller(df_activities, wellness, context):
     else:
         print("[DEBUG-T1] no valid wellness DataFrame to merge.")
 
-    # --- Step 6b: Build training zone distribution (Z1–Z7) ---
-    zone_cols = [c for c in df_activities.columns if c.lower().startswith("z")]
-    if zone_cols:
-        try:
-            zone_sums = df_activities[zone_cols].sum(numeric_only=True)
-            total = zone_sums.sum()
-            if total > 0:
-                zone_dist = (zone_sums / total * 100).round(1).to_dict()
-                context["zone_dist"] = zone_dist
-            else:
-                context["zone_dist"] = {}
-        except Exception as e:
-            print(f"⚠ Failed to compute zone distribution: {e}")
-            context["zone_dist"] = {}
-    else:
-        print("⚠ No zone columns (Z1–Z7) found in dataset")
-        context["zone_dist"] = {}
-
+    # --- Step 6b: Build HR / Power / Pace zone distributions ---
+    try:
+        from audit_core.zone_handler import collect_zone_distributions
+        context = collect_zone_distributions(df_activities, context["athleteProfile"], context)
+    except Exception as e:
+        print(f"⚠ Zone distribution collection failed: {e}")
+        context["zone_dist_power"] = {}
+        context["zone_dist_hr"] = {}
+        context["zone_dist_pace"] = {}
 
     # --- Step 7: Qualitative label translation ---
     rpe_map = {1: "very easy", 2: "easy", 3: "moderate", 4: "somewhat hard",
@@ -205,3 +250,6 @@ def run_tier1_controller(df_activities, wellness, context):
         context["outliers"] = []
 
     return df_activities, wellness, context
+
+
+
