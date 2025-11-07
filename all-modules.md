@@ -23,12 +23,28 @@
     "render_mode": "full",
     "autoCommit": true,
     "suppressPrompts": true
+    "tier2_event_filter": {
+    "field": "origin",
+    "include": ["event"],
+    "deduplicate": true,
+    "deduplicate_keys": ["id", "start_date_local"]
+}
+
   },
-  "audit": {
-    "tier0": { "enabled": true, "ruleset": "pre_audit_integrity" },
-    "tier1": { "enabled": true, "ruleset": "dataset_consistency" },
-    "tier2": { "enabled": true, "ruleset": "derived_metrics_validation" }
-  },
+"audit": {
+  "tier0": { "enabled": true, "ruleset": "pre_audit_integrity" },
+  "tier1": { "enabled": true, "ruleset": "dataset_consistency" },
+  "tier2": {
+    "enabled": true,
+    "ruleset": "derived_metrics_validation",
+    "rules": [
+      "filter_event_origin",
+      "collapse_duplicate_events",
+      "enforce_event_only_totals",
+      "validate_calculation_integrity"
+    ]
+  }
+}
   "derived": {
     "enableFatOx": true,
     "enableCarbOx": true,
