@@ -166,29 +166,54 @@
   "security": [
     { "OAuth2": ["ACTIVITY:READ", "WELLNESS:READ", "SETTINGS:READ"] }
   ],
-  "x-validation-rules": {
-    "discipline_filter": {
+  "x-validation-rules": [
+  {
+    "id": "discipline_filter",
+    "description": "Discipline inclusion mapping for totals",
+    "rules": {
       "cycling": ["Ride", "VirtualRide"],
       "running": ["Run", "VirtualRun"],
       "swimming": ["Swim"],
       "other": ["*"]
-    },
-    "conversions": {
+    }
+  },
+  {
+    "id": "conversions",
+    "description": "Numeric conversions and rounding",
+    "rules": {
       "distanceKm": "distance/1000, round 2 decimals",
       "volumeH": "moving_time/3600, round 1 decimal",
       "tss": "sum of icu_training_load, exact"
-    },
-    "precision": {
+    }
+  },
+  {
+    "id": "precision",
+    "description": "Rounding precision enforcement",
+    "rules": {
       "distanceKm": 2,
       "volumeH": 1,
       "tss": 0
-    },
-    "integrity": {
+    }
+  },
+  {
+    "id": "integrity",
+    "description": "Discipline and dataset integrity checks",
+    "rules": {
       "no_elapsed_time": true,
       "discipline_totals_must_match": true,
       "no_cross_discipline_sums": true,
       "halt_on_mismatch": true
     }
+  },
+  {
+    "id": "render_event_totals_integrity",
+    "description": "Ensure renderer uses Tier-2 Σ(eventTotals) instead of disciplineSummary",
+    "target": "render",
+    "method": "validate_render_source",
+    "expected_source": "event_totals",
+    "halt_on_fail": true
+  }
+],
   },
   "x-actions": {
     "run_audit_pipeline": {
