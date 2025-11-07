@@ -20,13 +20,11 @@
 | Audit flags | Tier-0 → Tier-2 | Tier-2 Step-7: Evaluate Actions | Adaptive Actions | Weekly / Seasonal Report – Actions Section | Triggered by **`evaluate_actions()`** in **t2_actions.py** |
 | Placeholders (`{xxx}`) | Glossary & Placeholders | Used across all modules | Populated values for rendering | Unified Reporting Framework v5.1 sections | Tied to **Coaching Heuristics**, **Coaching Profile** |
 
+
+**OVERVIEW FLOW DIAGRAM**
+
 ```mermaid
 flowchart TB
-%% ====== LAYOUT CONTROL ======
-classDef small fill=#e7f0fa,stroke=#4a90e2,color=#111,stroke-width:1px,font-size:10px;
-classDef process fill=#fff,stroke=#999,color=#222,stroke-width:1px,font-size:10px;
-classDef output fill=#f7faf7,stroke=#7ca87c,color=#111,stroke-width:1px,font-size:10px;
-classDef section fill=#faf3e7,stroke=#c9993c,color=#111,stroke-width:1px,font-size:10px;
 
 %% ====== INPUTS ======
 subgraph Inputs["Inputs"]
@@ -117,7 +115,7 @@ C8 --> D5
 ```
 
 
-DETAILED SYSTEM FLOW BELOW
+**DETAILED SYSTEM FLOW BELOW**
 
 
 ```mermaid
