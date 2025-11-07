@@ -26,14 +26,15 @@ This file serves as the official local entry point and calls `run_report()` from
 4. A diagnostic script, **run_audit.py**, remains available for developer testing and direct tier calls but is **not** used for standard reporting.
 
 ### Local Mode Flow Diagram
-```plaintext
-[Local Data Fetch] → [report.py → run_report()]  
-    → [audit_core/tier0_pre_audit.py]  
-    → [audit_core/tier1_controller.py]  
-    → [audit_core/tier2_* modules]  
-    → [render_unified_report.py]  
-    → [Unified Report Output]
-
+```mermaid
+graph TB
+    A[Local Data Fetch] --> B[report.py - run_report]
+    B --> C[tier0_pre_audit.py]
+    C --> D[tier1_controller.py]
+    D --> E[tier2_modules - integrity, totals, wellness, metrics]
+    E --> F[render_unified_report.py]
+    F --> G[Unified Report Output]
+```
 ## Key Differences Between Cloud and Local Flows
 | Feature | Cloud (ChatGPT) | Local (Python) |
 |:--|:--|:--|
