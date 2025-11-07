@@ -231,7 +231,7 @@ load_metrics post-render: {'CTL': {'value': 91.65, 'status': 'ok'}, 'ATL': {'val
 **Athlete:** Clive King
 **Period:** ? → ?
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-07T14:23:40.011659
+**Generated:** 2025-11-07T15:06:04.065930
 
 ---
 
@@ -343,6 +343,6 @@ _No outliers detected._
 _No event preview available._
 
 ---
-✅ **Audit Completed:** 2025-11-07T14:23:40.011765
+✅ **Audit Completed:** 2025-11-07T15:06:04.066054
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 

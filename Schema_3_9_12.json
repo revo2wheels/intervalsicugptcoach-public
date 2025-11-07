@@ -208,10 +208,11 @@
   {
     "id": "render_event_totals_integrity",
     "description": "Ensure renderer uses Tier-2 Σ(eventTotals) instead of disciplineSummary",
-    "target": "render",
+    "target": "tier2.finalizer",
     "method": "validate_render_source",
     "expected_source": "event_totals",
-    "halt_on_fail": true
+    "halt_on_fail": true,
+    "severity": "critical"
   }
 ],
   "x-actions": {

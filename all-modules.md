@@ -31,6 +31,7 @@ manifest_note: "Dual-path manifest with explicit ChatGPT and Local modes; full G
     "auditPartial": true,
     "force_analysis": true,
     "preRenderAudit": true,
+    "tier2_event_finalizer_strict": true,
     "tier2_enforce_event_only_totals": true,
     "tier2_event_collapse": {
       "deduplicate_by": ["id", "start_date_local"],
@@ -74,15 +75,15 @@ manifest_note: "Dual-path manifest with explicit ChatGPT and Local modes; full G
     "supportedIntents": ["weekly", "season", "wellness"],
     "autoCommit": true
   },
-"output": {
-  "render_mode": "full",
-  "icons": true,
-  "include_metabolic_panel": true,
-  "include_energy_mix_chart": true,
-  "validateDerivedMetabolic": true,
-  "enforce_event_totals_render": true,
-  "render_source": "event_totals"
-}
+  "output": {
+    "render_mode": "full",
+    "icons": true,
+    "include_metabolic_panel": true,
+    "include_energy_mix_chart": true,
+    "validateDerivedMetabolic": true,
+    "enforce_event_totals_render": true,
+    "render_source": "event_totals"
+  }
   "permissions": {
     "roles": ["administrator", "auditor"],
     "accessLevels": { "weekly": "read", "season": "read", "audit": "write" }
