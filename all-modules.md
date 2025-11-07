@@ -85,7 +85,10 @@ manifest_note: "Dual-path manifest with explicit ChatGPT and Local modes; full G
     "include_energy_mix_chart": true,
     "validateDerivedMetabolic": true,
     "enforce_event_totals_render": true,
-    "render_source": "event_totals"
+    "render_source": "event_totals",
+    "require_explicit_flags": false,
+    "extended_metrics_default": true,
+    "derived_metrics_default": true
   }
   "permissions": {
     "roles": ["administrator", "auditor"],
