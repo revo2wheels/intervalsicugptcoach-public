@@ -5,6 +5,10 @@
   "version": "3.9.12",
   "description": "Custom Governance Manifest for Unified Reporting Framework v5.1",
   "xValidationRef": "./Schema_3_9_12.json#/x-validation-rules"
+  "autoload": {
+  "enabled": true,
+  "on_session_start": "loadAllRules"
+}
   "governance": {
     "auditRequired": true,
     "renderMode": "full",
