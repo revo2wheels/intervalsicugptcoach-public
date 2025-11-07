@@ -35,6 +35,13 @@ manifest_note: "Dual-path manifest with explicit ChatGPT and Local modes; full G
     "tier0": { "enabled": true, "ruleset": "pre_audit_integrity" },
     "tier1": { "enabled": true, "ruleset": "dataset_consistency" },
     "tier2": { "enabled": true, "ruleset": "derived_metrics_validation" }
+      "derived": {
+    "enableFatOx": true,
+    "enableCarbOx": true,
+    "enableVO2Estimation": true,
+    "enableEnergyMix": true,
+    "enableLactateModel": true
+  }
   },
   "reporting": {
     "defaultIntent": "weekly",
