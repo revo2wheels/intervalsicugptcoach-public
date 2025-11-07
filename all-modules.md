@@ -72,13 +72,15 @@ manifest_note: "Dual-path manifest with explicit ChatGPT and Local modes; full G
     "supportedIntents": ["weekly", "season", "wellness"],
     "autoCommit": true
   },
-  "output": {
-    "render_mode": "full",
-    "icons": true,
-    "include_metabolic_panel": true,
-    "include_energy_mix_chart": true,
-    "validateDerivedMetabolic": true
-  },
+"output": {
+  "render_mode": "full",
+  "icons": true,
+  "include_metabolic_panel": true,
+  "include_energy_mix_chart": true,
+  "validateDerivedMetabolic": true,
+  "enforce_event_totals_render": true,
+  "render_source": "event_totals"
+}
   "permissions": {
     "roles": ["administrator", "auditor"],
     "accessLevels": { "weekly": "read", "season": "read", "audit": "write" }
