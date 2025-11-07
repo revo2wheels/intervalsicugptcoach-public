@@ -153,25 +153,25 @@ This section is auto-generated and refreshed via GitHub Actions on commit.
 | File | Description |
 |:--|:--|
 | [all-modules.md](./all-modules.md) | Module list, bindings, and dependency schema. |
-| [USAGE_GUIDE.md](.docs/USAGE_GUIDE.md) | Usage for local (`report.py`) and ChatGPT modes. |
+| [USAGE_GUIDE.md](docs/USAGE_GUIDE.md) | Usage for local (`report.py`) and ChatGPT modes. |
 
 ### 🧱 Coaching Framework Stack
 | File | Description |
 |:--|:--|
-| [coach_framework-map.md](.docs/coach_framework-map.md) | Hierarchical coaching frameworks. |
-| [coach_mapping-table.md](.docs/coach_mapping-table.md) | Metric-to-framework mappings. |
+| [coach_framework-map.md](docs/coach_framework-map.md) | Hierarchical coaching frameworks. |
+| [coach_mapping-table.md](docs/coach_mapping-table.md) | Metric-to-framework mappings. |
 
 ### 🔬 Analytical & Mapping Resources
 | File | Description |
 |:--|:--|
-| [mapping-table.md](.docs/mapping-table.md) | Full data lineage diagram and report linkage. |
-| [audit_framework-map.md](.docs/audit_framework-map.md) | Audit tier dependency flow. |
+| [mapping-table.md](docs/mapping-table.md) | Full data lineage diagram and report linkage. |
+| [audit_framework-map.md](docs/audit_framework-map.md) | Audit tier dependency flow. |
 
 ### ⚖️ Governance & Integrity
 | File | Description |
 |:--|:--|
-| [COMPLIANCE_LOG_GUIDE.md](.docs/COMPLIANCE_LOG_GUIDE.md) | Logging and compliance trace rules. |
-| [audit_chain_overview.md](.docs/audit_chain_overview.md) | Tier integrity enforcement and validation logic. |
+| [COMPLIANCE_LOG_GUIDE.md](docs/COMPLIANCE_LOG_GUIDE.md) | Logging and compliance trace rules. |
+| [audit_chain_overview.md](docs/audit_chain_overview.md) | Tier integrity enforcement and validation logic. |
 
 ### 🧭 Entry Points
 | File | Function |
