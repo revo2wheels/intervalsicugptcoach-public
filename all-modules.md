@@ -1,13 +1,3 @@
-<!-- Renderer binding block -->
-# 🧭 Module Source Map PUBLIC
-manifest_origin: github
-manifest_source: live
-manifest_mode: dual
-manifest_usage: chatgpt+local
-framework_version: "Unified Reporting Framework v5.1"
-ruleset_version: "v16.16G"
-manifest_note: "Dual-path manifest with explicit ChatGPT and Local modes; full GitHub URLs, relative local bindings, and corrected documentation."
-
 ## Governance Manifest v3.9.12
 ```json
 {
@@ -22,26 +12,26 @@ manifest_note: "Dual-path manifest with explicit ChatGPT and Local modes; full G
     "xValidationRef": "./Schema_3_9_12.json#/x-validation-rules"
   },
   "enforcement": {
-  "auditFinal": true,
-  "auditPartial": true,
-  "force_analysis": true,
-  "preRenderAudit": true,
-  "tier2_enforce_event_only_totals": true,
-  "render_mode": "full",
-  "autoCommit": true,
-  "suppressPrompts": true
-}
+    "auditFinal": true,
+    "auditPartial": true,
+    "force_analysis": true,
+    "preRenderAudit": true,
+    "tier2_enforce_event_only_totals": true,
+    "render_mode": "full",
+    "autoCommit": true,
+    "suppressPrompts": true
+  },
   "audit": {
     "tier0": { "enabled": true, "ruleset": "pre_audit_integrity" },
     "tier1": { "enabled": true, "ruleset": "dataset_consistency" },
     "tier2": { "enabled": true, "ruleset": "derived_metrics_validation" }
-      "derived": {
+  },
+  "derived": {
     "enableFatOx": true,
     "enableCarbOx": true,
     "enableVO2Estimation": true,
     "enableEnergyMix": true,
     "enableLactateModel": true
-  }
   },
   "reporting": {
     "defaultIntent": "weekly",
@@ -52,9 +42,9 @@ manifest_note: "Dual-path manifest with explicit ChatGPT and Local modes; full G
     "render_mode": "full",
     "icons": true,
     "include_metabolic_panel": true,
-    "validateDerivedMetabolic": true,
-    "include_energy_mix_chart": true
-  }
+    "include_energy_mix_chart": true,
+    "validateDerivedMetabolic": true
+  },
   "permissions": {
     "roles": ["administrator", "auditor"],
     "accessLevels": { "weekly": "read", "season": "read", "audit": "write" }
@@ -71,170 +61,18 @@ manifest_note: "Dual-path manifest with explicit ChatGPT and Local modes; full G
   },
   "x-intents": [
     {
-      "trigger": [
-        "weekly report",
-        "season report",
-        "wellness report"
-      ],
+      "trigger": ["weekly report", "season report", "wellness report"],
       "action": "run_audit_pipeline"
     }
   ],
   "manifest_signature": {
-  "schemaVersion": "3.9.12",
-  "rulesetVersion": "v16.14",
-  "validatedBy": "Unified Reporting Framework v5.1",
-  "checksum": "auto" 
-}
+    "schemaVersion": "3.9.12",
+    "rulesetVersion": "v16.16G",
+    "validatedBy": "Unified Reporting Framework v5.1",
+    "checksum": "auto"
+  },
   "timestamps": {
-```
-
----
-
-## 🔗 Bindings (Dual Path)
-bindings:
-  Glossary & Placeholders:
-    cloud: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Glossary%20%26%20Placeholders.md
-    local: ./Glossary & Placeholders.md
-  Coaching Cheat Sheet:
-    cloud: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Coaching%20Cheat%20Sheet.md
-    local: ./Coaching Cheat Sheet.md
-  Coaching Heuristics Pack:
-    cloud: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Coaching%20Heuristics%20Pack.md
-    local: ./Coaching Heuristics Pack.md
-  Advanced Marker Reference:
-    cloud: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Advanced%20Marker%20Reference.md
-    local: ./Advanced Marker Reference.md
-  Coach Profile:
-    cloud: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Coach%20profile.md
-    local: ./Coach profile.md
-  Unified Reporting Framework:
-    cloud: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Unified%20Reporting%20Framework.md
-    local: ./Unified Reporting Framework.md
-  Unified_UI_v5.1:
-    cloud: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/UIcomponents/icon_pack.py
-    local: ./UIcomponents/icon_pack.py
-  Framework Map:
-    cloud: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/docs/framework-map.md
-    local: ./docs/framework-map.md
-  Mapping Table:
-    cloud: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/docs/mapping-table.md
-    local: ./docs/mapping-table.md
-  Schema JSON:
-    cloud: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Schema_3_9_12.json
-    local: ./Schema_3_9_12.json
-
----
-
-## 📄 Documentation References
-README: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/README.md  
-Instructions v16.13: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/instructionsv16.13.md  
-License: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/LICENSE  
-Docs/audit_chain_overview: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/docs/audit_chain_overview.md  
-Docs/COMPLIANCE_LOG_GUIDE: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/docs/COMPLIANCE_LOG_GUIDE.md  
-Docs/TIER_MODULE_DETAILS: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/docs/TIER_MODULE_DETAILS.md  
-Docs/USAGE_GUIDE: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/docs/USAGE_GUIDE.md  
-
----
-
-# 📘 All Modules Index — v16.16G (Dual Mode)
-Authoritative reference for all modules used by **IntervalsICU GPT Coach** for ChatGPT and local execution.
-
----
-
-## 🧩 Audit Core Modules
-| Tier / Step | Module | Function | File Path |
-|:--|:--|:--|:--|
-| Controller — Report Entry | run_report | Unified controller for all report types | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/report_controller.py |
-| Tier-0 — Pre-Audit | run_tier0_pre_audit | Fetch athlete context, activities, wellness | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier0_pre_audit.py |
-| Tier-1 — Audit Controller | run_tier1_controller | Validate dataset integrity | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier1_controller.py |
-| Tier-2 — Data Integrity | validate_data_integrity | Verify dataset count, duplication | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier2_data_integrity.py |
-| Tier-2 — Event Completeness | validate_event_completeness | Ensure no missing or duplicate events | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier2_event_completeness.py |
-| Tier-2 — Enforce Event-Only Totals | enforce_event_only_totals | Aggregate totals from event-level data | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier2_enforce_event_only_totals.py |
-| Tier-2 — Calculation Integrity | validate_calculation_integrity | Ensure variance ≤ 0.1h / 2TSS | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier2_calculation_integrity.py |
-| Tier-2 — Derived Metrics | compute_derived_metrics | Recompute ACWR, Strain, Polarisation | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier2_derived_metrics.py |
-| Tier-2 — Extended Metrics | compute_extended_metrics | Compute durability, hybrid modes | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier2_extended_metrics.py |
-| Tier-2 — Actions | evaluate_actions | Generate adaptive coaching actions | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier2_actions.py |
-| Tier-2 — Renderer Validator | finalize_and_validate_render | Validate render before output | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier2_render_validator.py |
-| Schema Guard | validate_report_schema | Ensure Unified Framework compliance | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/report_schema_guard.py |
-
----
-
-## 🧠 Coaching & Profile Modules
-| Module | Purpose | File Path |
-|:--|:--|:--|
-| Athlete Profile | Athlete identity & training history | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/athlete_profile.py |
-| Coaching Profile | Coach heuristics & adaptive logic | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/coaching_profile.py |
-| Coaching Heuristics | Phase evaluation & trend derivation | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/coaching_heuristics.py |
-| Coaching Cheat Sheet | Load classification tools | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/coaching_cheat_sheet.py |
-
----
-
-## 🎨 Renderer & UI Modules
-| Component | Purpose | File Path |
-|:--|:--|:--|
-| Unified Renderer | Combines audit and UI output | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/render_unified_report.py |
-| Icon Pack | UI icons and metrics logic | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/UIcomponents/icon_pack.py |
-| Layout Schema | Section & card layout map | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/UIcomponents/layout.yaml |
-| Color Schema | Defines UI color variables | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/UIcomponents/color_schema.json |
-| Renderer Config | Renderer layout specification | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/UIcomponents/renderer.json |
-| Typography | Font and text styles | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/UIcomponents/typography.json |
-
----
-
-## 🌐 System Interfaces & Plugins
-| Interface | Purpose | File Path |
-|:--|:--|:--|
-| GitHub API Plugin | Loads ruleset manifests | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/api_github_com__jit_plugin/__init__.py |
-| Intervals.icu API Plugin | Fetches athlete data and wellness | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/intervals_icu__jit_plugin/__init__.py |
-| OAuth Token Fetcher | Secure API authentication | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/oauth_token_fetcher.py |
-
----
-
-## 🧭 Unified Report Entry
-| Component | Function | File Path |
-|:--|:--|:--|
-| Report Dispatcher (ChatGPT) | run_report | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/report_controller.py |
-| Local Report Entry (Primary) | report.py → run_report() | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/report.py |
-| Audit Runner (Developer Utility) | run_audit.py | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/run_audit.py |
-
----
-
-## ✅ Validation Summary
-- Framework: Unified Reporting Framework v5.1  
-- Version: v16.16G — Dual-path ChatGPT + Local ready  
-- Status: Fully validated with documentation and schema bindings  
-
----
-
-## 🧩 Usage (Dual Mode)
-
-### ChatGPT Instruction Mode
-Used for live audit rendering and report orchestration.
-
-# ChatGPT environment automatically reads all-modules.md
-# No manual imports required.
-
-### Local Python Execution Mode
-
-# --- Core Audit Flow ---
-from audit_core.tier0_pre_audit import run_tier0_pre_audit
-from audit_core.tier1_controller import run_tier1_controller
-from audit_core.tier2_data_integrity import validate_data_integrity
-from audit_core.tier2_event_completeness import validate_event_completeness
-from audit_core.tier2_enforce_event_only_totals import enforce_event_only_totals
-from audit_core.tier2_calculation_integrity import validate_calculation_integrity
-from audit_core.tier2_derived_metrics import compute_derived_metrics
-from audit_core.tier2_extended_metrics import compute_extended_metrics
-from audit_core.tier2_actions import evaluate_actions
-from audit_core.tier2_render_validator import finalize_and_validate_render
-
-# --- Renderer ---
-from render_unified_report import render_full_report
-
-# --- Unified Report Entry ---
-from report import run_report
-
-# --- System Interfaces ---
-from intervals_icu__jit_plugin import listActivities, listWellness, getAthleteProfile
-from api_github_com__jit_plugin import loadAllRules
-from oauth_token_fetcher import fetch_token
+    "created": "2025-11-07T00:00:00Z",
+    "updated": "2025-11-07T00:00:00Z"
+  }
+}
