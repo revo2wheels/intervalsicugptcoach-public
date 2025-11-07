@@ -1,6 +1,6 @@
 {
-  "$schema": "https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/schema_3_9_2.json",
-  "version": "3.19.2",
+  "$schema": "https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/schema_3_9_12.json",
+  "version": "3.9.12",
   "description": "Custom Governance Manifest for Unified Reporting Framework v5.1",
   "governance": {
     "auditRequired": true,
