@@ -20,6 +20,78 @@
 | Audit flags | Tier-0 → Tier-2 | Tier-2 Step-7: Evaluate Actions | Adaptive Actions | Weekly / Seasonal Report – Actions Section | Triggered by **`evaluate_actions()`** in **t2_actions.py** |
 | Placeholders (`{xxx}`) | Glossary & Placeholders | Used across all modules | Populated values for rendering | Unified Reporting Framework v5.1 sections | Tied to **Coaching Heuristics**, **Coaching Profile** |
 
+```mermaid
+flowchart TB
+    subgraph Inputs
+        activity_moving_time["activity.moving_time"]
+        activity_distance["activity.distance"]
+        activity_icu_training_load["activity.icu_training_load"]
+        wellness_HRV["wellness.HRV"]
+        wellness_restHR["wellness.restHR"]
+        wellness_sleep["wellness.sleep"]
+        RPE_Feel["RPE, Feel"]
+        power_HR["power/HR"]
+        FTP_LT1_LT2["FTP, LT1, LT2"]
+        age["age"]
+        activity_climbing["activity.climbing"]
+        discipline["discipline"]
+        session_type["session.type"]
+        derived_CR_S["Derived C/R/S components"]
+        all_event_totals["All event totals"]
+        audit_flags["Audit flags"]
+        placeholders["Placeholders `{xxx}`"]
+    end
+
+    subgraph Tier_2_Modules
+        Data_Integrity["Data Integrity"]
+        Event_Completeness["Event Completeness"]
+        Enforce_Event_Only_Totals["Enforce Event Totals"]
+        Calculation_Integrity["Calculation Integrity"]
+        Wellness_Validation["Wellness Validation"]
+        Derived_Metrics["Derived Metrics"]
+        Evaluate_Actions["Evaluate Actions"]
+        Glossary_and_Placeholders["Glossary / Placeholders"]
+    end
+
+    subgraph Outputs
+        TotalHours
+        TotalDistance
+        TotalTSS
+        RecoveryIndex
+        ACWR
+        Strain
+        Monotony
+        Polarisation
+        DurabilityIndex
+        FatOxidationIndex
+        BenchmarkIndex
+        SpecificityIndex
+        ConsistencyIndex
+        HybridMode
+        AdaptiveActions
+        ValidatesDatasetSplit
+    end
+
+    subgraph Report_Sections
+        Weekly_Summary["Weekly Summary"]
+        Training_Quality["Training Quality"]
+        Metrics_Panel["Metrics Panel"]
+        Advanced_Markers["Advanced Markers"]
+        Periodisation["Periodisation & Load Planning"]
+        Discipline_Breakdown["Discipline Breakdown"]
+        Recovery["Recovery & Wellness"]
+        Actions["Actions Section"]
+    end
+
+    %% Simplified flows
+    Inputs --> Tier_2_Modules
+    Tier_2_Modules --> Outputs
+    Outputs --> Report_Sections
+```
+
+
+DETAILED SYSTEM FLOW BELOW
+
 
 ```mermaid
 flowchart TD
