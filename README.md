@@ -144,6 +144,49 @@ The stack integrates **analytical**, **heuristic**, and **behavioral** logic for
 
 ---
 
+## 📚 Documentation Index
+
+Centralized index of all framework, audit, and coaching modules in **Intervals.icu GPT Coaching Framework v16.16G**.  
+This section is auto-generated and refreshed via GitHub Actions on commit.
+
+### 🧩 Core Framework Documents
+| File | Description |
+|:--|:--|
+| [all-modules.md](./all-modules.md) | Module list, bindings, and dependency schema. |
+| [USAGE_GUIDE.md](./USAGE_GUIDE.md) | Usage for local (`report.py`) and ChatGPT modes. |
+| [TIER_MODULE_DETAILS.md](./TIER_MODULE_DETAILS.md) | Tier-0 → Tier-2 audit module descriptions. |
+| [audit_chain_overview.md](./audit_chain_overview.md) | End-to-end audit chain visualization. |
+| [COMPLIANCE_LOG_GUIDE.md](./COMPLIANCE_LOG_GUIDE.md) | Compliance and audit log schema. |
+
+### 🧱 Coaching Framework Stack
+| File | Description |
+|:--|:--|
+| [coach_framework-map.md](./coach_framework-map.md) | Hierarchical coaching frameworks. |
+| [coach_mapping-table.md](./coach_mapping-table.md) | Metric-to-framework mappings. |
+
+### 🔬 Analytical & Mapping Resources
+| File | Description |
+|:--|:--|
+| [mapping-table.md](./mapping-table.md) | Full data lineage diagram and report linkage. |
+| [mapping-table-compact.md](./mapping-table-compact.md) | Compact vertical flow diagram (GitHub-optimized). |
+| [audit_framework-map.md](./audit_framework-map.md) | Audit tier dependency flow. |
+
+### ⚖️ Governance & Integrity
+| File | Description |
+|:--|:--|
+| [COMPLIANCE_LOG_GUIDE.md](./COMPLIANCE_LOG_GUIDE.md) | Logging and compliance trace rules. |
+| [audit_chain_overview.md](./audit_chain_overview.md) | Tier integrity enforcement and validation logic. |
+
+### 🧭 Entry Points
+| File | Function |
+|:--|:--|
+| `report.py` | Primary local execution entry for `run_report()`. |
+| `run_audit.py` | Developer diagnostic utility. |
+| `audit_core/report_controller.py` | ChatGPT execution controller. |
+
+
+---
+
 ## 📜 References  
 
 - **Seiler, S. & Tønnessen, E. (2009).** *Intervals, Thresholds, and Long Slow Distance: The Role of Intensity and Duration in Endurance Training.* *Eur. J. Sport Sci.*, 9(1), 3–13.  
