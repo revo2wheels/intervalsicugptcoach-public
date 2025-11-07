@@ -4,6 +4,7 @@
   "$schema": "https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Schema_3_9_12.json",
   "version": "3.9.12",
   "description": "Custom Governance Manifest for Unified Reporting Framework v5.1",
+  "xValidationRef": "./Schema_3_9_12.json#/x-validation-rules"
   "governance": {
     "auditRequired": true,
     "renderMode": "full",
@@ -17,6 +18,8 @@
     "force_analysis": true,
     "preRenderAudit": true,
     "tier2_enforce_event_only_totals": true,
+    "event_source_mode": "strict",
+    "event_origin_tag": "live"
     "render_mode": "full",
     "autoCommit": true,
     "suppressPrompts": true
@@ -59,13 +62,13 @@
       }
     }
   },
-  "x-intents": [
+    "x-intents": [
     {
       "trigger": ["weekly report", "season report", "wellness report"],
       "action": "run_audit_pipeline"
     }
   ],
-  "manifest_signature": {
+    "manifest_signature": {
     "schemaVersion": "3.9.12",
     "rulesetVersion": "v16.16G",
     "validatedBy": "Unified Reporting Framework v5.1",
