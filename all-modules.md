@@ -8,6 +8,60 @@ framework_version: "Unified Reporting Framework v5.1"
 ruleset_version: "v16.16G"
 manifest_note: "Dual-path manifest with explicit ChatGPT and Local modes; full GitHub URLs, relative local bindings, and corrected documentation."
 
+## Governance Manifest v3.9.12
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Schema_3_9_12.json",
+  "version": "3.9.12",
+  "description": "Custom Governance Manifest for Unified Reporting Framework v5.1",
+  "governance": {
+    "auditRequired": true,
+    "renderMode": "full",
+    "tierEnforce": true,
+    "intentRouter": "v1.1",
+    "xValidationRef": "./Schema_3_9_12.json#/x-validation-rules"
+  },
+  "audit": {
+    "tier0": { "enabled": true, "ruleset": "pre_audit_integrity" },
+    "tier1": { "enabled": true, "ruleset": "dataset_consistency" },
+    "tier2": { "enabled": true, "ruleset": "derived_metrics_validation" }
+  },
+  "reporting": {
+    "defaultIntent": "weekly",
+    "supportedIntents": ["weekly", "season", "wellness"],
+    "autoCommit": true
+  },
+  "output": {
+    "render_mode": "full",
+    "icons": true
+  },
+  "permissions": {
+    "roles": ["administrator", "auditor"],
+    "accessLevels": { "weekly": "read", "season": "read", "audit": "write" }
+  },
+  "x-actions": {
+    "run_audit_pipeline": {
+      "type": "python",
+      "entrypoint": "run_audit_pipeline",
+      "args": {
+        "conn": "intervals_icu__jit_plugin",
+        "src": "intervals"
+      }
+    }
+  },
+  "x-intents": [
+    {
+      "trigger": [
+        "weekly report",
+        "season report",
+        "wellness report"
+      ],
+      "action": "run_audit_pipeline"
+    }
+  ],
+  "timestamps": {
+```
+
 ---
 
 ## 🔗 Bindings (Dual Path)
