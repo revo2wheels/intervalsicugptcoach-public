@@ -214,7 +214,6 @@
     "halt_on_fail": true
   }
 ],
-  },
   "x-actions": {
     "run_audit_pipeline": {
       "type": "python",
