@@ -43,8 +43,11 @@ manifest_note: "Dual-path manifest with explicit ChatGPT and Local modes; full G
   },
   "output": {
     "render_mode": "full",
-    "icons": true
-  },
+    "icons": true,
+    "include_metabolic_panel": true,
+    "validateDerivedMetabolic": true,
+    "include_energy_mix_chart": true
+  }
   "permissions": {
     "roles": ["administrator", "auditor"],
     "accessLevels": { "weekly": "read", "season": "read", "audit": "write" }
