@@ -33,6 +33,9 @@ manifest_note: "Dual-path manifest with explicit ChatGPT and Local modes; full G
     "preRenderAudit": true,
     "tier2_event_finalizer_strict": true,
     "tier2_enforce_event_only_totals": true,
+    "tier2_event_finalizer_strict": true,
+    "tier2_event_totals_lock": true,
+    "tier2_disable_discipline_summary": true,
     "tier2_event_collapse": {
       "deduplicate_by": ["id", "start_date_local"],
       "aggregation_method": "first_instance"
