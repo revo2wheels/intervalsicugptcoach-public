@@ -13,7 +13,7 @@ bindings:
   Unified_UI_v5.1: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Unified_UI_v5.1/icon_pack.json
   Framework Map: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/docs/framework-map.md
   Mapping Table: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/docs/mapping-table.md
-  Schema JSON: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/archive/Schema.json
+  Schema JSON: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Schema_3_9_12.json
   Version Manifest: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/version_manifest.yaml
 
 ruleset_version: "v16.15"
@@ -68,6 +68,7 @@ All previous sections retained; new analytical and UI modules added.
 | **Tier-2 Render Validator** | finalize_and_validate_render | Validate layout | [audit_core/tier2_render_validator.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/tier2_render_validator.py) |
 | **Tier-2 Schema Guard** | validate_report_schema | Schema check | [audit_core/report_schema_guard.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/report_schema_guard.py) |
 | **Utility — System Integrity Guard** | verify_environment | Checksum validation | [audit_core/system_integrity_guard.py](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/audit_core/system_integrity_guard.py) |
+| **UI Icon Pack** | ICON_CARDS |  Unified UI v5.1 icons | [UIcomponents/icon_pack.py](UIcomponents/icon_pack.py) |
 
 ---
 
@@ -77,8 +78,7 @@ All previous sections retained; new analytical and UI modules added.
 |:--|:--|:--|:--|
 | **Dataset Integrity Utils** | validate_dataset_integrity | [audit_core/utils.py](audit_core/utils.py) | Verify Σ(moving_time) / Σ(TSS) |
 | **Wellness Alignment** | validate_wellness_alignment | [audit_core/utils.py](audit_core/utils.py) | Align wellness with activities |
-| **Renderer (Private)** | render_full_report | [render_unified_report.py](render_unified_report.py) | Extended context diagnostics |
-| **UI Icon Pack** | ICON_CARDS | [UIcomponents/icon_pack.py](UIcomponents/icon_pack.py) | Unified UI v5.1 icons |
+| **Renderer (Local)** | render_full_report | [render_unified_report.py](render_unified_report.py) | Extended context diagnostics |
 | **Layout Schema** | — | [UIcomponents/layout.yaml](UIcomponents/layout.yaml) | Panel and section layout |
 | **Renderer Config** | — | [UIcomponents/renderer.json](UIcomponents/renderer.json) | Render behavior schema |
 

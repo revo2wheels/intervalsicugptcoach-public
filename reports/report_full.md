@@ -6,19 +6,12 @@
 🧭 Running Weekly Report (auditFinal=True, render_mode=full)
 🧹 Tier-0 purge enforced — previous cache cleared.
 [T0] Fetching athlete profile via OAuth2: https://intervals.icu/api/v1/athlete/0/profile
+[T0] Athlete profile fetched successfully — id=1914741 name=Clive King
 [Tier-0 fetch] chunk_start=2025-10-31  chunk_end=2025-11-06
-           id                                               name  moving_time
-0  i105308685  Zwift - Group Ride: Stage 5 - Zwift Unlocked -...         3644
-1  i105297636  Zwift - Pacer Group Ride: The 6 Train in New Y...          933
-2  i105148826  Zwift - Group Ride: Stage 5 - Zwift Unlocked -...         3636
-3  i105140121              Zwift - Issendorf Express in New York          782
-4  i105138333  Zwift - Race: Stage 5 - Zwift Unlocked - Race ...         1866
-5  i104781214                                          Otto walk         3783
-6  i104753457                                  3 hours endurance        11501
-7  i104670958                                        1 with Yumi         4239
-🧩 Tier-0 deduplication: 0 duplicate activities removed.
-[T0] Canonical slice → 8/8 rows retained (2025-10-30–2025-11-06, tz=Europe/Zurich)
-[T0] start_date_local finalized → tz=Europe/Zurich rows=8
+🧩 Tier-0 deduplication: 0 duplicates removed.
+[T0] Canonical slice → 8/8 rows retained (2025-10-31–2025-11-06, tz=Europe/Zurich)
+[DEBUG-T0] Expanded icu_zone_times → 8 numeric columns
+[DEBUG-T0] Expanded icu_hr_zone_times → 7 numeric columns
 [T0] Canonical totals → Σ(moving_time)/3600=8.44  Σ(TSS)=424.0
 [DEBUG] wellness raw: <class 'pandas.core.frame.DataFrame'> 7
 [DEBUG] wellness columns: ['id', 'ctl', 'atl', 'rampRate', 'ctlLoad', 'atlLoad', 'sportInfo', 'updated', 'weight', 'restingHR', 'hrv', 'hrvSDNN', 'menstrualPhase', 'menstrualPhasePredicted', 'kcalConsumed', 'sleepSecs', 'sleepScore', 'sleepQuality', 'avgSleepingHR', 'soreness', 'fatigue', 'stress', 'mood', 'motivation', 'injury', 'spO2', 'systolic', 'diastolic', 'hydration', 'hydrationVolume', 'readiness', 'baevskySI', 'bloodGlucose', 'lactate', 'bodyFat', 'abdomen', 'vo2max', 'comments', 'steps', 'respiration', 'locked', 'tempWeight', 'tempRestingHR']
@@ -31,7 +24,8 @@
 4  2025-11-04  91.210950  87.667076  ...    None        True          False
 
 [5 rows x 43 columns]
-[T1] Columns at entry: ['id', 'start_date_local', 'type', 'icu_ignore_time', 'icu_pm_cp', 'icu_pm_w_prime', 'icu_pm_p_max', 'icu_pm_ftp', 'icu_pm_ftp_secs', 'icu_pm_ftp_watts', 'icu_ignore_power', 'icu_rolling_cp', 'icu_rolling_w_prime', 'icu_rolling_p_max', 'icu_rolling_ftp', 'icu_rolling_ftp_delta', 'icu_training_load', 'icu_atl', 'icu_ctl', 'ss_p_max', 'ss_w_prime', 'ss_cp', 'paired_event_id', 'icu_ftp', 'icu_joules', 'icu_recording_time', 'elapsed_time', 'icu_weighted_avg_watts', 'carbs_used', 'name', 'description', 'start_date', 'distance', 'icu_distance', 'moving_time', 'coasting_time', 'total_elevation_gain', 'total_elevation_loss', 'timezone', 'trainer', 'sub_type', 'commute', 'race', 'max_speed', 'average_speed', 'device_watts', 'has_heartrate', 'max_heartrate', 'average_heartrate', 'average_cadence', 'calories', 'average_temp', 'min_temp', 'max_temp', 'avg_lr_balance', 'gap', 'gap_model', 'use_elevation_correction', 'gear', 'perceived_exertion', 'device_name', 'power_meter', 'power_meter_serial', 'power_meter_battery', 'crank_length', 'external_id', 'file_sport_index', 'file_type', 'icu_athlete_id', 'created', 'icu_sync_date', 'analyzed', 'icu_w_prime', 'p_max', 'threshold_pace', 'icu_hr_zones', 'pace_zones', 'lthr', 'icu_resting_hr', 'icu_weight', 'icu_power_zones', 'icu_sweet_spot_min', 'icu_sweet_spot_max', 'icu_power_spike_threshold', 'trimp', 'icu_warmup_time', 'icu_cooldown_time', 'icu_chat_id', 'icu_ignore_hr', 'ignore_velocity', 'ignore_pace', 'ignore_parts', 'icu_training_load_data', 'interval_summary', 'skyline_chart_bytes', 'stream_types', 'has_weather', 'has_segments', 'power_field_names', 'power_field', 'icu_zone_times', 'icu_hr_zone_times', 'pace_zone_times', 'gap_zone_times', 'use_gap_zone_times', 'custom_zones', 'tiz_order', 'polarization_index', 'icu_achievements', 'icu_intervals_edited', 'lock_intervals', 'icu_lap_count', 'icu_joules_above_ftp', 'icu_max_wbal_depletion', 'icu_hrr', 'icu_sync_error', 'icu_color', 'icu_power_hr_z2', 'icu_power_hr_z2_mins', 'icu_cadence_z2', 'icu_rpe', 'feel', 'kg_lifted', 'decoupling', 'icu_median_time_delta', 'p30s_exponent', 'workout_shift_secs', 'strava_id', 'lengths', 'pool_length', 'compliance', 'coach_tick', 'source', 'oauth_client_id', 'oauth_client_name', 'average_altitude', 'min_altitude', 'max_altitude', 'power_load', 'hr_load', 'pace_load', 'hr_load_type', 'pace_load_type', 'tags', 'attachments', 'recording_stops', 'average_weather_temp', 'min_weather_temp', 'max_weather_temp', 'average_feels_like', 'min_feels_like', 'max_feels_like', 'average_wind_speed', 'average_wind_gust', 'prevailing_wind_deg', 'headwind_percent', 'tailwind_percent', 'average_clouds', 'max_rain', 'max_snow', 'carbs_ingested', 'route_id', 'pace', 'athlete_max_hr', 'group', 'icu_intensity', 'icu_efficiency_factor', 'icu_power_hr', 'session_rpe', 'average_stride', 'icu_average_watts', 'icu_variability_index', 'strain_score', 'IF', 'VO2MaxGarmin', 'PerformanceCondition', 'date', 'origin']
+[T0] Pre-audit complete: activities=8, wellness_rows=7
+[T1] Columns at entry: ['id', 'start_date_local', 'icu_training_load', 'elapsed_time', 'name', 'start_date', 'distance', 'moving_time', 'icu_zone_times', 'icu_hr_zone_times', 'date', 'origin', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7']
 [T1] Wellness alignment window (tz-aware): 2025-10-31 18:35:54+01:00 → 2025-11-04 18:00:55+01:00
 [T1] Wellness date range: 2025-10-31 → 2025-11-06
 ✅ Wellness alignment check passed.
@@ -45,7 +39,26 @@
 2 2025-11-03  91.914795  91.608640
 3 2025-11-03  91.914795  91.608640
 4 2025-11-03  91.914795  91.608640
-⚠ No zone columns (Z1–Z7) found in dataset
+[DEBUG-T1] sanity check before Step 6b — rows in df_activities: 8
+[DEBUG-T1] athleteProfile present: True
+[DEBUG-T1] athleteProfile keys: ['athlete_id', 'name', 'discipline', 'ftp', 'weight', 'hr_rest', 'hr_max', 'ftp_wkg', 'hr_reserve', 'zone_model', 'training_age_years', 'preferred_units', 'environment', 'timezone', 'updated']
+[DEBUG-T1] Starting zone distribution extraction...
+[DEBUG-T1] Activity columns sample: ['id', 'start_date_local', 'icu_training_load', 'elapsed_time', 'name', 'start_date', 'distance', 'moving_time', 'icu_zone_times', 'icu_hr_zone_times', 'date', 'origin', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7', 'ctl', 'atl', 'tsb']
+[DEBUG-ZONE] Available columns: ['id', 'start_date_local', 'icu_training_load', 'elapsed_time', 'name', 'start_date', 'distance', 'moving_time', 'icu_zone_times', 'icu_hr_zone_times', 'date', 'origin', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7', 'ctl', 'atl', 'tsb']
+[DEBUG-ZONE] Detected Power zone columns: ['icu_zone_times', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8']
+[DEBUG-ZONE] Detected HR zone columns: ['icu_hr_zone_times', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7']
+[DEBUG-ZONE] Detected Pace zone columns: []
+[DEBUG-ZONES] power zones computed: {'power_z1': 26.5, 'power_z2': 36.2, 'power_z3': 16.1, 'power_z4': 6.6, 'power_z5': 3.1, 'power_z6': 2.1, 'power_z7': 0.3, 'power_z8': 9.1}
+[DEBUG-ZONES] hr zones computed: {'hr_z1': 74.8, 'hr_z2': 11.6, 'hr_z3': 3.4, 'hr_z4': 4.6, 'hr_z5': 1.7, 'hr_z6': 2.2, 'hr_z7': 1.7}
+[DEBUG-ZONES] No pace columns found — skipping.
+[DEBUG-T1] Completed zone distribution extraction.
+[DEBUG-T1] Zone distributions now in context:
+  zone_dist_power: {'power_z1': 26.5, 'power_z2': 36.2, 'power_z3': 16.1, 'power_z4': 6.6, 'power_z5': 3.1, 'power_z6': 2.1, 'power_z7': 0.3, 'power_z8': 9.1}
+  zone_dist_hr: {'hr_z1': 74.8, 'hr_z2': 11.6, 'hr_z3': 3.4, 'hr_z4': 4.6, 'hr_z5': 1.7, 'hr_z6': 2.2, 'hr_z7': 1.7}
+  zone_dist_pace: {}
+[DEBUG-T1] Outlier events detected: 1
+[DEBUG-OUTLIER] mean TSS: 53.0 std: 47.84200186924814
+[DEBUG-OUTLIER] min/max TSS: 8 / 155
 [T2] Daily completeness summary built — 4 rows
 🔍 Tier-2 enforcement source: Tier-2 validated events (8 rows)
 origin counts:
@@ -90,7 +103,7 @@ correlation_metrics: True
 [Renderer shim] Delegating to render_report() in render_unified_report.py
 
 [DEBUG-TEMPLATE: PRE-CALL]
-Keys in context: ['auditPartial', 'auditFinal', 'purge_enforced', 'timezone', 'athleteProfile', 'athlete', 'report_mode', 'window_start', 'window_end', 'window_summary', 'knowledge', 'tier1_eventTotals', 'df_events', 'dailyMerged', 'ctl', 'atl', 'tsb', 'load_metrics', 'zone_dist', 'outliers', 'totalHours', 'totalTss', 'totalDistance', 'eventTotals', 'df_event_only', 'enforcement_layer', '_locked_totals', 'locked_totalHours', 'locked_totalTss', 'locked_totalDistance', 'event_count', 'trace', 'derived_metrics', 'trend_series', 'metrics', 'ACWR', 'Monotony', 'Strain', 'FatigueTrend', 'ZQI', 'FatOxEfficiency', 'Polarisation', 'FOxI', 'CUR', 'GR', 'MES', 'RecoveryIndex', 'ACWR_Risk', 'StressTolerance', 'phases', 'ui_flag', 'actions', '_locked_load_metrics', 'adaptation_metrics', 'trend_metrics', 'correlation_metrics', 'Duration_total', 'icon_pack', 'force_icon_pack', 'event_log_text']
+Keys in context: ['auditPartial', 'auditFinal', 'purge_enforced', 'timezone', 'athleteProfile', 'athlete', 'report_mode', 'window_start', 'window_end', 'window_summary', 'knowledge', 'tier1_eventTotals', 'df_events', 'dailyMerged', 'ctl', 'atl', 'tsb', 'load_metrics', 'zone_dist_power', 'zone_dist_hr', 'zone_dist_pace', 'outliers', 'totalHours', 'totalTss', 'totalDistance', 'eventTotals', 'df_event_only', 'enforcement_layer', '_locked_totals', 'locked_totalHours', 'locked_totalTss', 'locked_totalDistance', 'event_count', 'trace', 'derived_metrics', 'trend_series', 'metrics', 'ACWR', 'Monotony', 'Strain', 'FatigueTrend', 'ZQI', 'FatOxEfficiency', 'Polarisation', 'FOxI', 'CUR', 'GR', 'MES', 'RecoveryIndex', 'ACWR_Risk', 'StressTolerance', 'phases', 'ui_flag', 'actions', '_locked_load_metrics', 'adaptation_metrics', 'trend_metrics', 'correlation_metrics', 'Duration_total', 'icon_pack', 'force_icon_pack', 'event_log_text']
 load_metrics pre-pass: {'CTL': {'value': 91.93, 'status': 'ok'}, 'ATL': {'value': 91.57, 'status': 'ok'}, 'TSB': {'value': 0.36, 'status': 'ok'}, 'ACWR': {'value': nan, 'status': 'ok'}, 'Monotony': {'value': np.float64(1.77), 'status': 'ok'}, 'Strain': {'value': np.float64(750.5), 'status': 'ok'}, 'Polarisation': {'value': 0.0, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.646), 'status': 'ok'}}
 _locked_load_metrics pre-pass: {'CTL': {'value': 91.93, 'status': 'ok'}, 'ATL': {'value': 91.57, 'status': 'ok'}, 'TSB': {'value': 0.36, 'status': 'ok'}, 'ACWR': {'value': nan, 'status': 'ok'}, 'Monotony': {'value': np.float64(1.77), 'status': 'ok'}, 'Strain': {'value': np.float64(750.5), 'status': 'ok'}, 'Polarisation': {'value': 0.0, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.646), 'status': 'ok'}}
 Report type: weekly
@@ -203,7 +216,9 @@ load_metrics post-render: {'CTL': {'value': 91.93, 'status': 'ok'}, 'ATL': {'val
   - window_end
   - window_start
   - window_summary
-  - zone_dist
+  - zone_dist_hr
+  - zone_dist_pace
+  - zone_dist_power
 [DEBUG] End of context key list
 
 ✅ Report passed framework + schema validation (event-only, markdown).
@@ -216,7 +231,7 @@ load_metrics post-render: {'CTL': {'value': 91.93, 'status': 'ok'}, 'ATL': {'val
 **Athlete:** Clive King
 **Period:** ? → ?
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-06T14:11:14.655460
+**Generated:** 2025-11-06T17:04:31.977776
 
 ---
 
@@ -257,15 +272,29 @@ load_metrics post-render: {'CTL': {'value': 91.93, 'status': 'ok'}, 'ATL': {'val
 | RecoveryIndex | 0.646 | ✅ |
 | ACWR_Risk | ✅ | ✅ |
 | StressTolerance | 4.24 | ✅ |
+### Power Zones
+| Zone | % Time |
+|:-- |:--|
+| power_z1 | 26.5 |
+| power_z2 | 36.2 |
+| power_z3 | 16.1 |
+| power_z4 | 6.6 |
+| power_z5 | 3.1 |
+| power_z6 | 2.1 |
+| power_z7 | 0.3 |
+| power_z8 | 9.1 |
 
-
-## ⚙️ Training Zone Distribution
-
-_Zone data not available._
-
-
-## ⚠️ Outlier Events
-
+### Heart Rate Zones
+| Zone | % Time |
+|:-- |:--|
+| hr_z1 | 74.8 |
+| hr_z2 | 11.6 |
+| hr_z3 | 3.4 |
+| hr_z4 | 4.6 |
+| hr_z5 | 1.7 |
+| hr_z6 | 2.2 |
+| hr_z7 | 1.7 |
+_No pace zone data available._
 _No outliers detected._
 
 
@@ -313,6 +342,6 @@ _No outliers detected._
 _No event preview available._
 
 ---
-✅ **Audit Completed:** 2025-11-06T14:11:14.655544
+✅ **Audit Completed:** 2025-11-06T17:04:31.977862
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 

@@ -1,7 +1,7 @@
 import json
 
 # Load current Intervals schema
-with open("Schema 3.9.12.json", "r", encoding="utf-8") as f:
+with open("Schema_3_9_12.json", "r", encoding="utf-8") as f:
     SCHEMA = json.load(f)
 
 def get_schema_version():

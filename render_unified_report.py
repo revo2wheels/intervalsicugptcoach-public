@@ -123,11 +123,12 @@ def render_report(data):
         md.append("_No pace zone data available._")
 
     # === 6️⃣ Outlier Events ===
-    md.append(section("⚠️ Outlier Events"))
     outliers = ctx.get("outliers", [])
     if outliers:
-        rows = [[o.get("date", "?"), o.get("event", "?"), o.get("issue", "?"), o.get("obs", "?")] for o in outliers]
-        md.append(table(["Date", "Event", "Issue", "Observation"], rows))
+        md.append(table(["ID", "Name", "Date", "TSS"], [
+        [o["id"], o["name"], o["start_date_local"], o["icu_training_load"]]
+        for o in outliers
+    ]))
     else:
         md.append("_No outliers detected._")
 

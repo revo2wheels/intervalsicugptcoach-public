@@ -12,9 +12,6 @@ from audit_core.utils import validate_dataset_integrity, validate_wellness_align
 def collect_zone_distributions(df_activities, athlete_profile, context):
     """Compute separate zone distributions for Power, HR, and Pace."""
 
-    import numpy as np
-    import pandas as pd
-
     if df_activities is None or df_activities.empty:
         print("⚠ collect_zone_distributions: empty df_activities")
         context["zone_dist_power"] = {}
@@ -27,31 +24,51 @@ def collect_zone_distributions(df_activities, athlete_profile, context):
     context["zone_dist_hr"] = {}
     context["zone_dist_pace"] = {}
 
+    # --- Debug: show available columns ---
+    print("[DEBUG-ZONE] Available columns:", df_activities.columns.tolist())
+
+    # --- POWER ZONES ---
+    power_cols = [
+        c for c in df_activities.columns
+        if c.lower().startswith(("power_z", "icu_power_z", "icu_zone_times"))
+    ]
+    print("[DEBUG-ZONE] Detected Power zone columns:", power_cols)
+
+    # --- HEART RATE ZONES ---
+    hr_cols = [
+        c for c in df_activities.columns
+        if c.lower().startswith(("hr_z", "icu_hr_zone_times"))
+    ]
+    print("[DEBUG-ZONE] Detected HR zone columns:", hr_cols)
+
+    # --- PACE ZONES ---
+    pace_cols = [
+        c for c in df_activities.columns
+        if c.lower().startswith(("pace_z", "pace_zone_times", "gap_zone_times"))
+    ]
+    print("[DEBUG-ZONE] Detected Pace zone columns:", pace_cols)
+
+    # --- Zone Distribution Helper ---
     def compute_zone_dist(cols, label):
         if not cols:
+            print(f"[DEBUG-ZONES] No {label} columns found — skipping.")
             return {}
         subset = df_activities[cols].select_dtypes(include=[np.number])
         total = subset.sum().sum()
         if total <= 0:
+            print(f"[DEBUG-ZONES] No valid data for {label} zones — total=0.")
             return {}
         dist = (subset.sum() / total * 100).round(1).to_dict()
         print(f"[DEBUG-ZONES] {label} zones computed: {dist}")
         return dist
 
-    # --- POWER ZONES ---
-    power_cols = [c for c in df_activities.columns if c.lower().startswith("power_z")]
-    if power_cols:
-        context["zone_dist_power"] = compute_zone_dist(power_cols, "Power")
+    # --- Compute all zone distributions ---
+    context["zone_dist_power"] = compute_zone_dist(power_cols, "power")
+    context["zone_dist_hr"] = compute_zone_dist(hr_cols, "hr")
+    context["zone_dist_pace"] = compute_zone_dist(pace_cols, "pace")
 
-    # --- HEART RATE ZONES ---
-    hr_cols = [c for c in df_activities.columns if c.lower().startswith("hr_z")]
-    if hr_cols:
-        context["zone_dist_hr"] = compute_zone_dist(hr_cols, "HR")
+    return context
 
-    # --- PACE ZONES ---
-    pace_cols = [c for c in df_activities.columns if c.lower().startswith("pace_z")]
-    if pace_cols:
-        context["zone_dist_pace"] = compute_zone_dist(pace_cols, "Pace")
 
     # --- Fallback using athlete profile if no explicit zone data ---
     if not any([context["zone_dist_power"], context["zone_dist_hr"], context["zone_dist_pace"]]):
@@ -189,15 +206,47 @@ def run_tier1_controller(df_activities, wellness, context):
     else:
         print("[DEBUG-T1] no valid wellness DataFrame to merge.")
 
+    print("[DEBUG-T1] sanity check before Step 6b — rows in df_activities:", len(df_activities))
+    print("[DEBUG-T1] athleteProfile present:", "athleteProfile" in context)
+    if "athleteProfile" in context:
+        print("[DEBUG-T1] athleteProfile keys:", list(context["athleteProfile"].keys()))
+
     # --- Step 6b: Build HR / Power / Pace zone distributions ---
     try:
-        from audit_core.zone_handler import collect_zone_distributions
-        context = collect_zone_distributions(df_activities, context["athleteProfile"], context)
+        print("[DEBUG-T1] Starting zone distribution extraction...")
+        print("[DEBUG-T1] Activity columns sample:", df_activities.columns.tolist()[:40])
+
+        context = collect_zone_distributions(df_activities, context.get("athleteProfile", {}), context)
+
+        print("[DEBUG-T1] Completed zone distribution extraction.")
+        print("[DEBUG-T1] Zone distributions now in context:")
+        for k in ["zone_dist_power", "zone_dist_hr", "zone_dist_pace"]:
+            print(f"  {k}: {context.get(k, {})}")
     except Exception as e:
         print(f"⚠ Zone distribution collection failed: {e}")
         context["zone_dist_power"] = {}
         context["zone_dist_hr"] = {}
         context["zone_dist_pace"] = {}
+
+    # --- Step 6c: Outlier Detection ---
+    try:
+        df = df_activities.copy()
+        if "icu_training_load" in df.columns:
+            mean_tss = df["icu_training_load"].mean()
+            std_tss = df["icu_training_load"].std()
+            outliers = df[
+                (df["icu_training_load"] > mean_tss + 2 * std_tss) |
+                (df["icu_training_load"] < mean_tss - 2 * std_tss)
+            ][["id", "name", "start_date_local", "icu_training_load"]]
+            context["outliers"] = outliers.to_dict(orient="records")
+            print(f"[DEBUG-T1] Outlier events detected: {len(outliers)}")
+            print("[DEBUG-OUTLIER] mean TSS:", mean_tss, "std:", std_tss)
+            print("[DEBUG-OUTLIER] min/max TSS:", df["icu_training_load"].min(), "/", df["icu_training_load"].max())
+        else:
+            context["outliers"] = []
+    except Exception as e:
+        print(f"⚠ Outlier detection failed: {e}")
+        context["outliers"] = []
 
     # --- Step 7: Qualitative label translation ---
     rpe_map = {1: "very easy", 2: "easy", 3: "moderate", 4: "somewhat hard",
