@@ -54,36 +54,49 @@ flowchart TD
 
     %% Outputs
     Enforce_Event_Only_Totals -->|Outputs| TotalHours
-    Calculation_Integrity -->|Outputs| TotalDistance, TotalTSS
+    Calculation_Integrity -->|Outputs| TotalDistance
+    Calculation_Integrity -->|Outputs| TotalTSS
     Wellness_Validation -->|Outputs| RecoveryIndex
-    Derived_Metrics -->|Outputs| FatOxidationIndex, SubjectiveReadinessIndex, ACWR, Monotony, Strain, Polarisation, DurabilityIndex, HybridMode, BenchmarkIndex, SpecificityIndex, ConsistencyIndex, AgeFactor_adjusted_ATL
-    Data_Integrity -->|Outputs| Validates Dataset Split (cycling, running, triathlon)
-    Event_Completeness -->|Outputs| Rest Day 🛌, Current Day ⏳ icons
-    Evaluate_Actions -->|Outputs| Adaptive Actions
-    Glossary_and_Placeholders -->|Outputs| Populated values for rendering
+    Derived_Metrics -->|Outputs| FatOxidationIndex
+    Derived_Metrics -->|Outputs| SubjectiveReadinessIndex
+    Derived_Metrics -->|Outputs| ACWR
+    Derived_Metrics -->|Outputs| Monotony
+    Derived_Metrics -->|Outputs| Strain
+    Derived_Metrics -->|Outputs| Polarisation
+    Derived_Metrics -->|Outputs| DurabilityIndex
+    Derived_Metrics -->|Outputs| HybridMode
+    Derived_Metrics -->|Outputs| BenchmarkIndex
+    Derived_Metrics -->|Outputs| SpecificityIndex
+    Derived_Metrics -->|Outputs| ConsistencyIndex
+    Derived_Metrics -->|Outputs| AgeFactor_adjusted_ATL
+    Data_Integrity -->|Outputs| ValidatesDatasetSplit
+    Event_Completeness -->|Outputs| RestDayIcon
+    Event_Completeness -->|Outputs| CurrentDayIcon
+    Evaluate_Actions -->|Outputs| AdaptiveActions
+    Glossary_and_Placeholders -->|Outputs| PopulatedValues
 
     %% Render / Report Placement
-    TotalHours["TotalHours"] -->|Render| Weekly_Seasonal_Report_Summary
-    TotalDistance["TotalDistance"] -->|Render| Weekly_Seasonal_Report_Summary
-    TotalTSS["TotalTSS"] -->|Render| Weekly_Seasonal_Report_Summary
-    RecoveryIndex["RecoveryIndex"] -->|Render| Weekly_Report_Recovery
-    FatOxidationIndex["FatOxidationIndex"] -->|Render| Weekly_Seasonal_Report_Training_Quality
-    SubjectiveReadinessIndex["SubjectiveReadinessIndex"] -->|Render| Weekly_Seasonal_Report_Training_Quality
-    ACWR["ACWR"] -->|Render| Weekly_Seasonal_Report_Metrics_Panel
-    Monotony["Monotony"] -->|Render| Weekly_Seasonal_Report_Metrics_Panel
-    Strain["Strain"] -->|Render| Weekly_Seasonal_Report_Metrics_Panel
-    Polarisation["Polarisation"] -->|Render| Weekly_Seasonal_Report_Metrics_Panel
-    DurabilityIndex["DurabilityIndex"] -->|Render| Weekly_Seasonal_Report_Training_Quality
-    HybridMode["HybridMode"] -->|Render| Weekly_Seasonal_Report_Metrics_Panel
-    BenchmarkIndex["BenchmarkIndex"] -->|Render| Seasonal_Report_Advanced_Markers
-    SpecificityIndex["SpecificityIndex"] -->|Render| Seasonal_Report_Advanced_Markers
-    ConsistencyIndex["ConsistencyIndex"] -->|Render| Seasonal_Report_Advanced_Markers
-    AgeFactor_adjusted_ATL["AgeFactor_adjusted_ATL"] -->|Render| Seasonal_Report_Periodisation_Load_Planning
-    ValidatesDatasetSplit["ValidatesDatasetSplit"] -->|Render| Weekly_Report_Discipline_Breakdown
-    RestDayIcon["Rest Day 🛌"] -->|Render| Weekly_Report_Summary_Section
-    CurrentDayIcon["Current Day ⏳"] -->|Render| Weekly_Report_Summary_Section
-    AdaptiveActions["Adaptive Actions"] -->|Render| Weekly_Seasonal_Report_Actions_Section
-    PopulatedValues["Populated values for rendering"] -->|Render| Unified_Reporting_Framework_Sections
+    TotalHours -->|Render| Weekly_Seasonal_Report_Summary
+    TotalDistance -->|Render| Weekly_Seasonal_Report_Summary
+    TotalTSS -->|Render| Weekly_Seasonal_Report_Summary
+    RecoveryIndex -->|Render| Weekly_Report_Recovery
+    FatOxidationIndex -->|Render| Weekly_Seasonal_Report_Training_Quality
+    SubjectiveReadinessIndex -->|Render| Weekly_Seasonal_Report_Training_Quality
+    ACWR -->|Render| Weekly_Seasonal_Report_Metrics_Panel
+    Monotony -->|Render| Weekly_Seasonal_Report_Metrics_Panel
+    Strain -->|Render| Weekly_Seasonal_Report_Metrics_Panel
+    Polarisation -->|Render| Weekly_Seasonal_Report_Metrics_Panel
+    DurabilityIndex -->|Render| Weekly_Seasonal_Report_Training_Quality
+    HybridMode -->|Render| Weekly_Seasonal_Report_Metrics_Panel
+    BenchmarkIndex -->|Render| Seasonal_Report_Advanced_Markers
+    SpecificityIndex -->|Render| Seasonal_Report_Advanced_Markers
+    ConsistencyIndex -->|Render| Seasonal_Report_Advanced_Markers
+    AgeFactor_adjusted_ATL -->|Render| Seasonal_Report_Periodisation_Load_Planning
+    ValidatesDatasetSplit -->|Render| Weekly_Report_Discipline_Breakdown
+    RestDayIcon -->|Render| Weekly_Report_Summary_Section
+    CurrentDayIcon -->|Render| Weekly_Report_Summary_Section
+    AdaptiveActions -->|Render| Weekly_Seasonal_Report_Actions_Section
+    PopulatedValues -->|Render| Unified_Reporting_Framework_Sections
 
     %% Reporting Sections
     Weekly_Seasonal_Report_Summary["Weekly / Seasonal Report – Section Summary"]
@@ -105,5 +118,4 @@ flowchart TD
     Event_Completeness -->|Contributes to| Weekly_Report_Summary_Section
     Evaluate_Actions -->|Contributes to| Weekly_Seasonal_Report_Actions_Section
     Glossary_and_Placeholders -->|Contributes to| Unified_Reporting_Framework_Sections
-    ```
 ```
