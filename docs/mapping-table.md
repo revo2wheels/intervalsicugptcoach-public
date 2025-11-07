@@ -21,79 +21,98 @@
 | Placeholders (`{xxx}`) | Glossary & Placeholders | Used across all modules | Populated values for rendering | Unified Reporting Framework v5.1 sections | Tied to **Coaching Heuristics**, **Coaching Profile** |
 
 ```mermaid
-%% Compact Vertical Mapping — Optimized for GitHub/VSCodium
-%% Top-down layout with small boxes and reduced spacing
 flowchart TB
-    classDef small fill=#eef,stroke=#99c,stroke-width:1px,font-size:10px,font-family:Arial,rx:4,ry:4;
+%% ====== LAYOUT CONTROL ======
+classDef small fill=#e7f0fa,stroke=#4a90e2,color=#111,stroke-width:1px,font-size:10px;
+classDef process fill=#fff,stroke=#999,color=#222,stroke-width:1px,font-size:10px;
+classDef output fill=#f7faf7,stroke=#7ca87c,color=#111,stroke-width:1px,font-size:10px;
+classDef section fill=#faf3e7,stroke=#c9993c,color=#111,stroke-width:1px,font-size:10px;
 
-    subgraph Inputs [Input Sources]
-        activity_moving_time["activity.moving_time"]
-        activity_distance["activity.distance"]
-        activity_icu_training_load["activity.icu_training_load"]
-        wellness_HRV["wellness.HRV"]
-        wellness_restHR["wellness.restHR"]
-        wellness_sleep["wellness.sleep"]
-        RPE_Feel["RPE / Feel"]
-        power_HR["power / HR"]
-        FTP_LT1_LT2["FTP / LT1 / LT2"]
-        age["age"]
-        activity_climbing["activity.climbing"]
-        discipline["discipline"]
-        session_type["session.type"]
-        derived_CR_S["Derived C/R/S"]
-        all_event_totals["Event totals"]
-        audit_flags["Audit flags"]
-        placeholders["Placeholders {xxx}"]
-    end
+%% ====== INPUTS ======
+subgraph Inputs["Inputs"]
+    A1["activity.moving_time"]:::small
+    A2["activity.distance"]:::small
+    A3["icu_training_load"]:::small
+    A4["wellness.HRV"]:::small
+    A5["wellness.restHR"]:::small
+    A6["sleep"]:::small
+    A7["RPE"]:::small
+    A8["power/HR"]:::small
+    A9["FTP, LT1, LT2"]:::small
+    A10["discipline"]:::small
+    A11["session.type"]:::small
+end
 
-    subgraph Tier2_Modules [Tier-2 Processing Chain]
-        Data_Integrity["Data Integrity"]
-        Event_Completeness["Event Completeness"]
-        Enforce_Event_Only_Totals["Event Totals Enforcement"]
-        Calculation_Integrity["Calculation Integrity"]
-        Wellness_Validation["Wellness Validation"]
-        Derived_Metrics["Derived Metrics"]
-        Evaluate_Actions["Evaluate Actions"]
-        Glossary_and_Placeholders["Glossary & Placeholders"]
-    end
+%% ====== PROCESSING ======
+subgraph Tier2_Modules["Tier-2 Modules"]
+    B1["Data Integrity"]:::process
+    B2["Event Completeness"]:::process
+    B3["Enforce Totals"]:::process
+    B4["Calc Integrity"]:::process
+    B5["Wellness Valid."]:::process
+    B6["Derived Metrics"]:::process
+    B7["Evaluate Actions"]:::process
+    B8["Placeholders"]:::process
+end
 
-    subgraph Outputs [Derived Outputs]
-        TotalHours["TotalHours"]
-        TotalDistance["TotalDistance"]
-        TotalTSS["TotalTSS"]
-        RecoveryIndex["RecoveryIndex"]
-        ACWR["ACWR"]
-        Strain["Strain"]
-        Monotony["Monotony"]
-        Polarisation["Polarisation"]
-        DurabilityIndex["DurabilityIndex"]
-        FatOxidationIndex["FatOxidationIndex"]
-        BenchmarkIndex["BenchmarkIndex"]
-        SpecificityIndex["SpecificityIndex"]
-        ConsistencyIndex["ConsistencyIndex"]
-        HybridMode["HybridMode"]
-        AdaptiveActions["AdaptiveActions"]
-        ValidatesDatasetSplit["DisciplineSplit"]
-    end
+%% ====== OUTPUTS ======
+subgraph Outputs["Outputs"]
+    C1["TotalHours"]:::output
+    C2["TotalTSS"]:::output
+    C3["ACWR"]:::output
+    C4["Monotony"]:::output
+    C5["Strain"]:::output
+    C6["RecoveryIndex"]:::output
+    C7["DurabilityIndex"]:::output
+    C8["AdaptiveActions"]:::output
+end
 
-    subgraph Report_Sections [Report Rendering]
-        Summary["Summary"]
-        TrainingQuality["Training Quality"]
-        MetricsPanel["Metrics Panel"]
-        AdvancedMarkers["Advanced Markers"]
-        Periodisation["Periodisation"]
-        DisciplineBreakdown["Discipline Breakdown"]
-        Recovery["Recovery"]
-        Actions["Actions"]
-    end
+%% ====== REPORT SECTIONS ======
+subgraph Report["Report Sections"]
+    D1["Summary"]:::section
+    D2["Training Quality"]:::section
+    D3["Metrics Panel"]:::section
+    D4["Recovery & Wellness"]:::section
+    D5["Actions"]:::section
+end
 
-    %% Simplified flow arrows
-    Inputs --> Tier2_Modules
-    Tier2_Modules --> Outputs
-    Outputs --> Report_Sections
+%% ====== FLOWS ======
+Inputs --> Tier2_Modules
+Tier2_Modules --> Outputs
+Outputs --> Report
 
-    %% Apply compact styling to all nodes
-    class Inputs,Tier2_Modules,Outputs,Report_Sections,activity_moving_time,activity_distance,activity_icu_training_load,wellness_HRV,wellness_restHR,wellness_sleep,RPE_Feel,power_HR,FTP_LT1_LT2,age,activity_climbing,discipline,session_type,derived_CR_S,all_event_totals,audit_flags,placeholders,Data_Integrity,Event_Completeness,Enforce_Event_Only_Totals,Calculation_Integrity,Wellness_Validation,Derived_Metrics,Evaluate_Actions,Glossary_and_Placeholders,TotalHours,TotalDistance,TotalTSS,RecoveryIndex,ACWR,Strain,Monotony,Polarisation,DurabilityIndex,FatOxidationIndex,BenchmarkIndex,SpecificityIndex,ConsistencyIndex,HybridMode,AdaptiveActions,ValidatesDatasetSplit,Summary,TrainingQuality,MetricsPanel,AdvancedMarkers,Periodisation,DisciplineBreakdown,Recovery,Actions small;
+%% ====== DETAIL LINKS ======
+A1 --> B3
+A2 --> B4
+A3 --> B3
+A4 --> B5
+A5 --> B5
+A6 --> B5
+A7 --> B6
+A8 --> B6
+A9 --> B6
+A10 --> B1
+A11 --> B2
+
+B1 --> C1
+B2 --> C6
+B3 --> C1
+B4 --> C2
+B5 --> C6
+B6 --> C3
+B6 --> C4
+B6 --> C5
+B6 --> C7
+B7 --> C8
+
+C1 --> D1
+C2 --> D1
+C3 --> D3
+C4 --> D3
+C5 --> D3
+C6 --> D4
+C7 --> D2
+C8 --> D5
 
 ```
 
