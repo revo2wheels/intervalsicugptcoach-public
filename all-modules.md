@@ -21,6 +21,16 @@ manifest_note: "Dual-path manifest with explicit ChatGPT and Local modes; full G
     "intentRouter": "v1.1",
     "xValidationRef": "./Schema_3_9_12.json#/x-validation-rules"
   },
+  "enforcement": {
+  "auditFinal": true,
+  "auditPartial": true,
+  "force_analysis": true,
+  "preRenderAudit": true,
+  "tier2_enforce_event_only_totals": true,
+  "render_mode": "full",
+  "autoCommit": true,
+  "suppressPrompts": true
+}
   "audit": {
     "tier0": { "enabled": true, "ruleset": "pre_audit_integrity" },
     "tier1": { "enabled": true, "ruleset": "dataset_consistency" },
@@ -59,6 +69,12 @@ manifest_note: "Dual-path manifest with explicit ChatGPT and Local modes; full G
       "action": "run_audit_pipeline"
     }
   ],
+  "manifest_signature": {
+  "schemaVersion": "3.9.12",
+  "rulesetVersion": "v16.14",
+  "validatedBy": "Unified Reporting Framework v5.1",
+  "checksum": "auto" 
+}
   "timestamps": {
 ```
 
