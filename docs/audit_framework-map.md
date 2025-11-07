@@ -18,5 +18,13 @@ In **Cloud Mode**, modules are fetched dynamically from GitHub, and each compone
    - Once the audit is completed, the results are rendered via `render_unified_report.py`, producing a full 10-section Markdown report.
 
 ### Cloud Mode Flow Diagram
-```plaintext
-[Cloud API] → [intervals_icu__jit_plugin] → [audit_core/tier0_pre_audit.py] → [audit_core/tier1_controller.py] → [audit_core/tier2_*] → [render_unified_report.py] → [Unified Report]
+```mermaid
+graph TB
+    A[Cloud API] --> B[intervals_icu__jit_plugin]
+    B --> C[tier0_pre_audit.py]
+    C --> D[tier1_controller.py]
+    D --> E[tier2_modules - data integrity, totals, wellness, metrics]
+    E --> F[render_unified_report.py]
+    F --> G[Unified Report - 10 section Markdown]
+
+```
