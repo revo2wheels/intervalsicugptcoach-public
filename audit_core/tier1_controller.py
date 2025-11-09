@@ -105,8 +105,20 @@ def run_tier1_controller(df_activities, wellness, context):
     if df_activities["id"].duplicated().any():
         raise ValueError("❌ Duplicate activity IDs detected")
 
-    # --- Step 2: Canonical totals (moving_time only) ---
-    event_hours = df_activities["moving_time"].sum() / 3600
+    # --- Step 2: Canonical totals (true Σ(event.moving_time)) ---
+    if "moving_time" not in df_activities.columns:
+        raise AuditHalt("❌ Tier-1: missing moving_time column for canonical totals")
+
+    raw_sum = df_activities["moving_time"].sum()
+    max_val = df_activities["moving_time"].max()
+
+    if max_val < 1000:  # hours already
+        event_hours = raw_sum
+        print(f"🧮 Tier-1: using true Σ(event.moving_time)={raw_sum:.2f} h (input already hours)")
+    else:               # seconds → convert once
+        event_hours = raw_sum / 3600
+        print(f"🧮 Tier-1: using true Σ(event.moving_time)={raw_sum:.0f} s → {event_hours:.2f} h")
+
     event_tss = df_activities["icu_training_load"].sum()
     context["tier1_eventTotals"] = {
         "hours": round(event_hours, 2),

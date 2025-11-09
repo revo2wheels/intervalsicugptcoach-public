@@ -221,10 +221,22 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
             df_activities = expand_zones(df_activities, "icu_hr_zone_times", "hr")
             df_activities = expand_zones(df_activities, "pace_zone_times", "pace")
 
-            # --- Diagnostic summary ---
-            total_hours = df_activities["moving_time"].sum() / 3600 if "moving_time" in df_activities else 0
+            # --- Diagnostic summary (true Σ(event.moving_time)) ---
+            if "moving_time" in df_activities.columns:
+                raw_sum = df_activities["moving_time"].sum()
+                max_val = df_activities["moving_time"].max()
+                if max_val < 1000:  # hours already
+                    total_hours = raw_sum
+                    print(f"[T0] Diagnostic: true Σ(event.moving_time)={raw_sum:.2f} h (input already hours)")
+                else:
+                    total_hours = raw_sum / 3600
+                    print(f"[T0] Diagnostic: true Σ(event.moving_time)={raw_sum:.0f} s → {total_hours:.2f} h")
+            else:
+                total_hours = 0
+                print("[T0] Diagnostic: no moving_time column found")
+
             total_tss = df_activities["icu_training_load"].sum() if "icu_training_load" in df_activities else 0
-            print(f"[T0] Canonical totals → Σ(moving_time)/3600={total_hours:.2f}  Σ(TSS)={total_tss:.1f}")
+            print(f"[T0] Canonical totals → Σ(TSS)={total_tss:.1f}")
 
             return df_activities
 

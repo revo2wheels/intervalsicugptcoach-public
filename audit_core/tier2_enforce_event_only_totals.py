@@ -47,18 +47,23 @@ def enforce_event_only_totals(df_events, context):
     if df_event_only.empty:
         raise AuditHalt("❌ enforce_event_only_totals: no valid event rows after filtering")
 
-    # --- Step 4: Canonical recomputation (unit-aware) -----------------------
-    if "moving_time" in df_event_only.columns:
-        max_val = df_event_only["moving_time"].max()
-        if max_val > 1000:  # seconds → convert to hours
-            print(f"🧮 Tier-2: detected seconds → converting to hours (max={max_val})")
-            event_hours = df_event_only["moving_time"].sum() / 3600
-        else:  # already hours
-            print(f"🧮 Tier-2: detected hours → no conversion (max={max_val})")
-            event_hours = df_event_only["moving_time"].sum()
-    else:
-        raise AuditHalt("❌ enforce_event_only_totals: moving_time column missing")
+    # --- Step 4: Canonical recomputation (true Σ(event.moving_time)) -------
+    if "moving_time" not in df_event_only.columns:
+        raise AuditHalt("❌ enforce_event_only_totals: missing moving_time column")
 
+    # compute direct sum from event rows only
+    raw_sum = df_event_only["moving_time"].sum()
+    max_val = df_event_only["moving_time"].max()
+
+    # unit detection and conversion
+    if max_val < 1000:  # hours already
+        event_hours = raw_sum
+        print(f"🧮 Tier-2: using true Σ(event.moving_time)={raw_sum:.2f} h (input already hours)")
+    else:               # seconds → convert once
+        event_hours = raw_sum / 3600
+        print(f"🧮 Tier-2: using true Σ(event.moving_time)={raw_sum:.0f} s → {event_hours:.2f} h")
+
+    # recompute other canonical totals directly from events
     event_tss = df_event_only["icu_training_load"].sum()
     event_distance = (
         df_event_only["distance"].sum() / 1000 if "distance" in df_event_only else 0
