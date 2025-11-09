@@ -47,8 +47,18 @@ def enforce_event_only_totals(df_events, context):
     if df_event_only.empty:
         raise AuditHalt("❌ enforce_event_only_totals: no valid event rows after filtering")
 
-    # --- Step 4: Canonical recomputation ------------------------------------
-    event_hours = df_event_only["moving_time"].sum() / 3600
+    # --- Step 4: Canonical recomputation (unit-aware) -----------------------
+    if "moving_time" in df_event_only.columns:
+        max_val = df_event_only["moving_time"].max()
+        if max_val > 1000:  # seconds → convert to hours
+            print(f"🧮 Tier-2: detected seconds → converting to hours (max={max_val})")
+            event_hours = df_event_only["moving_time"].sum() / 3600
+        else:  # already hours
+            print(f"🧮 Tier-2: detected hours → no conversion (max={max_val})")
+            event_hours = df_event_only["moving_time"].sum()
+    else:
+        raise AuditHalt("❌ enforce_event_only_totals: moving_time column missing")
+
     event_tss = df_event_only["icu_training_load"].sum()
     event_distance = (
         df_event_only["distance"].sum() / 1000 if "distance" in df_event_only else 0
@@ -98,7 +108,8 @@ def enforce_event_only_totals(df_events, context):
         f"T2 totals computed from {source_label} "
         f"(Δh={diff_hours:.2f}, ΔTSS={diff_tss:.1f}, events={len(df_event_only)})"
     )
-    # --- Final load_metrics sync ---
+
+    # --- Final load_metrics sync -------------------------------------------
     if all(k in context for k in ["ctl", "atl", "tsb"]):
         context["load_metrics"] = {
             "CTL": {"value": round(context.get("ctl", 0), 2), "status": "ok"},

@@ -98,9 +98,18 @@ def run_report(
             chunk_start += delta
         df_master = pd.concat(all_dfs, ignore_index=True)
 
+    # --- Normalize moving_time units before Tier-1 ---
+    if "moving_time" in df_master.columns:
+       max_val = df_master["moving_time"].max()
+    if max_val < 1000:  # hours → convert to seconds for consistency
+        print(f"⚙️ Controller normalization: converting moving_time from hours → seconds (max={max_val})")
+        df_master["moving_time"] *= 3600
+    else:
+        print(f"⚙️ Controller normalization: detected seconds, no conversion (max={max_val})")
+
     # --- Tier-1 — Dataset validation ---
     df_master, wellness, context = run_tier1_controller(df_master, wellness, context)
-
+    
     # --- Tier-2 — Full audit chain ---
     df_master, daily = validate_event_completeness(df_master)
     context = enforce_event_only_totals(df_master, context)

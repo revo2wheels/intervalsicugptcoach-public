@@ -136,6 +136,13 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                 df_activities.drop_duplicates(subset=["id"], keep="first", inplace=True)
                 print(f"🧩 Tier-0 deduplication: {before - len(df_activities)} duplicates removed.")
 
+            # --- Unit Normalization: ensure moving_time is in seconds ---
+            if "moving_time" in df_activities.columns:
+               max_val = df_activities["moving_time"].max()
+            if max_val < 1000:  # likely already in hours
+               print(f"⚙️ Tier-0 normalization: converting moving_time from hours → seconds (max={max_val})")
+               df_activities["moving_time"] *= 3600
+
             # --- Canonical timezone & date window normalization ---
             context = context or {}
             tz = context.get("timezone", "Europe/Zurich")
@@ -287,6 +294,13 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     """Tier-0: OAuth-only Pre-audit fetch chain with adaptive chunking and meta-retry."""
     if not ICU_TOKEN:
         raise EnvironmentError("Missing Intervals.icu OAuth token. Set ICU_OAUTH env var.")
+
+    # --- Reset cumulative totals before Tier-0 calculations ---
+    context["totalHours"] = 0
+    context["totalTss"] = 0
+    context["totalDistance"] = 0
+    context.pop("eventTotals", None)
+    print("🧩 Tier-0 reset: cleared totalHours/TSS/distance before aggregation")
 
     # --- Always purge before data fetch ---
     purge_keys = ["eventTotals", "dailyMerged", "df_events", "athleteProfile"]
