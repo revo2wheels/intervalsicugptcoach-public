@@ -63,6 +63,7 @@
 [DEBUG-T1] Outlier events detected: 0
 [DEBUG-OUTLIER] mean TSS: 65.33333333333333 std: 57.19702789481286
 [DEBUG-OUTLIER] min/max TSS: 10 / 161
+[T2] Daily summary built — 5 rows (no event merge applied)
 [T2] Daily completeness summary built — 5 rows
 🔍 Tier-2 enforcement source: Tier-2 validated events (9 rows)
 origin counts:
@@ -113,6 +114,7 @@ load_metrics pre-pass: {'CTL': {'value': 91.38, 'status': 'ok'}, 'ATL': {'value'
 _locked_load_metrics pre-pass: {'CTL': {'value': 91.38, 'status': 'ok'}, 'ATL': {'value': 91.43, 'status': 'ok'}, 'TSB': {'value': -0.05, 'status': 'ok'}, 'ACWR': {'value': nan, 'status': 'ok'}, 'Monotony': {'value': np.float64(2.48), 'status': 'ok'}, 'Strain': {'value': np.float64(1458.2), 'status': 'ok'}, 'Polarisation': {'value': 0.0, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.504), 'status': 'ok'}}
 Report type: weekly
 ------------------------------------------------------------
+[DEBUG-TEMPLATE] Injected auditFinal flag and live window for renderer
 [DEBUG-RENDER] incoming load_metrics: {
   "CTL": {
     "value": 91.38,
@@ -218,6 +220,7 @@ load_metrics post-render: {'CTL': {'value': 91.38, 'status': 'ok'}, 'ATL': {'val
   - trend_series
   - tsb
   - ui_flag
+  - window
   - window_end
   - window_start
   - window_summary
@@ -234,9 +237,9 @@ load_metrics post-render: {'CTL': {'value': 91.38, 'status': 'ok'}, 'ATL': {'val
 
 # 🧭 weekly Training Report — URF v5.1
 **Athlete:** Clive King
-**Period:** ? → ?
+**Period:** 2025-11-04 → 2025-11-10
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-10T10:13:19.329410
+**Generated:** 2025-11-10T10:41:35.341109
 
 ---
 
@@ -348,6 +351,6 @@ _No outliers detected._
 _No event preview available._
 
 ---
-✅ **Audit Completed:** 2025-11-10T10:13:19.329496
+✅ **Audit Completed:** 2025-11-10T10:41:35.341198
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 

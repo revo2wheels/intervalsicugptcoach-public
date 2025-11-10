@@ -82,6 +82,18 @@ def validate_event_completeness(df_activities, df_wellness=None, context=None):
     # Drop rows where date could not be parsed
     df_valid = df_valid.dropna(subset=["date"])
 
+    # --- Daily summary (preserved for recovery/load analytics) ---
+    daily = (
+        df_valid.groupby("date", as_index=False)
+        .agg({
+            "moving_time": "sum",
+            "icu_training_load": "sum",
+            "distance": "sum",
+        })
+    )
+    daily["display_only"] = True
+    print(f"[T2] Daily summary built — {len(daily)} rows (no event merge applied)")
+
     # Preserve original audit context fields
     df_valid["origin"] = "event"
     daily["display_only"] = True
@@ -120,4 +132,4 @@ def validate_event_completeness(df_activities, df_wellness=None, context=None):
         context["eventCompleteness_checked"] = True
         context["dedup_method"] = "elapsed-time overlap (v16.1.3)"
 
-    return df_valid, None
+    return df_valid, daily
