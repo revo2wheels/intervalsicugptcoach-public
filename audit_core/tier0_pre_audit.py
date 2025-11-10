@@ -175,11 +175,11 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
             if "elapsed_time" in df_activities.columns and "moving_time" in df_activities.columns:
                 df_activities["elapsed_time"] = df_activities["moving_time"]
 
-            # --- Zone array expansion ---
             def expand_zones(df, field, prefix):
                 """
                 Expands zone arrays (both list-of-dicts and list-of-ints) into numeric columns.
                 Handles power_z*, hr_z*, pace_z* forms consistently.
+                Safe against nulls, 'null' strings, or malformed entries.
                 """
                 import numpy as np
                 import pandas as pd
@@ -187,6 +187,9 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
 
                 if field not in df.columns:
                     return df
+
+                # Normalize: ensure every entry is a list, not None or "null"
+                df[field] = df[field].apply(lambda x: [] if x in [None, "null", "None", np.nan] else x)
 
                 try:
                     def parse_entry(x):
@@ -197,30 +200,32 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                             except Exception:
                                 return []
                         if isinstance(x, list):
-                            # list of dicts → extract 'secs' field
                             if all(isinstance(z, dict) for z in x):
                                 return [z.get("secs", 0) for z in x]
-                            # list of numeric → keep as-is
                             elif all(isinstance(z, (int, float)) for z in x):
                                 return x
                         return []
 
-                    zone_values = df[field].dropna().apply(parse_entry)
+                    zone_values = df[field].apply(parse_entry)
                     max_len = zone_values.map(len).max() if not zone_values.empty else 0
-                    z = pd.DataFrame(zone_values.tolist(), index=df[field].dropna().index)
+                    if max_len == 0:
+                        return df  # Nothing to expand
+
+                    z = pd.DataFrame(zone_values.tolist(), index=df.index)
                     z = z.reindex(columns=range(max_len)).fillna(0)
                     z.columns = [f"{prefix}_z{i+1}" for i in range(max_len)]
 
                     df = pd.concat([df, z], axis=1)
-                    debug(context,f"[DEBUG-T0] Expanded {field} → {len(z.columns)} numeric columns")
+                    debug(context, f"[DEBUG-T0] Expanded {field} → {len(z.columns)} numeric columns")
                 except Exception as e:
-                    debug(context,f"[DEBUG-T0] Failed to expand {field}: {e}")
+                    debug(context, f"[DEBUG-T0] Failed to expand {field}: {e}")
 
                 return df
 
-            df_activities = expand_zones(df_activities, "icu_zone_times", "power")
-            df_activities = expand_zones(df_activities, "icu_hr_zone_times", "hr")
-            df_activities = expand_zones(df_activities, "pace_zone_times", "pace")
+
+                df_activities = expand_zones(df_activities, "icu_zone_times", "power")
+                df_activities = expand_zones(df_activities, "icu_hr_zone_times", "hr")
+                df_activities = expand_zones(df_activities, "pace_zone_times", "pace")
 
             # --- Diagnostic summary (true Σ(event.moving_time)) ---
             if "moving_time" in df_activities.columns:
