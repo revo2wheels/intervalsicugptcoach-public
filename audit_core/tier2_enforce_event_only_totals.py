@@ -40,7 +40,7 @@ def enforce_event_only_totals(df_events, context):
             & (df_source["moving_time"] > 120)
             & (df_source["icu_training_load"] > 0)
         ]
-        .drop_duplicates(subset=["start_date_local", "elapsed_time"], keep="first")
+            .drop_duplicates(subset=["id"],keep="first")
         .copy()
     )
 
@@ -51,19 +51,16 @@ def enforce_event_only_totals(df_events, context):
     if "moving_time" not in df_event_only.columns:
         raise AuditHalt("❌ enforce_event_only_totals: missing moving_time column")
 
-    # compute direct sum from event rows only
+    # Normalize and enforce numeric seconds
+    df_event_only["moving_time"] = pd.to_timedelta(
+        df_event_only["moving_time"], unit="s"
+    ).dt.total_seconds()
+
     raw_sum = df_event_only["moving_time"].sum()
-    max_val = df_event_only["moving_time"].max()
+    event_hours = round(raw_sum / 3600, 2)
+    debug(context, f"🧮 Tier-2: Σ(moving_time)={raw_sum:.0f}s → {event_hours:.2f}h (Intervals seconds source)")
 
-    # unit detection and conversion
-    if max_val < 1000:  # hours already
-        event_hours = raw_sum
-        debug(context,f"🧮 Tier-2: using true Σ(event.moving_time)={raw_sum:.2f} h (input already hours)")
-    else:               # seconds → convert once
-        event_hours = raw_sum / 3600
-        debug(context,f"🧮 Tier-2: using true Σ(event.moving_time)={raw_sum:.0f} s → {event_hours:.2f} h")
-
-    # recompute other canonical totals directly from events
+    # Recompute canonical totals
     event_tss = df_event_only["icu_training_load"].sum()
     event_distance = (
         df_event_only["distance"].sum() / 1000 if "distance" in df_event_only else 0
