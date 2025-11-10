@@ -4,12 +4,12 @@ Computes canonical totals using Tier-2 validated event dataset if available.
 Falls back to raw Tier-0 data only if no DataFrame is passed.
 """
 import os
-print("📁 Tier-2 module loaded from:", os.path.abspath(__file__))
-
+from audit_core.utils import debug
 from audit_core.errors import AuditHalt
 
 
 def enforce_event_only_totals(df_events, context):
+    debug(context,"📁 Tier-2 module loaded from:", os.path.abspath(__file__))
     # --- Step 1: Acquire source dataset -------------------------------------
     if df_events is not None and not df_events.empty:
         df_source = df_events.copy()
@@ -20,18 +20,18 @@ def enforce_event_only_totals(df_events, context):
         if df_source is None or df_source.empty:
             raise AuditHalt("❌ enforce_event_only_totals: no dataset available from Tier-2 or Tier-0")
 
-    print(f"🔍 Tier-2 enforcement source: {source_label} ({df_source.shape[0]} rows)")
+    debug(context,f"🔍 Tier-2 enforcement source: {source_label} ({df_source.shape[0]} rows)")
 
     # --- Step 2: Diagnostics -------------------------------------------------
     if "origin" in df_source.columns:
-        print("origin counts:\n", df_source["origin"].value_counts(dropna=False))
+        debug(context,"origin counts:\n", df_source["origin"].value_counts(dropna=False))
     else:
-        print("⚠️  'origin' column missing in dataset")
+        debug(context,"⚠️  'origin' column missing in dataset")
 
     if "moving_time" in df_source.columns:
-        print("moving_time stats:\n", df_source["moving_time"].describe())
+        debug(context,"moving_time stats:\n", df_source["moving_time"].describe())
     else:
-        print("⚠️  'moving_time' column missing")
+        debug(context,"⚠️  'moving_time' column missing")
 
     # --- Step 3: Filter to valid event rows ---------------------------------
     df_event_only = (
@@ -58,10 +58,10 @@ def enforce_event_only_totals(df_events, context):
     # unit detection and conversion
     if max_val < 1000:  # hours already
         event_hours = raw_sum
-        print(f"🧮 Tier-2: using true Σ(event.moving_time)={raw_sum:.2f} h (input already hours)")
+        debug(context,f"🧮 Tier-2: using true Σ(event.moving_time)={raw_sum:.2f} h (input already hours)")
     else:               # seconds → convert once
         event_hours = raw_sum / 3600
-        print(f"🧮 Tier-2: using true Σ(event.moving_time)={raw_sum:.0f} s → {event_hours:.2f} h")
+        debug(context,f"🧮 Tier-2: using true Σ(event.moving_time)={raw_sum:.0f} s → {event_hours:.2f} h")
 
     # recompute other canonical totals directly from events
     event_tss = df_event_only["icu_training_load"].sum()
@@ -135,13 +135,13 @@ def enforce_event_only_totals(df_events, context):
         )
 
         context["df_event_only"] = {"preview": df_preview.to_dict("records")}
-        print(
+        debug(context,
             f"[DEBUG-T2] injected df_event_only preview: "
             f"{len(context['df_event_only']['preview'])} rows (sorted by {sort_col})"
         )
 
     except Exception as e:
-        print(f"[DEBUG-T2] could not build df_event_only preview: {e}")
+        debug(context,f"[DEBUG-T2] could not build df_event_only preview: {e}")
         context["df_event_only"] = {"preview": []}
 
     # --- Mark enforcement layer for downstream traceability ---
@@ -168,6 +168,6 @@ def enforce_event_only_totals(df_events, context):
             "ATL": {"value": round(context.get("atl", 0), 2), "status": "ok"},
             "TSB": {"value": round(context.get("tsb", 0), 2), "status": "ok"},
         }
-        print("[DEBUG-T2] enforced load_metrics sync in context:", context["load_metrics"])
+        debug(context,"[DEBUG-T2] enforced load_metrics sync in context:", context["load_metrics"])
 
     return context

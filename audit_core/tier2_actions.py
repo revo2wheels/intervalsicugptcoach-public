@@ -4,6 +4,7 @@ Infers phase segments from validated event-level load data.
 Derived directly from legacy v15.4 inline logic.
 """
 
+from audit_core.utils import debug
 from datetime import datetime, timedelta
 
 def detect_phases(context, events):

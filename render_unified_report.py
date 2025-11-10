@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 from datetime import datetime
 from UIcomponents.icon_pack import ICON_CARDS
+from audit_core.utils import debug
 
 # --- Unified Framework Report Object (v16-compatible) ---
 class Report(dict):
@@ -61,7 +62,7 @@ def render_report(data):
     tz = ctx.get("timezone", "n/a")
     start, end = data.get("window", ["?", "?"])
     report_type = data.get("type", "Weekly")
-    print("[DEBUG-RENDER] incoming load_metrics:", json.dumps(ctx.get("load_metrics", {}), indent=2))   
+    debug(ctx,"[DEBUG-RENDER] incoming load_metrics:", json.dumps(ctx.get("load_metrics", {}), indent=2))   
     md = []
 
     # === 1️⃣ HEADER / META ===
@@ -191,12 +192,12 @@ def render_report(data):
             ctx["event_log"] = ctx["df_event_only"]
 
 
-    print("[DEBUG-RENDER] Keys in ctx:", list(ctx.keys()))
-    print("[DEBUG-RENDER] df_events type:", type(ctx.get("df_events")))
+    debug(ctx,"[DEBUG-RENDER] Keys in ctx:", list(ctx.keys()))
+    debug(ctx,"[DEBUG-RENDER] df_events type:", type(ctx.get("df_events")))
     if isinstance(ctx.get("df_events"), (list, dict)):
-        print("[DEBUG-RENDER] df_events length:", len(ctx.get("df_events")))
+        debug(ctx,"[DEBUG-RENDER] df_events length:", len(ctx.get("df_events")))
     if "df_event_only" in ctx:
-        print("[DEBUG-RENDER] df_event_only content:", ctx["df_event_only"])
+        debug(ctx,"[DEBUG-RENDER] df_event_only content:", ctx["df_event_only"])
 
 
     # === 🪜 Optional: Weekly Events ===
@@ -227,9 +228,9 @@ def render_report(data):
                     )
                 if preview:
                     ctx["df_event_only"] = {"preview": preview}
-                    print(f"[DEBUG-RENDER] Rebuilt df_event_only preview: {len(preview)} rows")
+                    debug(ctx,f"[DEBUG-RENDER] Rebuilt df_event_only preview: {len(preview)} rows")
             except Exception as e:
-                print(f"[DEBUG-RENDER] could not rebuild df_event_only: {e}")
+                debug(ctx,f"[DEBUG-RENDER] could not rebuild df_event_only: {e}")
 
         md.append(section("🚴 Weekly Events Summary"))
         preview = ctx.get("df_event_only", {}).get("preview", [])
@@ -337,12 +338,12 @@ def render_report(data):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python render_unified_report.py <report.json> [--out report.md]")
+        debug(ctx,"Usage: python render_unified_report.py <report.json> [--out report.md]")
         sys.exit(1)
 
     path = Path(sys.argv[1])
     if not path.exists():
-        print(f"❌ File not found: {path}")
+        debug(ctx,f"❌ File not found: {path}")
         sys.exit(1)
 
     data = json.loads(path.read_text())
@@ -351,9 +352,9 @@ def main():
     if len(sys.argv) > 3 and sys.argv[2] == "--out":
         out_path = Path(sys.argv[3])
         out_path.write_text(md, encoding="utf-8")
-        print(f"✅ Markdown report written to {out_path}")
+        debug(ctx,f"✅ Markdown report written to {out_path}")
     else:
-        print(md)
+        debug(ctx,md)
 
 
 if __name__ == "__main__":

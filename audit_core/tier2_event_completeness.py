@@ -8,6 +8,7 @@ Maintains wellness alignment and HRV↔Load correlation (legacy block).
 
 import pandas as pd
 import numpy as np
+from audit_core.utils import debug
 from datetime import timedelta
 
 
@@ -87,7 +88,7 @@ def validate_event_completeness(df_activities, df_wellness=None, context=None):
     df_valid["origin"] = "event"
     daily["display_only"] = True
 
-    print(f"[T2] Daily completeness summary built — {len(daily)} rows")
+    debug(context,f"[T2] Daily completeness summary built — {len(daily)} rows")
 
 
     # --- Wellness merge & HRV correlation (legacy logic) ---

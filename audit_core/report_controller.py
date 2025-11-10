@@ -1,6 +1,7 @@
 import pandas as pd
 from datetime import timedelta
 
+from audit_core.utils import debug
 from api_github_com__jit_plugin import loadAllRules
 from audit_core.tier0_pre_audit import run_tier0_pre_audit
 from audit_core.tier1_controller import run_tier1_controller
@@ -25,7 +26,8 @@ def run_report(
     suppressPrompts: bool = True,
     **kwargs
 ):
-    print(f"🧭 Running {reportType.title()} Report (auditFinal={auditFinal}, render_mode={render_mode})")
+    context = {}  # Initialize context FIRST
+    debug(context,f"🧭 Running {reportType.title()} Report (auditFinal={auditFinal}, render_mode={render_mode})")
 
     # --- Tier-0 — Ruleset and pre-audit ---
     loadAllRules()
@@ -102,10 +104,10 @@ def run_report(
     if "moving_time" in df_master.columns:
        max_val = df_master["moving_time"].max()
     if max_val < 1000:  # hours → convert to seconds for consistency
-        print(f"⚙️ Controller normalization: converting moving_time from hours → seconds (max={max_val})")
+        debug(context,f"⚙️ Controller normalization: converting moving_time from hours → seconds (max={max_val})")
         df_master["moving_time"] *= 3600
     else:
-        print(f"⚙️ Controller normalization: detected seconds, no conversion (max={max_val})")
+        debug(context,f"⚙️ Controller normalization: detected seconds, no conversion (max={max_val})")
 
     # --- Tier-1 — Dataset validation ---
     df_master, wellness, context = run_tier1_controller(df_master, wellness, context)
@@ -123,18 +125,18 @@ def run_report(
     # --- PATCH: Hard-lock load_metrics before Tier-2 render ---
     if "load_metrics" in context and context["load_metrics"]:
         context["_locked_load_metrics"] = context["load_metrics"].copy()
-        print("[PATCH-LOCK] Preserved load_metrics before validator:",
+        debug(context,"[PATCH-LOCK] Preserved load_metrics before validator:",
             context["_locked_load_metrics"])
 
     # --- Tier-2 extended analytics ---
     context = compute_extended_metrics(df_master, context)
-    print("[PATCH-LOCKPOSTEXTENDED] Preserved load_metrics after extended:",
+    debug(context,"[PATCH-LOCKPOSTEXTENDED] Preserved load_metrics after extended:",
             context["_locked_load_metrics"])
 
     # ✅ Restore locked metrics back into live context before rendering
     if "_locked_load_metrics" in context:
         context["load_metrics"] = context["_locked_load_metrics"].copy()
-        print("[PATCH-RESTORE] Reinstated locked load_metrics before finalizer:",
+        debug(context,"[PATCH-RESTORE] Reinstated locked load_metrics before finalizer:",
             context["load_metrics"])
 
      # --- Promote final audit state ---

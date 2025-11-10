@@ -3,7 +3,7 @@ Tier-2 Extended Metrics (v16.14-integrated)
 Bridges derived_metrics with higher-order coaching, trend, and correlation layers.
 Builds on Tier-2 Step 3 (Derived Metrics Calculation).
 """
-
+from audit_core.utils import debug
 from audit_core.tier2_derived_metrics import compute_derived_metrics
 from coaching_profile import COACH_PROFILE, get_profile_metrics
 from coaching_heuristics import HEURISTICS, derive_trends, derive_correlations

@@ -7,7 +7,8 @@ Ensures Tier-2 canonical totals are enforced using raw Tier-0 data.
 import os
 import json
 import argparse
-import numpy as np
+import numpy as np#
+from audit_core.utils import debug
 from datetime import datetime, timezone, date
 from audit_core import (
     tier0_pre_audit,
@@ -19,18 +20,18 @@ from audit_core import (
 )
 
 def print_totals(tag, df=None, context=None):
-    print(f"\n🔹 [Totals Debug — {tag}]")
+    debug(context,f"\n🔹 [Totals Debug — {tag}]")
     if df is not None and not df.empty:
         if "moving_time" in df.columns:
             total_hours = df["moving_time"].sum() / 3600
-            print(f"   Σ(moving_time)/3600 = {total_hours:.2f}")
+            debug(context,f"   Σ(moving_time)/3600 = {total_hours:.2f}")
         if "icu_training_load" in df.columns:
             total_tss = df["icu_training_load"].sum()
-            print(f"   Σ(icu_training_load) = {total_tss:.1f}")
+            debug(context,f"   Σ(icu_training_load) = {total_tss:.1f}")
     if context:
         if "totalHours" in context or "totalTss" in context:
-            print(f"   context → totalHours={context.get('totalHours')} totalTss={context.get('totalTss')}")
-    print("--------------------------------------------------")
+            debug(context,f"   context → totalHours={context.get('totalHours')} totalTss={context.get('totalTss')}")
+    debug(context,"--------------------------------------------------")
 
 
 def main():
@@ -48,12 +49,12 @@ def main():
 
     # 👇 Diagnostic context toggle
     if args.diag:
-        print("🧩 Diagnostic mode enabled — verbose Tier-2 debug active.")
+        debug(context,"🧩 Diagnostic mode enabled — verbose Tier-2 debug active.")
         context = {"diag": True}
     else:
         context = {}
 
-    print(f"🟢 Starting audit chain {args.type} ({args.start} → {args.end})")
+    debug(context,f"🟢 Starting audit chain {args.type} ({args.start} → {args.end})")
 
     # --- Tier 0: Pre-Audit ---------------------------------------------------
     df_activities, wellness, context, auditPartial, auditFinal = tier0_pre_audit.run_tier0_pre_audit(
@@ -87,11 +88,11 @@ def main():
     # --- Safety Enforcement --------------------------------------------------
     # Ensure canonical totals exist even if earlier steps were bypassed.
     if "totalHours" not in context or "totalTss" not in context:
-        print("⚙️  Enforcing canonical totals before finalization …")
+        debug(context,"⚙️  Enforcing canonical totals before finalization …")
         try:
             context = tier2_enforce_event_only_totals.enforce_event_only_totals(None, context)
         except Exception as e:
-            print(f"⚠️  Tier-2 enforcement fallback failed: {e}")
+            debug(context,f"⚠️  Tier-2 enforcement fallback failed: {e}")
 
     # --- Finalize ------------------------------------------------------------
     context["auditFinal"] = True
@@ -127,8 +128,8 @@ def main():
         with open(outpath, "w", encoding="utf-8") as f:
             json.dump(report, f, indent=2, default=safe_json, allow_nan=False)
     except Exception as e:
-        print(f"❌ JSON dump failed: {e}")
-        print("🩹 Attempting fallback with NaN-safe sanitization …")
+        debug(context,f"❌ JSON dump failed: {e}")
+        debug(context,"🩹 Attempting fallback with NaN-safe sanitization …")
 
         def sanitize(o):
             """Recursively make object JSON-safe (handles numpy, NaN, inf, datetime, bool)."""
@@ -167,14 +168,14 @@ def main():
             with open(tmp_path, "r", encoding="utf-8") as f:
                 _json.load(f)
             os.replace(tmp_path, outpath)
-            print("✅ JSON validation passed. Safe fallback file written.")
+            debug(context,"✅ JSON validation passed. Safe fallback file written.")
         except Exception as ve:
-            print(f"❌ Validation failed: {ve}")
-            print(f"⚠️ Corrupted JSON output — see {tmp_path} for debugging.")
+            debug(context,f"❌ Validation failed: {ve}")
+            debug(context,f"⚠️ Corrupted JSON output — see {tmp_path} for debugging.")
             raise
 
-    print("✅ Audit completed. Canonical totals enforced (Tier-2 integrated).")
-    print(f"📁 Output written to {outpath}")
+    debug(context,"✅ Audit completed. Canonical totals enforced (Tier-2 integrated).")
+    debug(context,f"📁 Output written to {outpath}")
 
 
 # --- Safe exit wrapper ----------------------------------------------------
@@ -184,5 +185,5 @@ if __name__ == "__main__":
         main()
         sys.exit(0)
     except Exception as e:
-        print(f"❌ Audit runner failed: {e}")
+        debug(context,f"❌ Audit runner failed: {e}")
         sys.exit(1)

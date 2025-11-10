@@ -3,6 +3,7 @@ import os
 import sys
 import requests
 import pandas as pd
+from audit_core.utils import debug
 from datetime import datetime, timedelta
 from audit_core.errors import AuditHalt
 
@@ -79,7 +80,7 @@ def fetch_wellness_chunked(athlete_id, oldest, newest, headers, context=None, ma
                 raise AuditHalt(f"❌ Wellness fetch failed after {max_retries + 1} meta-retries: {e}")
             continue
 
-    print("⚠ No wellness data available after adaptive chunking.")
+    debug(context,"⚠ No wellness data available after adaptive chunking.")
     if "id" in df_well.columns and "date" not in df_well.columns:
         df_well.rename(columns={"id": "date"}, inplace=True)
     return pd.DataFrame(columns=["date", "ctl", "atl", "tsb"])
@@ -105,7 +106,7 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                 chunk_start = oldest + timedelta(days=offset)
                 chunk_end = min(newest, chunk_start + timedelta(days=act_chunk_days)) - timedelta(seconds=1)
 
-                print(f"[Tier-0 fetch] chunk_start={chunk_start}  chunk_end={chunk_end}")
+                debug(context,f"[Tier-0 fetch] chunk_start={chunk_start}  chunk_end={chunk_end}")
                 fields = (
                     "id,name,start_date,start_date_local,moving_time,elapsed_time,"
                     "icu_training_load,distance,origin,power,hr,avg_power,avg_hr,"
@@ -125,7 +126,7 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                     df_activities_list.append(df_chunk)
 
             if not df_activities_list:
-                print("⚠ No activity chunks returned from API.")
+                debug(context,"⚠ No activity chunks returned from API.")
                 return pd.DataFrame()
 
             df_activities = pd.concat(df_activities_list, ignore_index=True)
@@ -134,13 +135,13 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
             if "id" in df_activities.columns:
                 before = len(df_activities)
                 df_activities.drop_duplicates(subset=["id"], keep="first", inplace=True)
-                print(f"🧩 Tier-0 deduplication: {before - len(df_activities)} duplicates removed.")
+                debug(context,f"🧩 Tier-0 deduplication: {before - len(df_activities)} duplicates removed.")
 
             # --- Unit Normalization: ensure moving_time is in seconds ---
             if "moving_time" in df_activities.columns:
                max_val = df_activities["moving_time"].max()
             if max_val < 1000:  # likely already in hours
-               print(f"⚙️ Tier-0 normalization: converting moving_time from hours → seconds (max={max_val})")
+               debug(context,f"⚙️ Tier-0 normalization: converting moving_time from hours → seconds (max={max_val})")
                df_activities["moving_time"] *= 3600
 
             # --- Canonical timezone & date window normalization ---
@@ -159,14 +160,14 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                 & (df_activities["start_date_local"].dt.date <= end_date)
             ]
             sliced_rows = len(df_activities)
-            print(f"[T0] Canonical slice → {sliced_rows}/{before_rows} rows retained ({start_date}–{end_date}, tz={tz})")
+            debug(context,f"[T0] Canonical slice → {sliced_rows}/{before_rows} rows retained ({start_date}–{end_date}, tz={tz})")
 
             # Post-slice dedup
             before = len(df_activities)
             df_activities.drop_duplicates(subset=["id"], keep="first", inplace=True)
             dropped = before - len(df_activities)
             if dropped > 0:
-                print(f"[T0] Post-slice deduplication removed {dropped} duplicates.")
+                debug(context,f"[T0] Post-slice deduplication removed {dropped} duplicates.")
 
             # Canonical columns
             df_activities["date"] = df_activities["start_date_local"].dt.date
@@ -211,9 +212,9 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                     z.columns = [f"{prefix}_z{i+1}" for i in range(max_len)]
 
                     df = pd.concat([df, z], axis=1)
-                    print(f"[DEBUG-T0] Expanded {field} → {len(z.columns)} numeric columns")
+                    debug(context,f"[DEBUG-T0] Expanded {field} → {len(z.columns)} numeric columns")
                 except Exception as e:
-                    print(f"[DEBUG-T0] Failed to expand {field}: {e}")
+                    debug(context,f"[DEBUG-T0] Failed to expand {field}: {e}")
 
                 return df
 
@@ -227,16 +228,16 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                 max_val = df_activities["moving_time"].max()
                 if max_val < 1000:  # hours already
                     total_hours = raw_sum
-                    print(f"[T0] Diagnostic: true Σ(event.moving_time)={raw_sum:.2f} h (input already hours)")
+                    debug(context,f"[T0] Diagnostic: true Σ(event.moving_time)={raw_sum:.2f} h (input already hours)")
                 else:
                     total_hours = raw_sum / 3600
-                    print(f"[T0] Diagnostic: true Σ(event.moving_time)={raw_sum:.0f} s → {total_hours:.2f} h")
+                    debug(context,f"[T0] Diagnostic: true Σ(event.moving_time)={raw_sum:.0f} s → {total_hours:.2f} h")
             else:
                 total_hours = 0
-                print("[T0] Diagnostic: no moving_time column found")
+                debug(context,"[T0] Diagnostic: no moving_time column found")
 
             total_tss = df_activities["icu_training_load"].sum() if "icu_training_load" in df_activities else 0
-            print(f"[T0] Canonical totals → Σ(TSS)={total_tss:.1f}")
+            debug(context,f"[T0] Canonical totals → Σ(TSS)={total_tss:.1f}")
 
             return df_activities
 
@@ -245,14 +246,14 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                 raise AuditHalt(f"❌ Activities fetch failed after {max_retries + 1} meta-retries: {e}")
             continue
 
-    print("⚠ No activities data available after chunked fetch.")
+    debug(context,"⚠ No activities data available after chunked fetch.")
     return pd.DataFrame()
 
 #FETCH AHLETEPROFILE
 def fetch_athlete_profile(headers, context=None):
     """Fetch and normalize the athlete profile via OAuth2."""
     profile_url = f"{INTERVALS_API}/athlete/0/profile"
-    print(f"[T0] Fetching athlete profile via OAuth2: {profile_url}")
+    debug(context,f"[T0] Fetching athlete profile via OAuth2: {profile_url}")
 
     profile_resp = fetch_with_retry(profile_url, headers)
     if profile_resp.status_code != 200:
@@ -268,7 +269,7 @@ def fetch_athlete_profile(headers, context=None):
 
     # Default ID handling
     if "id" not in athlete or athlete["id"] in [None, "", "unknown"]:
-        print("⚠️ No athlete.id found — assigning default ID 0 (current athlete).")
+        debug(context,"⚠️ No athlete.id found — assigning default ID 0 (current athlete).")
         athlete["id"] = 0
 
     # Reject invalid sources
@@ -299,7 +300,7 @@ def fetch_athlete_profile(headers, context=None):
     context["athleteProfile"] = merged_profile
     context["athlete"] = athlete
 
-    print(f"[T0] Athlete profile fetched successfully — id={athlete['id']} name={athlete.get('name')}")
+    debug(context,f"[T0] Athlete profile fetched successfully — id={athlete['id']} name={athlete.get('name')}")
     return athlete, context
 
 def run_tier0_pre_audit(start: str, end: str, context: dict):
@@ -312,7 +313,7 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     context["totalTss"] = 0
     context["totalDistance"] = 0
     context.pop("eventTotals", None)
-    print("🧩 Tier-0 reset: cleared totalHours/TSS/distance before aggregation")
+    debug(context,"🧩 Tier-0 reset: cleared totalHours/TSS/distance before aggregation")
 
     # --- Always purge before data fetch ---
     purge_keys = ["eventTotals", "dailyMerged", "df_events", "athleteProfile"]
@@ -322,7 +323,7 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     context["auditPartial"] = False
     context["auditFinal"] = False
     context["purge_enforced"] = True
-    print("🧹 Tier-0 purge enforced — previous cache cleared.")
+    debug(context,"🧹 Tier-0 purge enforced — previous cache cleared.")
 
     headers = {"Authorization": f"Bearer {ICU_TOKEN}"}
 
@@ -345,10 +346,10 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         raise AuditHalt("❌ No wellness data returned after chunked fetch")
 
     # --- Debug inspection ---
-    print("[DEBUG] wellness raw:", type(wellness), len(wellness))
+    debug(context,"[DEBUG] wellness raw:", type(wellness), len(wellness))
     if isinstance(wellness, pd.DataFrame):
-        print("[DEBUG] wellness columns:", wellness.columns.tolist())
-        print("[DEBUG] wellness head:\n", wellness.head())
+        debug(context,"[DEBUG] wellness columns:", wellness.columns.tolist())
+        debug(context,"[DEBUG] wellness head:\n", wellness.head())
         
     # --- Step 5: Finalize context ---
     context.update({"auditPartial": False, "auditFinal": False})
@@ -366,6 +367,8 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         else:
             wellness = pd.DataFrame(columns=["date", "fatigue", "sleep", "hrv", "recovery"])
 
-    print(f"[T0] Pre-audit complete: activities={len(df_activities)}, wellness_rows={len(wellness)}")
+    debug(context,f"[T0] Pre-audit complete: activities={len(df_activities)}, wellness_rows={len(wellness)}")
+
+
 
     return df_activities, wellness, context, context["auditPartial"], context["auditFinal"]

@@ -7,6 +7,7 @@ Captures both stdout logs and the rendered markdown report into one .md file.
 import io
 import sys
 from contextlib import redirect_stdout
+from audit_core.utils import debug
 from pathlib import Path
 
 # Import your core report runner
@@ -45,7 +46,6 @@ def generate_full_report(output_path="reports/report_full.md"):
     output_file.write_text(full_output, encoding="utf-8")
 
     print(f"✅ Full report (logs + markdown) written to {output_file.resolve()}")
-
 
 if __name__ == "__main__":
     generate_full_report()

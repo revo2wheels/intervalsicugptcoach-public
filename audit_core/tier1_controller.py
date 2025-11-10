@@ -7,6 +7,7 @@ and enforces Field Lock Rule for moving_time.
 
 import pandas as pd
 import numpy as np
+from audit_core.utils import debug
 from audit_core.errors import AuditHalt
 from audit_core.utils import validate_dataset_integrity, validate_wellness_alignment
 
@@ -14,7 +15,7 @@ def collect_zone_distributions(df_activities, athlete_profile, context):
     """Compute separate zone distributions for Power, HR, and Pace."""
 
     if df_activities is None or df_activities.empty:
-        print("⚠ collect_zone_distributions: empty df_activities")
+        debug(context,"⚠ collect_zone_distributions: empty df_activities")
         context["zone_dist_power"] = {}
         context["zone_dist_hr"] = {}
         context["zone_dist_pace"] = {}
@@ -26,41 +27,41 @@ def collect_zone_distributions(df_activities, athlete_profile, context):
     context["zone_dist_pace"] = {}
 
     # --- Debug: show available columns ---
-    print("[DEBUG-ZONE] Available columns:", df_activities.columns.tolist())
+    debug(context,"[DEBUG-ZONE] Available columns:", df_activities.columns.tolist())
 
     # --- POWER ZONES ---
     power_cols = [
         c for c in df_activities.columns
         if c.lower().startswith(("power_z", "icu_power_z", "icu_zone_times"))
     ]
-    print("[DEBUG-ZONE] Detected Power zone columns:", power_cols)
+    debug(context,"[DEBUG-ZONE] Detected Power zone columns:", power_cols)
 
     # --- HEART RATE ZONES ---
     hr_cols = [
         c for c in df_activities.columns
         if c.lower().startswith(("hr_z", "icu_hr_zone_times"))
     ]
-    print("[DEBUG-ZONE] Detected HR zone columns:", hr_cols)
+    debug(context,"[DEBUG-ZONE] Detected HR zone columns:", hr_cols)
 
     # --- PACE ZONES ---
     pace_cols = [
         c for c in df_activities.columns
         if c.lower().startswith(("pace_z", "pace_zone_times", "gap_zone_times"))
     ]
-    print("[DEBUG-ZONE] Detected Pace zone columns:", pace_cols)
+    debug(context,"[DEBUG-ZONE] Detected Pace zone columns:", pace_cols)
 
     # --- Zone Distribution Helper ---
     def compute_zone_dist(cols, label):
         if not cols:
-            print(f"[DEBUG-ZONES] No {label} columns found — skipping.")
+            debug(context,f"[DEBUG-ZONES] No {label} columns found — skipping.")
             return {}
         subset = df_activities[cols].select_dtypes(include=[np.number])
         total = subset.sum().sum()
         if total <= 0:
-            print(f"[DEBUG-ZONES] No valid data for {label} zones — total=0.")
+            debug(context,f"[DEBUG-ZONES] No valid data for {label} zones — total=0.")
             return {}
         dist = (subset.sum() / total * 100).round(1).to_dict()
-        print(f"[DEBUG-ZONES] {label} zones computed: {dist}")
+        debug(context,f"[DEBUG-ZONES] {label} zones computed: {dist}")
         return dist
 
     # --- Compute all zone distributions ---
@@ -73,7 +74,7 @@ def collect_zone_distributions(df_activities, athlete_profile, context):
 
     # --- Fallback using athlete profile if no explicit zone data ---
     if not any([context["zone_dist_power"], context["zone_dist_hr"], context["zone_dist_pace"]]):
-        print("⚠ No zone columns found — using athlete profile thresholds if available.")
+        debug(context,"⚠ No zone columns found — using athlete profile thresholds if available.")
         if athlete_profile:
             context["zone_dist_power"] = athlete_profile.get("power_zones", {})
             context["zone_dist_hr"] = athlete_profile.get("hr_zones", {})
@@ -94,7 +95,7 @@ def run_tier1_controller(df_activities, wellness, context):
     df_activities = df_activities.copy()
     if "start_date_local" not in df_activities.columns:
         raise AuditHalt("❌ Tier-1 missing start_date_local column — verify Tier-0 output")
-    print(f"[T1] Columns at entry: {list(df_activities.columns)}")
+    debug(context,f"[T1] Columns at entry: {list(df_activities.columns)}")
 
     # --- Step 1: Dataset integrity ---
     if df_activities.empty:
@@ -115,10 +116,10 @@ def run_tier1_controller(df_activities, wellness, context):
 
     if max_val < 1000:  # hours already
         event_hours = raw_sum
-        print(f"🧮 Tier-1: using true Σ(event.moving_time)={raw_sum:.2f} h (input already hours)")
+        debug(context,f"🧮 Tier-1: using true Σ(event.moving_time)={raw_sum:.2f} h (input already hours)")
     else:               # seconds → convert once
         event_hours = raw_sum / 3600
-        print(f"🧮 Tier-1: using true Σ(event.moving_time)={raw_sum:.0f} s → {event_hours:.2f} h")
+        debug(context,f"🧮 Tier-1: using true Σ(event.moving_time)={raw_sum:.0f} s → {event_hours:.2f} h")
 
     event_tss = df_activities["icu_training_load"].sum()
     context["tier1_eventTotals"] = {
@@ -143,7 +144,7 @@ def run_tier1_controller(df_activities, wellness, context):
 
     # --- Step 5: Wellness alignment check ---
     if wellness is None or (isinstance(wellness, pd.DataFrame) and wellness.empty):
-        print("⚠ No wellness data available for window; continuing with activity-only audit")
+        debug(context,"⚠ No wellness data available for window; continuing with activity-only audit")
     else:
         validate_wellness_alignment(df_activities, wellness)
 
@@ -173,7 +174,7 @@ def run_tier1_controller(df_activities, wellness, context):
         df_well.columns = [c.strip().lower() for c in df_well.columns]
         load_cols = [c for c in ["ctl", "atl", "tsb"] if c in df_well.columns]
         if load_cols:
-            print(f"[DEBUG-T1] merging load metrics from wellness: {load_cols}")
+            debug(context,f"[DEBUG-T1] merging load metrics from wellness: {load_cols}")
             # --- Normalize merge keys to timezone-naive daily dates ---
             df_well["date"] = (
                 pd.to_datetime(df_well["date"])
@@ -192,51 +193,51 @@ def run_tier1_controller(df_activities, wellness, context):
             if "ctl" in df_activities.columns and "atl" in df_activities.columns:
                 if "tsb" not in df_activities.columns:
                     df_activities["tsb"] = (df_activities["ctl"] - df_activities["atl"]).round(2)
-                    print("[DEBUG-T1] derived TSB column added from CTL-ATL.")
+                    debug(context,"[DEBUG-T1] derived TSB column added from CTL-ATL.")
                 else:
-                    print("[DEBUG-T1] TSB already present.")
+                    debug(context,"[DEBUG-T1] TSB already present.")
             else:
-                print("[DEBUG-T1] cannot derive TSB — ctl/atl missing.")
+                debug(context,"[DEBUG-T1] cannot derive TSB — ctl/atl missing.")
             # --- Step 6a.2: promote CTL/ATL/TSB to context for Tier-2 ---
             if all(c in df_activities.columns for c in ["ctl", "atl", "tsb"]):
                 context["ctl"] = float(df_activities["ctl"].mean(skipna=True).round(2))
                 context["atl"] = float(df_activities["atl"].mean(skipna=True).round(2))
                 context["tsb"] = float(df_activities["tsb"].mean(skipna=True).round(2))
-                print(f"[DEBUG-T1] promoted CTL={context['ctl']} ATL={context['atl']} TSB={context['tsb']} to context.")
+                debug(context,f"[DEBUG-T1] promoted CTL={context['ctl']} ATL={context['atl']} TSB={context['tsb']} to context.")
             else:
-                print("[DEBUG-T1] cannot promote CTL/ATL/TSB — missing column(s).")
+                debug(context,"[DEBUG-T1] cannot promote CTL/ATL/TSB — missing column(s).")
             # --- Step 6a.3: inject nested load_metrics dict for Tier-2/Renderer ---
             context["load_metrics"] = {
                 "CTL": {"value": round(context.get("ctl", 0), 2), "status": "ok"},
                 "ATL": {"value": round(context.get("atl", 0), 2), "status": "ok"},
                 "TSB": {"value": round(context.get("tsb", 0), 2), "status": "ok"},
             }
-            print("[DEBUG-T1] injected load_metrics for renderer:", context["load_metrics"])
+            debug(context,"[DEBUG-T1] injected load_metrics for renderer:", context["load_metrics"])
 
-            print("[DEBUG-T1] sample merged CTL/ATL/TSB:", df_activities[["date"] + load_cols].head())
+            debug(context,"[DEBUG-T1] sample merged CTL/ATL/TSB:", df_activities[["date"] + load_cols].head())
         else:
-            print("[DEBUG-T1] no ctl/atl/tsb columns found in wellness data.")
+            debug(context,"[DEBUG-T1] no ctl/atl/tsb columns found in wellness data.")
     else:
-        print("[DEBUG-T1] no valid wellness DataFrame to merge.")
+        debug(context,"[DEBUG-T1] no valid wellness DataFrame to merge.")
 
-    print("[DEBUG-T1] sanity check before Step 6b — rows in df_activities:", len(df_activities))
-    print("[DEBUG-T1] athleteProfile present:", "athleteProfile" in context)
+    debug(context,"[DEBUG-T1] sanity check before Step 6b — rows in df_activities:", len(df_activities))
+    debug(context,"[DEBUG-T1] athleteProfile present:", "athleteProfile" in context)
     if "athleteProfile" in context:
-        print("[DEBUG-T1] athleteProfile keys:", list(context["athleteProfile"].keys()))
+        debug(context,"[DEBUG-T1] athleteProfile keys:", list(context["athleteProfile"].keys()))
 
     # --- Step 6b: Build HR / Power / Pace zone distributions ---
     try:
-        print("[DEBUG-T1] Starting zone distribution extraction...")
-        print("[DEBUG-T1] Activity columns sample:", df_activities.columns.tolist()[:40])
+        debug(context,"[DEBUG-T1] Starting zone distribution extraction...")
+        debug(context,"[DEBUG-T1] Activity columns sample:", df_activities.columns.tolist()[:40])
 
         context = collect_zone_distributions(df_activities, context.get("athleteProfile", {}), context)
 
-        print("[DEBUG-T1] Completed zone distribution extraction.")
-        print("[DEBUG-T1] Zone distributions now in context:")
+        debug(context,"[DEBUG-T1] Completed zone distribution extraction.")
+        debug(context,"[DEBUG-T1] Zone distributions now in context:")
         for k in ["zone_dist_power", "zone_dist_hr", "zone_dist_pace"]:
-            print(f"  {k}: {context.get(k, {})}")
+            debug(context,f"  {k}: {context.get(k, {})}")
     except Exception as e:
-        print(f"⚠ Zone distribution collection failed: {e}")
+        debug(context,f"⚠ Zone distribution collection failed: {e}")
         context["zone_dist_power"] = {}
         context["zone_dist_hr"] = {}
         context["zone_dist_pace"] = {}
@@ -252,13 +253,13 @@ def run_tier1_controller(df_activities, wellness, context):
                 (df["icu_training_load"] < mean_tss - 2 * std_tss)
             ][["id", "name", "start_date_local", "icu_training_load"]]
             context["outliers"] = outliers.to_dict(orient="records")
-            print(f"[DEBUG-T1] Outlier events detected: {len(outliers)}")
-            print("[DEBUG-OUTLIER] mean TSS:", mean_tss, "std:", std_tss)
-            print("[DEBUG-OUTLIER] min/max TSS:", df["icu_training_load"].min(), "/", df["icu_training_load"].max())
+            debug(context,f"[DEBUG-T1] Outlier events detected: {len(outliers)}")
+            debug(context,"[DEBUG-OUTLIER] mean TSS:", mean_tss, "std:", std_tss)
+            debug(context,"[DEBUG-OUTLIER] min/max TSS:", df["icu_training_load"].min(), "/", df["icu_training_load"].max())
         else:
             context["outliers"] = []
     except Exception as e:
-        print(f"⚠ Outlier detection failed: {e}")
+        debug(context,f"⚠ Outlier detection failed: {e}")
         context["outliers"] = []
 
     # --- Step 7: Qualitative label translation ---

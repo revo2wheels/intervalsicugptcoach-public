@@ -9,6 +9,7 @@ Includes robust handling for missing zone or load columns.
 import numpy as np
 import pandas as pd
 import math
+from audit_core.utils import debug
 from datetime import timedelta
 
 from coaching_profile import COACH_PROFILE
@@ -192,7 +193,7 @@ def compute_derived_metrics(df_events, context):
             # fallback if invalid type
             context[key] = 0.0
 
-    print("[DEBUG] Derived metrics synced:", {k: context[k] for k in ["ACWR", "Monotony", "Strain", "Polarisation", "RecoveryIndex"] if k in context})
+    debug(context,"[DEBUG] Derived metrics synced:", {k: context[k] for k in ["ACWR", "Monotony", "Strain", "Polarisation", "RecoveryIndex"] if k in context})
 
     # --- Preserve CTL/ATL/TSB from earlier tiers ---
     existing_load = context.get("load_metrics", {}).copy()
@@ -209,6 +210,6 @@ def compute_derived_metrics(df_events, context):
         "RecoveryIndex": {"value": recovery_index, "status": "ok"},
     }
 
-    print("[DEBUG-T2X] post-extended load_metrics:", context["load_metrics"])
+    debug(context,"[DEBUG-T2X] post-extended load_metrics:", context["load_metrics"])
     return context
 
