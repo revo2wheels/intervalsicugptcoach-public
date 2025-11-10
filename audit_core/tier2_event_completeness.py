@@ -82,18 +82,6 @@ def validate_event_completeness(df_activities, df_wellness=None, context=None):
     # Drop rows where date could not be parsed
     df_valid = df_valid.dropna(subset=["date"])
 
-    # --- Perform daily aggregation ---
-    daily = (
-        df_valid.groupby("date", as_index=False)
-        .agg({
-            "moving_time": "sum",
-            "icu_training_load": "sum",
-            "distance": "sum",
-            "rpe": "mean",
-            "feel": "min"
-        })
-    )
-
     # Preserve original audit context fields
     df_valid["origin"] = "event"
     daily["display_only"] = True
