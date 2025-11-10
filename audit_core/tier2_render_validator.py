@@ -133,19 +133,21 @@ def finalize_and_validate_render(context, reportType="weekly"):
     if "dailyMerged" in context:
         dfm = context["dailyMerged"]
 
+        # Strictly retain event-level rows only (no daily aggregation)
         if "origin" in dfm.columns:
             context["dailyMerged"] = dfm.query("origin == 'event'").copy()
-
         elif "id" in dfm.columns:
+            # Use unique event IDs, not dates
             context["dailyMerged"] = dfm.drop_duplicates(subset=["id"], keep="first").copy()
-
-        elif "date" in dfm.columns:
-            context["dailyMerged"] = dfm.drop_duplicates(subset=["date"], keep="first").copy()
-
         else:
-            debug(context,"⚠ No suitable key column found in dailyMerged; skipping deduplication.")
+            debug(context, "⚠ No event key column found; skipping merge restriction.")
             context["dailyMerged"] = dfm.copy()
 
+    # Force renderer to use canonical Tier-2 totals for header
+    if "totalHours" in context:
+        context["Duration_total"] = time.strftime(
+            "%H:%M:%S", time.gmtime(int(context["totalHours"] * 3600))
+        )
 
     debug(context,"\n[Tier-2 context diagnostic]")
     for key in ["derived_metrics","load_metrics","adaptation_metrics","trend_metrics","correlation_metrics"]:
