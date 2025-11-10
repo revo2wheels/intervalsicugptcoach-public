@@ -44,26 +44,6 @@ def fetch_with_retry(url: str, headers: dict, max_retries: int = 2):
             continue
     return resp
 
-def retry_with_backoff(func, *args, max_retries=2, delay=3, **kwargs):
-    """Meta-level retry wrapper for Tier-0 data fetches (athlete, wellness, activities)."""
-    import time
-    for attempt in range(max_retries + 1):
-        try:
-            result = func(*args, **kwargs)
-            if result is not None:
-                # handle DataFrame or tuple returns
-                if isinstance(result, tuple):
-                    return result
-                if hasattr(result, "empty") and result.empty:
-                    raise ValueError("empty dataframe")
-                return result
-        except Exception as e:
-            if attempt == max_retries:
-                raise AuditHalt(f"❌ {func.__name__} failed after {max_retries + 1} retries: {e}")
-            wait = delay * (2 ** attempt)
-            print(f"⏳ Retry {attempt + 1}/{max_retries} for {func.__name__} in {wait}s → {e}")
-            time.sleep(wait)
-
 
 def estimate_payload_size(days: int, dataset: str):
     """Heuristic payload size estimator to prevent connector overflow."""
@@ -347,39 +327,22 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     headers = {"Authorization": f"Bearer {ICU_TOKEN}"}
 
 
-    # --- Step 1: Fetch athlete profile with retry ---
-    athlete, context = retry_with_backoff(fetch_athlete_profile, headers, context, max_retries=3)
+    # --- Step 1: Fetch athlete profile ---
+    athlete, context = fetch_athlete_profile(headers, context)
 
     # --- Step 2: Determine date window ---
     mode, oldest, newest = resolve_report_trigger("weekly", context["timezone"])
     context.update({"report_mode": mode, "window_start": oldest, "window_end": newest})
 
-    # --- Step 3: Fetch activities with retry ---
-    df_activities = retry_with_backoff(fetch_activities_chunked, athlete["id"], oldest, newest, headers, context, max_retries=3)
-
-    # --- FIX: Normalize any raw payload into a proper DataFrame ---
-    if isinstance(df_activities, (list, dict)):
-        df_activities = pd.DataFrame(df_activities)
-    elif isinstance(df_activities, str):
-        try:
-            df_activities = pd.read_json(df_activities)
-        except ValueError:
-            raise AuditHalt("❌ Invalid JSON returned for activities")
-    elif not isinstance(df_activities, pd.DataFrame):
-        raise AuditHalt(f"❌ Unsupported activity type: {type(df_activities)}")
-
+    # --- Step 3: Fetch activities using chunked adaptive method ---
+    df_activities = fetch_activities_chunked(athlete["id"], oldest, newest, headers, context)
     if df_activities.empty:
-        raise AuditHalt("❌ No activity data returned after all retries")
+        raise AuditHalt("❌ No activity data returned after chunked fetch")
 
-    # --- Step 4: Fetch wellness with retry ---
-    wellness = retry_with_backoff(fetch_wellness_chunked, athlete["id"], oldest, newest, headers, context, max_retries=3)
-    if wellness is None or (isinstance(wellness, pd.DataFrame) and wellness.empty):
-        raise AuditHalt("❌ No wellness data returned after all retries")
-
-    # --- Step 4: Fetch wellness with retry ---
-    wellness = retry_with_backoff(fetch_wellness_chunked, athlete["id"], oldest, newest, headers, context, max_retries=3)
+    # --- Step 4: Fetch wellness with adaptive chunking + meta-retry ---
+    wellness = fetch_wellness_chunked(athlete["id"], oldest, newest, headers, context)
     if wellness is None or wellness.empty:
-        raise AuditHalt("❌ No wellness data returned after all retries")
+        raise AuditHalt("❌ No wellness data returned after chunked fetch")
 
     # --- Debug inspection ---
     print("[DEBUG] wellness raw:", type(wellness), len(wellness))

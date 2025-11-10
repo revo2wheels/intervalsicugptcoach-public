@@ -1,3 +1,4 @@
+
 """
 Tier-2 Step 1 — Event Completeness Rule (v16.1.3)
 Ensures daily completeness, no missing or duplicate activities.
@@ -14,36 +15,25 @@ def validate_event_completeness(df_activities, df_wellness=None, context=None):
     if df_activities["id"].duplicated().any():
         raise ValueError("❌ Duplicate event IDs detected")
 
-    # --- Elapsed-time overlap duplicate detection (patched v16.17) ---
+    # --- Elapsed-time overlap duplicate detection ---
     df_sorted = df_activities.sort_values("start_date_local").reset_index(drop=True)
     valid_rows = []
-
     for i, e in df_sorted.iterrows():
         start_e = pd.to_datetime(e["start_date_local"])
         end_e = start_e + timedelta(seconds=float(e["moving_time"]))
         overlap_found = False
 
-        # Compare with already-accepted events
         for _, d in pd.DataFrame(valid_rows).iterrows() if valid_rows else []:
             start_d = pd.to_datetime(d["start_date_local"])
             end_d = start_d + timedelta(seconds=float(d["moving_time"]))
-
-            # Calculate temporal gap and potential overlap
-            gap_sec = (start_e - end_d).total_seconds()        # positive = e starts after d
+            # Calculate temporal overlap
             latest_start = max(start_e, start_d)
             earliest_end = min(end_e, end_d)
             overlap_sec = max((earliest_end - latest_start).total_seconds(), 0)
-
-            # Ignore near-sequential events (≤60 s gap) to prevent false merges
-            if gap_sec > -60:
-                overlap_fraction = overlap_sec / min(e["moving_time"], d["moving_time"])
-            else:
-                overlap_fraction = 0
-
-            # True duplicate only if large overlap and negative gap (same-time start)
-            if overlap_fraction > 0.8 and gap_sec < 0:
+            overlap_fraction = overlap_sec / min(e["moving_time"], d["moving_time"])
+            if overlap_fraction > 0.8:
                 overlap_found = True
-                # Keep the higher-load session
+                # Keep higher TSS session only
                 if e["icu_training_load"] > d["icu_training_load"]:
                     valid_rows.remove(d)
                     valid_rows.append(e)
@@ -53,7 +43,6 @@ def validate_event_completeness(df_activities, df_wellness=None, context=None):
             valid_rows.append(e)
 
     df_valid = pd.DataFrame(valid_rows).reset_index(drop=True)
-
 
     # --- Build daily completeness summary ---
     df_valid = df_valid.copy()
@@ -82,17 +71,17 @@ def validate_event_completeness(df_activities, df_wellness=None, context=None):
     # Drop rows where date could not be parsed
     df_valid = df_valid.dropna(subset=["date"])
 
-    # --- Daily summary (preserved for recovery/load analytics) ---
+    # --- Perform daily aggregation ---
     daily = (
         df_valid.groupby("date", as_index=False)
         .agg({
             "moving_time": "sum",
             "icu_training_load": "sum",
             "distance": "sum",
+            "rpe": "mean",
+            "feel": "min"
         })
     )
-    daily["display_only"] = True
-    print(f"[T2] Daily summary built — {len(daily)} rows (no event merge applied)")
 
     # Preserve original audit context fields
     df_valid["origin"] = "event"

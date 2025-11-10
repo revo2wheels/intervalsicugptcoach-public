@@ -30,11 +30,6 @@ def detect_phases(context, events):
     for i in range(1, len(avg7)):
         prev = avg7[i-1]
         delta = (avg7[i] - prev) / max(prev, 1)
-
-        # Ignore short-window inflections in weekly reports
-        if context.get("report_type") == "weekly":
-            continue
-
         if abs(delta) > 0.15:
             label = "Build" if delta > 0 else "Deload"
             phases.append({
@@ -44,7 +39,6 @@ def detect_phases(context, events):
                 "delta": round(delta, 2)
             })
             start_idx = i
-
 
     # --- Fallback if no detectable phase transitions ---
     if not phases:

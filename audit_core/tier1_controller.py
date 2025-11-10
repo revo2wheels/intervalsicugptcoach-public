@@ -1,3 +1,4 @@
+
 """
 Tier-1 — Audit Controller (v16.14-Stable++)
 Ensures dataset integrity, preserves Tier-0 columns (incl. start_date_local),
@@ -67,6 +68,9 @@ def collect_zone_distributions(df_activities, athlete_profile, context):
     context["zone_dist_hr"] = compute_zone_dist(hr_cols, "hr")
     context["zone_dist_pace"] = compute_zone_dist(pace_cols, "pace")
 
+    return context
+
+
     # --- Fallback using athlete profile if no explicit zone data ---
     if not any([context["zone_dist_power"], context["zone_dist_hr"], context["zone_dist_pace"]]):
         print("⚠ No zone columns found — using athlete profile thresholds if available.")
@@ -103,12 +107,18 @@ def run_tier1_controller(df_activities, wellness, context):
         raise ValueError("❌ Duplicate activity IDs detected")
 
     # --- Step 2: Canonical totals (true Σ(event.moving_time)) ---
-    
-    raw_sum = df_activities["moving_time"].sum()
+    if "moving_time" not in df_activities.columns:
+        raise AuditHalt("❌ Tier-1: missing moving_time column for canonical totals")
 
-    # always assume seconds unless metadata explicitly says hours
-    event_hours = float(raw_sum) / 3600.0
-    print(f"🧮 Tier-1: using Σ(event.moving_time)={raw_sum:.0f} s → {event_hours:.2f} h (converted from seconds)")
+    raw_sum = df_activities["moving_time"].sum()
+    max_val = df_activities["moving_time"].max()
+
+    if max_val < 1000:  # hours already
+        event_hours = raw_sum
+        print(f"🧮 Tier-1: using true Σ(event.moving_time)={raw_sum:.2f} h (input already hours)")
+    else:               # seconds → convert once
+        event_hours = raw_sum / 3600
+        print(f"🧮 Tier-1: using true Σ(event.moving_time)={raw_sum:.0f} s → {event_hours:.2f} h")
 
     event_tss = df_activities["icu_training_load"].sum()
     context["tier1_eventTotals"] = {
@@ -157,43 +167,27 @@ def run_tier1_controller(df_activities, wellness, context):
         daily_summary = df_well.copy()
 
     context["dailyMerged"] = daily_summary
-    # --- Disable dailyMerged for event-level mode ---
-    # --- Prevent renderer from replacing event logs with dailyMerged ---
-    if context.get("merge_events") is False:
-        context["event_log_source"] = context.get("df_events")
-        context["dailyMerged_mode"] = "summary_only"
-        print("[DEBUG-T1] merge_events=False → keeping daily summary but disabling per-day merge.")
 
-    # --- Step 6a: Append training load metrics (CTL / ATL / TSB) safely ---
+    # --- Step 6a: Append training load metrics (CTL / ATL / TSB) if present ---
     if isinstance(df_well, pd.DataFrame) and not df_well.empty:
         df_well.columns = [c.strip().lower() for c in df_well.columns]
         load_cols = [c for c in ["ctl", "atl", "tsb"] if c in df_well.columns]
         if load_cols:
             print(f"[DEBUG-T1] merging load metrics from wellness: {load_cols}")
-
-            # ensure both sides are timezone-naive daily datetimes
-            df_well["merge_date"] = (
-                pd.to_datetime(df_well["date"], utc=False)
+            # --- Normalize merge keys to timezone-naive daily dates ---
+            df_well["date"] = (
+                pd.to_datetime(df_well["date"])
                 .dt.tz_localize(None)
                 .dt.floor("D")
             )
-            df_activities["merge_date"] = (
-                pd.to_datetime(df_activities["start_date_local"], utc=False)
+            df_activities["date"] = (
+                pd.to_datetime(df_activities["start_date_local"])
                 .dt.tz_localize(None)
                 .dt.floor("D")
             )
-
-            # merge on temporary key to keep unique activity IDs
             df_activities = df_activities.merge(
-                df_well[["merge_date"] + load_cols],
-                on="merge_date",
-                how="left",
-                suffixes=("", "_well"),
+                df_well[["date"] + load_cols], on="date", how="left"
             )
-
-            df_activities.drop(columns=["merge_date"], inplace=True)
-
-
             # --- Step 6a.1: derive TSB if ctl/atl exist but tsb missing ---
             if "ctl" in df_activities.columns and "atl" in df_activities.columns:
                 if "tsb" not in df_activities.columns:
@@ -296,8 +290,25 @@ def run_tier1_controller(df_activities, wellness, context):
         f"Σ(moving_time)/3600={df_activities['moving_time'].sum()/3600:.2f}\n"
     )
     sys.stderr.flush()
+    # --- Step 9: Detect outlier events ---
+    try:
+        if "icu_training_load" in df_activities.columns:
+            mean_tss = df_activities["icu_training_load"].mean()
+            std_tss = df_activities["icu_training_load"].std()
+            outliers = df_activities[
+                (df_activities["icu_training_load"] > mean_tss + 3 * std_tss)
+                | (df_activities["icu_training_load"] < mean_tss - 3 * std_tss)
+            ]
+            if not outliers.empty:
+                context["outliers"] = outliers[
+                    ["date", "name", "icu_training_load", "moving_time"]
+                ].to_dict("records")
+            else:
+                context["outliers"] = []
+        else:
+            context["outliers"] = []
+    except Exception as e:
+        print(f"⚠ Outlier detection failed: {e}")
+        context["outliers"] = []
 
     return df_activities, wellness, context
-
-
-

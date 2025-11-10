@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 """
 Unified Report Renderer — URF v5.1 (Weekly / Season / Diagnostic)
@@ -123,12 +124,11 @@ def render_report(data):
         md.append("_No pace zone data available._")
 
     # === 6️⃣ Outlier Events ===
+    md.append(section("⚠️ Outlier Events"))
     outliers = ctx.get("outliers", [])
     if outliers:
-        md.append(table(["ID", "Name", "Date", "TSS"], [
-        [o["id"], o["name"], o["start_date_local"], o["icu_training_load"]]
-        for o in outliers
-    ]))
+        rows = [[o.get("date", "?"), o.get("event", "?"), o.get("issue", "?"), o.get("obs", "?")] for o in outliers]
+        md.append(table(["Date", "Event", "Issue", "Observation"], rows))
     else:
         md.append("_No outliers detected._")
 
@@ -175,21 +175,6 @@ def render_report(data):
             md.append(f"{i}. {a}")
     else:
         md.append("_No coaching actions recorded._")
-
-    # --- Renderer source override for event-level logs ---
-    if str(ctx.get("merge_events")).lower() in ("false", "0", "no"):
-        # Prefer raw event DataFrame if available
-        df_source = ctx.get("df_event_only") or ctx.get("df_events")
-        if isinstance(df_source, (list, dict)):
-            ctx["df_event_only"] = {"preview": df_source}
-        elif hasattr(df_source, "to_dict"):
-            ctx["df_event_only"] = {
-                "preview": df_source.to_dict(orient="records")
-            }
-        # --- alias for legacy keys ---
-        ctx["events"] = ctx["df_event_only"]
-        ctx["event_log"] = ctx["df_event_only"]
-        print("[DEBUG-RENDER] merge_events=False → event-level table source prepared")
 
     # === 🪜 Optional: Weekly Events ===
     if report_type.lower() == "weekly" and "df_event_only" in ctx:

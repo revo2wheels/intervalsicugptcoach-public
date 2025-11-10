@@ -55,9 +55,13 @@ def enforce_event_only_totals(df_events, context):
     raw_sum = df_event_only["moving_time"].sum()
     max_val = df_event_only["moving_time"].max()
 
-    # ✅ safe unit conversion — always assume seconds unless metadata says otherwise
-    event_hours = float(raw_sum) / 3600.0
-    print(f"🧮 Tier-2: using Σ(event.moving_time)={raw_sum:.0f} s → {event_hours:.2f} h (converted from seconds)")
+    # unit detection and conversion
+    if max_val < 1000:  # hours already
+        event_hours = raw_sum
+        print(f"🧮 Tier-2: using true Σ(event.moving_time)={raw_sum:.2f} h (input already hours)")
+    else:               # seconds → convert once
+        event_hours = raw_sum / 3600
+        print(f"🧮 Tier-2: using true Σ(event.moving_time)={raw_sum:.0f} s → {event_hours:.2f} h")
 
     # recompute other canonical totals directly from events
     event_tss = df_event_only["icu_training_load"].sum()
@@ -84,10 +88,9 @@ def enforce_event_only_totals(df_events, context):
     for key in ["dailyTotals", "totalHours", "totalTss"]:
         context.pop(key, None)
 
-    context["totalHours"] = round(float(event_hours), 2)
-    context["totalTss"] = int(round(float(event_tss)))
-    context["totalDistance"] = round(float(event_distance), 1)
-
+    context["totalHours"] = round(event_hours, 2)
+    context["totalTss"] = int(round(event_tss))
+    context["totalDistance"] = round(event_distance, 1)
 
     context["eventTotals"] = {
         "hours": context["totalHours"],
@@ -95,9 +98,7 @@ def enforce_event_only_totals(df_events, context):
         "distance": context["totalDistance"],
         "source": source_label,
     }
-    context["df_event_only"] = {
-        "preview": df_event_only.to_dict(orient="records")
-    }
+    context["df_event_only"] = df_event_only
     context["enforcement_layer"] = "tier2_enforce_event_only_totals"
 
     # --- Step 7: Hard-lock canonical totals ---------------------------------
@@ -113,7 +114,7 @@ def enforce_event_only_totals(df_events, context):
         f"(Δh={diff_hours:.2f}, ΔTSS={diff_tss:.1f}, events={len(df_event_only)})"
     )
 
-    # --- Step 9: Final load_metrics sync -------------------------------------------
+    # --- Final load_metrics sync -------------------------------------------
     if all(k in context for k in ["ctl", "atl", "tsb"]):
         context["load_metrics"] = {
             "CTL": {"value": round(context.get("ctl", 0), 2), "status": "ok"},
@@ -121,14 +122,5 @@ def enforce_event_only_totals(df_events, context):
             "TSB": {"value": round(context.get("tsb", 0), 2), "status": "ok"},
         }
         print("[DEBUG-T2] enforced load_metrics sync in context:", context["load_metrics"])
-
-    # --- Step 10: Preserve full multi-sport event log for renderer ---
-    if "df_events" in context and not context["df_events"].empty:
-        context["df_event_log"] = {
-            "preview": context["df_events"].to_dict(orient="records")
-        }
-        print(f"[Tier-2] multi-sport event log prepared for renderer "
-            f"({len(context['df_events'])} rows, JSON-encoded)")
-
 
     return context
