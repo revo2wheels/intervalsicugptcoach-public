@@ -102,12 +102,13 @@ def run_report(
 
     # --- Normalize moving_time units before Tier-1 ---
     if "moving_time" in df_master.columns:
-       max_val = df_master["moving_time"].max()
-    if max_val < 1000:  # hours → convert to seconds for consistency
-        debug(context,f"⚙️ Controller normalization: converting moving_time from hours → seconds (max={max_val})")
-        df_master["moving_time"] *= 3600
-    else:
-        debug(context,f"⚙️ Controller normalization: detected seconds, no conversion (max={max_val})")
+        max_val = df_master["moving_time"].max()
+        # If values look like hours (< 25) but not seconds, convert
+        if max_val < 25:
+            debug(context, f"⚙️ Normalization: converting moving_time from hours → seconds (max={max_val})")
+            df_master["moving_time"] *= 3600
+        else:
+            debug(context, f"⚙️ Normalization: detected seconds, no conversion (max={max_val})")
 
     # --- Tier-1 — Dataset validation ---
     df_master, wellness, context = run_tier1_controller(df_master, wellness, context)
@@ -142,13 +143,12 @@ def run_report(
     # --- Promote final audit state ---
     context["auditFinal"] = True
 
-        context["render_mode"] = "full+metrics"
+    context["render_mode"] = "full+metrics"
     debug(context, "🧩 Render mode forced to full+metrics for Unified 10-section layout")
     
     # --- Final render ---
     report, compliance = finalize_and_validate_render(context, reportType=reportType)
     return report, compliance
-
 
 if __name__ == "__main__":
     # Example run
