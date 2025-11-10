@@ -121,6 +121,28 @@ def finalize_and_validate_render(context, reportType="weekly"):
         print(f"{key}:", key in context)
 
     
+    # --- Normalize df_events for renderer compatibility (ChatGPT vs local) ---
+    df_events = context.get("df_events")
+
+    if isinstance(df_events, list):
+        df_events = pd.DataFrame(df_events)
+        context["df_events"] = df_events
+
+    if hasattr(df_events, "to_dict") and not df_events.empty:
+            cols = [
+        "date", "name", "icu_training_load",
+        "moving_time", "distance", "total_elevation_gain"
+    ]
+    available_cols = [c for c in cols if c in df_events.columns]
+    context["df_event_only"] = {
+        "preview": (
+            df_events[available_cols]
+            .sort_values("date", ascending=False)
+            .head(10)
+            .to_dict(orient="records")
+        )
+    }
+    
     # --- Step 5: Generate Report (no recomputation, uses enforced totals) ---
     print("[DEBUG-FINALIZER] pre-render load_metrics:", context.get("load_metrics"))
     report = render_template(

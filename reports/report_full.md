@@ -150,7 +150,7 @@ Report type: weekly
 }
 [DEBUG-RENDER] Keys in ctx: ['totalDistance', 'auditPartial', 'auditFinal', 'purge_enforced', 'timezone', 'athleteProfile', 'athlete', 'report_mode', 'window_start', 'window_end', 'window_summary', 'knowledge', 'tier1_eventTotals', 'df_events', 'dailyMerged', 'ctl', 'atl', 'tsb', 'load_metrics', 'zone_dist_power', 'zone_dist_hr', 'zone_dist_pace', 'outliers', 'totalHours', 'totalTss', 'eventTotals', 'df_event_only', 'enforcement_layer', '_locked_totals', 'locked_totalHours', 'locked_totalTss', 'locked_totalDistance', 'event_count', 'trace', 'derived_metrics', 'trend_series', 'metrics', 'ACWR', 'Monotony', 'Strain', 'FatigueTrend', 'ZQI', 'FatOxEfficiency', 'Polarisation', 'FOxI', 'CUR', 'GR', 'MES', 'RecoveryIndex', 'ACWR_Risk', 'StressTolerance', 'phases', 'ui_flag', 'actions', '_locked_load_metrics', 'adaptation_metrics', 'trend_metrics', 'correlation_metrics', 'Duration_total', 'icon_pack', 'force_icon_pack', 'event_log_text']
 [DEBUG-RENDER] df_events type: <class 'pandas.core.frame.DataFrame'>
-[DEBUG-RENDER] df_event_only content: {'preview': [{'date': datetime.date(2025, 11, 9), 'start_date_local': Timestamp('2025-11-09 12:14:22+0100', tz='Europe/Zurich'), 'name': 'Rathvel', 'icu_training_load': 129, 'moving_time': 7653, 'distance': 54930.42}, {'date': datetime.date(2025, 11, 9), 'start_date_local': Timestamp('2025-11-09 10:04:45+0100', tz='Europe/Zurich'), 'name': 'Otto walk', 'icu_training_load': 17, 'moving_time': 4069, 'distance': 6064.97}, {'date': datetime.date(2025, 11, 8), 'start_date_local': Timestamp('2025-11-08 11:49:24+0100', tz='Europe/Zurich'), 'name': '2hrs in the sunshine', 'icu_training_load': 110, 'moving_time': 8568, 'distance': 59275.05}, {'date': datetime.date(2025, 11, 8), 'start_date_local': Timestamp('2025-11-08 09:56:34+0100', tz='Europe/Zurich'), 'name': 'Otto walk', 'icu_training_load': 12, 'moving_time': 4239, 'distance': 6613.03}, {'date': datetime.date(2025, 11, 7), 'start_date_local': Timestamp('2025-11-07 18:30:08+0100', tz='Europe/Zurich'), 'name': 'Zwift - Race: Zwift Epic Race - Fuhgeddaboudit B=A', 'icu_training_load': 161, 'moving_time': 7238, 'distance': 82282.34}, {'date': datetime.date(2025, 11, 7), 'start_date_local': Timestamp('2025-11-07 17:52:06+0100', tz='Europe/Zurich'), 'name': 'Zwift - Tempus Fugit in Watopia', 'icu_training_load': 17, 'moving_time': 1582, 'distance': 15851.62}, {'date': datetime.date(2025, 11, 6), 'start_date_local': Timestamp('2025-11-06 18:16:29+0100', tz='Europe/Zurich'), 'name': '90 avec Jacques', 'icu_training_load': 80, 'moving_time': 5767, 'distance': 65265.38}, {'date': datetime.date(2025, 11, 4), 'start_date_local': Timestamp('2025-11-04 18:00:55+0100', tz='Europe/Zurich'), 'name': 'Zwift - Group Ride: Stage 5 - Zwift Unlocked - Short on The Double Borough in New York', 'icu_training_load': 52, 'moving_time': 3644, 'distance': 39272.8}, {'date': datetime.date(2025, 11, 4), 'start_date_local': Timestamp('2025-11-04 17:43:18+0100', tz='Europe/Zurich'), 'name': 'Zwift - Pacer Group Ride: The 6 Train in New York with Yumi', 'icu_training_load': 10, 'moving_time': 933, 'distance': 9801.86}]}
+[DEBUG-RENDER] df_event_only content: {'preview': [{'date': Timestamp('2025-11-09 00:00:00'), 'name': 'Rathvel', 'icu_training_load': 129, 'moving_time': 7653, 'distance': 54930.42}, {'date': Timestamp('2025-11-09 00:00:00'), 'name': 'Otto walk', 'icu_training_load': 17, 'moving_time': 4069, 'distance': 6064.97}, {'date': Timestamp('2025-11-08 00:00:00'), 'name': '2hrs in the sunshine', 'icu_training_load': 110, 'moving_time': 8568, 'distance': 59275.05}, {'date': Timestamp('2025-11-08 00:00:00'), 'name': 'Otto walk', 'icu_training_load': 12, 'moving_time': 4239, 'distance': 6613.03}, {'date': Timestamp('2025-11-07 00:00:00'), 'name': 'Zwift - Race: Zwift Epic Race - Fuhgeddaboudit B=A', 'icu_training_load': 161, 'moving_time': 7238, 'distance': 82282.34}, {'date': Timestamp('2025-11-07 00:00:00'), 'name': 'Zwift - Tempus Fugit in Watopia', 'icu_training_load': 17, 'moving_time': 1582, 'distance': 15851.62}, {'date': Timestamp('2025-11-06 00:00:00'), 'name': '90 avec Jacques', 'icu_training_load': 80, 'moving_time': 5767, 'distance': 65265.38}, {'date': Timestamp('2025-11-04 00:00:00'), 'name': 'Zwift - Group Ride: Stage 5 - Zwift Unlocked - Short on The Double Borough in New York', 'icu_training_load': 52, 'moving_time': 3644, 'distance': 39272.8}, {'date': Timestamp('2025-11-04 00:00:00'), 'name': 'Zwift - Pacer Group Ride: The 6 Train in New York with Yumi', 'icu_training_load': 10, 'moving_time': 933, 'distance': 9801.86}]}
 
 [DEBUG-TEMPLATE: POST-CALL]
 Renderer function executed: render_report
@@ -240,7 +240,7 @@ load_metrics post-render: {'CTL': {'value': 91.38, 'status': 'ok'}, 'ATL': {'val
 **Athlete:** Clive King
 **Period:** ? → ?
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-10T15:39:32.746855
+**Generated:** 2025-11-10T16:00:06.345832
 
 ---
 
@@ -353,19 +353,19 @@ _No outliers detected._
 
 ## 🚴 Weekly Events Summary
 
-| date | start_date_local | name | icu_training_load | moving_time | distance |
-|:-- |:-- |:-- |:-- |:-- |:--|
-| 2025-11-09 | 2025-11-09 12:14:22+01:00 | Rathvel | 129 | 7653 | 54930.42 |
-| 2025-11-09 | 2025-11-09 10:04:45+01:00 | Otto walk | 17 | 4069 | 6064.97 |
-| 2025-11-08 | 2025-11-08 11:49:24+01:00 | 2hrs in the sunshine | 110 | 8568 | 59275.05 |
-| 2025-11-08 | 2025-11-08 09:56:34+01:00 | Otto walk | 12 | 4239 | 6613.03 |
-| 2025-11-07 | 2025-11-07 18:30:08+01:00 | Zwift - Race: Zwift Epic Race - Fuhgeddaboudit B=A | 161 | 7238 | 82282.34 |
-| 2025-11-07 | 2025-11-07 17:52:06+01:00 | Zwift - Tempus Fugit in Watopia | 17 | 1582 | 15851.62 |
-| 2025-11-06 | 2025-11-06 18:16:29+01:00 | 90 avec Jacques | 80 | 5767 | 65265.38 |
-| 2025-11-04 | 2025-11-04 18:00:55+01:00 | Zwift - Group Ride: Stage 5 - Zwift Unlocked - Short on The Double Borough in New York | 52 | 3644 | 39272.8 |
-| 2025-11-04 | 2025-11-04 17:43:18+01:00 | Zwift - Pacer Group Ride: The 6 Train in New York with Yumi | 10 | 933 | 9801.86 |
+| date | name | icu_training_load | moving_time | distance |
+|:-- |:-- |:-- |:-- |:--|
+| 2025-11-09 00:00:00 | Rathvel | 129 | 7653 | 54930.42 |
+| 2025-11-09 00:00:00 | Otto walk | 17 | 4069 | 6064.97 |
+| 2025-11-08 00:00:00 | 2hrs in the sunshine | 110 | 8568 | 59275.05 |
+| 2025-11-08 00:00:00 | Otto walk | 12 | 4239 | 6613.03 |
+| 2025-11-07 00:00:00 | Zwift - Race: Zwift Epic Race - Fuhgeddaboudit B=A | 161 | 7238 | 82282.34 |
+| 2025-11-07 00:00:00 | Zwift - Tempus Fugit in Watopia | 17 | 1582 | 15851.62 |
+| 2025-11-06 00:00:00 | 90 avec Jacques | 80 | 5767 | 65265.38 |
+| 2025-11-04 00:00:00 | Zwift - Group Ride: Stage 5 - Zwift Unlocked - Short on The Double Borough in New York | 52 | 3644 | 39272.8 |
+| 2025-11-04 00:00:00 | Zwift - Pacer Group Ride: The 6 Train in New York with Yumi | 10 | 933 | 9801.86 |
 
 ---
-✅ **Audit Completed:** 2025-11-10T15:39:32.747085
+✅ **Audit Completed:** 2025-11-10T16:00:06.345979
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 
