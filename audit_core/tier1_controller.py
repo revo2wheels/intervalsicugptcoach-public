@@ -167,26 +167,28 @@ def run_tier1_controller(df_activities, wellness, context):
 
     context["dailyMerged"] = daily_summary
 
-    # --- Step 6a: Append training load metrics (CTL / ATL / TSB) if present ---
+    # --- Step 6a: Append training load metrics (CTL / ATL / TSB) safely ---
     if isinstance(df_well, pd.DataFrame) and not df_well.empty:
         df_well.columns = [c.strip().lower() for c in df_well.columns]
         load_cols = [c for c in ["ctl", "atl", "tsb"] if c in df_well.columns]
         if load_cols:
             print(f"[DEBUG-T1] merging load metrics from wellness: {load_cols}")
-            # --- Normalize merge keys to timezone-naive daily dates ---
-            df_well["date"] = (
-                pd.to_datetime(df_well["date"])
-                .dt.tz_localize(None)
-                .dt.floor("D")
+
+            df_well["merge_date"] = pd.to_datetime(df_well["date"]).dt.floor("D")
+            df_activities["merge_date"] = (
+                pd.to_datetime(df_activities["start_date_local"]).dt.floor("D")
             )
-            df_activities["date"] = (
-                pd.to_datetime(df_activities["start_date_local"])
-                .dt.tz_localize(None)
-                .dt.floor("D")
-            )
+
+            # merge on temporary key to keep unique activity IDs
             df_activities = df_activities.merge(
-                df_well[["date"] + load_cols], on="date", how="left"
+                df_well[["merge_date"] + load_cols],
+                on="merge_date",
+                how="left",
+                suffixes=("", "_well")
             )
+
+            df_activities.drop(columns=["merge_date"], inplace=True)
+
             # --- Step 6a.1: derive TSB if ctl/atl exist but tsb missing ---
             if "ctl" in df_activities.columns and "atl" in df_activities.columns:
                 if "tsb" not in df_activities.columns:
