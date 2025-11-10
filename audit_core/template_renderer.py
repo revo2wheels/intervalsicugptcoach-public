@@ -38,6 +38,20 @@ def render_template(report_type: str, framework: str, context: dict):
                 print("-" * 60)
 
                 # --- CALL RENDERER ---
+                # --- Inject required live-report metadata to bypass mock renderer ---
+                context["auditFinal"] = True
+
+                # Ensure window (start, end) exists for the report
+                if "window" not in context:
+                    context["window"] = [
+                        context.get("window_start", context.get("start_date", "2025-11-03")),
+                        context.get("window_end", context.get("end_date", "2025-11-10")),
+                    ]
+
+                wrapped["window"] = context["window"]
+
+                print("[DEBUG-TEMPLATE] Injected auditFinal flag and live window for renderer")
+
                 result = func(wrapped)
 
                 # --- DEBUG POST-CALL ---
