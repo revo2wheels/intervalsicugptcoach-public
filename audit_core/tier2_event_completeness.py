@@ -120,4 +120,4 @@ def validate_event_completeness(df_activities, df_wellness=None, context=None):
         context["eventCompleteness_checked"] = True
         context["dedup_method"] = "elapsed-time overlap (v16.1.3)"
 
-    return df_valid, daily
+    return df_valid, None
