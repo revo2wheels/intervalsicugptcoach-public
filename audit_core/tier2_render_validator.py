@@ -88,6 +88,16 @@ def finalize_and_validate_render(context, reportType="weekly"):
     context["icon_pack"] = ICON_CARDS
     context["force_icon_pack"] = True
 
+    # --- SAFETY PATCH: enforce true event-level event log ---
+    if ("dailyMerged" not in context or context["dailyMerged"] is None 
+            or getattr(context["dailyMerged"], "empty", True)):
+        if "df_event_only" in context and isinstance(context["df_event_only"], dict):
+            preview = context["df_event_only"].get("preview", [])
+            if preview:
+                import pandas as pd
+                context["dailyMerged"] = pd.DataFrame(preview).reset_index(drop=True)
+                debug(context, "✅ dailyMerged rebuilt from df_event_only (event-level isolation mode)")
+
     # --- Step 4: Compact Event Log render (Markdown) ---
     df_daily = context.get("dailyMerged")
     if df_daily is not None and not df_daily.empty:

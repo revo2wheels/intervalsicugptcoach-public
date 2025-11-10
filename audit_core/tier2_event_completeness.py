@@ -54,8 +54,7 @@ for i, e in df_sorted.iterrows():
     if not overlap_found:
         valid_rows.append(e)
 
-df_valid = pd.DataFrame(valid_rows).reset_index(drop=True)
-
+    df_valid = pd.DataFrame(valid_rows).reset_index(drop=True)
 
     # --- Build daily completeness summary ---
     df_valid = df_valid.copy()
