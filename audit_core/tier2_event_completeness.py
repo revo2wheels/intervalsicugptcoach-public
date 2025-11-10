@@ -14,25 +14,36 @@ def validate_event_completeness(df_activities, df_wellness=None, context=None):
     if df_activities["id"].duplicated().any():
         raise ValueError("❌ Duplicate event IDs detected")
 
-    # --- Elapsed-time overlap duplicate detection ---
+    # --- Elapsed-time overlap duplicate detection (patched v16.17) ---
     df_sorted = df_activities.sort_values("start_date_local").reset_index(drop=True)
     valid_rows = []
+
     for i, e in df_sorted.iterrows():
         start_e = pd.to_datetime(e["start_date_local"])
         end_e = start_e + timedelta(seconds=float(e["moving_time"]))
         overlap_found = False
 
+        # Compare with already-accepted events
         for _, d in pd.DataFrame(valid_rows).iterrows() if valid_rows else []:
             start_d = pd.to_datetime(d["start_date_local"])
             end_d = start_d + timedelta(seconds=float(d["moving_time"]))
-            # Calculate temporal overlap
+
+            # Calculate temporal gap and potential overlap
+            gap_sec = (start_e - end_d).total_seconds()        # positive = e starts after d
             latest_start = max(start_e, start_d)
             earliest_end = min(end_e, end_d)
             overlap_sec = max((earliest_end - latest_start).total_seconds(), 0)
-            overlap_fraction = overlap_sec / min(e["moving_time"], d["moving_time"])
-            if overlap_fraction > 0.8:
+
+            # Ignore near-sequential events (≤60 s gap) to prevent false merges
+            if gap_sec > -60:
+                overlap_fraction = overlap_sec / min(e["moving_time"], d["moving_time"])
+            else:
+                overlap_fraction = 0
+
+            # True duplicate only if large overlap and negative gap (same-time start)
+            if overlap_fraction > 0.8 and gap_sec < 0:
                 overlap_found = True
-                # Keep higher TSS session only
+                # Keep the higher-load session
                 if e["icu_training_load"] > d["icu_training_load"]:
                     valid_rows.remove(d)
                     valid_rows.append(e)
@@ -42,6 +53,7 @@ def validate_event_completeness(df_activities, df_wellness=None, context=None):
             valid_rows.append(e)
 
     df_valid = pd.DataFrame(valid_rows).reset_index(drop=True)
+
 
     # --- Build daily completeness summary ---
     df_valid = df_valid.copy()
