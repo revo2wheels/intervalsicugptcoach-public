@@ -356,8 +356,25 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
 
     # --- Step 3: Fetch activities with retry ---
     df_activities = retry_with_backoff(fetch_activities_chunked, athlete["id"], oldest, newest, headers, context, max_retries=3)
+
+    # --- FIX: Normalize any raw payload into a proper DataFrame ---
+    if isinstance(df_activities, (list, dict)):
+        df_activities = pd.DataFrame(df_activities)
+    elif isinstance(df_activities, str):
+        try:
+            df_activities = pd.read_json(df_activities)
+        except ValueError:
+            raise AuditHalt("❌ Invalid JSON returned for activities")
+    elif not isinstance(df_activities, pd.DataFrame):
+        raise AuditHalt(f"❌ Unsupported activity type: {type(df_activities)}")
+
     if df_activities.empty:
         raise AuditHalt("❌ No activity data returned after all retries")
+
+    # --- Step 4: Fetch wellness with retry ---
+    wellness = retry_with_backoff(fetch_wellness_chunked, athlete["id"], oldest, newest, headers, context, max_retries=3)
+    if wellness is None or (isinstance(wellness, pd.DataFrame) and wellness.empty):
+        raise AuditHalt("❌ No wellness data returned after all retries")
 
     # --- Step 4: Fetch wellness with retry ---
     wellness = retry_with_backoff(fetch_wellness_chunked, athlete["id"], oldest, newest, headers, context, max_retries=3)
