@@ -26,6 +26,12 @@ def finalize_and_validate_render(context, reportType="weekly"):
     if not context.get("auditFinal", False):
         raise RuntimeError("❌ Renderer blocked: auditFinal=False")
 
+     # --- Early safeguard: prevent mock event fallback ---
+    if context.get("df_events") in [None, [], "mock"] or (
+        "df_events" not in context or getattr(context.get("df_events"), "empty", True)
+    ):
+        raise AuditHalt("❌ Renderer blocked: df_events missing or invalid — mock fallback prevented.")
+
     # --- Athlete Profile Check ---
     if "athleteProfile" not in context or not context["athleteProfile"]:
         raise AuditHalt("❌ Missing athleteProfile — Section 1 cannot render")
