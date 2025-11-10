@@ -74,7 +74,25 @@
           "404": { "description": "Profile not found or athlete_id mismatch" }
         }
       }
-    }
+    },
+        "/athlete/0/activities.csv": {
+  "get": {
+    "summary": "Export activities as CSV (archival only)",
+    "operationId": "listActivitiesCsv",
+    "x-archivalOnly": true,
+    "deprecated": true,
+    "responses": { "410": { "description": "Deprecated – use chunked JSON" } }
+  }
+},
+"/athlete/0/wellness.csv": {
+  "get": {
+    "summary": "Export wellness data as CSV (archival only)",
+    "operationId": "listWellnessCsv",
+    "x-archivalOnly": true,
+    "deprecated": true,
+    "responses": { "410": { "description": "Deprecated – use chunked JSON" } }
+  }
+}
   },
   "components": {
     "schemas": {
