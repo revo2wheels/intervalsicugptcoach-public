@@ -1,0 +1,240 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Intervals.icu API + Unified Reporting Framework",
+    "version": "3.9.13",
+    "description": "Full schema preserved with added /athlete/profile endpoint and its schemas."
+  },
+  "servers": [
+    { "url": "https://intervals.icu/api/v1" }
+  ],
+  "paths": {
+    "/athlete/0/activities": {
+      "get": {
+        "summary": "List activities (≤7 days, JSON)",
+        "operationId": "listActivities",
+        "parameters": [
+          { "name": "oldest", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "newest", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "per_page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "chunk", "in": "query", "schema": { "type": "string" } },
+          { "name": "auto", "in": "query", "schema": { "type": "boolean" } },
+          { "name": "fields", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Activity list" } }
+      }
+    },
+    "/athlete/0/wellness": {
+      "get": {
+        "summary": "List wellness data (≤7 days, JSON)",
+        "operationId": "listWellness",
+        "parameters": [
+          { "name": "oldest", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "newest", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "fields", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "Wellness dataset" } }
+      }
+    },
+    "/athlete/0/profile": {
+      "get": {
+        "summary": "Fetch athlete profile (official endpoint)",
+        "description": "Returns athlete profile including core athlete details, shared folders, and custom items.",
+        "operationId": "getAthleteProfile",
+        "responses": {
+          "200": {
+            "description": "Athlete profile object",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AthleteProfile" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/athlete/0/activities.csv": {
+  "get": {
+    "summary": "Export activities as CSV (archival only)",
+    "operationId": "listActivitiesCsv",
+    "x-archivalOnly": true,
+    "deprecated": true,
+    "responses": { "410": { "description": "Deprecated – use chunked JSON" } }
+  }
+},
+"/athlete/0/wellness.csv": {
+  "get": {
+    "summary": "Export wellness data as CSV (archival only)",
+    "operationId": "listWellnessCsv",
+    "x-archivalOnly": true,
+    "deprecated": true,
+    "responses": { "410": { "description": "Deprecated – use chunked JSON" } }
+  }
+}
+  },
+  "components": {
+    "schemas": {
+      "AthleteProfile": {
+        "type": "object",
+        "properties": {
+          "athlete": { "$ref": "#/components/schemas/Athlete" },
+          "sharedFolders": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/SharedFolder" }
+          },
+          "customItems": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/CustomItem" }
+          }
+        }
+      },
+      "Athlete": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "profile_medium": { "type": "string" },
+          "city": { "type": ["string", "null"] },
+          "state": { "type": ["string", "null"] },
+          "country": { "type": ["string", "null"] },
+          "timezone": { "type": ["string", "null"] },
+          "sex": { "type": ["string", "null"] },
+          "bio": { "type": ["string", "null"] },
+          "website": { "type": ["string", "null"] },
+          "email": { "type": ["string", "null"] }
+        }
+      },
+      "SharedFolder": {
+        "type": "object",
+        "properties": {
+          "athlete_id": { "type": "string" },
+          "id": { "type": "integer" },
+          "type": { "type": "string", "enum": ["FOLDER", "PLAN"] },
+          "name": { "type": "string" },
+          "description": { "type": ["string", "null"] },
+          "visibility": { "type": "string", "enum": ["PRIVATE", "PUBLIC"] },
+          "children": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/WorkoutChild" }
+          }
+        }
+      },
+      "WorkoutChild": {
+        "type": "object",
+        "properties": {
+          "athlete_id": { "type": "string" },
+          "id": { "type": "integer" },
+          "icu_training_load": { "type": ["integer", "null"] },
+          "name": { "type": "string" },
+          "description": { "type": ["string", "null"] },
+          "type": { "type": "string" },
+          "moving_time": { "type": ["integer", "null"] },
+          "distance": { "type": ["number", "null"] }
+        }
+      },
+      "CustomItem": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "athlete_id": { "type": "string" },
+          "type": { "type": "string" },
+          "visibility": { "type": "string", "enum": ["PRIVATE", "FOLLOWERS", "PUBLIC"] },
+          "name": { "type": "string" },
+          "description": { "type": ["string", "null"] },
+          "image": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "securitySchemes": {
+      "OAuth2": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://intervals.icu/oauth/authorize",
+            "tokenUrl": "https://intervals.icu/api/oauth/token",
+            "scopes": {
+              "ACTIVITY:READ": "Read activities",
+              "WELLNESS:READ": "Read wellness data",
+              "SETTINGS:READ": "Read athlete profile and configuration"
+            }
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    { "OAuth2": ["ACTIVITY:READ", "WELLNESS:READ", "SETTINGS:READ"] }
+  ],
+  "x-validation-rules": [
+  {
+    "id": "discipline_filter",
+    "description": "Discipline inclusion mapping for totals",
+    "rules": {
+      "cycling": ["Ride", "VirtualRide"],
+      "running": ["Run", "VirtualRun"],
+      "swimming": ["Swim"],
+      "other": ["*"]
+    }
+  },
+  {
+    "id": "conversions",
+    "description": "Numeric conversions and rounding",
+    "rules": {
+      "distanceKm": "distance/1000, round 2 decimals",
+      "volumeH": "moving_time/3600, round 1 decimal",
+      "tss": "sum of icu_training_load, exact"
+    }
+  },
+  {
+    "id": "precision",
+    "description": "Rounding precision enforcement",
+    "rules": {
+      "distanceKm": 2,
+      "volumeH": 1,
+      "tss": 0
+    }
+  },
+  {
+    "id": "integrity",
+    "description": "Discipline and dataset integrity checks",
+    "rules": {
+      "no_elapsed_time": true,
+      "discipline_totals_must_match": true,
+      "no_cross_discipline_sums": true,
+      "halt_on_mismatch": true
+    }
+  },
+  {
+    "id": "render_event_totals_integrity",
+    "description": "Ensure renderer uses Tier-2 Σ(eventTotals) instead of disciplineSummary",
+    "target": "tier2.finalizer",
+    "method": "validate_render_source",
+    "expected_source": "event_totals",
+    "halt_on_fail": true,
+    "severity": "critical"
+  }
+],
+  "x-actions": {
+    "run_audit_pipeline": {
+      "type": "python",
+      "entrypoint": "run_audit_pipeline",
+      "args": {
+        "conn": "intervals_icu__jit_plugin",
+        "src": "intervals"
+      }
+    }
+  },
+  "x-intents": [
+    {
+      "trigger": [
+        "weekly report",
+        "check active connection",
+        "run weekly report",
+        "run season report",
+        "run wellness report"
+      ],
+      "action": "run_audit_pipeline"
+    }
+  ]
+}

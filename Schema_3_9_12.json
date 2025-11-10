@@ -1,9 +1,10 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Intervals.icu API + Unified Reporting Framework",
-    "version": "3.9.13",
-    "description": "Full schema preserved with added /athlete/profile endpoint and its schemas."
+    "title": "Intervals.icu API + Unified Reporting Framework (Hybrid Full Profile Schema)",
+    "version": "3.9.12-hybrid-full-profile",
+    "x-origin": "forked_from_v3.7.0_static_fields + v3.9.13_dynamic_rules",
+    "description": "Hybrid schema combining v3.9.12 dynamic validation with v3.7.0 static Activity, AthleteProfile, and Wellness field enforcement for deterministic Tier-0 ingestion and Tier-2 runtime safety."
   },
   "servers": [
     { "url": "https://intervals.icu/api/v1" }
@@ -11,7 +12,7 @@
   "paths": {
     "/athlete/0/activities": {
       "get": {
-        "summary": "List activities (≤7 days, JSON)",
+        "summary": "List activities (≤7 days, JSON, hybrid static+dynamic validation)",
         "operationId": "listActivities",
         "parameters": [
           { "name": "oldest", "in": "query", "schema": { "type": "string", "format": "date" } },
@@ -22,7 +23,16 @@
           { "name": "auto", "in": "query", "schema": { "type": "boolean" } },
           { "name": "fields", "in": "query", "schema": { "type": "string" } }
         ],
-        "responses": { "200": { "description": "Activity list" } }
+        "responses": {
+          "200": {
+            "description": "Hybrid activity list with deterministic fields",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Activity" } }
+              }
+            }
+          }
+        }
       }
     },
     "/athlete/0/wellness": {
@@ -34,13 +44,22 @@
           { "name": "newest", "in": "query", "schema": { "type": "string", "format": "date" } },
           { "name": "fields", "in": "query", "schema": { "type": "string" } }
         ],
-        "responses": { "200": { "description": "Wellness dataset" } }
+        "responses": {
+          "200": {
+            "description": "Wellness dataset",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Wellness" } }
+              }
+            }
+          }
+        }
       }
     },
     "/athlete/0/profile": {
       "get": {
-        "summary": "Fetch athlete profile (official endpoint)",
-        "description": "Returns athlete profile including core athlete details, shared folders, and custom items.",
+        "summary": "Fetch athlete profile (official endpoint, hybrid schema)",
+        "description": "Returns athlete profile including core athlete details, shared folders, and custom items. Used by Tier-0 pre-audit initialization to validate source identity and training context.",
         "operationId": "getAthleteProfile",
         "responses": {
           "200": {
@@ -50,31 +69,42 @@
                 "schema": { "$ref": "#/components/schemas/AthleteProfile" }
               }
             }
-          }
+          },
+          "401": { "description": "Unauthorized or invalid token" },
+          "404": { "description": "Profile not found or athlete_id mismatch" }
         }
       }
-    },
-    "/athlete/0/activities.csv": {
-  "get": {
-    "summary": "Export activities as CSV (archival only)",
-    "operationId": "listActivitiesCsv",
-    "x-archivalOnly": true,
-    "deprecated": true,
-    "responses": { "410": { "description": "Deprecated – use chunked JSON" } }
-  }
-},
-"/athlete/0/wellness.csv": {
-  "get": {
-    "summary": "Export wellness data as CSV (archival only)",
-    "operationId": "listWellnessCsv",
-    "x-archivalOnly": true,
-    "deprecated": true,
-    "responses": { "410": { "description": "Deprecated – use chunked JSON" } }
-  }
-}
+    }
   },
   "components": {
     "schemas": {
+      "Activity": {
+        "type": "object",
+        "required": ["id", "start_date_local", "type", "distance", "moving_time"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": ["string", "null"] },
+          "type": { "type": "string" },
+          "sport_type": { "type": ["string", "null"] },
+          "start_date_local": { "type": "string", "format": "date-time" },
+          "distance": { "type": "number" },
+          "moving_time": { "type": "number" },
+          "elapsed_time": { "type": ["number", "null"] },
+          "average_heartrate": { "type": ["number", "null"] },
+          "weighted_average_watts": { "type": ["number", "null"] },
+          "icu_training_load": { "type": ["number", "null"] },
+          "total_elevation_gain": { "type": ["number", "null"] },
+          "rpe": { "type": ["number", "null"] },
+          "feel": { "type": ["integer", "null"] },
+          "pwhr_decoupling": { "type": ["number", "null"] },
+          "pahr_decoupling": { "type": ["number", "null"] },
+          "VO2MaxGarmin": { "type": ["number", "null"] },
+          "PerformanceCondition": { "type": ["number", "null"] },
+          "ftp": { "type": ["number", "null"] },
+          "IF": { "type": ["number", "null"] },
+          "avg_cadence": { "type": ["number", "null"] }
+        }
+      },
       "AthleteProfile": {
         "type": "object",
         "properties": {
@@ -87,14 +117,15 @@
             "type": "array",
             "items": { "$ref": "#/components/schemas/CustomItem" }
           }
-        }
+        },
+        "required": ["athlete"]
       },
       "Athlete": {
         "type": "object",
         "properties": {
           "id": { "type": "string" },
           "name": { "type": "string" },
-          "profile_medium": { "type": "string" },
+          "profile_medium": { "type": ["string", "null"] },
           "city": { "type": ["string", "null"] },
           "state": { "type": ["string", "null"] },
           "country": { "type": ["string", "null"] },
@@ -103,7 +134,8 @@
           "bio": { "type": ["string", "null"] },
           "website": { "type": ["string", "null"] },
           "email": { "type": ["string", "null"] }
-        }
+        },
+        "required": ["id", "name"]
       },
       "SharedFolder": {
         "type": "object",
@@ -144,6 +176,43 @@
           "description": { "type": ["string", "null"] },
           "image": { "type": ["string", "null"] }
         }
+      },
+      "Wellness": {
+        "type": "object",
+        "properties": {
+          "date": { "type": "string", "format": "date" },
+          "ctl": { "type": ["number", "null"] },
+          "atl": { "type": ["number", "null"] },
+          "form": { "type": ["number", "null"] },
+          "rampRate": { "type": ["number", "null"] },
+          "ctlLoad": { "type": ["number", "null"] },
+          "atlLoad": { "type": ["number", "null"] },
+          "weight": { "type": ["number", "null"] },
+          "bodyFat": { "type": ["number", "null"] },
+          "sleepSecs": { "type": ["number", "null"] },
+          "sleepScore": { "type": ["number", "null"] },
+          "sleepQuality": { "type": ["number", "null"] },
+          "avgSleepingHr": { "type": ["number", "null"] },
+          "hrv": { "type": ["number", "null"] },
+          "hrvSDNN": { "type": ["number", "null"] },
+          "restingHr": { "type": ["number", "null"] },
+          "soreness": { "type": ["number", "null"] },
+          "fatigue": { "type": ["number", "null"] },
+          "stress": { "type": ["number", "null"] },
+          "mood": { "type": ["number", "null"] },
+          "motivation": { "type": ["number", "null"] },
+          "hydration": { "type": ["number", "null"] },
+          "injury": { "type": ["number", "null"] },
+          "readiness": { "type": ["number", "null"] },
+          "spO2": { "type": ["number", "null"] },
+          "systolic": { "type": ["number", "null"] },
+          "diastolic": { "type": ["number", "null"] },
+          "vo2max": { "type": ["number", "null"] },
+          "Ride_eFTP": { "type": ["number", "null"] },
+          "Run_eFTP": { "type": ["number", "null"] },
+          "comments": { "type": ["string", "null"] }
+        },
+        "required": ["date"]
       }
     },
     "securitySchemes": {
@@ -167,54 +236,62 @@
     { "OAuth2": ["ACTIVITY:READ", "WELLNESS:READ", "SETTINGS:READ"] }
   ],
   "x-validation-rules": [
-  {
-    "id": "discipline_filter",
-    "description": "Discipline inclusion mapping for totals",
-    "rules": {
-      "cycling": ["Ride", "VirtualRide"],
-      "running": ["Run", "VirtualRun"],
-      "swimming": ["Swim"],
-      "other": ["*"]
+    {
+      "id": "field_enforcement",
+      "description": "Ensure static Activity fields exist for Tier-0 normalization",
+      "rules": {
+        "fields_required": ["id", "start_date_local", "type", "distance", "moving_time"],
+        "fields_optional": ["icu_training_load", "average_heartrate", "weighted_average_watts", "total_elevation_gain", "IF", "avg_cadence"]
+      }
+    },
+    {
+      "id": "discipline_filter",
+      "description": "Discipline inclusion mapping for totals",
+      "rules": {
+        "cycling": ["Ride", "VirtualRide"],
+        "running": ["Run", "VirtualRun"],
+        "swimming": ["Swim"],
+        "other": ["*"]
+      }
+    },
+    {
+      "id": "conversions",
+      "description": "Numeric conversions and rounding",
+      "rules": {
+        "distanceKm": "distance/1000, round 2 decimals",
+        "volumeH": "moving_time/3600, round 1 decimal",
+        "tss": "sum of icu_training_load, exact"
+      }
+    },
+    {
+      "id": "precision",
+      "description": "Rounding precision enforcement",
+      "rules": {
+        "distanceKm": 2,
+        "volumeH": 1,
+        "tss": 0
+      }
+    },
+    {
+      "id": "integrity",
+      "description": "Discipline and dataset integrity checks",
+      "rules": {
+        "no_elapsed_time": true,
+        "discipline_totals_must_match": true,
+        "no_cross_discipline_sums": true,
+        "halt_on_mismatch": true
+      }
+    },
+    {
+      "id": "render_event_totals_integrity",
+      "description": "Ensure renderer uses Tier-2 Σ(eventTotals)",
+      "target": "tier2.finalizer",
+      "method": "validate_render_source",
+      "expected_source": "event_totals",
+      "halt_on_fail": true,
+      "severity": "critical"
     }
-  },
-  {
-    "id": "conversions",
-    "description": "Numeric conversions and rounding",
-    "rules": {
-      "distanceKm": "distance/1000, round 2 decimals",
-      "volumeH": "moving_time/3600, round 1 decimal",
-      "tss": "sum of icu_training_load, exact"
-    }
-  },
-  {
-    "id": "precision",
-    "description": "Rounding precision enforcement",
-    "rules": {
-      "distanceKm": 2,
-      "volumeH": 1,
-      "tss": 0
-    }
-  },
-  {
-    "id": "integrity",
-    "description": "Discipline and dataset integrity checks",
-    "rules": {
-      "no_elapsed_time": true,
-      "discipline_totals_must_match": true,
-      "no_cross_discipline_sums": true,
-      "halt_on_mismatch": true
-    }
-  },
-  {
-    "id": "render_event_totals_integrity",
-    "description": "Ensure renderer uses Tier-2 Σ(eventTotals) instead of disciplineSummary",
-    "target": "tier2.finalizer",
-    "method": "validate_render_source",
-    "expected_source": "event_totals",
-    "halt_on_fail": true,
-    "severity": "critical"
-  }
-],
+  ],
   "x-actions": {
     "run_audit_pipeline": {
       "type": "python",
