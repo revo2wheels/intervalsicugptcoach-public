@@ -98,7 +98,9 @@ def enforce_event_only_totals(df_events, context):
         "distance": context["totalDistance"],
         "source": source_label,
     }
-    context["df_event_only"] = df_event_only
+    context["df_event_only"] = {
+        "preview": df_event_only.to_dict(orient="records")
+    }
     context["enforcement_layer"] = "tier2_enforce_event_only_totals"
 
     # --- Step 7: Hard-lock canonical totals ---------------------------------
@@ -125,7 +127,10 @@ def enforce_event_only_totals(df_events, context):
 
     # --- Preserve full multi-sport event log for renderer ---
     if "df_events" in context and not context["df_events"].empty:
-        context["df_event_only"] = context["df_events"].copy()
-        print(f"[Tier-2] df_event_only reset to full dataset for multi-sport event log ({len(context['df_event_only'])} rows)")
+        context["df_event_only"] = {
+            "preview": context["df_events"].to_dict(orient="records")
+        }
+        print(f"[Tier-2] df_event_only reset to full dataset for multi-sport event log "
+            f"({len(context['df_events'])} rows, JSON-encoded for renderer)")
 
     return context
