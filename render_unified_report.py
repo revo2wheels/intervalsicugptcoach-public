@@ -177,17 +177,18 @@ def render_report(data):
         md.append("_No coaching actions recorded._")
 
     # --- Renderer source override for event-level logs ---
-    if ctx.get("merge_events") is False:
+    if str(ctx.get("merge_events")).lower() in ("false", "0", "no"):
         # Prefer raw event DataFrame if available
         df_source = ctx.get("df_event_only") or ctx.get("df_events")
         if isinstance(df_source, (list, dict)):
-            # Already serialized
             ctx["df_event_only"] = {"preview": df_source}
         elif hasattr(df_source, "to_dict"):
-            # Convert DataFrame → list of dicts for preview table
             ctx["df_event_only"] = {
                 "preview": df_source.to_dict(orient="records")
             }
+        # --- alias for legacy keys ---
+        ctx["events"] = ctx["df_event_only"]
+        ctx["event_log"] = ctx["df_event_only"]
         print("[DEBUG-RENDER] merge_events=False → event-level table source prepared")
 
     # === 🪜 Optional: Weekly Events ===
