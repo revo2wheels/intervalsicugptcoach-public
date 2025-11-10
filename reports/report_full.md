@@ -241,7 +241,7 @@ load_metrics post-render: {'CTL': {'value': 91.38, 'status': 'ok'}, 'ATL': {'val
 **Athlete:** Clive King
 **Period:** 2025-11-04 → 2025-11-10
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-10T12:25:52.153779
+**Generated:** 2025-11-10T13:13:15.393581
 
 ---
 
@@ -363,6 +363,6 @@ _No outliers detected._
 | i106037029 | 2025-11-09 12:14:22+01:00 | 129 | 7653 | Rathvel | 2025-11-09T11:14:22Z | 54930.42 | 7653 | [{'id': 'Z1', 'secs': 3766}, {'id': 'Z2', 'secs': 1417}, {'id': 'Z3', 'secs': 1015}, {'id': 'Z4', 'secs': 574}, {'id': 'Z5', 'secs': 330}, {'id': 'Z6', 'secs': 432}, {'id': 'Z7', 'secs': 119}, {'id': 'SS', 'secs': 684}] | [5101, 1745, 328, 418, 49, 12, 0] | 2025-11-09 | event | 3766.0 | 1417.0 | 1015.0 | 574.0 | 330.0 | 432.0 | 119.0 | 684.0 | 5101 | 1745 | 328 | 418 | 49 | 12 | 0 | 92.95778 | 101.175865 | -8.22 | None | None |
 
 ---
-✅ **Audit Completed:** 2025-11-10T12:25:52.153983
+✅ **Audit Completed:** 2025-11-10T13:13:15.393760
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 
