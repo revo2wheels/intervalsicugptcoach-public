@@ -166,6 +166,10 @@ def run_tier1_controller(df_activities, wellness, context):
         daily_summary = df_well.copy()
 
     context["dailyMerged"] = daily_summary
+    # --- Disable dailyMerged for event-level mode ---
+    if context.get("merge_events") is False:
+        context.pop("dailyMerged", None)
+        print("[DEBUG-T1] merge_events=False → dailyMerged removed for event-level rendering")
 
     # --- Step 6a: Append training load metrics (CTL / ATL / TSB) safely ---
     if isinstance(df_well, pd.DataFrame) and not df_well.empty:
