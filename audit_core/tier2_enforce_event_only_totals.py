@@ -123,4 +123,9 @@ def enforce_event_only_totals(df_events, context):
         }
         print("[DEBUG-T2] enforced load_metrics sync in context:", context["load_metrics"])
 
+    # --- Preserve full multi-sport event log for renderer ---
+    if "df_events" in context and not context["df_events"].empty:
+        context["df_event_only"] = context["df_events"].copy()
+        print(f"[Tier-2] df_event_only reset to full dataset for multi-sport event log ({len(context['df_event_only'])} rows)")
+
     return context

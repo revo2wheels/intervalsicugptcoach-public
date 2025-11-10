@@ -30,8 +30,10 @@ run_report(
     postRenderAudit=True,                # ← new: run URF only after auditFinal=True
     tier2_enforce_event_only_totals=True,
     render_mode="full",
+    merge_events = False,
     autoCommit=True,
     suppressPrompts=True
+    render_summary=False        # ← enforce no summary card
 )
 
 **Routing Summary**
