@@ -11,8 +11,6 @@
 [Tier-0 fetch] chunk_start=2025-11-04  chunk_end=2025-11-10
 🧩 Tier-0 deduplication: 0 duplicates removed.
 [T0] Canonical slice → 9/9 rows retained (2025-11-04–2025-11-10, tz=Europe/Zurich)
-[DEBUG-T0] Expanded icu_zone_times → 8 numeric columns
-[DEBUG-T0] Expanded icu_hr_zone_times → 7 numeric columns
 [T0] Diagnostic: true Σ(event.moving_time)=43693 s → 12.14 h
 [T0] Canonical totals → Σ(TSS)=588.0
 [DEBUG] wellness raw: <class 'pandas.core.frame.DataFrame'> 7
@@ -27,8 +25,8 @@
 
 [5 rows x 43 columns]
 [T0] Pre-audit complete: activities=9, wellness_rows=7
-⚙️ Controller normalization: detected seconds, no conversion (max=8568)
-[T1] Columns at entry: ['id', 'start_date_local', 'icu_training_load', 'elapsed_time', 'name', 'start_date', 'distance', 'moving_time', 'icu_zone_times', 'icu_hr_zone_times', 'date', 'origin', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7']
+⚙️ Normalization: detected seconds, no conversion (max=8568)
+[T1] Columns at entry: ['id', 'start_date_local', 'icu_training_load', 'elapsed_time', 'name', 'start_date', 'distance', 'moving_time', 'icu_zone_times', 'icu_hr_zone_times', 'date', 'origin']
 🧮 Tier-1: using true Σ(event.moving_time)=43693 s → 12.14 h
 [T1] Wellness alignment window (tz-aware): 2025-11-04 17:43:18+01:00 → 2025-11-09 12:14:22+01:00
 [T1] Wellness date range: 2025-11-04 → 2025-11-10
@@ -47,18 +45,18 @@
 [DEBUG-T1] athleteProfile present: True
 [DEBUG-T1] athleteProfile keys: ['athlete_id', 'name', 'discipline', 'ftp', 'weight', 'hr_rest', 'hr_max', 'ftp_wkg', 'hr_reserve', 'zone_model', 'training_age_years', 'preferred_units', 'environment', 'timezone', 'updated']
 [DEBUG-T1] Starting zone distribution extraction...
-[DEBUG-T1] Activity columns sample: ['id', 'start_date_local', 'icu_training_load', 'elapsed_time', 'name', 'start_date', 'distance', 'moving_time', 'icu_zone_times', 'icu_hr_zone_times', 'date', 'origin', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7', 'ctl', 'atl', 'tsb']
-[DEBUG-ZONE] Available columns: ['id', 'start_date_local', 'icu_training_load', 'elapsed_time', 'name', 'start_date', 'distance', 'moving_time', 'icu_zone_times', 'icu_hr_zone_times', 'date', 'origin', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7', 'ctl', 'atl', 'tsb']
-[DEBUG-ZONE] Detected Power zone columns: ['icu_zone_times', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8']
-[DEBUG-ZONE] Detected HR zone columns: ['icu_hr_zone_times', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7']
+[DEBUG-T1] Activity columns sample: ['id', 'start_date_local', 'icu_training_load', 'elapsed_time', 'name', 'start_date', 'distance', 'moving_time', 'icu_zone_times', 'icu_hr_zone_times', 'date', 'origin', 'ctl', 'atl', 'tsb']
+[DEBUG-ZONE] Available columns: ['id', 'start_date_local', 'icu_training_load', 'elapsed_time', 'name', 'start_date', 'distance', 'moving_time', 'icu_zone_times', 'icu_hr_zone_times', 'date', 'origin', 'ctl', 'atl', 'tsb']
+[DEBUG-ZONE] Detected Power zone columns: ['icu_zone_times']
+[DEBUG-ZONE] Detected HR zone columns: ['icu_hr_zone_times']
 [DEBUG-ZONE] Detected Pace zone columns: []
-[DEBUG-ZONES] power zones computed: {'power_z1': 26.8, 'power_z2': 35.4, 'power_z3': 16.6, 'power_z4': 6.2, 'power_z5': 2.9, 'power_z6': 3.0, 'power_z7': 0.6, 'power_z8': 8.4}
-[DEBUG-ZONES] hr zones computed: {'hr_z1': 66.3, 'hr_z2': 18.3, 'hr_z3': 3.7, 'hr_z4': 6.0, 'hr_z5': 2.3, 'hr_z6': 1.7, 'hr_z7': 1.7}
+[DEBUG-ZONES] No valid data for power zones — total=0.
+[DEBUG-ZONES] No valid data for hr zones — total=0.
 [DEBUG-ZONES] No pace columns found — skipping.
 [DEBUG-T1] Completed zone distribution extraction.
 [DEBUG-T1] Zone distributions now in context:
-  zone_dist_power: {'power_z1': 26.8, 'power_z2': 35.4, 'power_z3': 16.6, 'power_z4': 6.2, 'power_z5': 2.9, 'power_z6': 3.0, 'power_z7': 0.6, 'power_z8': 8.4}
-  zone_dist_hr: {'hr_z1': 66.3, 'hr_z2': 18.3, 'hr_z3': 3.7, 'hr_z4': 6.0, 'hr_z5': 2.3, 'hr_z6': 1.7, 'hr_z7': 1.7}
+  zone_dist_power: {}
+  zone_dist_hr: {}
   zone_dist_pace: {}
 [DEBUG-T1] Outlier events detected: 0
 [DEBUG-OUTLIER] mean TSS: 65.33333333333333 std: 57.19702789481286
@@ -93,6 +91,7 @@ Name: moving_time, dtype: float64
 [DEBUG-T2X] post-extended load_metrics: {'CTL': {'value': 91.38, 'status': 'ok'}, 'ATL': {'value': 91.43, 'status': 'ok'}, 'TSB': {'value': -0.05, 'status': 'ok'}, 'ACWR': {'value': nan, 'status': 'ok'}, 'Monotony': {'value': np.float64(2.48), 'status': 'ok'}, 'Strain': {'value': np.float64(1458.2), 'status': 'ok'}, 'Polarisation': {'value': 0.0, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.504), 'status': 'ok'}}
 [PATCH-LOCKPOSTEXTENDED] Preserved load_metrics after extended: {'CTL': {'value': 91.38, 'status': 'ok'}, 'ATL': {'value': 91.43, 'status': 'ok'}, 'TSB': {'value': -0.05, 'status': 'ok'}, 'ACWR': {'value': nan, 'status': 'ok'}, 'Monotony': {'value': np.float64(2.48), 'status': 'ok'}, 'Strain': {'value': np.float64(1458.2), 'status': 'ok'}, 'Polarisation': {'value': 0.0, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.504), 'status': 'ok'}}
 [PATCH-RESTORE] Reinstated locked load_metrics before finalizer: {'CTL': {'value': 91.38, 'status': 'ok'}, 'ATL': {'value': 91.43, 'status': 'ok'}, 'TSB': {'value': -0.05, 'status': 'ok'}, 'ACWR': {'value': nan, 'status': 'ok'}, 'Monotony': {'value': np.float64(2.48), 'status': 'ok'}, 'Strain': {'value': np.float64(1458.2), 'status': 'ok'}, 'Polarisation': {'value': 0.0, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.504), 'status': 'ok'}}
+🧩 Render mode forced to full+metrics for Unified 10-section layout
 [DEBUG-FINALIZER-ENTRY] load_metrics: {'CTL': {'value': 91.38, 'status': 'ok'}, 'ATL': {'value': 91.43, 'status': 'ok'}, 'TSB': {'value': -0.05, 'status': 'ok'}, 'ACWR': {'value': nan, 'status': 'ok'}, 'Monotony': {'value': np.float64(2.48), 'status': 'ok'}, 'Strain': {'value': np.float64(1458.2), 'status': 'ok'}, 'Polarisation': {'value': 0.0, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.504), 'status': 'ok'}}
 ✅ Loaded ICON_CARDS from UIcomponents.icon_pack
 🔎 Render pre-flight — totals by source:
@@ -111,7 +110,7 @@ correlation_metrics: True
 [Renderer shim] Delegating to render_report() in render_unified_report.py
 
 [DEBUG-TEMPLATE: PRE-CALL]
-Keys in context: ['totalDistance', 'debug_trace', 'auditPartial', 'auditFinal', 'purge_enforced', 'timezone', 'athleteProfile', 'athlete', 'report_mode', 'window_start', 'window_end', 'window_summary', 'knowledge', 'tier1_eventTotals', 'df_events', 'dailyMerged', 'ctl', 'atl', 'tsb', 'load_metrics', 'zone_dist_power', 'zone_dist_hr', 'zone_dist_pace', 'outliers', 'totalHours', 'totalTss', 'eventTotals', 'df_event_only', 'enforcement_layer', '_locked_totals', 'locked_totalHours', 'locked_totalTss', 'locked_totalDistance', 'event_count', 'trace', 'derived_metrics', 'trend_series', 'metrics', 'ACWR', 'Monotony', 'Strain', 'FatigueTrend', 'ZQI', 'FatOxEfficiency', 'Polarisation', 'FOxI', 'CUR', 'GR', 'MES', 'RecoveryIndex', 'ACWR_Risk', 'StressTolerance', 'phases', 'ui_flag', 'actions', '_locked_load_metrics', 'adaptation_metrics', 'trend_metrics', 'correlation_metrics', 'Duration_total', 'icon_pack', 'force_icon_pack', 'event_log_text', 'report_header']
+Keys in context: ['totalDistance', 'debug_trace', 'auditPartial', 'auditFinal', 'purge_enforced', 'timezone', 'athleteProfile', 'athlete', 'report_mode', 'window_start', 'window_end', 'window_summary', 'knowledge', 'tier1_eventTotals', 'df_events', 'dailyMerged', 'ctl', 'atl', 'tsb', 'load_metrics', 'zone_dist_power', 'zone_dist_hr', 'zone_dist_pace', 'outliers', 'totalHours', 'totalTss', 'eventTotals', 'df_event_only', 'enforcement_layer', '_locked_totals', 'locked_totalHours', 'locked_totalTss', 'locked_totalDistance', 'event_count', 'trace', 'derived_metrics', 'trend_series', 'metrics', 'ACWR', 'Monotony', 'Strain', 'FatigueTrend', 'ZQI', 'FatOxEfficiency', 'Polarisation', 'FOxI', 'CUR', 'GR', 'MES', 'RecoveryIndex', 'ACWR_Risk', 'StressTolerance', 'phases', 'ui_flag', 'actions', '_locked_load_metrics', 'adaptation_metrics', 'trend_metrics', 'correlation_metrics', 'render_mode', 'Duration_total', 'icon_pack', 'force_icon_pack', 'event_log_text', 'report_header']
 load_metrics pre-pass: {'CTL': {'value': 91.38, 'status': 'ok'}, 'ATL': {'value': 91.43, 'status': 'ok'}, 'TSB': {'value': -0.05, 'status': 'ok'}, 'ACWR': {'value': nan, 'status': 'ok'}, 'Monotony': {'value': np.float64(2.48), 'status': 'ok'}, 'Strain': {'value': np.float64(1458.2), 'status': 'ok'}, 'Polarisation': {'value': 0.0, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.504), 'status': 'ok'}}
 _locked_load_metrics pre-pass: {'CTL': {'value': 91.38, 'status': 'ok'}, 'ATL': {'value': 91.43, 'status': 'ok'}, 'TSB': {'value': -0.05, 'status': 'ok'}, 'ACWR': {'value': nan, 'status': 'ok'}, 'Monotony': {'value': np.float64(2.48), 'status': 'ok'}, 'Strain': {'value': np.float64(1458.2), 'status': 'ok'}, 'Polarisation': {'value': 0.0, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.504), 'status': 'ok'}}
 Report type: weekly
@@ -150,7 +149,7 @@ Report type: weekly
     "status": "ok"
   }
 }
-[DEBUG-RENDER] Keys in ctx: ['totalDistance', 'debug_trace', 'auditPartial', 'auditFinal', 'purge_enforced', 'timezone', 'athleteProfile', 'athlete', 'report_mode', 'window_start', 'window_end', 'window_summary', 'knowledge', 'tier1_eventTotals', 'df_events', 'dailyMerged', 'ctl', 'atl', 'tsb', 'load_metrics', 'zone_dist_power', 'zone_dist_hr', 'zone_dist_pace', 'outliers', 'totalHours', 'totalTss', 'eventTotals', 'df_event_only', 'enforcement_layer', '_locked_totals', 'locked_totalHours', 'locked_totalTss', 'locked_totalDistance', 'event_count', 'trace', 'derived_metrics', 'trend_series', 'metrics', 'ACWR', 'Monotony', 'Strain', 'FatigueTrend', 'ZQI', 'FatOxEfficiency', 'Polarisation', 'FOxI', 'CUR', 'GR', 'MES', 'RecoveryIndex', 'ACWR_Risk', 'StressTolerance', 'phases', 'ui_flag', 'actions', '_locked_load_metrics', 'adaptation_metrics', 'trend_metrics', 'correlation_metrics', 'Duration_total', 'icon_pack', 'force_icon_pack', 'event_log_text', 'report_header']
+[DEBUG-RENDER] Keys in ctx: ['totalDistance', 'debug_trace', 'auditPartial', 'auditFinal', 'purge_enforced', 'timezone', 'athleteProfile', 'athlete', 'report_mode', 'window_start', 'window_end', 'window_summary', 'knowledge', 'tier1_eventTotals', 'df_events', 'dailyMerged', 'ctl', 'atl', 'tsb', 'load_metrics', 'zone_dist_power', 'zone_dist_hr', 'zone_dist_pace', 'outliers', 'totalHours', 'totalTss', 'eventTotals', 'df_event_only', 'enforcement_layer', '_locked_totals', 'locked_totalHours', 'locked_totalTss', 'locked_totalDistance', 'event_count', 'trace', 'derived_metrics', 'trend_series', 'metrics', 'ACWR', 'Monotony', 'Strain', 'FatigueTrend', 'ZQI', 'FatOxEfficiency', 'Polarisation', 'FOxI', 'CUR', 'GR', 'MES', 'RecoveryIndex', 'ACWR_Risk', 'StressTolerance', 'phases', 'ui_flag', 'actions', '_locked_load_metrics', 'adaptation_metrics', 'trend_metrics', 'correlation_metrics', 'render_mode', 'Duration_total', 'icon_pack', 'force_icon_pack', 'event_log_text', 'report_header']
 [DEBUG-RENDER] df_events type: <class 'pandas.core.frame.DataFrame'>
 [DEBUG-RENDER] df_event_only content: {'preview': [{'date': Timestamp('2025-11-09 00:00:00'), 'name': 'Rathvel', 'icu_training_load': 129, 'moving_time': 7653, 'distance': 54930.42}, {'date': Timestamp('2025-11-09 00:00:00'), 'name': 'Otto walk', 'icu_training_load': 17, 'moving_time': 4069, 'distance': 6064.97}, {'date': Timestamp('2025-11-08 00:00:00'), 'name': '2hrs in the sunshine', 'icu_training_load': 110, 'moving_time': 8568, 'distance': 59275.05}, {'date': Timestamp('2025-11-08 00:00:00'), 'name': 'Otto walk', 'icu_training_load': 12, 'moving_time': 4239, 'distance': 6613.03}, {'date': Timestamp('2025-11-07 00:00:00'), 'name': 'Zwift - Race: Zwift Epic Race - Fuhgeddaboudit B=A', 'icu_training_load': 161, 'moving_time': 7238, 'distance': 82282.34}, {'date': Timestamp('2025-11-07 00:00:00'), 'name': 'Zwift - Tempus Fugit in Watopia', 'icu_training_load': 17, 'moving_time': 1582, 'distance': 15851.62}, {'date': Timestamp('2025-11-06 00:00:00'), 'name': '90 avec Jacques', 'icu_training_load': 80, 'moving_time': 5767, 'distance': 65265.38}, {'date': Timestamp('2025-11-04 00:00:00'), 'name': 'Zwift - Group Ride: Stage 5 - Zwift Unlocked - Short on The Double Borough in New York', 'icu_training_load': 52, 'moving_time': 3644, 'distance': 39272.8}, {'date': Timestamp('2025-11-04 00:00:00'), 'name': 'Zwift - Pacer Group Ride: The 6 Train in New York with Yumi', 'icu_training_load': 10, 'moving_time': 933, 'distance': 9801.86}]}
 
@@ -223,6 +222,7 @@ load_metrics post-render: {'CTL': {'value': 91.38, 'status': 'ok'}, 'ATL': {'val
   - outliers
   - phases
   - purge_enforced
+  - render_mode
   - report_header
   - report_mode
   - tier1_eventTotals
@@ -253,7 +253,7 @@ load_metrics post-render: {'CTL': {'value': 91.38, 'status': 'ok'}, 'ATL': {'val
 **Athlete:** Clive King
 **Period:** ? → ?
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-10T18:02:28.222863
+**Generated:** 2025-11-10T18:44:13.512104
 
 ---
 
@@ -294,28 +294,8 @@ load_metrics post-render: {'CTL': {'value': 91.38, 'status': 'ok'}, 'ATL': {'val
 | RecoveryIndex | 0.504 | ✅ |
 | ACWR_Risk | ✅ | ✅ |
 | StressTolerance | 5.88 | ✅ |
-### Power Zones
-| Zone | % Time |
-|:-- |:--|
-| power_z1 | 26.8 |
-| power_z2 | 35.4 |
-| power_z3 | 16.6 |
-| power_z4 | 6.2 |
-| power_z5 | 2.9 |
-| power_z6 | 3.0 |
-| power_z7 | 0.6 |
-| power_z8 | 8.4 |
-
-### Heart Rate Zones
-| Zone | % Time |
-|:-- |:--|
-| hr_z1 | 66.3 |
-| hr_z2 | 18.3 |
-| hr_z3 | 3.7 |
-| hr_z4 | 6.0 |
-| hr_z5 | 2.3 |
-| hr_z6 | 1.7 |
-| hr_z7 | 1.7 |
+_No power zone data available._
+_No HR zone data available._
 _No pace zone data available._
 
 
@@ -379,6 +359,6 @@ _No outliers detected._
 | 2025-11-04 00:00:00 | Zwift - Pacer Group Ride: The 6 Train in New York with Yumi | 10 | 933 | 9801.86 |
 
 ---
-✅ **Audit Completed:** 2025-11-10T18:02:28.223011
+✅ **Audit Completed:** 2025-11-10T18:44:13.512298
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 
