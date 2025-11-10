@@ -67,9 +67,6 @@ def collect_zone_distributions(df_activities, athlete_profile, context):
     context["zone_dist_hr"] = compute_zone_dist(hr_cols, "hr")
     context["zone_dist_pace"] = compute_zone_dist(pace_cols, "pace")
 
-    return context
-
-
     # --- Fallback using athlete profile if no explicit zone data ---
     if not any([context["zone_dist_power"], context["zone_dist_hr"], context["zone_dist_pace"]]):
         print("⚠ No zone columns found — using athlete profile thresholds if available.")
@@ -106,18 +103,12 @@ def run_tier1_controller(df_activities, wellness, context):
         raise ValueError("❌ Duplicate activity IDs detected")
 
     # --- Step 2: Canonical totals (true Σ(event.moving_time)) ---
-    if "moving_time" not in df_activities.columns:
-        raise AuditHalt("❌ Tier-1: missing moving_time column for canonical totals")
-
+    
     raw_sum = df_activities["moving_time"].sum()
-    max_val = df_activities["moving_time"].max()
 
-    if max_val < 1000:  # hours already
-        event_hours = raw_sum
-        print(f"🧮 Tier-1: using true Σ(event.moving_time)={raw_sum:.2f} h (input already hours)")
-    else:               # seconds → convert once
-        event_hours = raw_sum / 3600
-        print(f"🧮 Tier-1: using true Σ(event.moving_time)={raw_sum:.0f} s → {event_hours:.2f} h")
+    # always assume seconds unless metadata explicitly says hours
+    event_hours = float(raw_sum) / 3600.0
+    print(f"🧮 Tier-1: using Σ(event.moving_time)={raw_sum:.0f} s → {event_hours:.2f} h (converted from seconds)")
 
     event_tss = df_activities["icu_training_load"].sum()
     context["tier1_eventTotals"] = {
@@ -167,7 +158,7 @@ def run_tier1_controller(df_activities, wellness, context):
 
     context["dailyMerged"] = daily_summary
     # --- Disable dailyMerged for event-level mode ---
-# --- Prevent renderer from replacing event logs with dailyMerged ---
+    # --- Prevent renderer from replacing event logs with dailyMerged ---
     if context.get("merge_events") is False:
         context["event_log_source"] = context.get("df_events")
         context["dailyMerged_mode"] = "summary_only"
@@ -305,26 +296,6 @@ def run_tier1_controller(df_activities, wellness, context):
         f"Σ(moving_time)/3600={df_activities['moving_time'].sum()/3600:.2f}\n"
     )
     sys.stderr.flush()
-    # --- Step 9: Detect outlier events ---
-    try:
-        if "icu_training_load" in df_activities.columns:
-            mean_tss = df_activities["icu_training_load"].mean()
-            std_tss = df_activities["icu_training_load"].std()
-            outliers = df_activities[
-                (df_activities["icu_training_load"] > mean_tss + 3 * std_tss)
-                | (df_activities["icu_training_load"] < mean_tss - 3 * std_tss)
-            ]
-            if not outliers.empty:
-                context["outliers"] = outliers[
-                    ["date", "name", "icu_training_load", "moving_time"]
-                ].to_dict("records")
-            else:
-                context["outliers"] = []
-        else:
-            context["outliers"] = []
-    except Exception as e:
-        print(f"⚠ Outlier detection failed: {e}")
-        context["outliers"] = []
 
     return df_activities, wellness, context
 
