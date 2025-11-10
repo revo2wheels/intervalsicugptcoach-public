@@ -290,25 +290,5 @@ def run_tier1_controller(df_activities, wellness, context):
         f"Σ(moving_time)/3600={df_activities['moving_time'].sum()/3600:.2f}\n"
     )
     sys.stderr.flush()
-    # --- Step 9: Detect outlier events ---
-    try:
-        if "icu_training_load" in df_activities.columns:
-            mean_tss = df_activities["icu_training_load"].mean()
-            std_tss = df_activities["icu_training_load"].std()
-            outliers = df_activities[
-                (df_activities["icu_training_load"] > mean_tss + 3 * std_tss)
-                | (df_activities["icu_training_load"] < mean_tss - 3 * std_tss)
-            ]
-            if not outliers.empty:
-                context["outliers"] = outliers[
-                    ["date", "name", "icu_training_load", "moving_time"]
-                ].to_dict("records")
-            else:
-                context["outliers"] = []
-        else:
-            context["outliers"] = []
-    except Exception as e:
-        print(f"⚠ Outlier detection failed: {e}")
-        context["outliers"] = []
 
     return df_activities, wellness, context

@@ -176,13 +176,66 @@ def render_report(data):
     else:
         md.append("_No coaching actions recorded._")
 
+        # --- Renderer source override for event-level logs ---
+        if str(ctx.get("merge_events")).lower() in ("false", "0", "no"):
+            # Prefer raw event DataFrame if available
+            df_source = ctx.get("df_event_only") or ctx.get("df_events")
+            if isinstance(df_source, (list, dict)):
+                ctx["df_event_only"] = {"preview": df_source}
+            elif hasattr(df_source, "to_dict"):
+                ctx["df_event_only"] = {
+                    "preview": df_source.to_dict(orient="records")
+                }
+            # --- alias for legacy keys ---
+            ctx["events"] = ctx["df_event_only"]
+            ctx["event_log"] = ctx["df_event_only"]
+
+
+    print("[DEBUG-RENDER] Keys in ctx:", list(ctx.keys()))
+    print("[DEBUG-RENDER] df_events type:", type(ctx.get("df_events")))
+    if isinstance(ctx.get("df_events"), (list, dict)):
+        print("[DEBUG-RENDER] df_events length:", len(ctx.get("df_events")))
+    if "df_event_only" in ctx:
+        print("[DEBUG-RENDER] df_event_only content:", ctx["df_event_only"])
+
+
     # === 🪜 Optional: Weekly Events ===
-    if report_type.lower() == "weekly" and "df_event_only" in ctx:
+    if report_type.lower() == "weekly":
+        # build or rebuild df_event_only.preview
+        df_event_only = ctx.get("df_event_only", {})
+        preview = df_event_only.get("preview", [])
+
+        if not preview:
+            df_events = ctx.get("df_events")
+            try:
+                # handle list or DataFrame
+                if isinstance(df_events, list):
+                    preview = sorted(
+                        df_events,
+                        key=lambda x: x.get("date", x.get("start_date_local", "")),
+                        reverse=True
+                    )[:10]
+                elif hasattr(df_events, "to_dict"):
+                    preview = (
+                        df_events[[
+                            "date", "name", "icu_training_load",
+                            "moving_time", "distance", "total_elevation_gain"
+                        ]]
+                        .sort_values("date", ascending=False)
+                        .head(10)
+                        .to_dict("records")
+                    )
+                if preview:
+                    ctx["df_event_only"] = {"preview": preview}
+                    print(f"[DEBUG-RENDER] Rebuilt df_event_only preview: {len(preview)} rows")
+            except Exception as e:
+                print(f"[DEBUG-RENDER] could not rebuild df_event_only: {e}")
+
         md.append(section("🚴 Weekly Events Summary"))
-        events = ctx["df_event_only"].get("preview", [])
-        if events:
-            headers = list(events[0].keys())
-            rows = [[e.get(h, "") for h in headers] for e in events]
+        preview = ctx.get("df_event_only", {}).get("preview", [])
+        if preview:
+            headers = list(preview[0].keys())
+            rows = [[e.get(h, "") for h in headers] for e in preview]
             md.append(table(headers, rows))
         else:
             md.append("_No event preview available._")

@@ -98,8 +98,55 @@ def enforce_event_only_totals(df_events, context):
         "distance": context["totalDistance"],
         "source": source_label,
     }
+    # --- Preserve full DataFrame for internal audit ---
     context["df_event_only"] = df_event_only
+
+    # --- Ensure JSON-safe preview for renderer ---
+    try:
+        # Pick best available date column
+        sort_col = (
+            "start_date_local"
+            if "start_date_local" in df_event_only.columns
+            else ("date" if "date" in df_event_only.columns else None)
+        )
+
+        # Select valid columns only
+        cols = [
+            c for c in [
+                "date",
+                "start_date_local",
+                "name",
+                "icu_training_load",
+                "moving_time",
+                "distance",
+                "total_elevation_gain",
+                "total_elev_gain",   # tolerate alternate key
+            ]
+            if c in df_event_only.columns
+        ]
+
+        # Build preview
+        df_preview = (
+            df_event_only[cols]
+            .sort_values(sort_col, ascending=False)
+            .head(10)
+            if sort_col
+            else df_event_only[cols].head(10)
+        )
+
+        context["df_event_only"] = {"preview": df_preview.to_dict("records")}
+        print(
+            f"[DEBUG-T2] injected df_event_only preview: "
+            f"{len(context['df_event_only']['preview'])} rows (sorted by {sort_col})"
+        )
+
+    except Exception as e:
+        print(f"[DEBUG-T2] could not build df_event_only preview: {e}")
+        context["df_event_only"] = {"preview": []}
+
+    # --- Mark enforcement layer for downstream traceability ---
     context["enforcement_layer"] = "tier2_enforce_event_only_totals"
+
 
     # --- Step 7: Hard-lock canonical totals ---------------------------------
     context["_locked_totals"] = True
