@@ -139,9 +139,12 @@ def run_report(
         debug(context,"[PATCH-RESTORE] Reinstated locked load_metrics before finalizer:",
             context["load_metrics"])
 
-     # --- Promote final audit state ---
+    # --- Promote final audit state ---
     context["auditFinal"] = True
 
+        context["render_mode"] = "full+metrics"
+    debug(context, "🧩 Render mode forced to full+metrics for Unified 10-section layout")
+    
     # --- Final render ---
     report, compliance = finalize_and_validate_render(context, reportType=reportType)
     return report, compliance
