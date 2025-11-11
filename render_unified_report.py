@@ -65,6 +65,16 @@ def safe_metric_entry(k, v):
 
 def render_report(data):
     ctx = data.get("context", {})
+    # --- 🔒 Canonical Restore Guard (prevents sandbox inflation) ---
+    if "_locked_load_metrics" in ctx:
+        lm = ctx["_locked_load_metrics"]
+        ctx["totalHours"] = lm.get("totalHours", ctx.get("totalHours"))
+        ctx["totalTss"] = lm.get("totalTss", ctx.get("totalTss"))
+        ctx.setdefault("load_metrics", {})
+        ctx["load_metrics"]["totalHours"] = ctx["totalHours"]
+        ctx["load_metrics"]["totalTss"] = ctx["totalTss"]
+        debug(ctx, "[STATE-GUARD] Canonical totals restored from _locked_load_metrics")
+
     athlete = ctx.get("athlete", {})
     name = athlete.get("name", "Unknown Athlete")
     tz = ctx.get("timezone", "n/a")
