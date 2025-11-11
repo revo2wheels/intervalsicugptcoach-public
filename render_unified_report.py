@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 """
 Unified Report Renderer — URF v5.1 (Weekly / Season / Diagnostic)
@@ -14,23 +13,22 @@ from datetime import datetime
 from UIcomponents.icon_pack import ICON_CARDS
 from audit_core.utils import debug
 
+
 # --- Unified Framework Report Object (v16-compatible) ---
 class Report(dict):
     """Lightweight object to hold report data and render helpers."""
     def add_line(self, text: str):
-        """Append a markdown line to report."""
         self.setdefault("lines", []).append(text)
         return self
 
     def add_table(self, rows):
-        """Append a markdown table (list of lists)."""
         self.setdefault("tables", []).append(rows)
         return self
 
     def add_section(self, title: str, content: str):
-        """Append a titled markdown section."""
         self.setdefault("sections", []).append({"title": title, "content": content})
         return self
+
 
 def safe_get(d, *keys, default="—"):
     """Safely traverse nested dicts."""
@@ -55,6 +53,15 @@ def table(header, rows):
     return "\n".join(lines)
 
 
+# --- New helper ---
+def safe_metric_entry(k, v):
+    """Handle both dict-based and scalar metric values (prevents .get() crash)."""
+    if isinstance(v, dict):
+        return [k, v.get("value", v), v.get("status", "✅")]
+    else:
+        return [k, v, "✅"]
+
+
 def render_report(data):
     ctx = data.get("context", {})
     athlete = ctx.get("athlete", {})
@@ -62,7 +69,8 @@ def render_report(data):
     tz = ctx.get("timezone", "n/a")
     start, end = data.get("window", ["?", "?"])
     report_type = data.get("type", "Weekly")
-    debug(ctx,"[DEBUG-RENDER] incoming load_metrics:", json.dumps(ctx.get("load_metrics", {}), indent=2))   
+
+    debug(ctx, "[DEBUG-RENDER] incoming load_metrics:", json.dumps(ctx.get("load_metrics", {}), indent=2))
     md = []
 
     # === 1️⃣ HEADER / META ===
@@ -99,8 +107,6 @@ def render_report(data):
         md.append("_No derived metrics available._")
 
     ## ⚙️ Training Zone Distributions
-
-    # --- Power Zones ---
     power = ctx.get("zone_dist_power", {})
     if power:
         md.append("### Power Zones")
@@ -108,7 +114,6 @@ def render_report(data):
     else:
         md.append("_No power zone data available._")
 
-    # --- Heart Rate Zones ---
     hr = ctx.get("zone_dist_hr", {})
     if hr:
         md.append("\n### Heart Rate Zones")
@@ -116,7 +121,6 @@ def render_report(data):
     else:
         md.append("_No HR zone data available._")
 
-    # --- Pace Zones ---
     pace = ctx.get("zone_dist_pace", {})
     if pace:
         md.append("\n### Pace Zones")
@@ -140,16 +144,16 @@ def render_report(data):
     md.append(f"- Resting HR: {well.get('rhr', '—')} bpm")
     md.append(f"- HRV Trend: {well.get('hrv_trend', '—')}")
     load = ctx.get("load_metrics", {})
-    atl = load.get("ATL", {}).get("value", well.get("atl", "—"))
-    ctl = load.get("CTL", {}).get("value", well.get("ctl", "—"))
-    tsb = load.get("TSB", {}).get("value", well.get("tsb", "—"))
+    atl = load.get("ATL", {}).get("value", well.get("atl", "—")) if isinstance(load.get("ATL"), dict) else load.get("ATL", "—")
+    ctl = load.get("CTL", {}).get("value", well.get("ctl", "—")) if isinstance(load.get("CTL"), dict) else load.get("CTL", "—")
+    tsb = load.get("TSB", {}).get("value", well.get("tsb", "—")) if isinstance(load.get("TSB"), dict) else load.get("TSB", "—")
     md.append(f"- ATL: {atl} · CTL: {ctl} · TSB: {tsb}")
 
     # === 8️⃣ Load & Stress Chain ===
     md.append(section("⚖️ Load & Stress Chain"))
     load = ctx.get("load_metrics", {})
     if load:
-        rows = [[k, v.get("value", v), v.get("status", "✅")] for k, v in load.items()]
+        rows = [safe_metric_entry(k, v) for k, v in load.items()]
         md.append(table(["Metric", "Value", "Status"], rows))
     else:
         md.append("_Load metrics unavailable._")
@@ -158,8 +162,8 @@ def render_report(data):
     md.append(section("🔬 Efficiency & Adaptation"))
     adapt = ctx.get("adaptation_metrics", {})
     if adapt:
-        for k, v in adapt.items():
-            md.append(f"- {k}: {v}")
+        rows = [safe_metric_entry(k, v) for k, v in adapt.items()]
+        md.append(table(["Metric", "Value", "Status"], rows))
     else:
         md.append("_No adaptation data._")
 
@@ -177,39 +181,13 @@ def render_report(data):
     else:
         md.append("_No coaching actions recorded._")
 
-        # --- Renderer source override for event-level logs ---
-        if str(ctx.get("merge_events")).lower() in ("false", "0", "no"):
-            # Prefer raw event DataFrame if available
-            df_source = ctx.get("df_event_only") or ctx.get("df_events")
-            if isinstance(df_source, (list, dict)):
-                ctx["df_event_only"] = {"preview": df_source}
-            elif hasattr(df_source, "to_dict"):
-                ctx["df_event_only"] = {
-                    "preview": df_source.to_dict(orient="records")
-                }
-            # --- alias for legacy keys ---
-            ctx["events"] = ctx["df_event_only"]
-            ctx["event_log"] = ctx["df_event_only"]
-
-
-    debug(ctx,"[DEBUG-RENDER] Keys in ctx:", list(ctx.keys()))
-    debug(ctx,"[DEBUG-RENDER] df_events type:", type(ctx.get("df_events")))
-    if isinstance(ctx.get("df_events"), (list, dict)):
-        debug(ctx,"[DEBUG-RENDER] df_events length:", len(ctx.get("df_events")))
-    if "df_event_only" in ctx:
-        debug(ctx,"[DEBUG-RENDER] df_event_only content:", ctx["df_event_only"])
-
-
     # === 🪜 Optional: Weekly Events ===
     if report_type.lower() == "weekly":
-        # build or rebuild df_event_only.preview
         df_event_only = ctx.get("df_event_only", {})
         preview = df_event_only.get("preview", [])
-
         if not preview:
             df_events = ctx.get("df_events")
             try:
-                # handle list or DataFrame
                 if isinstance(df_events, list):
                     preview = sorted(
                         df_events,
@@ -228,9 +206,9 @@ def render_report(data):
                     )
                 if preview:
                     ctx["df_event_only"] = {"preview": preview}
-                    debug(ctx,f"[DEBUG-RENDER] Rebuilt df_event_only preview: {len(preview)} rows")
+                    debug(ctx, f"[DEBUG-RENDER] Rebuilt df_event_only preview: {len(preview)} rows")
             except Exception as e:
-                debug(ctx,f"[DEBUG-RENDER] could not rebuild df_event_only: {e}")
+                debug(ctx, f"[DEBUG-RENDER] could not rebuild df_event_only: {e}")
 
         md.append(section("🚴 Weekly Events Summary"))
         preview = ctx.get("df_event_only", {}).get("preview", [])
@@ -241,13 +219,6 @@ def render_report(data):
         else:
             md.append("_No event preview available._")
 
-    # === 🧱 Optional: Seasonal Phases ===
-    if report_type.lower() == "season" and "phase_breakdown" in ctx:
-        md.append(section("🪜 Season Phase Breakdown"))
-        phases = ctx["phase_breakdown"]
-        rows = [[p.get("phase", "?"), p.get("weeks", "?"), p.get("load", "?"), p.get("notes", "")] for p in phases]
-        md.append(table(["Phase", "Weeks", "Load", "Notes"], rows))
-
     # === 🧾 Final Summary ===
     md.append("\n---")
     md.append(f"✅ **Audit Completed:** {ctx.get('timestamp', datetime.utcnow().isoformat())}")
@@ -256,7 +227,7 @@ def render_report(data):
 
     md_text = "\n".join(md)
 
-  # Construct the Report object
+    # --- Construct the Report object ---
     report = Report({
         "header": {
             "title": f"{report_type.title()} Training Report",
@@ -264,8 +235,8 @@ def render_report(data):
             "athlete": name,
             "period": f"{start} → {end}",
             "timestamp": ctx.get("timestamp", datetime.utcnow().isoformat()),
-            "discipline": ctx.get("discipline", "cycling"),  # ✅ added for schema guard
-    },
+            "discipline": ctx.get("discipline", "cycling"),
+        },
         "markdown": md_text,
         "type": report_type,
         "context": ctx,
@@ -278,7 +249,7 @@ def render_report(data):
     ctx["header"] = report["header"]
     ctx["ICON_CARDS"] = ICON_CARDS
 
-    # Add synthetic summary section for validator compatibility
+    # --- Summary section ---
     report["summary"] = {
         "totalHours": ctx.get("totalHours", "—"),
         "totalTss": ctx.get("totalTss", "—"),
@@ -286,7 +257,7 @@ def render_report(data):
         "period": f"{start} → {end}",
         "athlete": name,
         "variance": ctx.get("variance", 0.0),
-        "zones": ctx.get("zone_dist", {}),  # ✅ add this
+        "zones": ctx.get("zone_dist", {}),
         "🛌 Rest Day": ICON_CARDS.get("recovery", "🛌"),
         "⏳ Current Day": ICON_CARDS.get("info", "⏳"),
     }
@@ -294,25 +265,22 @@ def render_report(data):
     # --- METRICS (schema-compliant) ---
     report["metrics"] = {
         "ACWR": ctx.get("ACWR", {"value": "—"}),
-        "Monotony": ctx.get("Monotony", {"value": "—"}),         # ✅ required
-        "Strain": ctx.get("Strain", {"value": "—"}),             # ✅ required
-        "Polarisation": ctx.get("Polarisation", {"value": "—"}), # ✅ required
-        "RecoveryIndex": ctx.get("RecoveryIndex", {"value": "—"})# ✅ required
+        "Monotony": ctx.get("Monotony", {"value": "—"}),
+        "Strain": ctx.get("Strain", {"value": "—"}),
+        "Polarisation": ctx.get("Polarisation", {"value": "—"}),
+        "RecoveryIndex": ctx.get("RecoveryIndex", {"value": "—"})
     }
 
-    # Add actions section for validator compatibility
     report["actions"] = {
         "list": ctx.get("actions", []),
         "performance_flags": ctx.get("performance", {}),
         "notes": "Auto-generated validation placeholder for coaching actions."
     }
 
-    # Add phases section for validator compatibility
     report["phases"] = ctx.get("phase_breakdown", [
         {"phase": "Base", "weeks": 0, "load": "—", "notes": "No seasonal phase data available."}
     ])
 
-    # Add trends section for validator compatibility
     report["trends"] = ctx.get("trend_metrics", {
         "load_trend": ctx.get("load_trend", "—"),
         "fitness_trend": ctx.get("fitness_trend", "—"),
@@ -320,7 +288,6 @@ def render_report(data):
         "note": "No trend data available — placeholder for validator compliance."
     })
 
-    # --- Add correlation section for validator compliance ---
     report["correlation"] = ctx.get("correlation_metrics", {
         "power_hr_correlation": ctx.get("power_hr_correlation", "—"),
         "efficiency_factor_change": ctx.get("efficiency_factor_change", "—"),
@@ -328,22 +295,19 @@ def render_report(data):
         "note": "No correlation data available — placeholder for validator compliance."
     })
 
-    # --- FOOTER (schema-compliant) ---
-    report["footer"] = {
-        "framework": "URF v5.1",
-        "version": "v16.14",
-    }
+    report["footer"] = {"framework": "URF v5.1", "version": "v16.14"}
 
     return report
 
+
 def main():
     if len(sys.argv) < 2:
-        debug(ctx,"Usage: python render_unified_report.py <report.json> [--out report.md]")
+        print("Usage: python render_unified_report.py <report.json> [--out report.md]")
         sys.exit(1)
 
     path = Path(sys.argv[1])
     if not path.exists():
-        debug(ctx,f"❌ File not found: {path}")
+        print(f"❌ File not found: {path}")
         sys.exit(1)
 
     data = json.loads(path.read_text())
@@ -352,9 +316,9 @@ def main():
     if len(sys.argv) > 3 and sys.argv[2] == "--out":
         out_path = Path(sys.argv[3])
         out_path.write_text(md, encoding="utf-8")
-        debug(ctx,f"✅ Markdown report written to {out_path}")
+        print(f"✅ Markdown report written to {out_path}")
     else:
-        debug(ctx,md)
+        print(md)
 
 
 if __name__ == "__main__":
