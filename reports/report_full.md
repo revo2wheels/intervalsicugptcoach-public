@@ -151,6 +151,7 @@ Report type: weekly
   "totalTss": 526
 }
 [Tier-2] Using enforced df_event_only preview (no rebuild).
+[Tier-2] Rendered Weekly Events Summary (7 rows)
 
 [DEBUG-TEMPLATE: POST-CALL]
 Renderer function executed: render_report
@@ -256,7 +257,7 @@ load_metrics post-render: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'val
 **Athlete:** Clive King
 **Period:** ? → ?
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-11T08:51:48.051067
+**Generated:** 2025-11-11T09:00:52.137069
 
 ---
 
@@ -355,15 +356,15 @@ _No outliers detected._
 
 | date | name | icu_training_load | moving_time | distance |
 |:-- |:-- |:-- |:-- |:--|
-| 2025-11-09 00:00:00 | Rathvel | 129 | 7653 | 54930.42 |
-| 2025-11-09 00:00:00 | Otto walk | 17 | 4069 | 6064.97 |
-| 2025-11-08 00:00:00 | 2hrs in the sunshine | 110 | 8568 | 59275.05 |
-| 2025-11-08 00:00:00 | Otto walk | 12 | 4239 | 6613.03 |
-| 2025-11-07 00:00:00 | Zwift - Race: Zwift Epic Race - Fuhgeddaboudit B=A | 161 | 7238 | 82282.34 |
-| 2025-11-07 00:00:00 | Zwift - Tempus Fugit in Watopia | 17 | 1582 | 15851.62 |
-| 2025-11-06 00:00:00 | 90 avec Jacques | 80 | 5767 | 65265.38 |
+| 2025-11-09 00:00:00 | Rathvel | 129 | 02:07:33 | 54.9 |
+| 2025-11-09 00:00:00 | Otto walk | 17 | 01:07:49 | 6.1 |
+| 2025-11-08 00:00:00 | 2hrs in the sunshine | 110 | 02:22:48 | 59.3 |
+| 2025-11-08 00:00:00 | Otto walk | 12 | 01:10:39 | 6.6 |
+| 2025-11-07 00:00:00 | Zwift - Race: Zwift Epic Race - Fuhgeddaboudit B=A | 161 | 02:00:38 | 82.3 |
+| 2025-11-07 00:00:00 | Zwift - Tempus Fugit in Watopia | 17 | 00:26:22 | 15.9 |
+| 2025-11-06 00:00:00 | 90 avec Jacques | 80 | 01:36:07 | 65.3 |
 
 ---
-✅ **Audit Completed:** 2025-11-11T08:51:48.051169
+✅ **Audit Completed:** 2025-11-11T09:00:52.137177
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 

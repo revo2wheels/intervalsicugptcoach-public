@@ -182,48 +182,47 @@ def render_report(data):
     else:
         md.append("_No coaching actions recorded._")
 
-# === 🪜 Weekly Events Summary (Tier-2 Safe) ===
-if report_type.lower() == "weekly":
-    # ✅ Use canonical Tier-2 data if available
-    if "df_event_only" in ctx and ctx.get("df_event_only", {}).get("preview"):
-        preview = ctx["df_event_only"]["preview"]
-        debug(ctx, "[Tier-2] Using enforced df_event_only preview (no rebuild).")
-    else:
-        debug(ctx, "[Tier-2 WARN] Missing enforced df_event_only — fallback to rebuild.")
-        # optional legacy fallback (can be removed if always Tier-2)
-        df_events = ctx.get("df_events")
-        if hasattr(df_events, "to_dict") and not getattr(df_events, "empty", True):
-            preview = (
-                df_events[["date", "name", "icu_training_load", "moving_time", "distance", "total_elevation_gain"]]
-                .sort_values("date", ascending=False)
-                .head(10)
-                .to_dict("records")
-            )
+    # === 🪜 Weekly Events Summary (Tier-2 Safe) ===
+    if report_type.lower() == "weekly":
+        if "df_event_only" in ctx and ctx.get("df_event_only", {}).get("preview"):
+            preview = ctx["df_event_only"]["preview"]
+            debug(ctx, "[Tier-2] Using enforced df_event_only preview (no rebuild).")
         else:
-            preview = []
+            debug(ctx, "[Tier-2 WARN] Missing enforced df_event_only — fallback to rebuild.")
+            df_events = ctx.get("df_events")
+            if hasattr(df_events, "to_dict") and not getattr(df_events, "empty", True):
+                preview = (
+                    df_events[["date", "name", "icu_training_load", "moving_time", "distance", "total_elevation_gain"]]
+                    .sort_values("date", ascending=False)
+                    .head(10)
+                    .to_dict("records")
+                )
+            else:
+                preview = []
 
-    md.append(section("🚴 Weekly Events Summary"))
+        md.append(section("🚴 Weekly Events Summary"))
 
-    if preview:
-        headers = list(preview[0].keys())
-        rows = []
-        for e in preview:
-            row = []
-            for h in headers:
-                val = e.get(h, "")
-                # ✅ Format moving_time seconds to HH:MM:SS for human readability
-                if h == "moving_time" and isinstance(val, (int, float)):
-                    val = time.strftime("%H:%M:%S", time.gmtime(int(val)))
-                row.append(val)
-            rows.append(row)
+        if preview:
+            headers = list(preview[0].keys())
+            rows = []
+            for e in preview:
+                row = []
+                for h in headers:
+                    val = e.get(h, "")
+                    # Format duration
+                    if h == "moving_time" and isinstance(val, (int, float)):
+                        val = time.strftime("%H:%M:%S", time.gmtime(int(val)))
+                    # Convert distance → km for readability
+                    elif h == "distance" and isinstance(val, (int, float)):
+                        val = f"{val / 1000:.1f}"
+                    row.append(val)
+                rows.append(row)
 
-        md.append(table(headers, rows))
-        debug(ctx, f"[Tier-2] Rendered Weekly Events Summary ({len(rows)} rows)")
-    else:
-        md.append("_No event preview available._")
-        debug(ctx, "[Tier-2 WARN] No event preview found for Weekly Events Summary")
-
-
+            md.append(table(headers, rows))
+            debug(ctx, f"[Tier-2] Rendered Weekly Events Summary ({len(rows)} rows)")
+        else:
+            md.append("_No event preview available._")
+            debug(ctx, "[Tier-2 WARN] No event preview found for Weekly Events Summary")
 
     # === 🧾 Final Summary ===
     md.append("\n---")
