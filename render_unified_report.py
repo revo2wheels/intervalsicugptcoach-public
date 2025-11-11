@@ -109,7 +109,7 @@ def render_report(data):
     md.append(f"- Source verification: ✅ Live (no mock/cache)")
     debug(ctx, "[TRACE-HEADER] ctx.totalHours =", ctx.get("totalHours"))
     debug(ctx, "[TRACE-HEADER] ctx.totalTss   =", ctx.get("totalTss"))
-    md.append(f"- Σ(moving_time)/3600 = {ctx.get('totalHours', '—')} h  |  Σ(TSS) = {ctx.get('totalTss', '—')}")
+    #md.append(f"- Σ(moving_time)/3600 = {ctx.get('totalHours', '—')} h  |  Σ(TSS) = {ctx.get('totalTss', '—')}")
 
     # === 3️⃣ Tier-1 Audit Controller ===
     md.append(section("🧩 Tier-1 Audit Controller"))
@@ -240,6 +240,15 @@ def render_report(data):
 
             md.append(table(headers, rows))
             debug(ctx, f"[Tier-2] Rendered Weekly Events Summary ({len(rows)} rows)")
+            # --- Canonical Totals (displayed below event log only) ---
+            if "eventTotals" in ctx:
+                et = ctx["eventTotals"]
+                md.append("")
+                md.append(f"**Totals for reporting period:** "
+                        f"{et.get('hours', 0):.2f} h · "
+                        f"{et.get('tss', 0)} TSS · "
+                        f"{ctx.get('totalDistance', '—')} km**")
+                debug(ctx, "[Tier-2] Totals appended under event log")
         else:
             md.append("_No event preview available._")
             debug(ctx, "[Tier-2 WARN] No event preview found for Weekly Events Summary")

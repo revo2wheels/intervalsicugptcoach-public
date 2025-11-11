@@ -1,5 +1,5 @@
 """
-report_schema_guard.py — v16.1
+report_schema_guard.py — v16.1-patched
 Schema-level validation of report output fields.
 """
 
@@ -9,37 +9,31 @@ FRAMEWORK_SCHEMA = {
     "header": ["athlete", "period", "discipline"],
     "summary": ["totalHours", "totalTss", "variance", "zones"],
     "metrics": ["derived", "load", "adaptation", "trend", "correlation"],
-    "actions_block": ["list"],   # <-- expects dict now
+    "actions_block": ["list"],   # dict form for schema
     "footer": ["framework", "version"]
 }
 
-
 def enforce_report_schema(report):
-    # --- TEMPORARY DEBUG ---
     print("\n[DEBUG-GUARD] --- Report schema diagnostic ---")
     print("[DEBUG-GUARD] Report top-level keys:", list(report.keys()))
-    if "actions" in report:
-        print("[DEBUG-GUARD] actions type:", type(report["actions"]))
-        if isinstance(report["actions"], dict):
-            print("[DEBUG-GUARD] actions keys:", list(report["actions"].keys()))
-        else:
-            print("[DEBUG-GUARD] actions value (non-dict):", report["actions"])
-    else:
-        print("[DEBUG-GUARD] 'actions' not in report")
-    print("[DEBUG-GUARD] ---------------------------------\n")
-
     for section, keys in FRAMEWORK_SCHEMA.items():
         if section not in report:
             raise ValueError(f"❌ Missing section: {section}")
 
         section_data = report[section]
-
-        # Skip validation for non-dict types (e.g. list sections like report["actions"])
         if not isinstance(section_data, dict):
+            debug({}, f"[SCHEMA] Skipping non-dict section '{section}' ({type(section_data).__name__})")
             continue
 
         for key in keys:
             if key not in section_data:
-                raise KeyError(f"❌ Missing key {key} in section {section}")
+                raise KeyError(f"❌ Missing key '{key}' in section '{section}'")
 
-        return True
+    # ✅ Extra guard for dual actions structure
+    if "actions" not in report and "actions_block" not in report:
+        raise ValueError("❌ Both 'actions' and 'actions_block' missing — schema invalid")
+    if "actions_block" in report and not isinstance(report["actions_block"], dict):
+        raise TypeError("❌ actions_block must be a dict")
+
+    print("[DEBUG-GUARD] ✅ Schema validation passed for all sections\n")
+    return True

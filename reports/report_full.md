@@ -170,6 +170,7 @@ Report type: weekly
 [TRACE-HEADER] ctx.totalTss   = 526
 [Tier-2] Using enforced df_event_only preview (no rebuild).
 [Tier-2] Rendered Weekly Events Summary (7 rows)
+[Tier-2] Totals appended under event log
 [Tier-2] Using canonical summary_patch from Tier-2 validator
 [TRACE-DESERIALIZE] wrapped.context totals=10.87, 526
 
@@ -186,10 +187,10 @@ load_metrics post-render: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'val
 Final report keys: ['header', 'markdown', 'type', 'context', 'sections', 'tables', 'lines', 'summary', 'metrics', 'actions', 'phases', 'trends', 'correlation', 'footer']
 Final context load_metrics: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'value': 92.51, 'status': 'ok'}, 'TSB': {'value': -1.07, 'status': 'ok'}, 'ACWR': {'value': nan, 'status': 'ok'}, 'Monotony': {'value': 3.18, 'status': 'ok'}, 'Strain': {'value': 1672.7, 'status': 'ok'}, 'Polarisation': {'value': 0.0, 'status': 'ok'}, 'RecoveryIndex': {'value': 0.364, 'status': 'ok'}, 'totalHours': 10.87, 'totalTss': 526}
 ================================================================================
-[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Clive King', 'period': '2025-11-05 → 2025-11-11', 'timestamp': '2025-11-11T10:51:52.480241', 'discipline': 'cycling'}
+[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Clive King', 'period': '2025-11-05 → 2025-11-11', 'timestamp': '2025-11-11T11:02:13.239459', 'discipline': 'cycling'}
 [TRACE-POST-RENDER-CHECK] summary={'totalHours': np.float64(10.87), 'totalTss': 526, 'eventCount': 7, 'period': '2025-11-05 → 2025-11-11'}
 [POST-RENDER] Canonical event-only totals enforced → header + summary synced
-[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Clive King', 'period': '2025-11-05 → 2025-11-11', 'timestamp': '2025-11-11T10:51:52.480241', 'discipline': 'cycling', 'Total Hours': '10.87 h', 'Total Load (TSS)': 526}
+[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Clive King', 'period': '2025-11-05 → 2025-11-11', 'timestamp': '2025-11-11T11:02:13.239459', 'discipline': 'cycling', 'Total Hours': '10.87 h', 'Total Load (TSS)': 526}
 [PATCH] summary rebuilt for schema compliance: {'totalHours': np.float64(10.87), 'totalTss': 526, 'eventCount': 7, 'period': '2025-11-05 → 2025-11-11', 'variance': 0.0, 'zones': {}}
 [PATCH] Tier-2 summary override applied → canonical event-only totals enforced
 [PATCH] actions dual-structure applied → 3 items
@@ -198,9 +199,7 @@ Final context load_metrics: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'v
 
 [DEBUG-GUARD] --- Report schema diagnostic ---
 [DEBUG-GUARD] Report top-level keys: ['header', 'markdown', 'type', 'context', 'sections', 'tables', 'lines', 'summary', 'metrics', 'actions', 'phases', 'trends', 'correlation', 'footer', 'actions_block']
-[DEBUG-GUARD] actions type: <class 'list'>
-[DEBUG-GUARD] actions value (non-dict): ['⚠ Increase Z1–Z2 share to ≥70 % (Seiler 80/20).', '⚠ Improve Zone 2 efficiency: extend duration or adjust IF.', '⚠ Apply 10–15 % deload (Friel microcycle logic).']
-[DEBUG-GUARD] ---------------------------------
+[DEBUG-GUARD] ✅ Schema validation passed for all sections
 
 
 [DEBUG] Context keys available before finalize_and_validate_render() return:
@@ -292,7 +291,7 @@ Final context load_metrics: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'v
 **Athlete:** Clive King
 **Period:** 2025-11-05 → 2025-11-11
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-11T10:51:52.480082
+**Generated:** 2025-11-11T11:02:13.239292
 
 ---
 
@@ -304,7 +303,6 @@ Final context load_metrics: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'v
 - Purge enforced: True
 - Wellness records: n/a
 - Source verification: ✅ Live (no mock/cache)
-- Σ(moving_time)/3600 = 10.87 h  |  Σ(TSS) = 526
 
 
 ## 🧩 Tier-1 Audit Controller
@@ -399,7 +397,9 @@ _No outliers detected._
 | 2025-11-07 00:00:00 | Zwift - Tempus Fugit in Watopia | 17 | 00:26:22 | 15.9 |
 | 2025-11-06 00:00:00 | 90 avec Jacques | 80 | 01:36:07 | 65.3 |
 
+**Totals for reporting period:** 10.87 h · 526 TSS · 290.3 km**
+
 ---
-✅ **Audit Completed:** 2025-11-11T10:51:52.480230
+✅ **Audit Completed:** 2025-11-11T11:02:13.239444
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 
