@@ -27,7 +27,7 @@ def finalize_and_validate_render(context, reportType="weekly"):
     if not context.get("auditFinal", False):
         raise RuntimeError("❌ Renderer blocked: auditFinal=False")
 
-     # --- Early safeguard: prevent mock event fallback ---df = context.get("df_events")
+    # --- Early safeguard: prevent mock event fallback ---
     df = context.get("df_events")
     if (
         df is None
@@ -88,60 +88,29 @@ def finalize_and_validate_render(context, reportType="weekly"):
     context["icon_pack"] = ICON_CARDS
     context["force_icon_pack"] = True
 
-    # --- SAFETY PATCH: enforce true event-level event log ---
-    if ("dailyMerged" not in context or context["dailyMerged"] is None 
-            or getattr(context["dailyMerged"], "empty", True)):
-        if "df_event_only" in context and isinstance(context["df_event_only"], dict):
-            preview = context["df_event_only"].get("preview", [])
-            if preview:
-                import pandas as pd
-                context["dailyMerged"] = pd.DataFrame(preview).reset_index(drop=True)
-                debug(context, "✅ dailyMerged rebuilt from df_event_only (event-level isolation mode)")
-
     # --- Step 4: Compact Event Log render (Markdown) ---
-    df_daily = context.get("dailyMerged")
-    if df_daily is not None and not df_daily.empty:
-        pd.options.display.width = 160
-        pd.options.display.max_colwidth = 14
-        pd.options.display.colheader_justify = "center"
-        try:
-            context["event_log_text"] = df_daily.to_markdown(index=False, tablefmt="github")
-        except Exception as e:
-            debug(context,f"⚠ Markdown render fallback: {e}")
-            context["event_log_text"] = df_daily.to_string(index=False)
+    df_events = context.get("df_events")
+    if df_events is None or getattr(df_events, "empty", True):
+        raise AuditHalt("❌ Renderer blocked: missing df_events for markdown render")
 
-    debug(context,"🔎 Render pre-flight — totals by source:")
-    if "df_events" in context and "moving_time" in context["df_events"].columns:
-        debug(context,"   df_events Σmoving_time =", context["df_events"]["moving_time"].sum() / 3600)
+    pd.options.display.width = 160
+    pd.options.display.max_colwidth = 14
+    pd.options.display.colheader_justify = "center"
 
-    if "dailyMerged" in context:
-        dfm = context["dailyMerged"]
-        if "moving_time" in dfm.columns:
-            debug(context,"   dailyMerged Σmoving_time =", dfm["moving_time"].sum() / 3600)
-        elif "duration" in dfm.columns:
-            debug(context,"   dailyMerged Σduration (h) =", dfm["duration"].sum())
-        elif "hours" in dfm.columns:
-            debug(context,"   dailyMerged Σhours =", dfm["hours"].sum())
-        else:
-            debug(context,"   dailyMerged has no time-like column")
+    try:
+        context["event_log_text"] = df_events.to_markdown(index=False, tablefmt="github")
+    except Exception as e:
+        debug(context, f"⚠ Markdown render fallback: {e}")
+        context["event_log_text"] = df_events.to_string(index=False)
+
+    debug(context, "🔎 Render pre-flight — totals by source:")
+    if "moving_time" in df_events.columns:
+        debug(context, "   df_events Σmoving_time =", df_events["moving_time"].sum() / 3600)
+    if "icu_training_load" in df_events.columns:
+        debug(context, "   df_events Σicu_training_load =", df_events["icu_training_load"].sum())
 
     if "eventTotals" in context:
-        debug(context,"   eventTotals(hours) =", context["eventTotals"].get("hours"))
-
-
-    # --- SAFETY PATCH: enforce event-only rows before render ---
-    if "dailyMerged" in context:
-        dfm = context["dailyMerged"]
-
-        # Strictly retain event-level rows only (no daily aggregation)
-        if "origin" in dfm.columns:
-            context["dailyMerged"] = dfm.query("origin == 'event'").copy()
-        elif "id" in dfm.columns:
-            # Use unique event IDs, not dates
-            context["dailyMerged"] = dfm.drop_duplicates(subset=["id"], keep="first").copy()
-        else:
-            debug(context, "⚠ No event key column found; skipping merge restriction.")
-            context["dailyMerged"] = dfm.copy()
+        debug(context, "   eventTotals(hours) =", context["eventTotals"].get("hours"))
 
     # Force renderer to use canonical Tier-2 totals for header
     if "totalHours" in context:
@@ -162,19 +131,19 @@ def finalize_and_validate_render(context, reportType="weekly"):
         context["df_events"] = df_events
 
     if hasattr(df_events, "to_dict") and not df_events.empty:
-            cols = [
-        "date", "name", "icu_training_load",
-        "moving_time", "distance", "total_elevation_gain"
-    ]
-    available_cols = [c for c in cols if c in df_events.columns]
-    context["df_event_only"] = {
-        "preview": (
-            df_events[available_cols]
-            .sort_values("date", ascending=False)
-            .head(10)
-            .to_dict(orient="records")
-        )
-    }
+        cols = [
+            "date", "name", "icu_training_load",
+            "moving_time", "distance", "total_elevation_gain"
+        ]
+        available_cols = [c for c in cols if c in df_events.columns]
+        context["df_event_only"] = {
+            "preview": (
+                df_events[available_cols]
+                .sort_values("date", ascending=False)
+                .head(10)
+                .to_dict(orient="records")
+            )
+        }
     
     # --- SAFETY PATCH: Ensure athlete and header completeness ---
     athlete_profile = context.get("athleteProfile", {})
@@ -298,8 +267,6 @@ def finalize_and_validate_render(context, reportType="weekly"):
 
     debug(context, f"[PATCH] actions dual-structure applied → {len(actions_list)} items")
 
-
-
     # --- VALIDATION EXECUTION ---
     compliance = validate_report_output(context, report)
     enforce_report_schema(report)
@@ -331,5 +298,5 @@ def finalize_and_validate_render(context, reportType="weekly"):
 
     debug(context,"✅ Report passed framework + schema validation (event-only, markdown).")
     report["metrics"].setdefault("derived_metrics", context.get("derived_metrics", {}))
+    
     return report, compliance
-

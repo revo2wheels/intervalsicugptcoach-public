@@ -1,4 +1,3 @@
-
 """
 Tier-2 Step 1 — Event Completeness Rule (v16.1.3)
 Ensures daily completeness, no missing or duplicate activities.
@@ -16,43 +15,43 @@ def validate_event_completeness(df_activities, df_wellness=None, context=None):
     if df_activities["id"].duplicated().any():
         raise ValueError("❌ Duplicate event IDs detected")
 
-# --- Elapsed-time overlap duplicate detection (refined ≤1 s tolerance) ---
-df_sorted = df_activities.sort_values("start_date_local").reset_index(drop=True)
-valid_rows = []
+    # --- Elapsed-time overlap duplicate detection (refined ≤1 s tolerance) ---
+    df_sorted = df_activities.sort_values("start_date_local").reset_index(drop=True)
+    valid_rows = []
 
-for i, e in df_sorted.iterrows():
-    start_e = pd.to_datetime(e["start_date_local"])
-    end_e = start_e + timedelta(seconds=float(e["moving_time"]))
-    overlap_found = False
+    for i, e in df_sorted.iterrows():
+        start_e = pd.to_datetime(e["start_date_local"])
+        end_e = start_e + timedelta(seconds=float(e["moving_time"]))
+        overlap_found = False
 
-    if valid_rows:
-        for _, d in pd.DataFrame(valid_rows).iterrows():
-            start_d = pd.to_datetime(d["start_date_local"])
-            end_d = start_d + timedelta(seconds=float(d["moving_time"]))
+        if valid_rows:
+            for _, d in pd.DataFrame(valid_rows).iterrows():
+                start_d = pd.to_datetime(d["start_date_local"])
+                end_d = start_d + timedelta(seconds=float(d["moving_time"]))
 
-            # Compute exact temporal overlap in seconds
-            latest_start = max(start_e, start_d)
-            earliest_end = min(end_e, end_d)
-            overlap_sec = (earliest_end - latest_start).total_seconds()
+                # Compute exact temporal overlap in seconds
+                latest_start = max(start_e, start_d)
+                earliest_end = min(end_e, end_d)
+                overlap_sec = (earliest_end - latest_start).total_seconds()
 
-            # Ignore trivial overlaps (≤120 s) as non-conflicting
-            if overlap_sec <= 120:
-                continue
+                # Ignore trivial overlaps (≤120 s) as non-conflicting
+                if overlap_sec <= 120:
+                    continue
 
-            # Calculate fractional overlap for deeper duplicates
-            overlap_fraction = overlap_sec / min(e["moving_time"], d["moving_time"])
+                # Calculate fractional overlap for deeper duplicates
+                overlap_fraction = overlap_sec / min(e["moving_time"], d["moving_time"])
 
-            # Treat as duplicate only if >80 % temporal intersection
-            if overlap_fraction > 0.8:
-                overlap_found = True
-                # Retain higher-load (TSS) activity
-                if e["icu_training_load"] > d["icu_training_load"]:
-                    valid_rows.remove(d)
-                    valid_rows.append(e)
-                break
+                # Treat as duplicate only if >80 % temporal intersection
+                if overlap_fraction > 0.8:
+                    overlap_found = True
+                    # Retain higher-load (TSS) activity
+                    if e["icu_training_load"] > d["icu_training_load"]:
+                        valid_rows.remove(d)
+                        valid_rows.append(e)
+                    break
 
-    if not overlap_found:
-        valid_rows.append(e)
+        if not overlap_found:
+            valid_rows.append(e)
 
     df_valid = pd.DataFrame(valid_rows).reset_index(drop=True)
 
@@ -99,8 +98,7 @@ for i, e in df_sorted.iterrows():
     df_valid["origin"] = "event"
     daily["display_only"] = True
 
-    debug(context,f"[T2] Daily completeness summary built — {len(daily)} rows")
-
+    debug(context, f"[T2] Daily completeness summary built — {len(daily)} rows")
 
     # --- Wellness merge & HRV correlation (legacy logic) ---
     if df_wellness is not None and "hrv" in df_wellness.columns:

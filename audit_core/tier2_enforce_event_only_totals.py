@@ -4,6 +4,7 @@ Computes canonical totals using Tier-2 validated event dataset if available.
 Falls back to raw Tier-0 data only if no DataFrame is passed.
 """
 import os
+import pandas as pd
 from audit_core.utils import debug
 from audit_core.errors import AuditHalt
 
