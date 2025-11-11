@@ -271,15 +271,15 @@ def finalize_and_validate_render(context, reportType="weekly"):
     debug(context, f"[PATCH] summary rebuilt for schema compliance: {report['summary']}")
 
     # ✅ Tier-2 summary override: enforce canonical event-only totals
-    if "summary_patch" in context:
-        sp = context["summary_patch"]
+    if "eventTotals" in context:
+        et = context["eventTotals"]
         report["summary"].update({
-            "totalHours": sp.get("totalHours", report["summary"].get("totalHours")),
-            "totalTss": sp.get("totalTss", report["summary"].get("totalTss")),
-            "eventCount": sp.get("eventCount", report["summary"].get("eventCount")),
-            "period": sp.get("period", report["summary"].get("period")),
+            "totalHours": et.get("hours", report["summary"].get("totalHours")),
+            "totalTss": et.get("tss", report["summary"].get("totalTss")),
+            "eventCount": context.get("event_count", report["summary"].get("eventCount")),
+            "period": f"{context.get('window_start')} → {context.get('window_end')}"
         })
-        debug(context, "[PATCH] Tier-2 summary override applied → canonical totals now active")
+        debug(context, "[PATCH] Tier-2 summary override applied → canonical event-only totals enforced")
 
     # --- SAFETY PATCH: ensure actions completeness before schema guard ---
     # Ensure both list (for validator) and dict (for schema) forms exist
