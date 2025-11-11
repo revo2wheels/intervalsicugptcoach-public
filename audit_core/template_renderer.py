@@ -7,9 +7,11 @@ Adds full debug logging before, during, and after render call.
 
 import importlib
 import numpy as np
+import sys
 from audit_core.utils import debug
 from render_unified_report import Report
-
+if "render_unified_report" in sys.modules:
+    del sys.modules["render_unified_report"]
 
 def render_template(report_type: str, framework: str, context: dict):
     """Dispatch rendering call to render_unified_report while preserving live context."""
