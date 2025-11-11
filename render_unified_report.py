@@ -8,6 +8,7 @@ Supports automatic detection of report type, timezone, and data completeness.
 import json
 import sys
 import os
+import time
 from pathlib import Path
 from datetime import datetime
 from UIcomponents.icon_pack import ICON_CARDS
@@ -181,43 +182,48 @@ def render_report(data):
     else:
         md.append("_No coaching actions recorded._")
 
-    # === 🪜 Optional: Weekly Events ===
-    if report_type.lower() == "weekly":
-        df_event_only = ctx.get("df_event_only", {})
-        preview = df_event_only.get("preview", [])
-        if not preview:
-            df_events = ctx.get("df_events")
-            try:
-                if isinstance(df_events, list):
-                    preview = sorted(
-                        df_events,
-                        key=lambda x: x.get("date", x.get("start_date_local", "")),
-                        reverse=True
-                    )[:10]
-                elif hasattr(df_events, "to_dict"):
-                    preview = (
-                        df_events[[
-                            "date", "name", "icu_training_load",
-                            "moving_time", "distance", "total_elevation_gain"
-                        ]]
-                        .sort_values("date", ascending=False)
-                        .head(10)
-                        .to_dict("records")
-                    )
-                if preview:
-                    ctx["df_event_only"] = {"preview": preview}
-                    debug(ctx, f"[DEBUG-RENDER] Rebuilt df_event_only preview: {len(preview)} rows")
-            except Exception as e:
-                debug(ctx, f"[DEBUG-RENDER] could not rebuild df_event_only: {e}")
-
-        md.append(section("🚴 Weekly Events Summary"))
-        preview = ctx.get("df_event_only", {}).get("preview", [])
-        if preview:
-            headers = list(preview[0].keys())
-            rows = [[e.get(h, "") for h in headers] for e in preview]
-            md.append(table(headers, rows))
+# === 🪜 Weekly Events Summary (Tier-2 Safe) ===
+if report_type.lower() == "weekly":
+    # ✅ Use canonical Tier-2 data if available
+    if "df_event_only" in ctx and ctx.get("df_event_only", {}).get("preview"):
+        preview = ctx["df_event_only"]["preview"]
+        debug(ctx, "[Tier-2] Using enforced df_event_only preview (no rebuild).")
+    else:
+        debug(ctx, "[Tier-2 WARN] Missing enforced df_event_only — fallback to rebuild.")
+        # optional legacy fallback (can be removed if always Tier-2)
+        df_events = ctx.get("df_events")
+        if hasattr(df_events, "to_dict") and not getattr(df_events, "empty", True):
+            preview = (
+                df_events[["date", "name", "icu_training_load", "moving_time", "distance", "total_elevation_gain"]]
+                .sort_values("date", ascending=False)
+                .head(10)
+                .to_dict("records")
+            )
         else:
-            md.append("_No event preview available._")
+            preview = []
+
+    md.append(section("🚴 Weekly Events Summary"))
+
+    if preview:
+        headers = list(preview[0].keys())
+        rows = []
+        for e in preview:
+            row = []
+            for h in headers:
+                val = e.get(h, "")
+                # ✅ Format moving_time seconds to HH:MM:SS for human readability
+                if h == "moving_time" and isinstance(val, (int, float)):
+                    val = time.strftime("%H:%M:%S", time.gmtime(int(val)))
+                row.append(val)
+            rows.append(row)
+
+        md.append(table(headers, rows))
+        debug(ctx, f"[Tier-2] Rendered Weekly Events Summary ({len(rows)} rows)")
+    else:
+        md.append("_No event preview available._")
+        debug(ctx, "[Tier-2 WARN] No event preview found for Weekly Events Summary")
+
+
 
     # === 🧾 Final Summary ===
     md.append("\n---")
