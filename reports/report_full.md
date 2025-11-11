@@ -105,11 +105,11 @@ trend_metrics: True
 correlation_metrics: True
 [DEBUG] report_header injected: {'athlete': 'Clive King', 'discipline': 'cycling', 'report_type': 'weekly', 'framework': 'Unified_Reporting_Framework_v5.1', 'timezone': 'Europe/Zurich', 'date_range': '2025-11-05 → 2025-11-11'}
 [DEBUG-FINALIZER] pre-render load_metrics: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'value': 92.51, 'status': 'ok'}, 'TSB': {'value': -1.07, 'status': 'ok'}, 'ACWR': {'value': nan, 'status': 'ok'}, 'Monotony': {'value': np.float64(3.18), 'status': 'ok'}, 'Strain': {'value': np.float64(1672.7), 'status': 'ok'}, 'Polarisation': {'value': 0.0, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.364), 'status': 'ok'}}
-[CANONICAL PROPAGATION] totalHours=10.87, totalTss=526
+[CANONICAL PROPAGATION] hours=10.87, tss=526
 [Renderer shim] Delegating to render_report() in render_unified_report.py
 
 [DEBUG-TEMPLATE: PRE-CALL]
-Keys in context: ['merge_events', 'render_summary', 'include_coaching_metrics', 'postRenderAudit', 'debug_trace', 'totalDistance', 'auditPartial', 'auditFinal', 'purge_enforced', 'timezone', 'athleteProfile', 'athlete', 'report_mode', 'window_start', 'window_end', 'window_summary', 'knowledge', 'tier1_eventTotals', 'df_events', 'dailyMerged', 'ctl', 'atl', 'tsb', 'load_metrics', 'zone_dist_power', 'zone_dist_hr', 'zone_dist_pace', 'outliers', 'totalHours', 'totalTss', 'eventTotals', 'df_event_only', 'enforcement_layer', '_locked_totals', 'locked_totalHours', 'locked_totalTss', 'locked_totalDistance', 'event_count', 'trace', 'derived_metrics', 'trend_series', 'metrics', 'ACWR', 'Monotony', 'Strain', 'FatigueTrend', 'ZQI', 'FatOxEfficiency', 'Polarisation', 'FOxI', 'CUR', 'GR', 'MES', 'RecoveryIndex', 'ACWR_Risk', 'StressTolerance', 'phases', 'ui_flag', 'actions', '_locked_load_metrics', 'adaptation_metrics', 'trend_metrics', 'correlation_metrics', 'render_mode', 'Duration_total', 'icon_pack', 'force_icon_pack', 'event_log_text', 'report_header']
+Keys in context: ['merge_events', 'render_summary', 'include_coaching_metrics', 'postRenderAudit', 'debug_trace', 'totalDistance', 'auditPartial', 'auditFinal', 'purge_enforced', 'timezone', 'athleteProfile', 'athlete', 'report_mode', 'window_start', 'window_end', 'window_summary', 'knowledge', 'tier1_eventTotals', 'df_events', 'dailyMerged', 'ctl', 'atl', 'tsb', 'load_metrics', 'zone_dist_power', 'zone_dist_hr', 'zone_dist_pace', 'outliers', 'totalHours', 'totalTss', 'eventTotals', 'df_event_only', 'enforcement_layer', '_locked_totals', 'locked_totalHours', 'locked_totalTss', 'locked_totalDistance', 'event_count', 'trace', 'derived_metrics', 'trend_series', 'metrics', 'ACWR', 'Monotony', 'Strain', 'FatigueTrend', 'ZQI', 'FatOxEfficiency', 'Polarisation', 'FOxI', 'CUR', 'GR', 'MES', 'RecoveryIndex', 'ACWR_Risk', 'StressTolerance', 'phases', 'ui_flag', 'actions', '_locked_load_metrics', 'adaptation_metrics', 'trend_metrics', 'correlation_metrics', 'render_mode', 'Duration_total', 'icon_pack', 'force_icon_pack', 'event_log_text', 'report_header', 'summary_patch']
 load_metrics pre-pass: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'value': 92.51, 'status': 'ok'}, 'TSB': {'value': -1.07, 'status': 'ok'}, 'ACWR': {'value': nan, 'status': 'ok'}, 'Monotony': {'value': np.float64(3.18), 'status': 'ok'}, 'Strain': {'value': np.float64(1672.7), 'status': 'ok'}, 'Polarisation': {'value': 0.0, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.364), 'status': 'ok'}, 'totalHours': np.float64(10.87), 'totalTss': 526}
 _locked_load_metrics pre-pass: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'value': 92.51, 'status': 'ok'}, 'TSB': {'value': -1.07, 'status': 'ok'}, 'ACWR': {'value': nan, 'status': 'ok'}, 'Monotony': {'value': np.float64(3.18), 'status': 'ok'}, 'Strain': {'value': np.float64(1672.7), 'status': 'ok'}, 'Polarisation': {'value': 0.0, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.364), 'status': 'ok'}}
 Report type: weekly
@@ -161,7 +161,9 @@ load_metrics still in context: True
 load_metrics post-render: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'value': 92.51, 'status': 'ok'}, 'TSB': {'value': -1.07, 'status': 'ok'}, 'ACWR': {'value': nan, 'status': 'ok'}, 'Monotony': {'value': np.float64(3.18), 'status': 'ok'}, 'Strain': {'value': np.float64(1672.7), 'status': 'ok'}, 'Polarisation': {'value': 0.0, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.364), 'status': 'ok'}, 'totalHours': np.float64(10.87), 'totalTss': 526}
 ------------------------------------------------------------
 [DEBUG-TEMPLATE] Renderer returned a Report object.
+[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Clive King', 'period': '? → ?', 'timestamp': '2025-11-11T09:09:20.659228', 'discipline': 'cycling'}
 [PATCH] summary rebuilt for schema compliance: {'totalHours': np.float64(10.87), 'totalTss': 526, 'eventCount': 7, 'period': '? → ?', 'athlete': 'Clive King', 'variance': 0.0, 'zones': {}, '🛌 Rest Day': '🛌', '⏳ Current Day': 'ℹ️'}
+[PATCH] Tier-2 summary override applied → canonical totals now active
 [PATCH] actions dual-structure applied → 3 items
 ✅ Loaded ICON_CARDS from UIcomponents.icon_pack
 ✅ Report validated — framework compliant.
@@ -229,6 +231,7 @@ load_metrics post-render: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'val
   - render_summary
   - report_header
   - report_mode
+  - summary_patch
   - tier1_eventTotals
   - timezone
   - totalDistance
@@ -257,7 +260,7 @@ load_metrics post-render: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'val
 **Athlete:** Clive King
 **Period:** ? → ?
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-11T09:00:52.137069
+**Generated:** 2025-11-11T09:09:20.659076
 
 ---
 
@@ -365,6 +368,6 @@ _No outliers detected._
 | 2025-11-06 00:00:00 | 90 avec Jacques | 80 | 01:36:07 | 65.3 |
 
 ---
-✅ **Audit Completed:** 2025-11-11T09:00:52.137177
+✅ **Audit Completed:** 2025-11-11T09:09:20.659217
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 

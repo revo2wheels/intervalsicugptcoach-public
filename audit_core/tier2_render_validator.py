@@ -160,26 +160,32 @@ def finalize_and_validate_render(context, reportType="weekly"):
     })
     debug(context, f"[DEBUG] report_header injected: {context['report_header']}")
 
-    # --- Step 5: Generate Report (no recomputation, uses enforced totals) ---
+    # --- Step 5: Canonical Propagation and Report Render ---
     debug(context, "[DEBUG-FINALIZER] pre-render load_metrics:", context.get("load_metrics"))
 
-    # --- Canonical total propagation for downstream renderer ---
+    # ✅ Canonical Tier-2 totals override (true Σ from enforce_event_only_totals)
     if "eventTotals" in context:
         canonical_hours = context["eventTotals"].get("hours", 0)
         canonical_tss   = context["eventTotals"].get("tss", 0)
 
         context["totalHours"] = canonical_hours
         context["totalTss"]   = canonical_tss
+        context["Duration_total"] = time.strftime("%H:%M:%S", time.gmtime(int(canonical_hours * 3600)))
 
-        # Ensure all legacy and derived fields are in sync
+        # also mirror into load_metrics for schema consistency
         context.setdefault("load_metrics", {})
         context["load_metrics"]["totalHours"] = canonical_hours
         context["load_metrics"]["totalTss"]   = canonical_tss
-        context["Duration_total"] = time.strftime(
-            "%H:%M:%S", time.gmtime(int(canonical_hours * 3600))
-        )
 
-        debug(context, f"[CANONICAL PROPAGATION] totalHours={canonical_hours}, totalTss={canonical_tss}")
+        # Tier-2 summary patch for render_unified_report.py
+        context["summary_patch"] = {
+            "totalHours": canonical_hours,
+            "totalTss": canonical_tss,
+            "eventCount": context.get("event_count", 0),
+            "period": f"{context.get('window_start')} → {context.get('window_end')}",
+        }
+
+        debug(context, f"[CANONICAL PROPAGATION] hours={canonical_hours}, tss={canonical_tss}")
 
     # --- Renderer execution ---
     report = render_template(
@@ -253,7 +259,7 @@ def finalize_and_validate_render(context, reportType="weekly"):
             "period": f"{context.get('window_start')} → {context.get('window_end')}",
             "timezone": athlete_profile.get("timezone", "Europe/Zurich"),
         })
-        debug(context, f"[PATCH] header rebuilt for schema compliance: {report['header']}")
+    debug(context, f"[PATCH] header rebuilt for schema compliance: {report['header']}")
 
     # --- SAFETY PATCH: ensure summary completeness before schema guard ---
     report["summary"].setdefault("totalHours", context.get("totalHours", 0))
@@ -263,6 +269,17 @@ def finalize_and_validate_render(context, reportType="weekly"):
     report["summary"].setdefault("variance", context.get("variance", 0.0))
     report["summary"].setdefault("zones", context.get("zone_dist", {}))
     debug(context, f"[PATCH] summary rebuilt for schema compliance: {report['summary']}")
+
+    # ✅ Tier-2 summary override: enforce canonical event-only totals
+    if "summary_patch" in context:
+        sp = context["summary_patch"]
+        report["summary"].update({
+            "totalHours": sp.get("totalHours", report["summary"].get("totalHours")),
+            "totalTss": sp.get("totalTss", report["summary"].get("totalTss")),
+            "eventCount": sp.get("eventCount", report["summary"].get("eventCount")),
+            "period": sp.get("period", report["summary"].get("period")),
+        })
+        debug(context, "[PATCH] Tier-2 summary override applied → canonical totals now active")
 
     # --- SAFETY PATCH: ensure actions completeness before schema guard ---
     # Ensure both list (for validator) and dict (for schema) forms exist
