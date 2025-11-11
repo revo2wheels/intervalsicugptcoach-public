@@ -81,6 +81,15 @@ def render_report(data):
             "totalTss": ctx.get("totalTss"),
         })
         debug(ctx, "[STATE-GUARD] load_metrics forcibly resynced with canonical totals")
+    # --- 🧩 Fallback Tier-2 eventTotals restore (if _locked_load_metrics absent) ---
+    if "eventTotals" in ctx and "_locked_load_metrics" not in ctx:
+        et = ctx["eventTotals"]
+        ctx["totalHours"] = et.get("hours", ctx.get("totalHours"))
+        ctx["totalTss"] = et.get("tss", ctx.get("totalTss"))
+        ctx.setdefault("load_metrics", {})
+        ctx["load_metrics"]["totalHours"] = ctx["totalHours"]
+        ctx["load_metrics"]["totalTss"] = ctx["totalTss"]
+        debug(ctx, "[STATE-GUARD] Canonical totals restored from eventTotals (Tier-2 fallback)")
     athlete = ctx.get("athlete", {})
     name = athlete.get("name", "Unknown Athlete")
     tz = ctx.get("timezone", "n/a")
