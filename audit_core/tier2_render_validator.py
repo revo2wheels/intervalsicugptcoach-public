@@ -112,11 +112,14 @@ def finalize_and_validate_render(context, reportType="weekly"):
     if "eventTotals" in context:
         debug(context, "   eventTotals(hours) =", context["eventTotals"].get("hours"))
 
-    # Force renderer to use canonical Tier-2 totals for header
-    if "totalHours" in context:
-        context["Duration_total"] = time.strftime(
-            "%H:%M:%S", time.gmtime(int(context["totalHours"] * 3600))
-        )
+    # Force renderer to use canonical Tier-2 totals for header and key stats
+    if "eventTotals" in context:
+        context["totalHours"] = context["eventTotals"].get("hours", 0)
+        context["totalTss"] = context["eventTotals"].get("tss", 0)
+
+    context["Duration_total"] = time.strftime(
+        "%H:%M:%S", time.gmtime(int(context["totalHours"] * 3600))
+    )
 
     debug(context,"\n[Tier-2 context diagnostic]")
     for key in ["derived_metrics","load_metrics","adaptation_metrics","trend_metrics","correlation_metrics"]:
