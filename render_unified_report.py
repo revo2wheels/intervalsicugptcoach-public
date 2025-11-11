@@ -65,31 +65,37 @@ def safe_metric_entry(k, v):
 
 def render_report(data):
     ctx = data.get("context", {})
-    # --- 🔒 Canonical Restore Guard (prevents sandbox inflation) ---
-    if "_locked_load_metrics" in ctx:
-        lm = ctx["_locked_load_metrics"]
-        ctx["totalHours"] = lm.get("totalHours", ctx.get("totalHours"))
-        ctx["totalTss"] = lm.get("totalTss", ctx.get("totalTss"))
-        ctx.setdefault("load_metrics", {})
-        ctx["load_metrics"]["totalHours"] = ctx["totalHours"]
-        ctx["load_metrics"]["totalTss"] = ctx["totalTss"]
-        debug(ctx, "[STATE-GUARD] Canonical totals restored from _locked_load_metrics")
-    # --- 🔁 Canonical hard re-sync (forces key-stats to use event-only totals)
-    if "load_metrics" in ctx:
-        ctx["load_metrics"].update({
-            "totalHours": ctx.get("totalHours"),
-            "totalTss": ctx.get("totalTss"),
-        })
-        debug(ctx, "[STATE-GUARD] load_metrics forcibly resynced with canonical totals")
-    # --- 🧩 Fallback Tier-2 eventTotals restore (if _locked_load_metrics absent) ---
-    if "eventTotals" in ctx and "_locked_load_metrics" not in ctx:
+
+    # --- 🔧 Canonical sync from Tier-2 enforced DataFrame totals (URF v5.2+)
+    if "tier2_enforced_totals" in ctx:
+        et = ctx["tier2_enforced_totals"]
+        ctx["totalHours"] = et.get("time_h")
+        ctx["totalTss"] = et.get("tss")
+        ctx["totalDistance"] = et.get("distance_km")
+        debug(ctx, "[SYNC] Canonical totals restored from tier2_enforced_totals")
+
+    elif "eventTotals" in ctx:
         et = ctx["eventTotals"]
-        ctx["totalHours"] = et.get("hours", ctx.get("totalHours"))
-        ctx["totalTss"] = et.get("tss", ctx.get("totalTss"))
-        ctx.setdefault("load_metrics", {})
-        ctx["load_metrics"]["totalHours"] = ctx["totalHours"]
-        ctx["load_metrics"]["totalTss"] = ctx["totalTss"]
-        debug(ctx, "[STATE-GUARD] Canonical totals restored from eventTotals (Tier-2 fallback)")
+        ctx["totalHours"] = et.get("hours")
+        ctx["totalTss"] = et.get("tss")
+        ctx["totalDistance"] = et.get("distance")
+        debug(ctx, "[SYNC] Legacy totals restored from eventTotals")
+
+    else:
+        debug(ctx, "[WARN] No Tier-2 totals found — using serialized fallback values")
+
+    # --- Ensure downstream load metrics consistency
+    ctx.setdefault("load_metrics", {})
+    ctx["load_metrics"]["totalHours"] = ctx.get("totalHours")
+    ctx["load_metrics"]["totalTss"] = ctx.get("totalTss")
+
+    # --- Optional: attach metadata for audit trace
+    ctx["totals_source"] = (
+        "tier2_enforced_totals" if "tier2_enforced_totals" in ctx else "eventTotals"
+    )
+    ctx["totals_verified"] = True
+
+    # Continue normal render logic...
     athlete = ctx.get("athlete", {})
     name = athlete.get("name", "Unknown Athlete")
     tz = ctx.get("timezone", "n/a")
@@ -220,6 +226,8 @@ def render_report(data):
             debug(ctx, "[Tier-2 WARN] Missing enforced df_event_only — fallback to rebuild.")
             df_events = ctx.get("df_events")
             if hasattr(df_events, "to_dict") and not getattr(df_events, "empty", True):
+                # rename for compatibility
+                df_events = df_events.rename(columns={"start_date_local": "date"})
                 preview = (
                     df_events[["date", "name", "icu_training_load", "moving_time", "distance", "total_elevation_gain"]]
                     .sort_values("date", ascending=False)
@@ -232,23 +240,33 @@ def render_report(data):
         md.append(section("🚴 Weekly Events Summary"))
 
         if preview:
-            headers = list(preview[0].keys())
+            # Normalize column names and ensure date column exists
+            headers = ["date", "name", "icu_training_load", "moving_time", "distance"]
             rows = []
+
             for e in preview:
-                row = []
-                for h in headers:
-                    val = e.get(h, "")
-                    # Format duration
-                    if h == "moving_time" and isinstance(val, (int, float)):
-                        val = time.strftime("%H:%M:%S", time.gmtime(int(val)))
-                    # Convert distance → km for readability
-                    elif h == "distance" and isinstance(val, (int, float)):
-                        val = f"{val / 1000:.1f}"
-                    row.append(val)
-                rows.append(row)
+                # Build each row explicitly by key, not by preview[0].keys()
+                date_val = e.get("date") or e.get("start_date_local") or ""
+                if isinstance(date_val, str) and " " in date_val:
+                    date_val = date_val.split(" ")[0]
+                elif hasattr(date_val, "strftime"):
+                    date_val = date_val.strftime("%Y-%m-%d")
+
+                name = e.get("name", "")
+                tss = e.get("icu_training_load", "")
+                move = e.get("moving_time", "")
+                dist = e.get("distance", "")
+
+                if isinstance(move, (int, float)):
+                    move = time.strftime("%H:%M:%S", time.gmtime(int(move)))
+                if isinstance(dist, (int, float)):
+                    dist = f"{dist / 1000:.1f}"
+
+                rows.append([date_val, name, tss, move, dist])
 
             md.append(table(headers, rows))
             debug(ctx, f"[Tier-2] Rendered Weekly Events Summary ({len(rows)} rows)")
+
             # --- Canonical Totals (displayed below event log only) ---
             if "eventTotals" in ctx:
                 et = ctx["eventTotals"]

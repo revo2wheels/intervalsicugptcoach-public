@@ -9,7 +9,7 @@ import sys
 from contextlib import redirect_stdout
 from audit_core.utils import debug
 from pathlib import Path
-
+sys.stdout.reconfigure(encoding='utf-8')
 # Import your core report runner
 from audit_core.report_controller import run_report
 

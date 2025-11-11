@@ -9,7 +9,7 @@ import os
 import sys
 import requests
 import json
-from audit_core.utils import debug
+sys.stdout.reconfigure(encoding='utf-8')
 
 # --- Environment Variables ---
 client_id = os.getenv("ICU_CLIENT_ID")
@@ -35,7 +35,7 @@ payload = {
 
 headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
-debug(context,f"🔐 Requesting OAuth token for client_id={client_id} using redirect_uri={redirect_uri} ...")
+print(f" Requesting OAuth token for client_id={client_id} using redirect_uri={redirect_uri} ...")
 
 response = requests.post(token_url, data=payload, headers=headers)
 if response.status_code != 200:
@@ -43,8 +43,8 @@ if response.status_code != 200:
 
 token_data = response.json()
 
-debug(context,"\n✅ Token exchange successful:")
-debug(context,json.dumps(token_data, indent=2))
+print("\n Token exchange successful:")
+print(json.dumps(token_data, indent=2))
 
 # --- Save to .env.intervals ---
 with open(".env.intervals", "w", encoding="utf-8") as f:
@@ -52,4 +52,4 @@ with open(".env.intervals", "w", encoding="utf-8") as f:
     f.write(f"ICU_REFRESH={token_data.get('refresh_token')}\n")
     f.write(f"ICU_EXPIRES_IN={token_data.get('expires_in')}\n")
 
-debug(context,"\n💾 Saved credentials → .env.intervals")
+print("\n Saved credentials → .env.intervals")

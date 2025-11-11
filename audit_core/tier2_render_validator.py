@@ -245,6 +245,17 @@ def finalize_and_validate_render(context, reportType="weekly"):
         debug(context, f"[TRACE-CONTEXT] eventTotals(hours,tss) = "
                     f"{context['eventTotals'].get('hours')}, {context['eventTotals'].get('tss')}")
 
+    # --- ZONE DISTRIBUTION PRESERVATION ---
+    for k in ["zone_dist", "zone_dist_power", "zone_dist_hr", "zone_dist_pace"]:
+        if k not in context:
+            src = context.get("derived_metrics", {}).get(k)
+            if src:
+                context[k] = src
+                debug(context, f"[ZONE-PATCH] restored {k} from derived_metrics")
+            else:
+                debug(context, f"[ZONE-PATCH] missing {k}, using empty dict")
+                context[k] = {}
+
     # --- Renderer execution ---
     report = render_template(
         reportType,
