@@ -161,7 +161,8 @@ load_metrics still in context: True
 load_metrics post-render: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'value': 92.51, 'status': 'ok'}, 'TSB': {'value': -1.07, 'status': 'ok'}, 'ACWR': {'value': nan, 'status': 'ok'}, 'Monotony': {'value': np.float64(3.18), 'status': 'ok'}, 'Strain': {'value': np.float64(1672.7), 'status': 'ok'}, 'Polarisation': {'value': 0.0, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.364), 'status': 'ok'}, 'totalHours': np.float64(10.87), 'totalTss': 526}
 ------------------------------------------------------------
 [DEBUG-TEMPLATE] Renderer returned a Report object.
-[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Clive King', 'period': '? → ?', 'timestamp': '2025-11-11T09:15:38.319119', 'discipline': 'cycling'}
+[POST-RENDER] Canonical event-only totals enforced → header + summary synced
+[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Clive King', 'period': '? → ?', 'timestamp': '2025-11-11T09:21:03.250075', 'discipline': 'cycling', 'Total Hours': '10.87 h', 'Total Load (TSS)': 526}
 [PATCH] summary rebuilt for schema compliance: {'totalHours': np.float64(10.87), 'totalTss': 526, 'eventCount': 7, 'period': '? → ?', 'athlete': 'Clive King', 'variance': 0.0, 'zones': {}, '🛌 Rest Day': '🛌', '⏳ Current Day': 'ℹ️'}
 [PATCH] Tier-2 summary override applied → canonical event-only totals enforced
 [PATCH] actions dual-structure applied → 3 items
@@ -260,7 +261,7 @@ load_metrics post-render: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'val
 **Athlete:** Clive King
 **Period:** ? → ?
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-11T09:15:38.318998
+**Generated:** 2025-11-11T09:21:03.249911
 
 ---
 
@@ -368,6 +369,6 @@ _No outliers detected._
 | 2025-11-06 00:00:00 | 90 avec Jacques | 80 | 01:36:07 | 65.3 |
 
 ---
-✅ **Audit Completed:** 2025-11-11T09:15:38.319106
+✅ **Audit Completed:** 2025-11-11T09:21:03.250061
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 

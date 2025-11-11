@@ -193,6 +193,28 @@ def finalize_and_validate_render(context, reportType="weekly"):
         framework="Unified_Reporting_Framework_v5.1",
         context=context,
     )
+    
+    # ✅ Post-render canonical override (sandbox consistency fix)
+    if "eventTotals" in context:
+        et = context["eventTotals"]
+        canonical_hours = et.get("hours", report["summary"].get("totalHours", 0))
+        canonical_tss = et.get("tss", report["summary"].get("totalTss", 0))
+
+        # force-update both header + summary with canonical event-only totals
+        if "summary" in report:
+            report["summary"].update({
+                "totalHours": canonical_hours,
+                "totalTss": canonical_tss,
+                "eventCount": context.get("event_count", report["summary"].get("eventCount", 0)),
+            })
+
+        if "header" in report:
+            report["header"].update({
+                "Total Hours": f"{canonical_hours:.2f} h",
+                "Total Load (TSS)": canonical_tss,
+            })
+
+        debug(context, "[POST-RENDER] Canonical event-only totals enforced → header + summary synced")
 
 
     # --- Step 6: Derived Metrics Injection (Section 5 extension) ---
