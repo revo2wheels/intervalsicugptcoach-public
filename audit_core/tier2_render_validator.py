@@ -232,6 +232,9 @@ def finalize_and_validate_render(context, reportType="weekly"):
         framework="Unified_Reporting_Framework_v5.1",
         context=context,
     )
+    # --- Runtime trace for ChatGPT vs Local ---
+    debug(context, f"[TRACE-POST-RENDER-CHECK] header={report.get('header', {})}")
+    debug(context, f"[TRACE-POST-RENDER-CHECK] summary={report.get('summary', {})}")
 
     # ✅ Post-render canonical override (sandbox consistency fix)
     if "eventTotals" in context:

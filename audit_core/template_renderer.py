@@ -58,6 +58,7 @@ def render_template(report_type: str, framework: str, context: dict):
 
                 # --- CALL RENDERER ---
                 result = func(wrapped)
+                debug(context, f"[TRACE-DESERIALIZE] wrapped.context totals={wrapped['context'].get('totalHours')}, {wrapped['context'].get('totalTss')}")
 
                 # --- DEBUG POST-CALL ---
                 debug(context,"\n[DEBUG-TEMPLATE: POST-CALL]")
@@ -104,3 +105,6 @@ def render_template(report_type: str, framework: str, context: dict):
     debug(context,"=" * 80)
 
     return report
+    debug(context, f"[TRACE-FINAL-RETURN] report.summary={report.get('summary', {})}")
+    debug(context, f"[TRACE-FINAL-RETURN] context.totalHours={context.get('totalHours')}, context.totalTss={context.get('totalTss')}")
+

@@ -168,17 +168,20 @@ Report type: weekly
 [Tier-2] Using enforced df_event_only preview (no rebuild).
 [Tier-2] Rendered Weekly Events Summary (7 rows)
 [Tier-2] Using canonical summary_patch from Tier-2 validator
+[TRACE-DESERIALIZE] wrapped.context totals=10.87, 526
 
 [DEBUG-TEMPLATE: POST-CALL]
 Renderer function executed: render_report
 Result type: Report
 Result keys: ['header', 'markdown', 'type', 'context', 'sections', 'tables', 'lines', 'summary', 'metrics', 'actions', 'phases', 'trends', 'correlation', 'footer']
 load_metrics still in context: True
-load_metrics post-render: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'value': 92.51, 'status': 'ok'}, 'TSB': {'value': -1.07, 'status': 'ok'}, 'ACWR': {'value': nan, 'status': 'ok'}, 'Monotony': {'value': np.float64(3.18), 'status': 'ok'}, 'Strain': {'value': np.float64(1672.7), 'status': 'ok'}, 'Polarisation': {'value': 0.0, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.364), 'status': 'ok'}, 'totalHours': np.float64(10.87), 'totalTss': 526}
+load_metrics post-render: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'value': 92.51, 'status': 'ok'}, 'TSB': {'value': -1.07, 'status': 'ok'}, 'ACWR': {'value': nan, 'status': 'ok'}, 'Monotony': {'value': 3.18, 'status': 'ok'}, 'Strain': {'value': 1672.7, 'status': 'ok'}, 'Polarisation': {'value': 0.0, 'status': 'ok'}, 'RecoveryIndex': {'value': 0.364, 'status': 'ok'}, 'totalHours': 10.87, 'totalTss': 526}
 ------------------------------------------------------------
 [DEBUG-TEMPLATE] Renderer returned a Report object.
+[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Clive King', 'period': '2025-11-05 → 2025-11-11', 'timestamp': '2025-11-11T10:11:54.279614', 'discipline': 'cycling'}
+[TRACE-POST-RENDER-CHECK] summary={'totalHours': np.float64(10.87), 'totalTss': 526, 'eventCount': 7, 'period': '2025-11-05 → 2025-11-11'}
 [POST-RENDER] Canonical event-only totals enforced → header + summary synced
-[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Clive King', 'period': '2025-11-05 → 2025-11-11', 'timestamp': '2025-11-11T09:59:25.816722', 'discipline': 'cycling', 'Total Hours': '10.87 h', 'Total Load (TSS)': 526}
+[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Clive King', 'period': '2025-11-05 → 2025-11-11', 'timestamp': '2025-11-11T10:11:54.279614', 'discipline': 'cycling', 'Total Hours': '10.87 h', 'Total Load (TSS)': 526}
 [PATCH] summary rebuilt for schema compliance: {'totalHours': np.float64(10.87), 'totalTss': 526, 'eventCount': 7, 'period': '2025-11-05 → 2025-11-11', 'variance': 0.0, 'zones': {}}
 [PATCH] Tier-2 summary override applied → canonical event-only totals enforced
 [PATCH] actions dual-structure applied → 3 items
@@ -281,7 +284,7 @@ load_metrics post-render: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'val
 **Athlete:** Clive King
 **Period:** 2025-11-05 → 2025-11-11
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-11T09:59:25.816599
+**Generated:** 2025-11-11T10:11:54.279494
 
 ---
 
@@ -389,6 +392,6 @@ _No outliers detected._
 | 2025-11-06 00:00:00 | 90 avec Jacques | 80 | 01:36:07 | 65.3 |
 
 ---
-✅ **Audit Completed:** 2025-11-11T09:59:25.816710
+✅ **Audit Completed:** 2025-11-11T10:11:54.279603
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 
