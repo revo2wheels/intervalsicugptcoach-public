@@ -6,6 +6,7 @@ Adds full debug logging before, during, and after render call.
 """
 
 import importlib
+import numpty as np
 from audit_core.utils import debug
 from render_unified_report import Report
 
@@ -37,6 +38,23 @@ def render_template(report_type: str, framework: str, context: dict):
                     debug(context,"_locked_load_metrics pre-pass:", context["_locked_load_metrics"])
                 debug(context,"Report type:", report_type)
                 debug(context,"-" * 60)
+
+                # --- SAFETY: sanitize NumPy scalars pre-serialization ---
+                for k, v in list(context.items()):
+                    if isinstance(v, np.generic):
+                        context[k] = v.item()
+
+                # --- Deep sanitize nested dicts like load_metrics or derived_metrics ---
+                def _sanitize_nested(obj):
+                    if isinstance(obj, dict):
+                        return {kk: _sanitize_nested(vv) for kk, vv in obj.items()}
+                    elif isinstance(obj, list):
+                        return [_sanitize_nested(x) for x in obj]
+                    elif isinstance(obj, np.generic):
+                        return obj.item()
+                    return obj
+
+                context = _sanitize_nested(context)
 
                 # --- CALL RENDERER ---
                 result = func(wrapped)

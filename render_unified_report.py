@@ -74,7 +74,13 @@ def render_report(data):
         ctx["load_metrics"]["totalHours"] = ctx["totalHours"]
         ctx["load_metrics"]["totalTss"] = ctx["totalTss"]
         debug(ctx, "[STATE-GUARD] Canonical totals restored from _locked_load_metrics")
-
+    # --- 🔁 Canonical hard re-sync (forces key-stats to use event-only totals)
+    if "load_metrics" in ctx:
+        ctx["load_metrics"].update({
+            "totalHours": ctx.get("totalHours"),
+            "totalTss": ctx.get("totalTss"),
+        })
+        debug(ctx, "[STATE-GUARD] load_metrics forcibly resynced with canonical totals")
     athlete = ctx.get("athlete", {})
     name = athlete.get("name", "Unknown Athlete")
     tz = ctx.get("timezone", "n/a")
