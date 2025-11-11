@@ -161,12 +161,33 @@ def finalize_and_validate_render(context, reportType="weekly"):
     debug(context, f"[DEBUG] report_header injected: {context['report_header']}")
 
     # --- Step 5: Generate Report (no recomputation, uses enforced totals) ---
-    debug(context,"[DEBUG-FINALIZER] pre-render load_metrics:", context.get("load_metrics"))
+    debug(context, "[DEBUG-FINALIZER] pre-render load_metrics:", context.get("load_metrics"))
+
+    # --- Canonical total propagation for downstream renderer ---
+    if "eventTotals" in context:
+        canonical_hours = context["eventTotals"].get("hours", 0)
+        canonical_tss   = context["eventTotals"].get("tss", 0)
+
+        context["totalHours"] = canonical_hours
+        context["totalTss"]   = canonical_tss
+
+        # Ensure all legacy and derived fields are in sync
+        context.setdefault("load_metrics", {})
+        context["load_metrics"]["totalHours"] = canonical_hours
+        context["load_metrics"]["totalTss"]   = canonical_tss
+        context["Duration_total"] = time.strftime(
+            "%H:%M:%S", time.gmtime(int(canonical_hours * 3600))
+        )
+
+        debug(context, f"[CANONICAL PROPAGATION] totalHours={canonical_hours}, totalTss={canonical_tss}")
+
+    # --- Renderer execution ---
     report = render_template(
         reportType,
         framework="Unified_Reporting_Framework_v5.1",
         context=context,
     )
+
 
     # --- Step 6: Derived Metrics Injection (Section 5 extension) ---
     if context.get("auditFinal", False):
