@@ -111,17 +111,19 @@ def run_tier1_controller(df_activities, wellness, context):
     if "moving_time" not in df_activities.columns:
         raise AuditHalt("❌ Tier-1: missing moving_time column for canonical totals")
 
-    raw_sum = df_activities["moving_time"].sum()
-    max_val = df_activities["moving_time"].max()
+    # Intervals.icu always exports moving_time in seconds
+    # Force numeric and convert explicitly to hours
+    df_activities["moving_time"] = pd.to_numeric(df_activities["moving_time"], errors="coerce").fillna(0)
+    event_hours = df_activities["moving_time"].sum() / 3600
 
-    if max_val < 1000:  # hours already
-        event_hours = raw_sum
-        debug(context,f"🧮 Tier-1: using true Σ(event.moving_time)={raw_sum:.2f} h (input already hours)")
-    else:               # seconds → convert once
-        event_hours = raw_sum / 3600
-        debug(context,f"🧮 Tier-1: using true Σ(event.moving_time)={raw_sum:.0f} s → {event_hours:.2f} h")
+    debug(
+        context,
+        f"🧮 Tier-1: using enforced seconds→hours conversion "
+        f"(Σmoving_time={df_activities['moving_time'].sum():.0f} s → {event_hours:.2f} h)"
+    )
 
-    event_tss = df_activities["icu_training_load"].sum()
+    event_tss = pd.to_numeric(df_activities["icu_training_load"], errors="coerce").fillna(0).sum()
+
     context["tier1_eventTotals"] = {
         "hours": round(event_hours, 2),
         "tss": int(round(event_tss))

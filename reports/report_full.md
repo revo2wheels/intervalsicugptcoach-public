@@ -27,7 +27,7 @@
 [T0] Pre-audit complete: activities=7, wellness_rows=7
 ⚙️ Normalization: detected seconds, no conversion (max=8568)
 [T1] Columns at entry: ['id', 'start_date_local', 'icu_training_load', 'elapsed_time', 'name', 'start_date', 'distance', 'moving_time', 'icu_zone_times', 'icu_hr_zone_times', 'date', 'origin']
-🧮 Tier-1: using true Σ(event.moving_time)=39116 s → 10.87 h
+🧮 Tier-1: using enforced seconds→hours conversion (Σmoving_time=39116 s → 10.87 h)
 [T1] Wellness alignment window (tz-aware): 2025-11-06 18:16:29+01:00 → 2025-11-09 12:14:22+01:00
 [T1] Wellness date range: 2025-11-05 → 2025-11-11
 ✅ Wellness alignment check passed.
@@ -255,7 +255,7 @@ load_metrics post-render: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'val
 **Athlete:** Clive King
 **Period:** ? → ?
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-11T07:56:41.459332
+**Generated:** 2025-11-11T08:10:09.212158
 
 ---
 
@@ -359,6 +359,6 @@ _No outliers detected._
 | 2025-11-06 00:00:00 | 90 avec Jacques | 80 | 5767 | 65265.38 |
 
 ---
-✅ **Audit Completed:** 2025-11-11T07:56:41.459517
+✅ **Audit Completed:** 2025-11-11T08:10:09.212311
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 
