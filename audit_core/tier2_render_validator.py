@@ -16,7 +16,22 @@ from audit_core.tier2_enforce_event_only_totals import enforce_event_only_totals
 from audit_core.template_renderer import render_template
 
 def finalize_and_validate_render(context, reportType="weekly"):
-    debug(context,"[DEBUG-FINALIZER-ENTRY] load_metrics:", context.get("load_metrics"))
+    # --- Runtime trace for ChatGPT vs Local ---
+    from audit_core.utils import debug
+    debug(context, "[TRACE-RUNTIME] entering finalize_and_validate_render()")
+    debug(context, f"[TRACE-RUNTIME] df_events type = {type(context.get('df_events'))}")
+
+    if isinstance(context.get("df_events"), list):
+        context["df_events"] = pd.DataFrame(context["df_events"])
+        debug(context, "[TRACE-RUNTIME] df_events rebuilt from list after sandbox deserialization")
+
+    if hasattr(context.get("df_events"), "shape"):
+        debug(context, f"[TRACE-RUNTIME] df_events.shape = {context['df_events'].shape}")
+    else:
+        debug(context, "[TRACE-RUNTIME] df_events not a DataFrame (likely reloaded from JSON)")
+
+    debug(context, "[DEBUG-FINALIZER-ENTRY] load_metrics:", context.get("load_metrics"))
+
     # --- Promote audit to final before render (v16.14-A2) ---
     if context.get("auditPartial", False) and not context.get("auditFinal", False):
         context["auditFinal"] = True
@@ -172,6 +187,14 @@ def finalize_and_validate_render(context, reportType="weekly"):
         context["totalTss"]   = canonical_tss
         context["Duration_total"] = time.strftime("%H:%M:%S", time.gmtime(int(canonical_hours * 3600)))
 
+        # --- 🔒 Sandbox state guard ---
+        context["_locked_load_metrics"] = {
+            "totalHours": canonical_hours,
+            "totalTss": canonical_tss,
+            "source": "tier2_canonical"
+        }
+        debug(context, "[STATE-GUARD] _locked_load_metrics set (prevents recomputation)")
+
         # also mirror into load_metrics for schema consistency
         context.setdefault("load_metrics", {})
         context["load_metrics"]["totalHours"] = canonical_hours
@@ -187,13 +210,29 @@ def finalize_and_validate_render(context, reportType="weekly"):
 
         debug(context, f"[CANONICAL PROPAGATION] hours={canonical_hours}, tss={canonical_tss}")
 
+    # --- TRACE: df_events and canonical totals before render ---
+    if "df_events" in context:
+        try:
+            mt_sum = context["df_events"]["moving_time"].sum() / 3600
+            tss_sum = context["df_events"]["icu_training_load"].sum()
+            debug(context, f"[TRACE-DF] Σ df_events(moving_time)/3600 = {mt_sum:.2f} h")
+            debug(context, f"[TRACE-DF] Σ df_events(icu_training_load) = {tss_sum:.0f}")
+        except Exception as e:
+            debug(context, f"[TRACE-DF] unable to compute event sums: {e}")
+
+    debug(context, f"[TRACE-CONTEXT] totalHours (context) = {context.get('totalHours')}")
+    debug(context, f"[TRACE-CONTEXT] totalTss (context) = {context.get('totalTss')}")
+    if "eventTotals" in context:
+        debug(context, f"[TRACE-CONTEXT] eventTotals(hours,tss) = "
+                    f"{context['eventTotals'].get('hours')}, {context['eventTotals'].get('tss')}")
+
     # --- Renderer execution ---
     report = render_template(
         reportType,
         framework="Unified_Reporting_Framework_v5.1",
         context=context,
     )
-    
+
     # ✅ Post-render canonical override (sandbox consistency fix)
     if "eventTotals" in context:
         et = context["eventTotals"]
@@ -215,7 +254,6 @@ def finalize_and_validate_render(context, reportType="weekly"):
             })
 
         debug(context, "[POST-RENDER] Canonical event-only totals enforced → header + summary synced")
-
 
     # --- Step 6: Derived Metrics Injection (Section 5 extension) ---
     if context.get("auditFinal", False):
@@ -361,5 +399,11 @@ def finalize_and_validate_render(context, reportType="weekly"):
 
     debug(context,"✅ Report passed framework + schema validation (event-only, markdown).")
     report["metrics"].setdefault("derived_metrics", context.get("derived_metrics", {}))
-    
+    debug(context, "[TRACE-FINAL] totalHours =", context.get("totalHours"))
+    debug(context, "[TRACE-FINAL] totalTss   =", context.get("totalTss"))
+    if "eventTotals" in context:
+        debug(context, "[TRACE-FINAL] eventTotals(hours,tss) =", context["eventTotals"].get("hours"), context["eventTotals"].get("tss"))
+    if "summary_patch" in context:
+        debug(context, "[TRACE-FINAL] summary_patch =", context["summary_patch"])
+
     return report, compliance

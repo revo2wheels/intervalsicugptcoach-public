@@ -68,9 +68,11 @@ def render_report(data):
     athlete = ctx.get("athlete", {})
     name = athlete.get("name", "Unknown Athlete")
     tz = ctx.get("timezone", "n/a")
-    start, end = data.get("window", ["?", "?"])
+    start = ctx.get("window_start", "?")
+    end = ctx.get("window_end", "?")
     report_type = data.get("type", "Weekly")
-
+    debug(ctx, "[TRACE-RENDER-ENTRY] totalHours =", ctx.get("totalHours"))
+    debug(ctx, "[TRACE-RENDER-ENTRY] totalTss   =", ctx.get("totalTss"))
     debug(ctx, "[DEBUG-RENDER] incoming load_metrics:", json.dumps(ctx.get("load_metrics", {}), indent=2))
     md = []
 
@@ -89,6 +91,8 @@ def render_report(data):
     md.append(f"- Purge enforced: {ctx.get('purge_enforced', False)}")
     md.append(f"- Wellness records: {safe_get(ctx, 'wellness_summary', 'count', default='n/a')}")
     md.append(f"- Source verification: ✅ Live (no mock/cache)")
+    debug(ctx, "[TRACE-HEADER] ctx.totalHours =", ctx.get("totalHours"))
+    debug(ctx, "[TRACE-HEADER] ctx.totalTss   =", ctx.get("totalTss"))
     md.append(f"- Σ(moving_time)/3600 = {ctx.get('totalHours', '—')} h  |  Σ(TSS) = {ctx.get('totalTss', '—')}")
 
     # === 3️⃣ Tier-1 Audit Controller ===
