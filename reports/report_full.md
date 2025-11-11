@@ -152,6 +152,7 @@ Report type: weekly
 }
 [Tier-2] Using enforced df_event_only preview (no rebuild).
 [Tier-2] Rendered Weekly Events Summary (7 rows)
+[Tier-2] Using canonical summary_patch from Tier-2 validator
 
 [DEBUG-TEMPLATE: POST-CALL]
 Renderer function executed: render_report
@@ -162,8 +163,8 @@ load_metrics post-render: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'val
 ------------------------------------------------------------
 [DEBUG-TEMPLATE] Renderer returned a Report object.
 [POST-RENDER] Canonical event-only totals enforced → header + summary synced
-[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Clive King', 'period': '? → ?', 'timestamp': '2025-11-11T09:21:03.250075', 'discipline': 'cycling', 'Total Hours': '10.87 h', 'Total Load (TSS)': 526}
-[PATCH] summary rebuilt for schema compliance: {'totalHours': np.float64(10.87), 'totalTss': 526, 'eventCount': 7, 'period': '? → ?', 'athlete': 'Clive King', 'variance': 0.0, 'zones': {}, '🛌 Rest Day': '🛌', '⏳ Current Day': 'ℹ️'}
+[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Clive King', 'period': '? → ?', 'timestamp': '2025-11-11T09:27:46.551867', 'discipline': 'cycling', 'Total Hours': '10.87 h', 'Total Load (TSS)': 526}
+[PATCH] summary rebuilt for schema compliance: {'totalHours': np.float64(10.87), 'totalTss': 526, 'eventCount': 7, 'period': '2025-11-05 → 2025-11-11', 'variance': 0.0, 'zones': {}}
 [PATCH] Tier-2 summary override applied → canonical event-only totals enforced
 [PATCH] actions dual-structure applied → 3 items
 ✅ Loaded ICON_CARDS from UIcomponents.icon_pack
@@ -261,7 +262,7 @@ load_metrics post-render: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'val
 **Athlete:** Clive King
 **Period:** ? → ?
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-11T09:21:03.249911
+**Generated:** 2025-11-11T09:27:46.551735
 
 ---
 
@@ -369,6 +370,6 @@ _No outliers detected._
 | 2025-11-06 00:00:00 | 90 avec Jacques | 80 | 01:36:07 | 65.3 |
 
 ---
-✅ **Audit Completed:** 2025-11-11T09:21:03.250061
+✅ **Audit Completed:** 2025-11-11T09:27:46.551856
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 

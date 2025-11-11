@@ -254,18 +254,23 @@ def render_report(data):
     ctx["header"] = report["header"]
     ctx["ICON_CARDS"] = ICON_CARDS
 
-    # --- Summary section ---
-    report["summary"] = {
-        "totalHours": ctx.get("totalHours", "—"),
-        "totalTss": ctx.get("totalTss", "—"),
-        "eventCount": ctx.get("event_count", "—"),
-        "period": f"{start} → {end}",
-        "athlete": name,
-        "variance": ctx.get("variance", 0.0),
-        "zones": ctx.get("zone_dist", {}),
-        "🛌 Rest Day": ICON_CARDS.get("recovery", "🛌"),
-        "⏳ Current Day": ICON_CARDS.get("info", "⏳"),
-    }
+    # --- Summary section (Tier-2 aware) ---
+    if "summary_patch" in ctx:
+        debug(ctx, "[Tier-2] Using canonical summary_patch from Tier-2 validator")
+        report["summary"] = ctx["summary_patch"]
+    else:
+        report["summary"] = {
+            "totalHours": ctx.get("totalHours", "—"),
+            "totalTss": ctx.get("totalTss", "—"),
+            "eventCount": ctx.get("event_count", "—"),
+            "period": f"{start} → {end}",
+            "athlete": name,
+            "variance": ctx.get("variance", 0.0),
+            "zones": ctx.get("zone_dist", {}),
+            "🛌 Rest Day": ICON_CARDS.get("recovery", "🛌"),
+            "⏳ Current Day": ICON_CARDS.get("info", "⏳"),
+        }
+        debug(ctx, "[Tier-2 WARN] No summary_patch — fallback to default recompute")
 
     # --- METRICS (schema-compliant) ---
     report["metrics"] = {
