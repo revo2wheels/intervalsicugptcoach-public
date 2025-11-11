@@ -14,26 +14,38 @@ from audit_core.tier2_actions import evaluate_actions
 from audit_core.tier2_render_validator import finalize_and_validate_render
 from audit_core.tier2_extended_metrics import compute_extended_metrics
 
+
 def run_report(
     reportType: str = "weekly",
     auditFinal: bool = True,
     auditPartial: bool = True,
     force_analysis: bool = True,
-    preRenderAudit: bool = True,
+    preRenderAudit: bool = False,
     tier2_enforce_event_only_totals: bool = True,
-    render_mode: str = "full",
+    render_mode: str = "full+metrics",
     autoCommit: bool = True,
     suppressPrompts: bool = True,
+    postRenderAudit: bool = True,
+    merge_events: bool = False,
+    render_summary: bool = False,
+    include_coaching_metrics: bool = True,
     **kwargs
 ):
-    context = {}  # Initialize context FIRST
-    debug(context,f"🧭 Running {reportType.title()} Report (auditFinal={auditFinal}, render_mode={render_mode})")
+    # --- Initialize and merge context ---
+    context = {}
+    context.update(kwargs)
+    context.update({
+        "merge_events": merge_events,
+        "render_summary": render_summary,
+        "include_coaching_metrics": include_coaching_metrics,
+        "postRenderAudit": postRenderAudit,
+    })
+
+    debug(context, f"🧭 Running {reportType.title()} Report (auditFinal={auditFinal}, render_mode={render_mode})")
 
     # --- Tier-0 — Ruleset and pre-audit ---
     loadAllRules()
-    context = {}
 
-    # --- Initial pre-audit ---
     from datetime import datetime, timedelta
 
     # Determine date window
@@ -67,7 +79,7 @@ def run_report(
         "cheatsheet": CHEAT_SHEET,
     }
 
-    # Normalize athlete profile into schema
+    # Normalize athlete profile
     athlete = context.get("athlete", {})
     profile_ref = ATHLETE_PROFILE.copy()
     profile_ref.update({
@@ -83,27 +95,9 @@ def run_report(
     })
     context["athleteProfile"] = profile_ref
 
-
-    # --- Auto-chunk mode ---
-    start = context["window_start"]
-    end = context["window_end"]
-    delta = timedelta(days=7)
-
-    if (end - start).days > 7:
-        all_dfs = [df_master]
-        chunk_start = start + delta
-        while chunk_start < end:
-            chunk_end = min(chunk_start + delta - timedelta(days=1), end)
-            chunk_cmd = f"{user_cmd} chunk {chunk_start}→{chunk_end}"
-            df_chunk, _, _, _, _ = run_tier0_pre_audit(chunk_cmd, context)
-            all_dfs.append(df_chunk)
-            chunk_start += delta
-        df_master = pd.concat(all_dfs, ignore_index=True)
-
     # --- Normalize moving_time units before Tier-1 ---
     if "moving_time" in df_master.columns:
         max_val = df_master["moving_time"].max()
-        # If values look like hours (< 25) but not seconds, convert
         if max_val < 25:
             debug(context, f"⚙️ Normalization: converting moving_time from hours → seconds (max={max_val})")
             df_master["moving_time"] *= 3600
@@ -126,23 +120,15 @@ def run_report(
     # --- PATCH: Hard-lock load_metrics before Tier-2 render ---
     if "load_metrics" in context and context["load_metrics"]:
         context["_locked_load_metrics"] = context["load_metrics"].copy()
-        debug(context,"[PATCH-LOCK] Preserved load_metrics before validator:",
-            context["_locked_load_metrics"])
+        debug(context, "[PATCH-LOCK] Preserved load_metrics before validator:", context["_locked_load_metrics"])
 
     # --- Tier-2 extended analytics ---
     context = compute_extended_metrics(df_master, context)
-    debug(context,"[PATCH-LOCKPOSTEXTENDED] Preserved load_metrics after extended:",
-            context["_locked_load_metrics"])
-
-    # ✅ Restore locked metrics back into live context before rendering
     if "_locked_load_metrics" in context:
         context["load_metrics"] = context["_locked_load_metrics"].copy()
-        debug(context,"[PATCH-RESTORE] Reinstated locked load_metrics before finalizer:",
-            context["load_metrics"])
 
     # --- Promote final audit state ---
     context["auditFinal"] = True
-
     context["render_mode"] = "full+metrics"
     debug(context, "🧩 Render mode forced to full+metrics for Unified 10-section layout")
     
@@ -150,6 +136,6 @@ def run_report(
     report, compliance = finalize_and_validate_render(context, reportType=reportType)
     return report, compliance
 
+
 if __name__ == "__main__":
-    # Example run
     run_report("season report")
