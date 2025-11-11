@@ -91,8 +91,11 @@ Name: moving_time, dtype: float64
 [DEBUG-T2X] post-extended load_metrics: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'value': 92.51, 'status': 'ok'}, 'TSB': {'value': -1.07, 'status': 'ok'}, 'ACWR': {'value': nan, 'status': 'ok'}, 'Monotony': {'value': np.float64(3.18), 'status': 'ok'}, 'Strain': {'value': np.float64(1672.7), 'status': 'ok'}, 'Polarisation': {'value': 0.0, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.364), 'status': 'ok'}}
 🧩 Render mode forced to full+metrics for Unified 10-section layout
 [TRACE-RUNTIME] entering finalize_and_validate_render()
+[TRACE-RUNTIME] context type = <class 'dict'>
 [TRACE-RUNTIME] df_events type = <class 'pandas.core.frame.DataFrame'>
 [TRACE-RUNTIME] df_events.shape = (7, 12)
+[TRACE-RUNTIME] Σ moving_time/3600 = 10.87 h
+[TRACE-RUNTIME] Σ icu_training_load = 526
 [DEBUG-FINALIZER-ENTRY] load_metrics: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'value': 92.51, 'status': 'ok'}, 'TSB': {'value': -1.07, 'status': 'ok'}, 'ACWR': {'value': nan, 'status': 'ok'}, 'Monotony': {'value': np.float64(3.18), 'status': 'ok'}, 'Strain': {'value': np.float64(1672.7), 'status': 'ok'}, 'Polarisation': {'value': 0.0, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.364), 'status': 'ok'}}
 ✅ Loaded ICON_CARDS from UIcomponents.icon_pack
 🔎 Render pre-flight — totals by source:
@@ -183,10 +186,10 @@ load_metrics post-render: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'val
 Final report keys: ['header', 'markdown', 'type', 'context', 'sections', 'tables', 'lines', 'summary', 'metrics', 'actions', 'phases', 'trends', 'correlation', 'footer']
 Final context load_metrics: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'value': 92.51, 'status': 'ok'}, 'TSB': {'value': -1.07, 'status': 'ok'}, 'ACWR': {'value': nan, 'status': 'ok'}, 'Monotony': {'value': 3.18, 'status': 'ok'}, 'Strain': {'value': 1672.7, 'status': 'ok'}, 'Polarisation': {'value': 0.0, 'status': 'ok'}, 'RecoveryIndex': {'value': 0.364, 'status': 'ok'}, 'totalHours': 10.87, 'totalTss': 526}
 ================================================================================
-[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Clive King', 'period': '2025-11-05 → 2025-11-11', 'timestamp': '2025-11-11T10:15:36.513599', 'discipline': 'cycling'}
+[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Clive King', 'period': '2025-11-05 → 2025-11-11', 'timestamp': '2025-11-11T10:51:52.480241', 'discipline': 'cycling'}
 [TRACE-POST-RENDER-CHECK] summary={'totalHours': np.float64(10.87), 'totalTss': 526, 'eventCount': 7, 'period': '2025-11-05 → 2025-11-11'}
 [POST-RENDER] Canonical event-only totals enforced → header + summary synced
-[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Clive King', 'period': '2025-11-05 → 2025-11-11', 'timestamp': '2025-11-11T10:15:36.513599', 'discipline': 'cycling', 'Total Hours': '10.87 h', 'Total Load (TSS)': 526}
+[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Clive King', 'period': '2025-11-05 → 2025-11-11', 'timestamp': '2025-11-11T10:51:52.480241', 'discipline': 'cycling', 'Total Hours': '10.87 h', 'Total Load (TSS)': 526}
 [PATCH] summary rebuilt for schema compliance: {'totalHours': np.float64(10.87), 'totalTss': 526, 'eventCount': 7, 'period': '2025-11-05 → 2025-11-11', 'variance': 0.0, 'zones': {}}
 [PATCH] Tier-2 summary override applied → canonical event-only totals enforced
 [PATCH] actions dual-structure applied → 3 items
@@ -289,7 +292,7 @@ Final context load_metrics: {'CTL': {'value': 91.43, 'status': 'ok'}, 'ATL': {'v
 **Athlete:** Clive King
 **Period:** 2025-11-05 → 2025-11-11
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-11T10:15:36.513473
+**Generated:** 2025-11-11T10:51:52.480082
 
 ---
 
@@ -397,6 +400,6 @@ _No outliers detected._
 | 2025-11-06 00:00:00 | 90 avec Jacques | 80 | 01:36:07 | 65.3 |
 
 ---
-✅ **Audit Completed:** 2025-11-11T10:15:36.513588
+✅ **Audit Completed:** 2025-11-11T10:51:52.480230
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 

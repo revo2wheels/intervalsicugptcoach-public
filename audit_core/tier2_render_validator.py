@@ -19,14 +19,23 @@ def finalize_and_validate_render(context, reportType="weekly"):
     # --- Runtime trace for ChatGPT vs Local ---
     from audit_core.utils import debug
     debug(context, "[TRACE-RUNTIME] entering finalize_and_validate_render()")
+    debug(context, f"[TRACE-RUNTIME] context type = {type(context)}")
     debug(context, f"[TRACE-RUNTIME] df_events type = {type(context.get('df_events'))}")
 
+    # Rehydrate list → DataFrame if sandbox serialized
     if isinstance(context.get("df_events"), list):
         context["df_events"] = pd.DataFrame(context["df_events"])
         debug(context, "[TRACE-RUNTIME] df_events rebuilt from list after sandbox deserialization")
 
-    if hasattr(context.get("df_events"), "shape"):
-        debug(context, f"[TRACE-RUNTIME] df_events.shape = {context['df_events'].shape}")
+    # Inspect structure and totals
+    df = context.get("df_events")
+    if hasattr(df, "shape"):
+        debug(context, f"[TRACE-RUNTIME] df_events.shape = {df.shape}")
+        try:
+            debug(context, f"[TRACE-RUNTIME] Σ moving_time/3600 = {df['moving_time'].sum() / 3600:.2f} h")
+            debug(context, f"[TRACE-RUNTIME] Σ icu_training_load = {df['icu_training_load'].sum():.0f}")
+        except Exception as e:
+            debug(context, f"[TRACE-RUNTIME] error computing totals: {e}")
     else:
         debug(context, "[TRACE-RUNTIME] df_events not a DataFrame (likely reloaded from JSON)")
 
