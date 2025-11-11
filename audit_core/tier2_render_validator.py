@@ -187,7 +187,7 @@ def finalize_and_validate_render(context, reportType="weekly"):
     # --- Step 5: Canonical Propagation and Report Render ---
     debug(context, "[DEBUG-FINALIZER] pre-render load_metrics:", context.get("load_metrics"))
 
-    # ✅ Canonical Tier-2 totals override (true Σ from enforce_event_only_totals)
+    # Canonical Tier-2 totals override (true Σ from enforce_event_only_totals)
     if "eventTotals" in context:
         canonical_hours = context["eventTotals"].get("hours", 0)
         canonical_tss   = context["eventTotals"].get("tss", 0)
@@ -204,12 +204,10 @@ def finalize_and_validate_render(context, reportType="weekly"):
         }
         debug(context, "[STATE-GUARD] _locked_load_metrics set (prevents recomputation)")
 
-        # also mirror into load_metrics for schema consistency
         context.setdefault("load_metrics", {})
         context["load_metrics"]["totalHours"] = canonical_hours
         context["load_metrics"]["totalTss"]   = canonical_tss
 
-        # Tier-2 summary patch for render_unified_report.py
         context["summary_patch"] = {
             "totalHours": canonical_hours,
             "totalTss": canonical_tss,
@@ -218,6 +216,18 @@ def finalize_and_validate_render(context, reportType="weekly"):
         }
 
         debug(context, f"[CANONICAL PROPAGATION] hours={canonical_hours}, tss={canonical_tss}")
+
+    # Reinforce canonical lock (ensures persistence through serialization)
+    if "eventTotals" in context:
+        et = context["eventTotals"]
+        context["_locked_load_metrics"] = {
+            "totalHours": et.get("hours", context.get('totalHours')),
+            "totalTss": et.get("tss", context.get('totalTss')),
+            "source": "tier2_final_lock"
+        }
+        context["load_metrics"]["totalHours"] = context["_locked_load_metrics"]["totalHours"]
+        context["load_metrics"]["totalTss"]   = context["_locked_load_metrics"]["totalTss"]
+        debug(context, "[LOCK] Tier-2 canonical totals re-locked before render")
 
     # --- TRACE: df_events and canonical totals before render ---
     if "df_events" in context:
