@@ -6,7 +6,7 @@ Adds full debug logging before, during, and after render call.
 """
 
 import importlib
-import numpty as np
+import numpy as np
 from audit_core.utils import debug
 from render_unified_report import Report
 
