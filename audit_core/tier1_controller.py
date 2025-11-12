@@ -12,11 +12,26 @@ from audit_core.errors import AuditHalt
 from audit_core.utils import validate_dataset_integrity, validate_wellness_alignment
 
 def apply_event_filter(df):
-    """Lightweight Tier-1 proxy for visible event subset (same logic as Tier-2)."""
-    if "origin" in df.columns:
-        df = df[df["origin"].eq("event")]
+    """Tier-1 proxy to isolate visible endurance events for renderer."""
+    # Accept all valid sessions except system sync or nulls
+    include_types = [
+        "Ride", "VirtualRide", "GravelRide",
+        "Hike", "Run", "TrailRun", "Walk"
+    ]
+
+    # Filter by sport type when present
+    if "type" in df.columns:
+        df = df[df["type"].isin(include_types)]
+
+    # Drop duplicates on canonical identifiers
     df = df.drop_duplicates(subset=["id", "start_date_local"], keep="first")
+
+    # Remove ignored, null, or zero-duration records
+    if "moving_time" in df.columns:
+        df = df[df["moving_time"] > 0]
+
     return df
+
 
 
 def collect_zone_distributions(df_activities, athlete_profile, context):
