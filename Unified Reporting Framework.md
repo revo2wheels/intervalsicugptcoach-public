@@ -82,11 +82,6 @@ Audit: {auditStatus} | Integrity: {integrityFlag}
 
 > **Reference:** Coggan Power Metrics — NP, IF, and TSS definitions integrated from Dr. Andrew Coggan’s framework.  
 
-Audit rules:  
-- Σ(event moving_time)/3600 = Volume (h)  
-- Σ(event icu_training_load) = Load (TSS)  
-- Variance ≤ 0.1 h or 2 TSS  
-
 ---
 
 ## 3. 📅 Event Log (Merged Daily View)  
