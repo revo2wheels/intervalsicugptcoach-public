@@ -97,8 +97,8 @@ Audit: {auditStatus} | Integrity: {integrityFlag}
 
 ---
 
-## 3. 📅 Event Log (Merged Daily View)  
-Displays validated, merged daily sessions after the Event Completeness Rule.  
+## 3. 📅 Event Log
+Displays validated, daily sessions after the Event Completeness Rule.
 
 | Date | Discipline | Duration (h) | Load (TSS) | RPE | IF | Feel | Device • Source |
 |:--|:--|--:|--:|--:|--:|:--|:--|
