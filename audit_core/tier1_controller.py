@@ -11,6 +11,14 @@ from audit_core.utils import debug
 from audit_core.errors import AuditHalt
 from audit_core.utils import validate_dataset_integrity, validate_wellness_alignment
 
+def apply_event_filter(df):
+    """Lightweight Tier-1 proxy for visible event subset (same logic as Tier-2)."""
+    if "origin" in df.columns:
+        df = df[df["origin"].eq("event")]
+    df = df.drop_duplicates(subset=["id", "start_date_local"], keep="first")
+    return df
+
+
 def collect_zone_distributions(df_activities, athlete_profile, context):
     """Compute separate zone distributions for Power, HR, and Pace."""
 
@@ -123,6 +131,33 @@ def run_tier1_controller(df_activities, wellness, context):
         "hours": round(event_hours, 2),
         "tss": int(round(event_tss))
     }
+
+    # --- Step 2b: Visible event-log totals (subset for renderer) ---
+    visible_events = apply_event_filter(df_activities)
+
+    # Ensure numeric fields
+    for col in ["moving_time", "icu_training_load", "distance"]:
+        if col in visible_events.columns:
+            visible_events[col] = pd.to_numeric(visible_events[col], errors="coerce").fillna(0)
+
+    # Compute totals for visible events only
+    log_hours = visible_events["moving_time"].sum() / 3600
+    log_tss = visible_events["icu_training_load"].sum()
+    log_distance = visible_events["distance"].sum() / 1000          # meters → km
+
+    context["tier1_visibleTotals"] = {
+        "hours": round(log_hours, 2),
+        "tss": int(round(log_tss)),
+        "distance": round(log_distance, 1),
+    }
+
+    debug(
+        context,
+        f"📋 Tier-1: visible subset totals = {log_hours:.2f} h | "
+        f"{log_distance:.1f} km | {log_tss:.0f} TSS "
+        f"({len(visible_events)} events)"
+    )
+
 
     # --- Step 3: Basic variance validation ---
     if event_hours <= 0 or event_tss <= 0:

@@ -346,15 +346,30 @@ def render_report(data):
             md.append(table(headers, rows))
             debug(ctx, f"[Tier-2] Rendered Weekly Events Summary ({len(rows)} rows)")
 
-            # --- Canonical Totals (displayed below event log only) ---
-            if "eventTotals" in ctx:
+            # --- Visible Event Log Totals (Tier-1 visible subset preferred) ---
+            if "tier1_visibleTotals" in ctx:
+                vt = ctx["tier1_visibleTotals"]
+                md.append("")
+                md.append(
+                    f"**Visible event subset totals:** "
+                    f"{vt.get('hours', 0):.2f} h · "
+                    f"{vt.get('distance', 0):.1f} km · "
+                    f"{vt.get('elevation_gain', 0):,} m · "
+                    f"{vt.get('tss', 0)} TSS**"
+                )
+                debug(ctx, "[Tier-2] Visible event-log totals appended (Tier-1 subset)")
+
+            elif "eventTotals" in ctx:
                 et = ctx["eventTotals"]
                 md.append("")
-                md.append(f"**Totals for reporting period:** "
-                        f"{et.get('hours', 0):.2f} h · "
-                        f"{et.get('tss', 0)} TSS · "
-                        f"{ctx.get('totalDistance', '—')} km**")
-                debug(ctx, "[Tier-2] Totals appended under event log")
+                md.append(
+                    f"**Canonical totals for reporting period:** "
+                    f"{et.get('hours', 0):.2f} h · "
+                    f"{et.get('tss', 0)} TSS · "
+                    f"{ctx.get('totalDistance', '—')} km**"
+                )
+                debug(ctx, "[Tier-2] Canonical totals appended (fallback)")
+
         else:
             md.append("_No event preview available._")
             debug(ctx, "[Tier-2 WARN] No event preview found for Weekly Events Summary")

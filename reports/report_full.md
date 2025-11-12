@@ -34,6 +34,7 @@ None [T0] Expanded icu_hr_zone_times safely → 7 cols, max depth=7
 ⚙️ Normalization: detected seconds, no conversion (max=8568)
 [T1] Columns at entry: ['id', 'start_date_local', 'icu_training_load', 'elapsed_time', 'name', 'start_date', 'distance', 'moving_time', 'date', 'origin', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7']
 🧮 Tier-1: using enforced seconds→hours conversion (Σmoving_time=50173 s → 13.94 h)
+📋 Tier-1: visible subset totals = 13.94 h | 339.6 km | 640 TSS (10 events)
 [T1] Wellness alignment window (tz-aware): 2025-11-06 18:16:29+01:00 → 2025-11-11 17:52:01+01:00
 [T1] Wellness date range: 2025-11-06 → 2025-11-12
 ✅ Wellness alignment check passed.
@@ -138,7 +139,7 @@ correlation_metrics: True
 [Renderer shim] Delegating to render_report() in render_unified_report.py
 
 [DEBUG-TEMPLATE: PRE-CALL]
-Keys in context: ['debug_mode', 'merge_events', 'render_summary', 'include_coaching_metrics', 'postRenderAudit', 'debug_trace', 'totalDistance', 'auditPartial', 'auditFinal', 'purge_enforced', 'timezone', 'athleteProfile', 'athlete', 'report_mode', 'window_start', 'window_end', 'df_acwr_base', 'window_summary', 'knowledge', 'tier1_eventTotals', 'df_events', 'wellness_metrics', 'dailyMerged', 'ctl', 'atl', 'tsb', 'load_metrics', 'zone_dist_power', 'zone_dist_hr', 'zone_dist_pace', 'outliers', 'totalHours', 'totalTss', 'eventTotals', 'df_event_only', 'enforcement_layer', '_locked_totals', 'locked_totalHours', 'locked_totalTss', 'locked_totalDistance', 'event_count', 'trace', 'derived_metrics', 'trend_series', 'metrics', 'ACWR', 'Monotony', 'Strain', 'FatigueTrend', 'ZQI', 'FatOxEfficiency', 'Polarisation', 'FOxI', 'CUR', 'GR', 'MES', 'RecoveryIndex', 'ACWR_Risk', 'StressTolerance', 'phases', 'metric_contexts', 'ui_flag', 'actions', '_locked_load_metrics', 'adaptation_metrics', 'trend_metrics', 'correlation_metrics', 'render_mode', 'Duration_total', 'icon_pack', 'force_icon_pack', 'event_log_text', 'report_header', 'summary_patch', 'zone_dist']
+Keys in context: ['debug_mode', 'merge_events', 'render_summary', 'include_coaching_metrics', 'postRenderAudit', 'debug_trace', 'totalDistance', 'auditPartial', 'auditFinal', 'purge_enforced', 'timezone', 'athleteProfile', 'athlete', 'report_mode', 'window_start', 'window_end', 'df_acwr_base', 'window_summary', 'knowledge', 'tier1_eventTotals', 'tier1_visibleTotals', 'df_events', 'wellness_metrics', 'dailyMerged', 'ctl', 'atl', 'tsb', 'load_metrics', 'zone_dist_power', 'zone_dist_hr', 'zone_dist_pace', 'outliers', 'totalHours', 'totalTss', 'eventTotals', 'df_event_only', 'enforcement_layer', '_locked_totals', 'locked_totalHours', 'locked_totalTss', 'locked_totalDistance', 'event_count', 'trace', 'derived_metrics', 'trend_series', 'metrics', 'ACWR', 'Monotony', 'Strain', 'FatigueTrend', 'ZQI', 'FatOxEfficiency', 'Polarisation', 'FOxI', 'CUR', 'GR', 'MES', 'RecoveryIndex', 'ACWR_Risk', 'StressTolerance', 'phases', 'metric_contexts', 'ui_flag', 'actions', '_locked_load_metrics', 'adaptation_metrics', 'trend_metrics', 'correlation_metrics', 'render_mode', 'Duration_total', 'icon_pack', 'force_icon_pack', 'event_log_text', 'report_header', 'summary_patch', 'zone_dist']
 load_metrics pre-pass: {'CTL': {'value': 91.4, 'status': 'ok'}, 'ATL': {'value': 92.12, 'status': 'ok'}, 'TSB': {'value': -0.72, 'status': 'ok'}, 'ACWR': {'value': 1.24, 'status': 'ok'}, 'Monotony': {'value': np.float64(3.5), 'status': 'ok'}, 'Strain': {'value': np.float64(2240.0), 'status': 'ok'}, 'Polarisation': {'value': 0.699, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.3), 'status': 'ok'}, 'totalHours': np.float64(13.94), 'totalTss': 640}
 _locked_load_metrics pre-pass: {'totalHours': np.float64(13.94), 'totalTss': 640, 'source': 'tier2_final_lock'}
 Report type: weekly
@@ -187,7 +188,7 @@ Report type: weekly
 [DEBUG] Adaptation metric keys: ['Efficiency Factor', 'Fatigue Resistance', 'Endurance Decay', 'Z2 Stability', 'Aerobic Decay']
 [Tier-2] Using enforced df_event_only preview (no rebuild).
 [Tier-2] Rendered Weekly Events Summary (10 rows)
-[Tier-2] Totals appended under event log
+[Tier-2] Visible event-log totals appended (Tier-1 subset)
 [Tier-2] Using canonical summary_patch from Tier-2 validator
 [TRACE-DESERIALIZE] wrapped.context totals=13.94, 640
 
@@ -204,10 +205,10 @@ load_metrics post-render: {'CTL': {'value': 91.4, 'status': 'ok'}, 'ATL': {'valu
 Final report keys: ['header', 'markdown', 'type', 'context', 'sections', 'tables', 'lines', 'summary', 'metrics', 'actions', 'phases', 'trends', 'correlation', 'footer']
 Final context load_metrics: {'CTL': {'value': 91.4, 'status': 'ok'}, 'ATL': {'value': 92.12, 'status': 'ok'}, 'TSB': {'value': -0.72, 'status': 'ok'}, 'ACWR': {'value': 1.24, 'status': 'ok'}, 'Monotony': {'value': 3.5, 'status': 'ok'}, 'Strain': {'value': 2240.0, 'status': 'ok'}, 'Polarisation': {'value': 0.699, 'status': 'ok'}, 'RecoveryIndex': {'value': 0.3, 'status': 'ok'}, 'totalHours': 13.94, 'totalTss': 640}
 ================================================================================
-[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': '90 avec Jacques', 'period': '2025-11-06 → 2025-11-12', 'timestamp': '2025-11-12T12:36:51.083550', 'discipline': 'cycling'}
+[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': '90 avec Jacques', 'period': '2025-11-06 → 2025-11-12', 'timestamp': '2025-11-12T14:09:19.901206', 'discipline': 'cycling'}
 [TRACE-POST-RENDER-CHECK] summary={'totalHours': np.float64(13.94), 'totalTss': 640, 'eventCount': 10, 'period': '2025-11-06 → 2025-11-12'}
 [POST-RENDER] Canonical event-only totals enforced → header + summary synced
-[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': '90 avec Jacques', 'period': '2025-11-06 → 2025-11-12', 'timestamp': '2025-11-12T12:36:51.083550', 'discipline': 'cycling', 'Total Hours': '13.94 h', 'Total Load (TSS)': 640}
+[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': '90 avec Jacques', 'period': '2025-11-06 → 2025-11-12', 'timestamp': '2025-11-12T14:09:19.901206', 'discipline': 'cycling', 'Total Hours': '13.94 h', 'Total Load (TSS)': 640}
 [PATCH] summary rebuilt for schema compliance: {'totalHours': np.float64(13.94), 'totalTss': 640, 'eventCount': 10, 'period': '2025-11-06 → 2025-11-12', 'variance': 0.0, 'zones': {}}
 [PATCH] Tier-2 summary override applied → canonical event-only totals enforced
 [PATCH] actions dual-structure applied → 24 items
@@ -280,6 +281,7 @@ Final context load_metrics: {'CTL': {'value': 91.4, 'status': 'ok'}, 'ATL': {'va
   - report_mode
   - summary_patch
   - tier1_eventTotals
+  - tier1_visibleTotals
   - timezone
   - totalDistance
   - totalHours
@@ -315,7 +317,7 @@ Final context load_metrics: {'CTL': {'value': 91.4, 'status': 'ok'}, 'ATL': {'va
 **Athlete:** Clive King
 **Period:** 2025-11-06 → 2025-11-12
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-12T12:36:51.082809
+**Generated:** 2025-11-12T14:09:19.900520
 
 ---
 
@@ -476,9 +478,9 @@ _No pace zone data available._
 | 2025-11-07 | Zwift - Tempus Fugit in Watopia | 17 | 00:26:22 | 15.9 |
 | 2025-11-06 | 90 avec Jacques | 80 | 01:36:07 | 65.3 |
 
-**Totals for reporting period:** 13.94 h · 640 TSS · 339.6 km**
+**Visible event subset totals:** 13.94 h · 339.6 km · 0 m · 640 TSS**
 
 ---
-✅ **Audit Completed:** 2025-11-12T12:36:51.083533
+✅ **Audit Completed:** 2025-11-12T14:09:19.901189
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 
