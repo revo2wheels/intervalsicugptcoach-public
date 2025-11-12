@@ -64,6 +64,27 @@ def evaluate_actions(context):
     events = context.get("events", [])
     context = detect_phases(context, events)
 
+    # --- Integrate Derived + Extended Metrics (URF v5.2+)
+    derived = context.get("derived_metrics", {})
+    extended = context.get("extended_metrics", {})
+
+    # Promote key metrics into root context for easier heuristic access
+    for k in ["ACWR", "Monotony", "Strain", "Polarisation", "RecoveryIndex"]:
+        if k in derived:
+            context[k] = derived[k]
+    for k in ["Durability", "LoadIntensityRatio", "EnduranceReserve", "IFDrift", "FatOxidation"]:
+        if k in extended:
+            context[k] = extended[k]
+
+    # Debug visibility
+    from audit_core.utils import debug
+    debug(context, "[T2-ACTIONS] Integrated derived metrics:")
+    debug(context, derived)
+    debug(context, "[T2-ACTIONS] Integrated extended metrics:")
+    debug(context, extended)
+
+    actions = []
+
     actions = []
 
     # --- Polarisation / Intensity Balance ---
@@ -101,6 +122,54 @@ def evaluate_actions(context):
         context["ui_flag"] = "🟠 Fatigued"
     else:
         context["ui_flag"] = "🟢 Normal"
+
+    # --- New Heuristics (URF v5.2 enhancement with metric values) ---
+
+    # Durability / Fatigue Resistance
+    dur = context.get("Durability", 1.0)
+    if dur < 0.8:
+        actions.append(f"⚠ Durability low ({dur:.2f}) — extend steady-state endurance or increase time-in-zone.")
+    elif dur >= 1.0:
+        actions.append(f"✅ Durability improving ({dur:.2f}) — maintain current long-ride structure.")
+
+    # Load Intensity Ratio (LIR)
+    lir = context.get("LoadIntensityRatio", 0.0)
+    if lir > 1.2:
+        actions.append(f"⚠ Load intensity too high (LIR={lir:.2f}) — risk of overreaching; reduce threshold/VO₂ blocks.")
+    elif lir < 0.8:
+        actions.append(f"⚠ Load intensity low (LIR={lir:.2f}) — consider adding tempo or sweet-spot intervals.")
+    else:
+        actions.append(f"✅ Load intensity balanced (LIR={lir:.2f}).")
+
+    # Endurance Reserve
+    er = context.get("EnduranceReserve", 1.0)
+    if er < 0.8:
+        actions.append(f"⚠ Endurance reserve depleted ({er:.2f}) — add recovery or split long sessions.")
+    elif er >= 1.0:
+        actions.append(f"✅ Endurance reserve strong ({er:.2f}).")
+
+    # IF Drift (efficiency decay)
+    drift = context.get("IFDrift", 0.0)
+    if drift > 0.06:
+        actions.append(f"⚠ Efficiency drift high ({drift:.2%}) — improve aerobic durability or reduce fatigue load.")
+    else:
+        actions.append(f"✅ Efficiency drift stable ({drift:.2%}).")
+
+    # Polarisation feedback (reinforces Seiler balance)
+    pol = context.get("Polarisation", 0.0)
+    if pol < 0.7:
+        actions.append(f"⚠ Polarisation low ({pol:.0%}) — increase Z1–Z2 share toward ≥70 %.")
+    else:
+        actions.append(f"✅ Polarisation optimal ({pol:.0%}).")
+
+    # Recovery Index review
+    ri = context.get("RecoveryIndex", 1.0)
+    if ri < 0.6:
+        actions.append(f"⚠ Recovery Index poor ({ri:.2f}) — insert deload or reduce intensity.")
+    elif ri < 0.8:
+        actions.append(f"🟠 Recovery Index moderate ({ri:.2f}) — monitor fatigue trend.")
+    else:
+        actions.append(f"✅ Recovery Index healthy ({ri:.2f}).")
 
     # --- Final status ---
     context["actions"] = actions

@@ -156,18 +156,60 @@ def run_tier1_controller(df_activities, wellness, context):
 
     if isinstance(wellness, (list, pd.DataFrame)) and len(wellness) > 0:
         df_well = pd.DataFrame(wellness)
+
         keep_cols = [
-        "id", "ctl", "atl", "tsb", "sleepSecs", "sleepScore", "hrv", "restingHR",
-        "fatigue", "stress", "mood", "motivation",
-        "hydration", "soreness", "injury", "readiness"
+            "id", "date", "ctl", "atl", "tsb", "sleepSecs", "sleepScore", "hrv", "restingHR",
+            "fatigue", "stress", "mood", "motivation",
+            "hydration", "soreness", "injury", "readiness"
         ]
         df_well = df_well[[c for c in keep_cols if c in df_well.columns]]
-        df_well.rename(columns={"id": "date"}, inplace=True)
-        df_well["date"] = pd.to_datetime(df_well["date"]).dt.date
+
+        # --- Guarantee a date column ---
+        if "date" not in df_well.columns:
+            if "id" in df_well.columns:
+                df_well.rename(columns={"id": "date"}, inplace=True)
+                debug(context, "[T1] Wellness 'id' renamed to 'date'.")
+            else:
+                debug(context, "[T1] Wellness missing both 'id' and 'date' — inserting placeholder.")
+                df_well["date"] = pd.NaT
+
+        df_well["date"] = pd.to_datetime(df_well["date"], errors="coerce").dt.date
+
         if "sleepSecs" in df_well.columns:
             df_well["sleep_h"] = (df_well["sleepSecs"] / 3600).round(2)
             df_well.drop(columns=["sleepSecs"], inplace=True)
+
         daily_summary = df_well.copy()
+
+        # --- NEW wellness summary metrics ---
+        import numpy as np
+
+        rest_hr = (
+            df_well["restingHR"].mean(skipna=True).round(1)
+            if "restingHR" in df_well.columns else np.nan
+        )
+        hrv_trend = (
+        df_well["hrv"].pct_change(fill_method=None).mean(skipna=True).round(3)
+        if "hrv" in df_well.columns else np.nan
+        )
+
+        fatigue_threshold = 2  # adjust if you prefer another cutoff
+        rest_days = (
+            (df_well["fatigue"] <= fatigue_threshold).sum()
+            if "fatigue" in df_well.columns else 0
+        )
+
+        context["wellness_metrics"] = {
+            "rest_hr": rest_hr,
+            "hrv_trend": hrv_trend,
+            "rest_days": rest_days,
+        }
+
+        debug(
+            context,
+            f"[T1] Wellness summary → rest_days={rest_days}, "
+            f"rest_hr={rest_hr}, hrv_trend={hrv_trend}"
+        )
 
     context["dailyMerged"] = daily_summary
 
@@ -247,22 +289,37 @@ def run_tier1_controller(df_activities, wellness, context):
     # --- Step 6c: Outlier Detection ---
     try:
         df = df_activities.copy()
+        debug(context, f"[DEBUG-OUTLIER] Starting detection on {len(df)} rows")
         if "icu_training_load" in df.columns:
             mean_tss = df["icu_training_load"].mean()
             std_tss = df["icu_training_load"].std()
+            threshold = 1.5 * std_tss  # slightly more sensitive than 2σ
+
             outliers = df[
-                (df["icu_training_load"] > mean_tss + 2 * std_tss) |
-                (df["icu_training_load"] < mean_tss - 2 * std_tss)
+                (df["icu_training_load"] > mean_tss + threshold) |
+                (df["icu_training_load"] < mean_tss - threshold)
             ][["id", "name", "start_date_local", "icu_training_load"]]
-            context["outliers"] = outliers.to_dict(orient="records")
-            debug(context,f"[DEBUG-T1] Outlier events detected: {len(outliers)}")
-            debug(context,"[DEBUG-OUTLIER] mean TSS:", mean_tss, "std:", std_tss)
-            debug(context,"[DEBUG-OUTLIER] min/max TSS:", df["icu_training_load"].min(), "/", df["icu_training_load"].max())
+
+            outliers_formatted = []
+            for _, o in outliers.iterrows():
+                outliers_formatted.append({
+                    "date": str(o.get("start_date_local", "?")).split(" ")[0],
+                    "event": o.get("name", "?"),
+                    "issue": "TSS outlier",
+                    "obs": f"TSS={o.get('icu_training_load', '?')}"
+                })
+            context["outliers"] = outliers_formatted
+
+            debug(context, f"[DEBUG-T1] Outlier events detected: {len(outliers)}")
+            debug(context, f"[DEBUG-OUTLIER] mean TSS={mean_tss:.1f}, std={std_tss:.1f}, threshold={threshold:.1f}")
+            debug(context, f"[DEBUG-OUTLIER] min/max TSS: {df['icu_training_load'].min()} / {df['icu_training_load'].max()}")
         else:
             context["outliers"] = []
+            debug(context, "[DEBUG-OUTLIER] No icu_training_load column found.")
     except Exception as e:
-        debug(context,f"⚠ Outlier detection failed: {e}")
+        debug(context, f"⚠ Outlier detection failed: {e}")
         context["outliers"] = []
+
 
     # --- Step 7: Qualitative label translation ---
     rpe_map = {1: "very easy", 2: "easy", 3: "moderate", 4: "somewhat hard",

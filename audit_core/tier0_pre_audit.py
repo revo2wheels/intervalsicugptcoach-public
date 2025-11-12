@@ -55,36 +55,57 @@ def estimate_payload_size(days: int, dataset: str):
 
 #WELLNESS FETCH CHUNKED
 def fetch_wellness_chunked(athlete_id, oldest, newest, headers, context=None, max_retries=2):
-    """Adaptive and retryable chunked fetch for wellness data."""
+    """Adaptive and retryable chunked fetch for wellness data with guaranteed 'date' column."""
+    import pandas as pd
+    from datetime import timedelta
+
     wellness = []
+    df_well = pd.DataFrame()
 
     for meta_attempt in range(max_retries + 1):
         try:
             est_payload_well = estimate_payload_size((newest - oldest).days + 1, "wellness")
-            well_chunk_days = 3 if est_payload_well > 200000 else 7
+            well_chunk_days = 7  # keep safe chunk size
 
             for offset in range(0, (newest - oldest).days + 1, well_chunk_days):
                 chunk_start = oldest + timedelta(days=offset)
                 chunk_end = min(newest, chunk_start + timedelta(days=well_chunk_days - 1))
                 url = f"{INTERVALS_API}/athlete/{athlete_id}/wellness?oldest={chunk_start}&newest={chunk_end}"
                 resp = fetch_with_retry(url, headers)
+
                 if resp.status_code == 200 and resp.json():
-                    wellness.extend(resp.json())
+                    payload = resp.json()
+                    if isinstance(payload, list):
+                        wellness.extend(payload)
 
             if wellness:
                 df_well = pd.DataFrame(wellness)
-                return df_well
+                break  # success, exit meta-retry loop
 
         except Exception as e:
+            debug(context, f"[T0-WELLNESS] Meta-attempt {meta_attempt+1} failed: {e}")
             if meta_attempt == max_retries:
                 raise AuditHalt(f"❌ Wellness fetch failed after {max_retries + 1} meta-retries: {e}")
             continue
 
-    debug(context,"⚠ No wellness data available after adaptive chunking.")
-    if "id" in df_well.columns and "date" not in df_well.columns:
-        df_well.rename(columns={"id": "date"}, inplace=True)
-    return pd.DataFrame(columns=["date", "ctl", "atl", "tsb"])
+    # --- GUARANTEED COLUMN NORMALIZATION ---
+    if df_well.empty:
+        debug(context, "[T0-WELLNESS] No data returned — using empty frame.")
+        df_well = pd.DataFrame(columns=["date", "ctl", "atl", "tsb"])
+    else:
+        # normalize column names and ensure 'date' exists
+        cols = {c.lower(): c for c in df_well.columns}
+        if "id" in cols and "date" not in df_well.columns:
+            df_well.rename(columns={cols["id"]: "date"}, inplace=True)
+        if "date" not in df_well.columns:
+            debug(context, "[T0-WELLNESS] Inserting fallback date column.")
+            df_well["date"] = pd.NaT
 
+    debug(context, f"[T0-WELLNESS] Final wellness shape={df_well.shape}, columns={df_well.columns.tolist()}")
+    return df_well
+
+
+#ACTIVITIES FETCH CHUNKED
 def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, max_retries=2):
     """
     Adaptive and retryable chunked fetch for activities.
@@ -222,10 +243,9 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
 
                 return df
 
-
-                df_activities = expand_zones(df_activities, "icu_zone_times", "power")
-                df_activities = expand_zones(df_activities, "icu_hr_zone_times", "hr")
-                df_activities = expand_zones(df_activities, "pace_zone_times", "pace")
+            df_activities = expand_zones(df_activities, "icu_zone_times", "power")
+            df_activities = expand_zones(df_activities, "icu_hr_zone_times", "hr")
+            df_activities = expand_zones(df_activities, "pace_zone_times", "pace")
 
             # --- Diagnostic summary (true Σ(event.moving_time)) ---
             if "moving_time" in df_activities.columns:
@@ -345,6 +365,49 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     if df_activities.empty:
         raise AuditHalt("❌ No activity data returned after chunked fetch")
 
+    # --- Optional ACWR extension: fetch prior 21 days lightweight for load history ---
+    try:
+        acwr_oldest = oldest - timedelta(days=21)
+        acwr_newest = oldest - timedelta(days=1)
+
+        debug(context, f"[T0-ACWR] Fetching historical load window {acwr_oldest} → {acwr_newest}")
+
+        fields = "id,name,start_date_local,icu_training_load,moving_time"
+        acwr_url = (
+            f"{INTERVALS_API}/athlete/{athlete['id']}/activities?"
+            f"oldest={acwr_oldest}&newest={acwr_newest}&fields={fields}"
+        )
+
+        acwr_resp = fetch_with_retry(acwr_url, headers)
+        if acwr_resp.status_code == 200 and acwr_resp.json():
+            df_hist = pd.DataFrame(acwr_resp.json())
+            if not df_hist.empty:
+                df_hist["origin"] = "historical"
+
+                # --- Normalize timezones before concatenation ---
+                if "start_date_local" in df_hist.columns:
+                    df_hist["start_date_local"] = pd.to_datetime(
+                        df_hist["start_date_local"], utc=True, errors="coerce"
+                    )
+                if "start_date_local" in df_activities.columns:
+                    df_activities["start_date_local"] = pd.to_datetime(
+                        df_activities["start_date_local"], utc=True, errors="coerce"
+                    )
+
+                # --- Concatenate and enforce canonical timezone ---
+                df_activities = pd.concat([df_hist, df_activities], ignore_index=True)
+                tz = context.get("timezone", "Europe/Zurich")
+                df_activities["start_date_local"] = df_activities["start_date_local"].dt.tz_convert(tz)
+
+                debug(context, f"[T0-ACWR] Appended {len(df_hist)} historical activities (28-day total window).")
+            else:
+                debug(context, "[T0-ACWR] No historical activities found.")
+        else:
+            debug(context, f"[T0-ACWR] Historical fetch failed ({acwr_resp.status_code})")
+
+    except Exception as e:
+        debug(context, f"[T0-ACWR] Skipped historical extension due to error: {e}")
+
     # --- Step 4: Fetch wellness with adaptive chunking + meta-retry ---
     wellness = fetch_wellness_chunked(athlete["id"], oldest, newest, headers, context)
     if wellness is None or wellness.empty:
@@ -364,7 +427,6 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     sys.stderr.write(
     f"\n[Tier-0 diagnostic] Σ(moving_time)/3600 = {total_hours:.2f}\nRows = {len(df_activities)}\n"
     )
-
     # Normalize wellness payload to DataFrame for Tier-1 compatibility
     if isinstance(wellness, list):
         if len(wellness) > 0:
@@ -372,8 +434,16 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         else:
             wellness = pd.DataFrame(columns=["date", "fatigue", "sleep", "hrv", "recovery"])
 
-    debug(context,f"[T0] Pre-audit complete: activities={len(df_activities)}, wellness_rows={len(wellness)}")
+    # --- Safety fix for missing wellness 'date' column ---
+    if isinstance(wellness, pd.DataFrame):
+        if "id" in wellness.columns and "date" not in wellness.columns:
+            wellness.rename(columns={"id": "date"}, inplace=True)
+        if "date" not in wellness.columns:
+            debug(context, "[T0] Wellness missing 'date' column — inserting placeholder.")
+            wellness["date"] = pd.NaT
+    else:
+        wellness = pd.DataFrame(columns=["date", "ctl", "atl", "tsb"])
 
-
+    debug(context, f"[T0] Pre-audit complete: activities={len(df_activities)}, wellness_rows={len(wellness)}")
 
     return df_activities, wellness, context, context["auditPartial"], context["auditFinal"]

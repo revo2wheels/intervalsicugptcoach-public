@@ -9,6 +9,7 @@ import json
 import sys
 import os
 import time
+import pandas as pd
 from pathlib import Path
 from datetime import datetime
 from UIcomponents.icon_pack import ICON_CARDS
@@ -145,24 +146,24 @@ def render_report(data):
     ## ⚙️ Training Zone Distributions
     power = ctx.get("zone_dist_power", {})
     if power:
-        md.append("### Power Zones")
+        md.append("\n\n### Power Zones")
         md.append(table(["Zone", "% Time"], [[z, f"{v:.1f}"] for z, v in power.items()]))
     else:
-        md.append("_No power zone data available._")
+        md.append("\n\n_No power zone data available._")
 
     hr = ctx.get("zone_dist_hr", {})
     if hr:
-        md.append("\n### Heart Rate Zones")
+        md.append("\n\n### Heart Rate Zones")
         md.append(table(["Zone", "% Time"], [[z, f"{v:.1f}"] for z, v in hr.items()]))
     else:
-        md.append("_No HR zone data available._")
+        md.append("\n\n_No HR zone data available._")
 
     pace = ctx.get("zone_dist_pace", {})
     if pace:
-        md.append("\n### Pace Zones")
+        md.append("\n\n### Pace Zones")
         md.append(table(["Zone", "% Time"], [[z, f"{v:.1f}"] for z, v in pace.items()]))
     else:
-        md.append("_No pace zone data available._")
+        md.append("\n\n_No pace zone data available._")
 
     # === 6️⃣ Outlier Events ===
     md.append(section("⚠️ Outlier Events"))
@@ -175,10 +176,50 @@ def render_report(data):
 
     # === 7️⃣ Wellness & Recovery ===
     md.append(section("💓 Wellness & Recovery"))
-    well = ctx.get("wellness_summary", {})
+
+    well = ctx.get("wellness_metrics", {})
+    daily = ctx.get("dailyMerged", pd.DataFrame())
+
+    # Core summary
     md.append(f"- Rest Days: {well.get('rest_days', '—')}")
-    md.append(f"- Resting HR: {well.get('rhr', '—')} bpm")
-    md.append(f"- HRV Trend: {well.get('hrv_trend', '—')}")
+    md.append(f"- Resting HR: {well.get('rest_hr', '—')} bpm")
+    hrv_trend = well.get("hrv_trend", None)
+    # --- HRV presentation (show last two values and direction) ---
+    if isinstance(daily, pd.DataFrame) and "hrv" in daily.columns and len(daily) >= 2:
+        last_two = daily.sort_values("date").tail(2)["hrv"].tolist()
+        if len(last_two) == 2:
+            prev_hrv, curr_hrv = last_two
+            diff = curr_hrv - prev_hrv
+            if diff > 1:
+                trend_desc = f"↑ improving (+{diff:.1f} ms)"
+            elif diff < -1:
+                trend_desc = f"↓ declining ({diff:.1f} ms)"
+            else:
+                trend_desc = "→ stable"
+            md.append(f"- HRV: {curr_hrv:.1f} ms ({trend_desc}, prev {prev_hrv:.1f} ms)")
+        else:
+            md.append(f"- HRV: {daily['hrv'].iloc[-1]:.1f} ms (latest)")
+    elif well.get("hrv"):
+        md.append(f"- HRV: {well['hrv']:.1f} ms (single record)")
+    else:
+        md.append("- HRV: —")
+
+    # Optional averages if daily wellness data exists
+    if isinstance(daily, pd.DataFrame) and not daily.empty:
+        if "sleep_h" in daily.columns:
+            sleep_avg = round(daily["sleep_h"].mean(skipna=True), 1)
+            md.append(f"- Avg Sleep: {sleep_avg} h/night")
+        if "fatigue" in daily.columns:
+            fatigue_avg = round(daily["fatigue"].mean(skipna=True), 1)
+            md.append(f"- Fatigue: {fatigue_avg}/5")
+        if "stress" in daily.columns:
+            stress_avg = round(daily["stress"].mean(skipna=True), 1)
+            md.append(f"- Stress: {stress_avg}/5")
+        if "readiness" in daily.columns:
+            readiness_avg = round(daily["readiness"].mean(skipna=True), 1)
+            md.append(f"- Readiness: {readiness_avg}/5")
+
+    # Load metrics
     load = ctx.get("load_metrics", {})
     atl = load.get("ATL", {}).get("value", well.get("atl", "—")) if isinstance(load.get("ATL"), dict) else load.get("ATL", "—")
     ctl = load.get("CTL", {}).get("value", well.get("ctl", "—")) if isinstance(load.get("CTL"), dict) else load.get("CTL", "—")
@@ -305,6 +346,18 @@ def render_report(data):
         "tables": [],
         "lines": ["✅ Report rendered successfully"],
     })
+
+    # --- Add or repair summary for validator compliance ---
+    if "summary" not in report:
+        report["summary"] = {
+            "totalHours": ctx.get("totalHours", 0),
+            "totalTss": ctx.get("totalTss", 0),
+            "totalDistance": ctx.get("totalDistance", 0),
+            "eventCount": ctx.get("event_count", 0),
+            "period": f"{ctx.get('window_start')} → {ctx.get('window_end')}",
+            "athlete": ctx.get("athlete", {}).get("name", "Unknown Athlete"),
+            "framework": "Unified_Reporting_Framework_v5.1"
+        }
 
     # --- SAFETY PATCHES: ensure validator compatibility ---
     ctx["header"] = report["header"]

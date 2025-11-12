@@ -81,31 +81,39 @@ def compute_fatox_efficiency(df):
 
 
 def compute_polarisation(df):
-    """Compute Seiler-style polarisation index safely from mixed data."""
-    import pandas as pd
-
+    """Compute Seiler-style polarisation index (Seiler, 2010).
+    Low intensity = Z1+Z2, High intensity = Z5–Z7.
+    Polarisation = (Low + High) / Total.
+    """
     if not isinstance(df, pd.DataFrame):
         return 0.0
 
-    # Select only zone-related columns
+    # --- Power-based polarisation ---
     zcols = [c for c in df.columns if c.lower().startswith("z")]
-    if not zcols:
-        return 0.0
+    if zcols:
+        zdf = df[zcols].apply(pd.to_numeric, errors="coerce").fillna(0)
 
-    # Coerce to numeric (handles list/object/string issues)
-    zdf = df[zcols].apply(pd.to_numeric, errors="coerce").fillna(0)
+        low = sum(zdf[c].sum() for c in ["z1", "z2"] if c in zdf)
+        high = sum(zdf[c].sum() for c in ["z5", "z6", "z7"] if c in zdf)
+        total = zdf.to_numpy().sum()
 
-    # Compute low and high intensity totals
-    low = zdf["z1"].sum() if "z1" in zdf else 0
-    high = sum(zdf.get(c, pd.Series([0])).sum() for c in ["z5", "z6", "z7"])
+        if total > 0:
+            polarisation = (low + high) / total
+            return round(float(polarisation), 3)
 
-    total = zdf.to_numpy().sum()
-    if total == 0:
-        return 0.0
+    # --- HR-based fallback if no power zones ---
+    hr_cols = [c for c in df.columns if c.lower().startswith("hr_z")]
+    if hr_cols:
+        zhr = df[hr_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
+        low = sum(zhr[c].sum() for c in ["hr_z1", "hr_z2"] if c in zhr)
+        high = sum(zhr[c].sum() for c in ["hr_z5", "hr_z6", "hr_z7"] if c in zhr)
+        total = zhr.to_numpy().sum()
 
-    polarisation = (high + low) / total
-    return round(float(polarisation), 3)
+        if total > 0:
+            polarisation = (low + high) / total
+            return round(float(polarisation), 3)
 
+    return 0.0
 
 def compute_recovery_index(monotony):
     return round(1 - (monotony / 5), 3)
