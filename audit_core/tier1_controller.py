@@ -4,7 +4,7 @@ Tier-1 — Audit Controller (v16.14-Stable++)
 Ensures dataset integrity, preserves Tier-0 columns (incl. start_date_local),
 and enforces Field Lock Rule for moving_time.
 """
-
+import json
 import pandas as pd
 import numpy as np
 from audit_core.utils import debug
@@ -125,74 +125,62 @@ def run_tier1_controller(df_activities, wellness, context):
     if df_activities["id"].duplicated().any():
         raise ValueError("❌ Duplicate activity IDs detected")
 
-    # --- Step 2: Canonical totals (true Σ(event.moving_time)) ---
+        # --- Step 2: Canonical totals (true Σ(event.moving_time)) ---
     if "moving_time" not in df_activities.columns:
         raise AuditHalt("❌ Tier-1: missing moving_time column for canonical totals")
 
-    # Intervals.icu always exports moving_time in seconds
-    # Force numeric and convert explicitly to hours
+    # Intervals.icu exports moving_time in seconds — enforce numeric → hours
     df_activities["moving_time"] = pd.to_numeric(df_activities["moving_time"], errors="coerce").fillna(0)
+    df_activities["icu_training_load"] = pd.to_numeric(df_activities["icu_training_load"], errors="coerce").fillna(0)
     event_hours = df_activities["moving_time"].sum() / 3600
-
-    debug(
-        context,
-        f"🧮 Tier-1: using enforced seconds→hours conversion "
-        f"(Σmoving_time={df_activities['moving_time'].sum():.0f} s → {event_hours:.2f} h)"
-    )
-
-    event_tss = pd.to_numeric(df_activities["icu_training_load"], errors="coerce").fillna(0).sum()
+    event_tss = df_activities["icu_training_load"].sum()
 
     context["tier1_eventTotals"] = {
         "hours": round(event_hours, 2),
         "tss": int(round(event_tss))
     }
 
-    # --- Step 2b: Visible event-log totals (subset for renderer) ---
+    debug(
+        context,
+        f"🧮 Tier-1 canonical totals = {event_hours:.2f} h | {event_tss:.0f} TSS"
+    )
+
+    # --- Step 2b: Visible event-log totals (subset for renderer + key stats) ---
     visible_events = apply_event_filter(df_activities)
 
-    # Ensure numeric fields
-    for col in ["moving_time", "icu_training_load", "distance"]:
-        if col in visible_events.columns:
-            visible_events[col] = pd.to_numeric(visible_events[col], errors="coerce").fillna(0)
+    # Ensure numeric columns before aggregation
+    for c in ["moving_time", "icu_training_load", "distance", "IF", "average_heartrate", "VO2MaxGarmin"]:
+        if c in visible_events.columns:
+            visible_events[c] = pd.to_numeric(visible_events[c], errors="coerce").fillna(0)
 
-    # Compute totals for visible events only
     log_hours = visible_events["moving_time"].sum() / 3600
     log_tss = visible_events["icu_training_load"].sum()
-    log_distance = visible_events["distance"].sum() / 1000          # meters → km
+    log_distance = visible_events["distance"].sum() / 1000 if "distance" in visible_events.columns else 0
 
     context["tier1_visibleTotals"] = {
         "hours": round(log_hours, 2),
         "tss": int(round(log_tss)),
         "distance": round(log_distance, 1),
+        "avg_if": round(visible_events["IF"].mean(), 2) if "IF" in visible_events.columns else 0,
+        "avg_hr": int(visible_events["average_heartrate"].mean()) if "average_heartrate" in visible_events.columns else None,
+        "vo2max": round(visible_events["VO2MaxGarmin"].mean(), 1) if "VO2MaxGarmin" in visible_events.columns else None,
     }
 
     debug(
         context,
-        f"📋 Tier-1: visible subset totals = {log_hours:.2f} h | "
-        f"{log_distance:.1f} km | {log_tss:.0f} TSS "
-        f"({len(visible_events)} events)"
+        f"📋 Tier-1 visible subset totals = {log_hours:.2f} h | {log_distance:.1f} km | "
+        f"{log_tss:.0f} TSS ({len(visible_events)} events)"
     )
 
-    # --- Step 2c: Unified event-log totals (used by renderer + metrics) ---
-    for c in ["moving_time", "icu_training_load", "distance", "IF", "average_heartrate", "VO2MaxGarmin"]:
-        if c in visible_events.columns:
-            visible_events[c] = pd.to_numeric(visible_events[c], errors="coerce").fillna(0)
+    # --- Step 2c: Serialize visible events for renderer ---
+    context["weeklyEventLogBlock"] = json.loads(
+        visible_events.to_json(orient="records", double_precision=2)
+    )
 
-    context["tier1_visibleTotals"] = {
-        "hours": round(visible_events["moving_time"].sum() / 3600, 2),
-        "tss": int(visible_events["icu_training_load"].sum()),
-        "distance": round(visible_events["distance"].sum() / 1000, 1),
-        "avg_if": round(
-            visible_events["IF"].mean(), 2
-        ) if "IF" in visible_events.columns else 0,
-        "avg_hr": int(
-            visible_events["average_heartrate"].mean()
-        ) if "average_heartrate" in visible_events.columns else None,
-        "vo2max": round(
-            visible_events["VO2MaxGarmin"].mean(), 1
-        ) if "VO2MaxGarmin" in visible_events.columns else None,
-    }
-
+    debug(
+        context,
+        f"🪶 Tier-1 serialization complete: {len(context['weeklyEventLogBlock'])} records"
+    )
 
     # --- Step 3: Basic variance validation ---
     if event_hours <= 0 or event_tss <= 0:
