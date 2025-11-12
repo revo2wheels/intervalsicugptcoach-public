@@ -205,10 +205,10 @@ load_metrics post-render: {'CTL': {'value': 91.4, 'status': 'ok'}, 'ATL': {'valu
 Final report keys: ['header', 'markdown', 'type', 'context', 'sections', 'tables', 'lines', 'summary', 'metrics', 'actions', 'phases', 'trends', 'correlation', 'footer']
 Final context load_metrics: {'CTL': {'value': 91.4, 'status': 'ok'}, 'ATL': {'value': 92.12, 'status': 'ok'}, 'TSB': {'value': -0.72, 'status': 'ok'}, 'ACWR': {'value': 1.24, 'status': 'ok'}, 'Monotony': {'value': 3.5, 'status': 'ok'}, 'Strain': {'value': 2240.0, 'status': 'ok'}, 'Polarisation': {'value': 0.699, 'status': 'ok'}, 'RecoveryIndex': {'value': 0.3, 'status': 'ok'}, 'totalHours': 13.94, 'totalTss': 640}
 ================================================================================
-[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': '90 avec Jacques', 'period': '2025-11-06 → 2025-11-12', 'timestamp': '2025-11-12T14:09:19.901206', 'discipline': 'cycling'}
+[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': '90 avec Jacques', 'period': '2025-11-06 → 2025-11-12', 'timestamp': '2025-11-12T14:19:30.786685', 'discipline': 'cycling'}
 [TRACE-POST-RENDER-CHECK] summary={'totalHours': np.float64(13.94), 'totalTss': 640, 'eventCount': 10, 'period': '2025-11-06 → 2025-11-12'}
 [POST-RENDER] Canonical event-only totals enforced → header + summary synced
-[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': '90 avec Jacques', 'period': '2025-11-06 → 2025-11-12', 'timestamp': '2025-11-12T14:09:19.901206', 'discipline': 'cycling', 'Total Hours': '13.94 h', 'Total Load (TSS)': 640}
+[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': '90 avec Jacques', 'period': '2025-11-06 → 2025-11-12', 'timestamp': '2025-11-12T14:19:30.786685', 'discipline': 'cycling', 'Total Hours': '13.94 h', 'Total Load (TSS)': 640}
 [PATCH] summary rebuilt for schema compliance: {'totalHours': np.float64(13.94), 'totalTss': 640, 'eventCount': 10, 'period': '2025-11-06 → 2025-11-12', 'variance': 0.0, 'zones': {}}
 [PATCH] Tier-2 summary override applied → canonical event-only totals enforced
 [PATCH] actions dual-structure applied → 24 items
@@ -317,7 +317,7 @@ Final context load_metrics: {'CTL': {'value': 91.4, 'status': 'ok'}, 'ATL': {'va
 **Athlete:** Clive King
 **Period:** 2025-11-06 → 2025-11-12
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-12T14:09:19.900520
+**Generated:** 2025-11-12T14:19:30.786003
 
 ---
 
@@ -481,6 +481,6 @@ _No pace zone data available._
 **Visible event subset totals:** 13.94 h · 339.6 km · 0 m · 640 TSS**
 
 ---
-✅ **Audit Completed:** 2025-11-12T14:09:19.901189
+✅ **Audit Completed:** 2025-11-12T14:19:30.786669
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 

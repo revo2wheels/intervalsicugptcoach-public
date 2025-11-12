@@ -173,6 +173,26 @@ def run_tier1_controller(df_activities, wellness, context):
         f"({len(visible_events)} events)"
     )
 
+    # --- Step 2c: Unified event-log totals (used by renderer + metrics) ---
+    for c in ["moving_time", "icu_training_load", "distance", "IF", "average_heartrate", "VO2MaxGarmin"]:
+        if c in visible_events.columns:
+            visible_events[c] = pd.to_numeric(visible_events[c], errors="coerce").fillna(0)
+
+    context["tier1_visibleTotals"] = {
+        "hours": round(visible_events["moving_time"].sum() / 3600, 2),
+        "tss": int(visible_events["icu_training_load"].sum()),
+        "distance": round(visible_events["distance"].sum() / 1000, 1),
+        "avg_if": round(
+            visible_events["IF"].mean(), 2
+        ) if "IF" in visible_events.columns else 0,
+        "avg_hr": int(
+            visible_events["average_heartrate"].mean()
+        ) if "average_heartrate" in visible_events.columns else None,
+        "vo2max": round(
+            visible_events["VO2MaxGarmin"].mean(), 1
+        ) if "VO2MaxGarmin" in visible_events.columns else None,
+    }
+
 
     # --- Step 3: Basic variance validation ---
     if event_hours <= 0 or event_tss <= 0:
