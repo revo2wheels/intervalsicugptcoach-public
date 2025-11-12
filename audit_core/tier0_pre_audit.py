@@ -430,10 +430,8 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     context.update({"auditPartial": False, "auditFinal": False})
     context["window_summary"] = {"mode": mode, "start": str(oldest), "end": str(newest)} 
 
-    total_hours = df_activities["moving_time"].sum() / 3600 if "moving_time" in df_activities else 0
-    sys.stderr.write(
-    f"\n[Tier-0 diagnostic] Σ(moving_time)/3600 = {total_hours:.2f}\nRows = {len(df_activities)}\n"
-    )
+    debug(context, f"[T0] Diagnostic only: {len(df_activities)} rows fetched, moving_time present={ 'moving_time' in df_activities }")
+
     # Normalize wellness payload to DataFrame for Tier-1 compatibility
     if isinstance(wellness, list):
         if len(wellness) > 0:

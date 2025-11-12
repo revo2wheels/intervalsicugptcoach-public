@@ -85,12 +85,7 @@ def collect_zone_distributions(df_activities, athlete_profile, context):
 def run_tier1_controller(df_activities, wellness, context):
     # --- Tier-1 entry diagnostic ---
     import sys
-    sys.stderr.write(
-        f"\n[Tier-1 entry] rows={len(df_activities)}  "
-        f"Σ(moving_time)/3600={df_activities['moving_time'].sum()/3600:.2f}\n"
-    )
-    sys.stderr.flush()
-
+ 
     # --- Step 0: Defensive copy (preserve all Tier-0 columns)
     df_activities = df_activities.copy()
     if "start_date_local" not in df_activities.columns:
@@ -344,11 +339,5 @@ def run_tier1_controller(df_activities, wellness, context):
     # --- Step 8: Finalize ---
     context["auditPartial"] = True
     context["auditFinal"] = False
-
-    sys.stderr.write(
-        f"[Tier-1 exit] rows={len(df_activities)}  "
-        f"Σ(moving_time)/3600={df_activities['moving_time'].sum()/3600:.2f}\n"
-    )
-    sys.stderr.flush()
 
     return df_activities, wellness, context
