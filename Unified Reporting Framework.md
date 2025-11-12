@@ -81,6 +81,8 @@ Audit: {auditStatus} | Integrity: {integrityFlag}
 | Load (TSS) | {{ (context["tier1_visibleTotals"]["tss"] if "tier1_visibleTotals" in context else 0) | round(0) }} | {{ ΔTss | round(0) }} | — |
 | Distance (km) | {{ (context["tier1_visibleTotals"]["distance"] if "tier1_visibleTotals" in context else 0) | round(1) }} | — | — |
 | Avg IF | {{ (context["tier1_visibleTotals"]["avg_if"] if "tier1_visibleTotals" in context else 0) | round(2) }} | — | — |
+| Avg HR | {{ (context["tier1_visibleTotals"]["avg_hr"] if "tier1_visibleTotals" in context else 0) | round(0) }} | — | — |
+| VO₂max | {{ (context["tier1_visibleTotals"]["vo2max"] if "tier1_visibleTotals" in context else 0) | round(1) }} | — | — |
 | ACWR | {acwr:.2f} | — | {acwrFlag} |
 | Monotony | {monotony:.2f} | — | {monotonyFlag} |
 | Strain | {strain:.0f} | — | — |
