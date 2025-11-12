@@ -40,6 +40,8 @@ def run_report(
         "include_coaching_metrics": include_coaching_metrics,
         "postRenderAudit": postRenderAudit,
     })
+    # --- Debug mode toggle (enables developer-only diagnostics in render) ---
+    context["debug_mode"] = kwargs.get("debug_mode", False)
 
     debug(context, f"🧭 Running {reportType.title()} Report (auditFinal={auditFinal}, render_mode={render_mode})")
 

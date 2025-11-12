@@ -16,6 +16,38 @@ from coaching_profile import COACH_PROFILE
 from coaching_heuristics import HEURISTICS
 from coaching_cheat_sheet import CHEAT_SHEET
 
+# --- Interpretive classification layer ---
+def classify_metric(value, metric):
+    """Return icon + label based on CHEAT_SHEET thresholds, with numeric coercion."""
+    import numpy as np
+
+    # Handle missing or non-numeric values
+    try:
+        if value is None or (isinstance(value, float) and np.isnan(value)):
+            return "⚪", "no data"
+        value = float(value)
+        if np.isnan(value):
+            return "⚪", "no data"
+    except (TypeError, ValueError):
+        return "⚪", "no data"
+
+    thresholds = CHEAT_SHEET.get("thresholds", {})
+    bounds = thresholds.get(metric, {})
+
+    gmin, gmax = bounds.get("green", (None, None))
+    amin, amax = bounds.get("amber", (None, None))
+
+    # If no valid thresholds
+    if gmin is None or gmax is None:
+        return "⚪", "undefined"
+
+    # Numeric comparisons
+    if gmin <= value <= gmax:
+        return "🟢", "optimal"
+    if amin is not None and amin <= value <= amax:
+        return "🟠", "borderline"
+    return "🔴", "out of range"
+
 
 def safe(df, col, fn="sum"):
     """Safely apply a reduction to a dataframe column."""
@@ -58,25 +90,50 @@ def compute_fatigue_trend(df):
 
 
 def compute_zone_intensity(df):
-    """Zone intensity ratio (ZQI)."""
+    """Zone Quality Index (ZQI) — percentage of total time spent in high-intensity zones."""
+    import pandas as pd
+    import numpy as np
+
+    if not isinstance(df, pd.DataFrame) or df.empty:
+        return 0.0
+
+    # Identify zone columns (Z1–Z7)
     zcols = [c for c in df.columns if c.lower().startswith("z")]
     if not zcols:
-        return np.nan
-    total = df[zcols].sum(axis=1).sum()
-    high = safe(df, "z5") + safe(df, "z6") + safe(df, "z7")
-    return round(high / total if total > 0 else 0, 3)
+        return 0.0
+
+    # Convert to numeric and handle NaNs
+    zdf = df[zcols].apply(pd.to_numeric, errors="coerce").fillna(0)
+
+    # Handle case where all zone values are zero or missing
+    total = float(np.nansum(zdf.to_numpy()))
+    if total <= 0:
+        return 0.0
+
+    # High-intensity = Z5–Z7
+    high = float(sum(zdf[c].sum() for c in ["z5", "z6", "z7"] if c in zdf.columns))
+
+    # Return % of high-intensity time
+    zqi = (high / total) * 100
+    return round(zqi, 1)
 
 
 def compute_fatox_efficiency(df):
-    """Compute FatOx efficiency safely from available zone or load data."""
+    """Compute fat oxidation efficiency as (Z2+Z3)/total_zone_time."""
     if not isinstance(df, pd.DataFrame):
         return 0.0
-    total_load = safe(df, "icu_training_load")
-    z2 = safe(df, "z2")
-    z3 = safe(df, "z3")
-    if total_load == 0:
+
+    # find all zone columns
+    zcols = [c for c in df.columns if c.lower().startswith("z") and not c.lower().startswith("hr_z")]
+    if not zcols:
         return 0.0
-    fatox_eff = (z2 + z3) / total_load
+
+    zdf = df[zcols].apply(pd.to_numeric, errors="coerce").fillna(0)
+    total_time = zdf.to_numpy().sum()
+    if total_time <= 0:
+        return 0.0
+
+    fatox_eff = (zdf.get("z2", 0).sum() + zdf.get("z3", 0).sum()) / total_time
     return round(float(fatox_eff), 3)
 
 
@@ -115,8 +172,11 @@ def compute_polarisation(df):
 
     return 0.0
 
-def compute_recovery_index(monotony):
-    return round(1 - (monotony / 5), 3)
+def compute_recovery_index(monotony, fatigue_trend=None):
+    base = 1 - (monotony / 5)
+    if fatigue_trend is not None:
+        base -= fatigue_trend * 0.2  # penalize upward fatigue trend slightly
+    return round(max(base, 0), 3)
 
 
 def compute_derived_metrics(df_events, context):
@@ -130,11 +190,36 @@ def compute_derived_metrics(df_events, context):
     acwr_window = safe_get(HEURISTICS, "acwr_window_days", 7)
 
     df_events["date"] = pd.to_datetime(df_events["date"])
+
+    # --- Normalize zone column names (power_z* → z*, hr_z* → hr_z*) ---
+    rename_map = {f"power_z{i}": f"z{i}" for i in range(1, 8)}
+    rename_map.update({f"hr_z{i}": f"hr_z{i}" for i in range(1, 8)})
+    df_events = df_events.rename(columns=rename_map)
+
     df_daily = df_events.groupby("date")["icu_training_load"].sum().reset_index()
     load_series = df_daily["icu_training_load"].fillna(0)
 
-    # Core metrics
-    acwr = compute_acwr(load_series, acwr_window, baseline_days)
+    # --- ACWR computation: EWMA model (best practice) ---
+    try:
+        alpha_acute = 2 / (acwr_window + 1)        # decay for 7-day acute load
+        alpha_chronic = 2 / (baseline_days + 1)    # decay for 28-day chronic load
+
+        # compute EWMA series directly from daily TSS (icu_training_load)
+        ewma_acute = load_series.ewm(alpha=alpha_acute, adjust=False).mean()
+        ewma_chronic = load_series.ewm(alpha=alpha_chronic, adjust=False).mean()
+
+        acwr = round(float(ewma_acute.iloc[-1] / ewma_chronic.iloc[-1]), 2)
+
+        debug(
+            context,
+            f"[T2-ACWR] EWMA model applied → acute={ewma_acute.iloc[-1]:.2f}, "
+            f"chronic={ewma_chronic.iloc[-1]:.2f}, ratio={acwr}"
+        )
+
+    except Exception as e:
+        debug(context, f"[T2-ACWR] EWMA fallback triggered due to error: {e}")
+        acwr = np.nan
+
     monotony = compute_monotony(load_series)
     strain = compute_strain(load_series)
     fatigue_trend = compute_fatigue_trend(df_daily)
@@ -143,18 +228,23 @@ def compute_derived_metrics(df_events, context):
     polarisation = compute_polarisation(df_events)
     recovery_index = compute_recovery_index(monotony)
 
-    # Metabolic and efficiency extensions
-    foxi = round(fatox_eff * 100, 2)
-    cur = round((1 - fatox_eff) * 250, 1)
-    gr = round(fatox_eff / (1 - fatox_eff + 1e-6), 2)
-    mes = round(foxi * (1 - fatigue_trend), 2)
+    # --- Metabolic and efficiency extensions (normalized) ---
+    # Convert fraction to percentage for readability
+    foxi = round(fatox_eff * 100, 1)  # Fat oxidation index (%)
+    # Carbohydrate utilisation ratio: inverse of fat use scaled 0–100
+    cur = round((1 - fatox_eff) * 100, 1)
+    # Glucose ratio: simple ratio fat vs carb oxidation
+    gr = round((1 - fatox_eff) / (fatox_eff + 1e-6), 2)
+    # Metabolic efficiency score: combines FatOx% with fatigue trend (higher = better)
+    mes = round((foxi * max(0, 1 - abs(fatigue_trend))) , 1)
 
     # Risk and tolerance
     acwr_risk = "⚠️" if acwr > thresholds.get("acwr_risk_high", 1.5) else "✅"
     stress_tolerance = round((strain / (monotony + 1e-6)) / 100, 2)
 
-    # Store metrics
-    context["derived_metrics"] = {
+    # --- Semantic enrichment of derived metrics ---
+    derived = {}
+    for metric, val in {
         "ACWR": acwr,
         "Monotony": monotony,
         "Strain": strain,
@@ -169,7 +259,11 @@ def compute_derived_metrics(df_events, context):
         "RecoveryIndex": recovery_index,
         "ACWR_Risk": acwr_risk,
         "StressTolerance": stress_tolerance,
-    }
+    }.items():
+        icon, label = classify_metric(val, metric)
+        derived[metric] = {"value": val, "status": label, "icon": icon}
+
+    context["derived_metrics"] = derived
 
     context["trend_series"] = {
         "load_series": load_series.tail(14).tolist(),

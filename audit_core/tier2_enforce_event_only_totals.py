@@ -166,6 +166,18 @@ def enforce_event_only_totals(df_events, context):
             "ATL": {"value": round(context.get("atl", 0), 2), "status": "ok"},
             "TSB": {"value": round(context.get("tsb", 0), 2), "status": "ok"},
         }
-        debug(context,"[DEBUG-T2] enforced load_metrics sync in context:", context["load_metrics"])
+        debug(context, "[DEBUG-T2] enforced load_metrics sync in context:", context["load_metrics"])
 
+    # --- Propagate enriched derived metrics (semantic icons + labels) for renderer ---
+    if "derived_metrics" in context:
+        for metric, meta in context["derived_metrics"].items():
+            if isinstance(meta, dict):
+                context["load_metrics"][metric] = {
+                    "value": meta.get("value"),
+                    "status": meta.get("status"),
+                    "icon": meta.get("icon"),
+                }
+
+    debug(context, "[T2] Enriched load_metrics propagated to renderer")
+    
     return context

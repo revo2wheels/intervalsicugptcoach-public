@@ -6,6 +6,17 @@ Derived directly from legacy v15.4 inline logic.
 
 from audit_core.utils import debug
 from datetime import datetime, timedelta
+from coaching_cheat_sheet import CHEAT_SHEET
+METRIC_ACTION_MAP = CHEAT_SHEET.get("coaching_links", {})
+
+
+def metric_value(context, key, default=0.0):
+    """Return numeric metric value, handling both scalar and dict forms."""
+    val = context.get(key, default)
+    if isinstance(val, dict):
+        return val.get("value", default)
+    return val
+
 
 def detect_phases(context, events):
     # --- Extract event dates and loads ---
@@ -29,7 +40,7 @@ def detect_phases(context, events):
     phases = []
     start_idx = 0
     for i in range(1, len(avg7)):
-        prev = avg7[i-1]
+        prev = avg7[i - 1]
         delta = (avg7[i] - prev) / max(prev, 1)
         if abs(delta) > 0.15:
             label = "Build" if delta > 0 else "Deload"
@@ -60,6 +71,7 @@ Applies heuristics to validated derived metrics, outputs recommendations.
 Now includes automatic phase detection from event-level data.
 """
 
+
 def evaluate_actions(context):
     events = context.get("events", [])
     context = detect_phases(context, events)
@@ -76,8 +88,6 @@ def evaluate_actions(context):
         if k in extended:
             context[k] = extended[k]
 
-    # Debug visibility
-    from audit_core.utils import debug
     debug(context, "[T2-ACTIONS] Integrated derived metrics:")
     debug(context, derived)
     debug(context, "[T2-ACTIONS] Integrated extended metrics:")
@@ -85,23 +95,54 @@ def evaluate_actions(context):
 
     actions = []
 
+    # --- Metric Context Summary (link metrics to coaching relevance) ---
+    from coaching_cheat_sheet import CHEAT_SHEET
+    metric_links = CHEAT_SHEET.get("coaching_links", {})
+    derived = context.get("derived_metrics", {})
+    adapt = context.get("adaptation_metrics", {})
+
+    metric_contexts = []
     actions = []
 
+    def summarize_metric(k, v):
+        """Generate human-readable, context-aware recommendation for each metric."""
+        if not isinstance(v, dict):
+            return None
+        val = v.get("value")
+        icon = v.get("icon", "")
+        status = v.get("status", "")
+        desc = metric_links.get(k, "")
+
+        if status in ["out of range", "borderline"]:
+            return f"⚠ {k} ({val}) — {desc}"
+        elif status == "optimal":
+            return f"✅ {k} ({val}) — {desc}"
+        return None
+
+    # Derived and adaptation metrics combined
+    for metrics in [derived, adapt]:
+        for k, v in metrics.items():
+            rec = summarize_metric(k, v)
+            if rec:
+                metric_contexts.append(rec)
+
+    context["metric_contexts"] = metric_contexts
+
     # --- Polarisation / Intensity Balance ---
-    if context.get("Polarisation", 0.0) >= 0.7:
+    if metric_value(context, "Polarisation") >= 0.7:
         actions.append("✅ Maintain ≥70 % Z1–Z2 volume (Seiler 80/20).")
     else:
         actions.append("⚠ Increase Z1–Z2 share to ≥70 % (Seiler 80/20).")
 
     # --- Metabolic Efficiency ---
-    if context.get("FatOxidation", 0.0) >= 0.8 and context.get("Decoupling", 1.0) <= 0.05:
+    if metric_value(context, "FatOxidation") >= 0.8 and metric_value(context, "Decoupling", 1.0) <= 0.05:
         actions.append("✅ Metabolic efficiency maintained (San Millán Zone 2).")
     else:
         actions.append("⚠ Improve Zone 2 efficiency: extend duration or adjust IF.")
 
     # --- Recovery and Load Balance ---
-    if context.get("RecoveryIndex", 1.0) < 0.6:
-        if context.get("ACWR", 1.0) > 1.2:
+    if metric_value(context, "RecoveryIndex", 1.0) < 0.6:
+        if metric_value(context, "ACWR", 1.0) > 1.2:
             actions.append("⚠ Apply 30–40 % deload (Friel microcycle logic).")
         else:
             actions.append("⚠ Apply 10–15 % deload (Friel microcycle logic).")
@@ -111,11 +152,11 @@ def evaluate_actions(context):
         actions.append("🔄 Retest FTP/LT1 for updated benchmarks.")
 
     # --- FatMax Verification ---
-    if abs(context.get("FatMaxDeviation", 1.0)) <= 0.05 and context.get("Decoupling", 1.0) <= 0.05:
+    if abs(metric_value(context, "FatMaxDeviation", 1.0)) <= 0.05 and metric_value(context, "Decoupling", 1.0) <= 0.05:
         actions.append("✅ FatMax calibration verified (±5 %).")
 
     # --- Visual Fatigue Flag (v16.1.3 legacy cosmetic) ---
-    ri = context.get("RecoveryIndex", 1.0)
+    ri = metric_value(context, "RecoveryIndex", 1.0)
     if ri < 0.6:
         context["ui_flag"] = "🔴 Overreached"
     elif ri < 0.8:
@@ -126,14 +167,14 @@ def evaluate_actions(context):
     # --- New Heuristics (URF v5.2 enhancement with metric values) ---
 
     # Durability / Fatigue Resistance
-    dur = context.get("Durability", 1.0)
+    dur = metric_value(context, "Durability", 1.0)
     if dur < 0.8:
         actions.append(f"⚠ Durability low ({dur:.2f}) — extend steady-state endurance or increase time-in-zone.")
     elif dur >= 1.0:
         actions.append(f"✅ Durability improving ({dur:.2f}) — maintain current long-ride structure.")
 
     # Load Intensity Ratio (LIR)
-    lir = context.get("LoadIntensityRatio", 0.0)
+    lir = metric_value(context, "LoadIntensityRatio", 0.0)
     if lir > 1.2:
         actions.append(f"⚠ Load intensity too high (LIR={lir:.2f}) — risk of overreaching; reduce threshold/VO₂ blocks.")
     elif lir < 0.8:
@@ -142,28 +183,28 @@ def evaluate_actions(context):
         actions.append(f"✅ Load intensity balanced (LIR={lir:.2f}).")
 
     # Endurance Reserve
-    er = context.get("EnduranceReserve", 1.0)
+    er = metric_value(context, "EnduranceReserve", 1.0)
     if er < 0.8:
         actions.append(f"⚠ Endurance reserve depleted ({er:.2f}) — add recovery or split long sessions.")
     elif er >= 1.0:
         actions.append(f"✅ Endurance reserve strong ({er:.2f}).")
 
     # IF Drift (efficiency decay)
-    drift = context.get("IFDrift", 0.0)
+    drift = metric_value(context, "IFDrift", 0.0)
     if drift > 0.06:
         actions.append(f"⚠ Efficiency drift high ({drift:.2%}) — improve aerobic durability or reduce fatigue load.")
     else:
         actions.append(f"✅ Efficiency drift stable ({drift:.2%}).")
 
     # Polarisation feedback (reinforces Seiler balance)
-    pol = context.get("Polarisation", 0.0)
+    pol = metric_value(context, "Polarisation", 0.0)
     if pol < 0.7:
         actions.append(f"⚠ Polarisation low ({pol:.0%}) — increase Z1–Z2 share toward ≥70 %.")
     else:
         actions.append(f"✅ Polarisation optimal ({pol:.0%}).")
 
     # Recovery Index review
-    ri = context.get("RecoveryIndex", 1.0)
+    ri = metric_value(context, "RecoveryIndex", 1.0)
     if ri < 0.6:
         actions.append(f"⚠ Recovery Index poor ({ri:.2f}) — insert deload or reduce intensity.")
     elif ri < 0.8:
@@ -171,6 +212,14 @@ def evaluate_actions(context):
     else:
         actions.append(f"✅ Recovery Index healthy ({ri:.2f}).")
 
-    # --- Final status ---
+    # --- Merge dynamic metric feedback into action list ---
+    if "metric_contexts" in context and context["metric_contexts"]:
+        actions.extend([
+            "---",
+            "📊 Metric-based Feedback:"
+        ] + context["metric_contexts"])
+
+    # --- Finalize and inject ---
     context["actions"] = actions
     return context
+

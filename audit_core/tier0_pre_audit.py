@@ -365,7 +365,7 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     if df_activities.empty:
         raise AuditHalt("❌ No activity data returned after chunked fetch")
 
-    # --- Optional ACWR extension: fetch prior 21 days lightweight for load history ---
+        # --- Optional ACWR extension: fetch prior 21 days lightweight for load history ---
     try:
         acwr_oldest = oldest - timedelta(days=21)
         acwr_newest = oldest - timedelta(days=1)
@@ -382,31 +382,23 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         if acwr_resp.status_code == 200 and acwr_resp.json():
             df_hist = pd.DataFrame(acwr_resp.json())
             if not df_hist.empty:
-                df_hist["origin"] = "historical"
+                df_hist["origin"] = "acwr_baseline"
 
-                # --- Normalize timezones before concatenation ---
-                if "start_date_local" in df_hist.columns:
-                    df_hist["start_date_local"] = pd.to_datetime(
-                        df_hist["start_date_local"], utc=True, errors="coerce"
-                    )
-                if "start_date_local" in df_activities.columns:
-                    df_activities["start_date_local"] = pd.to_datetime(
-                        df_activities["start_date_local"], utc=True, errors="coerce"
-                    )
+                # --- Normalize timezone ---
+                df_hist["start_date_local"] = pd.to_datetime(
+                    df_hist["start_date_local"], utc=True, errors="coerce"
+                ).dt.tz_convert(context.get("timezone", "Europe/Zurich"))
 
-                # --- Concatenate and enforce canonical timezone ---
-                df_activities = pd.concat([df_hist, df_activities], ignore_index=True)
-                tz = context.get("timezone", "Europe/Zurich")
-                df_activities["start_date_local"] = df_activities["start_date_local"].dt.tz_convert(tz)
-
-                debug(context, f"[T0-ACWR] Appended {len(df_hist)} historical activities (28-day total window).")
+                # --- Store separately for ACWR computation ---
+                context["df_acwr_base"] = df_hist
+                debug(context, f"[T0-ACWR] Stored {len(df_hist)} baseline activities (ACWR only).")
             else:
                 debug(context, "[T0-ACWR] No historical activities found.")
         else:
             debug(context, f"[T0-ACWR] Historical fetch failed ({acwr_resp.status_code})")
 
     except Exception as e:
-        debug(context, f"[T0-ACWR] Skipped historical extension due to error: {e}")
+        debug(context, f"[T0-ACWR] Skipped ACWR extension due to error: {e}")
 
     # --- Step 4: Fetch wellness with adaptive chunking + meta-retry ---
     wellness = fetch_wellness_chunked(athlete["id"], oldest, newest, headers, context)

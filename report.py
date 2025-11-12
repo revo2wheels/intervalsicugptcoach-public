@@ -26,6 +26,7 @@ def generate_full_report(output_path="reports/report_full.md"):
             force_analysis=True,
             preRenderAudit=True,
             render_mode="full",
+            debug_mode=True
         )
 
     # Extract log and markdown data

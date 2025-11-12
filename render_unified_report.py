@@ -135,11 +135,33 @@ def render_report(data):
     md.append(f"- Time variance ≤ 0.1 h ✅")
 
     # === 4️⃣ Tier-2 Derived Metrics ===
-    md.append(section("🧮 Derived Metric Audit"))
+    md.append(section("🧮 Derived Metric Audit (EWMA-based ACWR)"))
+    from coaching_cheat_sheet import CHEAT_SHEET
+
     derived = ctx.get("derived_metrics", {})
     if derived:
-        rows = [[k, v, "✅"] for k, v in derived.items()]
-        md.append(table(["Metric", "Value", "Status"], rows))
+        rows = []
+        for k, v in derived.items():
+            if isinstance(v, dict):
+                value = v.get("value", "—")
+
+                # --- Cosmetic: show ZQI as percentage ---
+                if k == "ZQI" and isinstance(value, (int, float)):
+                    value = round(float(value) * 100, 1)
+
+                icon = v.get("icon", "")
+                status = v.get("status", "")
+                context_note = CHEAT_SHEET.get("context", {}).get(k, "")
+                rows.append([k, value, f"{icon} {status}", context_note])
+            else:
+                # --- Cosmetic: show ZQI as percentage ---
+                if k == "ZQI" and isinstance(v, (int, float)):
+                    v = round(float(v) * 100, 1)
+
+                context_note = CHEAT_SHEET.get("context", {}).get(k, "")
+                rows.append([k, v, "✅", context_note])
+
+        md.append(table(["Metric", "Value", "Status", "Context"], rows))
     else:
         md.append("_No derived metrics available._")
 
@@ -226,23 +248,38 @@ def render_report(data):
     tsb = load.get("TSB", {}).get("value", well.get("tsb", "—")) if isinstance(load.get("TSB"), dict) else load.get("TSB", "—")
     md.append(f"- ATL: {atl} · CTL: {ctl} · TSB: {tsb}")
 
-    # === 8️⃣ Load & Stress Chain ===
-    md.append(section("⚖️ Load & Stress Chain"))
-    load = ctx.get("load_metrics", {})
-    if load:
-        rows = [safe_metric_entry(k, v) for k, v in load.items()]
-        md.append(table(["Metric", "Value", "Status"], rows))
-    else:
-        md.append("_Load metrics unavailable._")
+    # === 8️⃣ Load & Stress Chain (Diagnostics) ===
+    if ctx.get("debug_mode", False):
+        md.append(section("⚖️ Load & Stress Chain (Diagnostics)"))
+        load = ctx.get("load_metrics", {})
+        if load:
+            rows = [safe_metric_entry(k, v) for k, v in load.items()]
+            md.append(table(["Metric", "Value", "Status"], rows))
+        else:
+            md.append("_Load metrics unavailable._")
 
     # === 9️⃣ Efficiency & Adaptation ===
     md.append(section("🔬 Efficiency & Adaptation"))
+    from coaching_cheat_sheet import CHEAT_SHEET
+
     adapt = ctx.get("adaptation_metrics", {})
     if adapt:
-        rows = [safe_metric_entry(k, v) for k, v in adapt.items()]
-        md.append(table(["Metric", "Value", "Status"], rows))
+        rows = []
+        for k, v in adapt.items():
+            if isinstance(v, dict):
+                value = v.get("value", "—")
+                icon = v.get("icon", "")
+                status = v.get("status", "")
+                context_note = CHEAT_SHEET.get("coaching_links", {}).get(k, "")
+                rows.append([k, value, f"{icon} {status}", context_note])
+            else:
+                context_note = CHEAT_SHEET.get("coaching_links", {}).get(k, "")
+                rows.append([k, v, "✅", context_note])
+        debug(ctx, f"[DEBUG] Adaptation metric keys: {list(adapt.keys())}")
+        md.append(table(["Metric", "Value", "Status", "Context"], rows))
     else:
         md.append("_No adaptation data._")
+
 
     # === 🔟 Performance & Coaching Actions ===
     md.append(section("🧠 Performance & Coaching Actions"))
@@ -252,6 +289,7 @@ def render_report(data):
         for k, v in perf.items():
             md.append(f"- {k}: {v}")
     if actions:
+        metric_contexts = ctx.get("metric_contexts", [])
         md.append("\n**Recommended Actions:**")
         for i, a in enumerate(actions, 1):
             md.append(f"{i}. {a}")
