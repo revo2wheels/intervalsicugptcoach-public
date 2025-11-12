@@ -64,8 +64,8 @@ Audit: {auditStatus} | Integrity: {integrityFlag}
 ## 2. 📊 Key Stats  
 | Metric | Value | Δ | Status |
 |:--|--:|:--:|:--:|
-| Volume (h) | {{ (context["eventTotals"]["hours"] if "eventTotals" in context else 0) | round(2) }} | {{ ΔHours | round(1) }} | — |
-| Load (TSS) | {{ (context["eventTotals"]["tss"] if "eventTotals" in context else 0) | round(0) }} | {{ ΔTss | round(0) }} | — |
+| Volume (h) | {{ (context["tier1_eventTotals"]["hours"] if "tier1_eventTotals" in context else 0) | round(2) }} | {{ ΔHours | round(1) }} | — |
+| Load (TSS) | {{ (context["tier1_eventTotals"]["tss"] if "tier1_eventTotals" in context else 0) | round(0) }} | {{ ΔTss | round(0) }} | — |
 | Avg IF | {{ context.get("avgIF", 0) | round(2) }} | — | — |
 | ACWR | {acwr:.2f} | — | {acwrFlag} |
 | Monotony | {monotony:.2f} | — | {monotonyFlag} |
