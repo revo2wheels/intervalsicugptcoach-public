@@ -54,10 +54,23 @@ Window: {start_date} → {end_date}
 Audit: {auditStatus} | Integrity: {integrityFlag}
 ```
 - Timezone derived from athlete profile.  
-- Audit must equal “Tier-2 ✅ Pass” before render.  
+- Audit must equal “Tier-2 ✅ Pass” before render. 
+- TSS, CTL, ATL → sourced directly from Intervals.icu API; not recomputed locally.
 
 > **Note:** Age-based load and recovery modifiers (Friel reference) are applied only when your age is known.  
 > If not provided, a default value of **35 years** is assumed (no adjustment applied).  
+
+---
+
+### 🧩 Context Additions — Runtime Alignment
+
+| Key | Tier | Type | Description |
+|:--|:--|:--|:--|
+| `tier1_eventTotals` | Tier-1 | dict | Canonical event totals (`hours`, `tss`) sourced directly from Intervals.icu. |
+| `load_metrics` | Tier-1 | dict | CTL / ATL / TSB values merged from wellness data for renderer use. |
+| `outliers` | Tier-1 | list[dict] | Detected TSS outliers ± 1.5 σ (`{date, event, issue, obs}`). |
+| `zone_dist_power`, `zone_dist_hr`, `zone_dist_pace` | Tier-1 | dict | Percent zone distributions expanded from arrays. |
+| `recovery_flag` | Tier-2 | str | Adaptive recovery classification from HRV↔Load correlation (`adaptive`, `neutral`, `poor`). |
 
 ---
 
