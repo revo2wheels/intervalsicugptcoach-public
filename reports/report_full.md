@@ -11,8 +11,8 @@
 [Tier-0 fetch] chunk_start=2025-11-06  chunk_end=2025-11-12
 🧩 Tier-0 deduplication: 0 duplicates removed.
 [T0] Canonical slice → 10/10 rows retained (2025-11-06–2025-11-12, tz=Europe/Zurich)
-[DEBUG-T0] Expanded icu_zone_times → 8 numeric columns
-[DEBUG-T0] Expanded icu_hr_zone_times → 7 numeric columns
+None [T0] Expanded icu_zone_times safely → 8 cols, max depth=8
+None [T0] Expanded icu_hr_zone_times safely → 7 cols, max depth=7
 [T0] Diagnostic: true Σ(event.moving_time)=50173 s → 13.94 h
 [T0] Canonical totals → Σ(TSS)=640.0
 [T0-ACWR] Fetching historical load window 2025-10-16 → 2025-11-05
@@ -32,7 +32,7 @@
 [T0] Diagnostic only: 10 rows fetched, moving_time present=True
 [T0] Pre-audit complete: activities=10, wellness_rows=7
 ⚙️ Normalization: detected seconds, no conversion (max=8568)
-[T1] Columns at entry: ['id', 'start_date_local', 'icu_training_load', 'elapsed_time', 'name', 'start_date', 'distance', 'moving_time', 'icu_zone_times', 'icu_hr_zone_times', 'date', 'origin', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7']
+[T1] Columns at entry: ['id', 'start_date_local', 'icu_training_load', 'elapsed_time', 'name', 'start_date', 'distance', 'moving_time', 'date', 'origin', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7']
 🧮 Tier-1: using enforced seconds→hours conversion (Σmoving_time=50173 s → 13.94 h)
 [T1] Wellness alignment window (tz-aware): 2025-11-06 18:16:29+01:00 → 2025-11-11 17:52:01+01:00
 [T1] Wellness date range: 2025-11-06 → 2025-11-12
@@ -52,10 +52,10 @@
 [DEBUG-T1] athleteProfile present: True
 [DEBUG-T1] athleteProfile keys: ['athlete_id', 'name', 'discipline', 'ftp', 'weight', 'hr_rest', 'hr_max', 'ftp_wkg', 'hr_reserve', 'zone_model', 'training_age_years', 'preferred_units', 'environment', 'timezone', 'updated']
 [DEBUG-T1] Starting zone distribution extraction...
-[DEBUG-T1] Activity columns sample: ['id', 'start_date_local', 'icu_training_load', 'elapsed_time', 'name', 'start_date', 'distance', 'moving_time', 'icu_zone_times', 'icu_hr_zone_times', 'date', 'origin', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7', 'ctl', 'atl', 'tsb']
-[DEBUG-ZONE] Available columns: ['id', 'start_date_local', 'icu_training_load', 'elapsed_time', 'name', 'start_date', 'distance', 'moving_time', 'icu_zone_times', 'icu_hr_zone_times', 'date', 'origin', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7', 'ctl', 'atl', 'tsb']
-[DEBUG-ZONE] Detected Power zone columns: ['icu_zone_times', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8']
-[DEBUG-ZONE] Detected HR zone columns: ['icu_hr_zone_times', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7']
+[DEBUG-T1] Activity columns sample: ['id', 'start_date_local', 'icu_training_load', 'elapsed_time', 'name', 'start_date', 'distance', 'moving_time', 'date', 'origin', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7', 'ctl', 'atl', 'tsb']
+[DEBUG-ZONE] Available columns: ['id', 'start_date_local', 'icu_training_load', 'elapsed_time', 'name', 'start_date', 'distance', 'moving_time', 'date', 'origin', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7', 'ctl', 'atl', 'tsb']
+[DEBUG-ZONE] Detected Power zone columns: ['power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8']
+[DEBUG-ZONE] Detected HR zone columns: ['hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7']
 [DEBUG-ZONE] Detected Pace zone columns: []
 [DEBUG-ZONES] power zones computed: {'power_z1': 26.6, 'power_z2': 28.4, 'power_z3': 18.3, 'power_z4': 7.9, 'power_z5': 2.6, 'power_z6': 2.7, 'power_z7': 0.6, 'power_z8': 12.9}
 [DEBUG-ZONES] hr zones computed: {'hr_z1': 65.6, 'hr_z2': 18.7, 'hr_z3': 5.5, 'hr_z4': 5.3, 'hr_z5': 2.0, 'hr_z6': 1.5, 'hr_z7': 1.4}
@@ -108,7 +108,7 @@ Name: moving_time, dtype: float64
 [TRACE-RUNTIME] entering finalize_and_validate_render()
 [TRACE-RUNTIME] context type = <class 'dict'>
 [TRACE-RUNTIME] df_events type = <class 'pandas.core.frame.DataFrame'>
-[TRACE-RUNTIME] df_events.shape = (10, 27)
+[TRACE-RUNTIME] df_events.shape = (10, 25)
 [TRACE-RUNTIME] Σ moving_time/3600 = 13.94 h
 [TRACE-RUNTIME] Σ icu_training_load = 640
 [DEBUG-FINALIZER-ENTRY] load_metrics: {'CTL': {'value': 91.4, 'status': 'ok'}, 'ATL': {'value': 92.12, 'status': 'ok'}, 'TSB': {'value': -0.72, 'status': 'ok'}, 'ACWR': {'value': 1.24, 'status': 'ok'}, 'Monotony': {'value': np.float64(3.5), 'status': 'ok'}, 'Strain': {'value': np.float64(2240.0), 'status': 'ok'}, 'Polarisation': {'value': 0.699, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.3), 'status': 'ok'}}
@@ -204,10 +204,10 @@ load_metrics post-render: {'CTL': {'value': 91.4, 'status': 'ok'}, 'ATL': {'valu
 Final report keys: ['header', 'markdown', 'type', 'context', 'sections', 'tables', 'lines', 'summary', 'metrics', 'actions', 'phases', 'trends', 'correlation', 'footer']
 Final context load_metrics: {'CTL': {'value': 91.4, 'status': 'ok'}, 'ATL': {'value': 92.12, 'status': 'ok'}, 'TSB': {'value': -0.72, 'status': 'ok'}, 'ACWR': {'value': 1.24, 'status': 'ok'}, 'Monotony': {'value': 3.5, 'status': 'ok'}, 'Strain': {'value': 2240.0, 'status': 'ok'}, 'Polarisation': {'value': 0.699, 'status': 'ok'}, 'RecoveryIndex': {'value': 0.3, 'status': 'ok'}, 'totalHours': 13.94, 'totalTss': 640}
 ================================================================================
-[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': '90 avec Jacques', 'period': '2025-11-06 → 2025-11-12', 'timestamp': '2025-11-12T12:17:01.741712', 'discipline': 'cycling'}
+[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': '90 avec Jacques', 'period': '2025-11-06 → 2025-11-12', 'timestamp': '2025-11-12T12:36:51.083550', 'discipline': 'cycling'}
 [TRACE-POST-RENDER-CHECK] summary={'totalHours': np.float64(13.94), 'totalTss': 640, 'eventCount': 10, 'period': '2025-11-06 → 2025-11-12'}
 [POST-RENDER] Canonical event-only totals enforced → header + summary synced
-[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': '90 avec Jacques', 'period': '2025-11-06 → 2025-11-12', 'timestamp': '2025-11-12T12:17:01.741712', 'discipline': 'cycling', 'Total Hours': '13.94 h', 'Total Load (TSS)': 640}
+[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': '90 avec Jacques', 'period': '2025-11-06 → 2025-11-12', 'timestamp': '2025-11-12T12:36:51.083550', 'discipline': 'cycling', 'Total Hours': '13.94 h', 'Total Load (TSS)': 640}
 [PATCH] summary rebuilt for schema compliance: {'totalHours': np.float64(13.94), 'totalTss': 640, 'eventCount': 10, 'period': '2025-11-06 → 2025-11-12', 'variance': 0.0, 'zones': {}}
 [PATCH] Tier-2 summary override applied → canonical event-only totals enforced
 [PATCH] actions dual-structure applied → 24 items
@@ -315,7 +315,7 @@ Final context load_metrics: {'CTL': {'value': 91.4, 'status': 'ok'}, 'ATL': {'va
 **Athlete:** Clive King
 **Period:** 2025-11-06 → 2025-11-12
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-12T12:17:01.740811
+**Generated:** 2025-11-12T12:36:51.082809
 
 ---
 
@@ -479,6 +479,6 @@ _No pace zone data available._
 **Totals for reporting period:** 13.94 h · 640 TSS · 339.6 km**
 
 ---
-✅ **Audit Completed:** 2025-11-12T12:17:01.741690
+✅ **Audit Completed:** 2025-11-12T12:36:51.083533
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 

@@ -213,9 +213,9 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
 
             def expand_zones(df, field, prefix):
                 """
-                Expands zone arrays (both list-of-dicts and list-of-ints) into numeric columns.
-                Handles power_z*, hr_z*, pace_z* forms consistently.
-                Safe against nulls, 'null' strings, or malformed entries.
+                Expands and flattens zone arrays safely into numeric columns.
+                Handles malformed JSON, nested lists, or dict-style entries.
+                Guarantees numeric output and prevents sandbox fallback.
                 """
                 import numpy as np
                 import pandas as pd
@@ -224,37 +224,53 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                 if field not in df.columns:
                     return df
 
-                # Normalize: ensure every entry is a list, not None or "null"
-                df[field] = df[field].apply(lambda x: [] if x in [None, "null", "None", np.nan] else x)
-
-                try:
-                    def parse_entry(x):
-                        # Accepts str(JSON), list[dict], list[int]
-                        if isinstance(x, str):
-                            try:
-                                x = json.loads(x)
-                            except Exception:
-                                return []
-                        if isinstance(x, list):
-                            if all(isinstance(z, dict) for z in x):
-                                return [z.get("secs", 0) for z in x]
-                            elif all(isinstance(z, (int, float)) for z in x):
-                                return x
+                def safe_parse(x):
+                    # Normalize null-like values
+                    if x in [None, "null", "None", np.nan]:
                         return []
 
-                    zone_values = df[field].apply(parse_entry)
-                    max_len = zone_values.map(len).max() if not zone_values.empty else 0
-                    if max_len == 0:
-                        return df  # Nothing to expand
+                    # Parse if stringified JSON
+                    if isinstance(x, str):
+                        try:
+                            x = json.loads(x)
+                        except Exception:
+                            return []
 
-                    z = pd.DataFrame(zone_values.tolist(), index=df.index)
-                    z = z.reindex(columns=range(max_len)).fillna(0)
+                    # Handle nested lists: [[...]] → [...]
+                    while isinstance(x, list) and len(x) == 1 and isinstance(x[0], list):
+                        x = x[0]
+
+                    # Extract seconds if dict-style
+                    if isinstance(x, list):
+                        flat = []
+                        for z in x:
+                            if isinstance(z, dict):
+                                flat.append(z.get("secs", 0))
+                            elif isinstance(z, (int, float)):
+                                flat.append(z)
+                            else:
+                                # Unknown element type
+                                continue
+                        return flat
+                    return []
+
+                try:
+                    parsed = df[field].apply(safe_parse)
+                    max_len = parsed.map(len).max() if not parsed.empty else 0
+                    if max_len == 0:
+                        return df
+
+                    # Build zone dataframe with consistent numeric dtype
+                    z = pd.DataFrame(parsed.tolist(), index=df.index)
+                    z = z.reindex(columns=range(max_len)).fillna(0).astype(float)
                     z.columns = [f"{prefix}_z{i+1}" for i in range(max_len)]
 
-                    df = pd.concat([df, z], axis=1)
-                    debug(context, f"[DEBUG-T0] Expanded {field} → {len(z.columns)} numeric columns")
+                    df = pd.concat([df.drop(columns=[field]), z], axis=1)
+                    debug(None, f"[T0] Expanded {field} safely → {len(z.columns)} cols, max depth={max_len}")
                 except Exception as e:
-                    debug(context, f"[DEBUG-T0] Failed to expand {field}: {e}")
+                    debug(None, f"[T0] Zone expansion failed for {field}: {e}")
+                    # On failure, drop offending column to prevent renderer fallback
+                    df.drop(columns=[field], inplace=True, errors="ignore")
 
                 return df
 
