@@ -6,29 +6,215 @@
 - See **Advanced Markers** for definitions and thresholds.  
 - See **Coaching Heuristics Pack** for full reasoning and coaching context.  
 
-*Reports must always show raw values. Validation: Σ(Event km) = Weekly km. Σ(Event TSS) = Weekly TSS. If not equal → flag error*
-*Reports must always include Rest Days as Events. Do not omit. If no activity is logged, insert 🛌 Rest Day for that date.*
+# Coaching Cheat Sheet (v16.17)
+
+## 1. Overview
+Unified interpretation and reporting framework for endurance performance metrics. Designed for alignment with Tier-0 through Tier-2 audit pipelines and ChatGPT Coach.
 
 ---
 
-## 🔑 Load Management
-| Metric     | Green ✅   | Amber ⚠️      | Red ❌         |
-|------------|-----------|---------------|----------------|
-| Strain     | <1,800    | 1,800–2,200   | >2,200         |
-| ACWR       | 0.8–1.3   | 1.3–1.5       | >1.5           |
-| Monotony   | <1.5      | 1.5–2.0       | >2.0           |
+## 2. Key Training Load Metrics
+
+| Metric | Formula | Ideal Range | Notes |
+|:--|:--|:--|:--|
+| **TSS (Training Stress Score)** | Provided directly by Intervals.icu | — | No recomputation required |
+| **CTL (Chronic Training Load)** | 42-day exponentially weighted TSS average | — | Reflects long-term load |
+| **ATL (Acute Training Load)** | 7-day exponentially weighted TSS average | — | Reflects short-term fatigue |
+| **TSB (Training Stress Balance)** | `CTL - ATL` | — | Positive = freshness; Negative = fatigue |
+| **ACWR (Acute:Chronic Workload Ratio)** | `ATL / CTL` | 0.8–1.3 | Monitors short-term load relative to capacity |
 
 ---
 
-## 🔄 Recovery
-| Metric         | Green ✅              | Amber ⚠️             | Red ❌                         |
-|----------------|-----------------------|----------------------|--------------------------------|
-| HRV            | Stable / >50 ms       | ↓15–25% vs baseline  | ↓>25% or <35 ms                |
-| Resting HR     | Stable                | +5 bpm               | +10 bpm                        |
-| Sleep (avg)    | >8h                   | 7–8h                 | <7h                            |
+## 3. Load Health Metrics
 
+| Metric | Formula | Ideal Range | Interpretation |
+|:--|:--|:--|:--|
+| **Monotony** | Mean(Load) / SD(Load) | < 2.0 | Training variety and load variation |
+| **Strain** | Monotony × Total Load | Contextual | Measures combined stress magnitude |
+| **Load Status** | Derived from ACWR, Monotony, and Strain | — | Categorizes adaptive state |
 
-## Age-Adjusted Load and Recovery Modifiers (Friel Reference)
+---
+
+## 4. Polarization & Intensity Distribution
+
+| Metric | Formula | Range | Target |
+|:--|:--|:--|:--|
+| **Polarization Index (PI)** | `(Z1% + Z3%) / (2 × Z2%)` | 0–3 | >1.0 = polarized; <1.0 = pyramidal |
+| **Zone Distribution** | Based on Power or HR zones | — | Endurance ≥ 60 % Z1–Z2 |
+| **SS Zone Fraction (Sweet Spot)** | Z3 proportion of total | 0–25 % | Overuse reduces recovery |
+
+---
+
+## 5. FatOx & Efficiency Metrics
+
+| Metric | Formula | Ideal Range | Notes |
+|:--|:--|:--|:--|
+| **FatOx Efficiency (FOxI)** | `Joules / kcal × aerobic_fraction` | 0.7–1.3 | Estimates aerobic efficiency |
+| **Efficiency Factor (EF)** | `NP / HR` | Contextual | Tracks aerobic endurance improvement |
+| **Decoupling (%)** | `|HR drift|` | < 5 % | Stability of effort |
+
+---
+
+## 6. Recovery & Wellness Integration
+
+| Metric | Formula | Ideal Range | Notes |
+|:--|:--|:--|:--|
+| **HRV Trend (7-day)** | `%Δ HRV mean` | — | +ve trend = improved recovery |
+| **RestHR Trend** | `%Δ RestHR mean` | — | Rising = fatigue |
+| **Sleep Quality Index (ZQI)** | `(SleepScore × (SleepSecs / 8h)) / 100` | 0–1 | Proxy for sleep recovery potential |
+| **Mood, Stress, Motivation** | Scaled 1–5 | — | Used in qualitative load state estimation |
+
+---
+
+## 7. Durability & Fatigue Resistance *(Coach-only interpretive)*
+
+| Metric | Formula | Range | Interpretation |
+|:--|:--|:--|:--|
+| **Durability Index (DI)** | `(LastHourPower / FirstHourPower)` | 0.8–1.0 | Stability of power over duration |
+| **Power Decay Rate** | `ΔPower / ΔTime` | — | Slope of fatigue curve |
+| **Heart Rate Stability** | `ΔHR / ΔPower` | < 0.1 | Cardiovascular stability marker |
+
+---
+
+## 8. Zone Distribution Reference
+
+| Zone | % of Session Time | Training Effect |
+|:--|:--:|:--|
+| Z1 | 30–60 % | Aerobic base, recovery |
+| Z2 | 25–40 % | Aerobic endurance |
+| Z3 | 10–20 % | Tempo / Sweet spot |
+| Z4 | 5–10 % | Threshold development |
+| Z5–Z7 | < 5 % | VO₂ / anaerobic capacity |
+
+---
+
+## 9. Taper & Recovery Guidance *(Coach-only interpretive)*
+
+| Phase | Definition | Load Ratio (vs Peak) | Guidance |
+|:--|:--|:--:|:--|
+| **Base** | Aerobic capacity build | 0.6–0.8 | Emphasize Z2 volume |
+| **Build** | Threshold & fatigue resistance | 0.8–1.0 | Introduce Z3–Z4 |
+| **Peak** | Race-specific intensity | 0.9–1.1 | Sharpen VO₂ / anaerobic |
+| **Taper** | Pre-event load reduction | 0.5–0.7 | Maintain intensity, cut volume |
+| **Recovery** | Post-event regeneration | < 0.5 | Active recovery, HRV ↑ expected |
+
+---
+
+## 10. 🧭 Training Quality & Load Management
+
+### Training Quality Index (TQI)
+
+| Metric | Formula | Target Range | Status |
+|:--|:--|:--|:--|
+| TQI | `(TSS / Hours) × FOxI × (Z2% + Z3%)` | 100–180 | Session efficiency and pacing execution |
+| FOxI | `FatOxEfficiency / 100` | 0.8–1.2 | Fat oxidation efficiency normalized factor |
+| Z2% + Z3% | Proportion of aerobic & tempo zone time | ≥ 60 % | Optimal endurance distribution |
+
+**Interpretation:**
+- `< 80`: Under-paced or incomplete session.  
+- `80–120`: Normal endurance session.  
+- `120–180`: High-quality aerobic or race-specific load.  
+- `> 180`: Over-reaching or pacing error; review plan.
+
+## 11. 🧩 Periodisation Framework
+
+| Cycle Type | Duration | Focus | Load Pattern | Typical Distribution | Notes |
+|:--|:--:|:--|:--|:--|:--|
+| **Microcycle** | 7 days | Specific workouts | 3:1 (Load:Recovery) | 3 loading + 1 recovery day | Used in short-term planning |
+| **Mesocycle** | 3–5 weeks | Performance block | 2–3:1 (Load:Recovery) | 2–3 build weeks + 1 deload | Aligns with ACWR monitoring |
+| **Macrocycle** | 12–24 weeks | Seasonal plan | 3–4 Mesocycles | Base → Build → Peak → Taper | Reflects annual plan progression |
+| **Transition** | 2–4 weeks | Regeneration / Rebuild | Reduced | Aerobic only, HRV ↑ | Optional between seasons |
+
+**Coach Use Guidance**
+- Maintain *ACWR ≤ 1.3* across cycles.  
+- Use *TSB ≥ 0* to schedule performance tests or events.  
+- Taper phase reduces ATL by 30–50 % while maintaining intensity.  
+- Base → Build → Peak → Taper → Transition forms one complete macrocycle.
+
+---
+
+## 12. 🧠 Adaptive Recommendations Logic (ChatGPT Coach Layer)
+
+| State Detected | AI Guidance Summary |
+|:--|:--|
+| **Overload** | Prioritize recovery; monitor HRV and fatigue markers. |
+| **Underload** | Introduce moderate volume block; focus on Z2. |
+| **High Quality / Excellent** | Maintain plan; verify sleep and HR stability. |
+| **Low Quality** | Review pacing, intensity control, and external stressors. |
+| **Fatigued / Poor Recovery** | Delay next HI session; increase recovery frequency. |
+
+---
+
+## 13. 📘 References
+- Friel, J. *The Cyclist’s Training Bible.* 2022 Edition.  
+- Bannister, E. “Modeling Human Performance and Fatigue.” *Eur J Appl Physiol*, 1975.  
+- Impellizzeri et al. “Use of RPE and Load Metrics in Endurance Training.” *Sports Med*, 2019.  
+- Intervals.icu Knowledge Base and API Schema Reference (2024).  
+- ChatGPT Coach Training State Heuristic Model (v16.17).
+
+---
+
+### Load Management Rules
+
+| Metric | Formula | Reference Range | Interpretation |
+|:--|:--|:--|:--|
+| **ACWR (Acute : Chronic Workload Ratio)** | `ATL / CTL` | 0.8–1.3 | Balance zone; >1.5 = risk of over-reaching |
+| **Monotony** | `Mean(Load) / SD(Load)` | < 2.0 | Higher = less variety, ↑ injury risk |
+| **Strain** | `Monotony × Total Load` | — | Quantifies combined stress from volume + repetition |
+| **Load Status** | derived | — | “Optimal”, “High Risk”, “Under-reached”, or “Recovery” based on above three |
+
+**Load State Table**
+
+| ACWR | Monotony | Strain | Load Status |
+|:--:|:--:|:--:|:--|
+| 0.8–1.3 | < 2.0 | Moderate | ✅ Optimal |
+| > 1.5 | > 2.0 | High | ⚠ Overload / Injury Risk |
+| < 0.8 | — | Low | ⬇ Underload / Maintenance |
+| 1.0–1.2 & Strain ↓ | < 1.5 | Low-Moderate | 💤 Recovery |
+
+---
+
+### Metabolic Adaptation Metrics
+
+| Metric | Range | Meaning |
+|:--|:--:|:--|
+| **CUR (Carbohydrate Utilisation Ratio)** | 30–80 | Balanced substrate use |
+| **GR (Glucose Ratio)** | 0.5–2.0 | >2 = glycolytic bias |
+| **MES (Metabolic Efficiency Score)** | 20–100 | >20 = endurance economy |
+| **StressTolerance** | 2–8 | Sustainable strain capacity |
+| **ZQI (Zone Quality Index)** | 5–15 % | Balanced high-intensity exposure |
+
+### AI Load Summary Logic
+
+| ACWR Range | Classification | Example Output |
+|:--:|:--|:--|
+| > 1.5 | 🚨 High Load / Overreaching | “🚨 High Load / Overreaching — 620 TSS over 12 h (ACWR 1.56)” |
+| 0.8–1.5 | ⚖️ Stable / Productive | “⚖️ Stable / Productive — 480 TSS / 10 h (ACWR 1.10)” |
+| < 0.8 | 🟢 Recovery / Underload | “🟢 Recovery / Underload — 300 TSS / 8 h (ACWR 0.72)” |
+
+---
+
+### Recovery & Readiness Indices
+
+| Metric | Formula | Scale | Notes |
+|:--|:--|:--|:--|
+| **Recovery Index (RI)** | `(HRV × Sleep × RestHR_baseline_ratio)` | 0–1 | Global readiness composite |
+| **Sleep Index (ZQI)** | `(SleepScore × (SleepSecs / 8 h)) / 100` | 0–1 | Proxy for recovery potential |
+| **RestHR Deviation** | `(RestHR − Baseline) / Baseline` | ± 10 % | > +10 % → fatigue; < −10 % → super-compensation |
+| **HRV Trend (7-day)** | `%Δ HRV mean` | — | ↓ persistent = maladaptation; ↑ = resilience |
+
+**Readiness State Table**
+
+| Recovery Index | Interpretation |
+|:--:|:--|
+| > 0.8 | Excellent readiness |
+| 0.6–0.8 | Normal / Maintain |
+| 0.4–0.6 | Fatigued — adjust load |
+| < 0.4 | Poor recovery — rest day |
+
+---
+
+### Age-Adjusted Load and Recovery Modifiers (Friel Reference)
 
 | Age | ATL Multiplier | ACWR Cap | Recovery Frequency | Notes |
 |:--|:--|:--|:--|:--|
@@ -38,48 +224,41 @@
 | 60–69 | 0.85 | 1.2 | 2-week | Maintain intensity, lower volume |
 | ≥ 70 | 0.75 | 1.1 | 2-week | Prioritize recovery, add aerobic maintenance |
 
-**Integration:**  
-Used by the Unified Reporting Framework and Heuristics Pack to weight ATL, cap ACWR, and define recovery microcycle cadence.
+---
+
+### Training Quality State Labels *(ChatGPT Coach interpretive layer)*
+
+| TQI Range | Label | Action |
+|:--:|:--|:--|
+| < 80 | Low Quality | Reassess pacing / fatigue |
+| 80–120 | Solid | Maintain plan |
+| 120–160 | High Quality | Progress load gradually |
+| 160–200 | Excellent | Maintain within recovery envelope |
+| > 200 | Overload | Insert rest or taper |
 
 ---
 
-## ⚡ Training Quality  
+### Performance Zone Crosswalk
 
-| Metric                         | Green ✅                      | Amber ⚠️                 | Red ❌                  |
-|--------------------------------|-------------------------------|--------------------------|-------------------------|
-| Polarisation Index             | ≥0.8                         | 0.6–0.8                  | <0.6                    |
-| Durability Index (avgDecoupling) | ≤5%                          | 5–7%                     | >7%                     |
-| Quality Session Balance        | ≥2/week (1 long, 1 interval) | 1/week (missing type)    | 0/week (none logged)    |
-
----
-
-### 🔥 Fat-Oxidation Efficiency (Zone 2 Quality)
-
-| Metric | Green ✅ | Amber ⚠️ | Red ❌ |
+| Zone | Physiological Focus | Fatigue Cost | Adaptation Pathway |
 |:--|:--|:--|:--|
-| **FatOxidation Index** | ≥ 0.80 (optimal fat oxidation) | 0.60 – 0.79 (moderate adaptation) | < 0.60 (glycolytic bias / low durability) |
-
-**Purpose:** Evaluates Zone 2 metabolic efficiency and aerobic durability using IF (0.65–0.75), decoupling %, and HRV trend.  
-**Reference:** Coach Profile / San Millán Framework — included in Weekly and Seasonal Reports → *Training Quality section.*
-
----
-
-## 🎯 Periodisation
-| Phase          | Indicators |
-|----------------|------------|
-| Build          | CTL ↑ steadily (+3–7/week), ATL <110 |
-| Overload       | ACWR >1.3, Strain 1,900–2,200, HRV dip |
-| Deload         | Load ↓ ~40%, ATL <80, HRV rebound ≥55 ms |
-| Consolidation  | CTL stable ±2, HRV steady, VO₂max preserved |
+| Z1 | Active recovery / base | Low | Mitochondrial density |
+| Z2 | Endurance capacity | Moderate | Aerobic enzyme development |
+| Z3 | Tempo / muscular endurance | High | Glycogen sparing, fatigue resistance |
+| Z4 | Threshold | Very High | Lactate tolerance |
+| Z5 | VO₂max | Extreme | Cardiorespiratory capacity |
+| Z6–Z7 | Anaerobic / neuromuscular | Maximal | Power and speed sharpening |
 
 ---
 
-## 🏁 Taper
-- Reduce ATL by **40–60%** (10–14 days pre-race)  
-- Maintain **intensity** (keep high-intensity, reduce volume)  
-- HRV should trend **upward**  
+### Coach Action Framework
+
+| State | Primary Focus | Example Interventions |
+|:--|:--|:--|
+| **Overload** | Recovery | Add rest day, reduce intensity |
+| **Optimal** | Progression | Maintain volume, add stimulus |
+| **Underload** | Activation | Add moderate-intensity block |
+| **Fatigued** | Restoration | Extend low-intensity duration |
+| **Excellent** | Maintenance | Sustain pattern, monitor HRV |
 
 ---
-
-✅ Use this sheet for **fast classification**.  
-For deeper analysis, see **Coaching Heuristics Pack**.  
