@@ -142,16 +142,30 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                 if acts_resp.status_code != 200:
                     raise AuditHalt(f"❌ Failed to fetch activities ({acts_resp.status_code}) → {acts_resp.text[:200]}")
 
-                df_chunk = pd.DataFrame(acts_resp.json())
-                if "icu_training_load" not in df_chunk.columns and "icu_training_load_data" in df_chunk.columns:
-                    df_chunk.rename(columns={"icu_training_load_data": "icu_training_load"}, inplace=True)
+                payload = acts_resp.json()
 
+                # --- Normalize alternate field names BEFORE DataFrame creation ---
+                if (
+                    isinstance(payload, list)
+                    and payload
+                    and "icu_training_load_data" in payload[0]
+                    and "icu_training_load" not in payload[0]
+                ):
+                    for r in payload:
+                        r["icu_training_load"] = r.pop("icu_training_load_data")
 
-            if not df_activities_list:
-                debug(context,"⚠ No activity chunks returned from API.")
-                return pd.DataFrame()
+                # --- Build DataFrame once ---
+                df_chunk = pd.DataFrame(payload)
 
-            df_activities = pd.concat(df_activities_list, ignore_index=True)
+                if not df_chunk.empty:
+                    df_activities_list.append(df_chunk)
+
+                # After loop ends
+                if not df_activities_list:
+                    debug(context, "⚠ No activity chunks returned from API (all payloads empty).")
+                    return pd.DataFrame()
+
+                df_activities = pd.concat(df_activities_list, ignore_index=True)
 
             # --- Deduplication ---
             if "id" in df_activities.columns:
