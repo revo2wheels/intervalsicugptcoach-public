@@ -109,15 +109,16 @@ Displays validated, merged daily sessions after the Event Completeness Rule.
 Each Event Card = rendered instance of a validated Event Log row (1 : 1 mapping).  
 Ensures transparent data→render chain for audit traceability.  
 
-**Chain:** API → Tier-2 Audit → Merged Daily Table → Event Card Renderer → Report Section  
+**Chain:** API → Tier-2 Audit → Canonical Event Table → Event Card Renderer → Report Section
 
 Rules:  
-1. Each card maps uniquely to an `activity_id`.  
-2. Inherits validated fields: date, type, duration, TSS, IF, RPE, feel, device_name, source.  
-3. Cards may group visually but never alter values.  
-4. If card count ≠ table rows → ❌ Renderer Halt.  
-5. Missing provenance → `Unknown • Manual`.  
-6. Device provenance must appear on both layers.  
+1. Each card maps uniquely to a single activity_id.
+2. No aggregation or daily merging permitted.
+3. Card values must equal validated event fields: date, type, duration, TSS, IF, RPE, feel, device_name, source.
+4. Card count must equal event row count; mismatch → ❌ Renderer Halt.
+5. Visual grouping allowed only for layout purposes, not data combination.
+6. Missing provenance → Unknown • Manual.
+7. Device provenance must appear consistently at both event and card levels.
 
 ---
 
