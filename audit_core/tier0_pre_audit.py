@@ -143,8 +143,9 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                     raise AuditHalt(f"❌ Failed to fetch activities ({acts_resp.status_code}) → {acts_resp.text[:200]}")
 
                 df_chunk = pd.DataFrame(acts_resp.json())
-                if not df_chunk.empty:
-                    df_activities_list.append(df_chunk)
+                if "icu_training_load" not in df_chunk.columns and "icu_training_load_data" in df_chunk.columns:
+                    df_chunk.rename(columns={"icu_training_load_data": "icu_training_load"}, inplace=True)
+
 
             if not df_activities_list:
                 debug(context,"⚠ No activity chunks returned from API.")
