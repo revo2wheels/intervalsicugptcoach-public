@@ -123,41 +123,60 @@ manifest_note: "Dual-path manifest with explicit ChatGPT and Local modes; full G
 }
 
 ---
+# Unified Module Load Order — v16.18 (Corrected)
 
-## 🔗 Bindings (Dual Path)
-bindings:
-  Glossary & Placeholders:
-    cloud: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Glossary%20%26%20Placeholders.md
-    local: ./Glossary & Placeholders.md
-  Coaching Cheat Sheet:
-    cloud: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Coaching%20Cheat%20Sheet.md
-    local: ./Coaching Cheat Sheet.md
-  Coaching Heuristics Pack:
-    cloud: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Coaching%20Heuristics%20Pack.md
-    local: ./Coaching Heuristics Pack.md
-  Advanced Marker Reference:
-    cloud: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Advanced%20Marker%20Reference.md
-    local: ./Advanced Marker Reference.md
-  Coach Profile:
-    cloud: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Coach%20profile.md
-    local: ./Coach profile.md
-  Unified Reporting Framework:
-    cloud: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Unified%20Reporting%20Framework.md
-    local: ./Unified Reporting Framework.md
-  Unified_UI_v5.1:
-    cloud: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/UIcomponents/icon_pack.py
-    local: ./UIcomponents/icon_pack.py
-  Framework Map:
-    cloud: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/docs/framework-map.md
-    local: ./docs/framework-map.md
-  Mapping Table:
-    cloud: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/docs/mapping-table.md
-    local: ./docs/mapping-table.md
-  Schema JSON:
-    cloud: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Schema_3_9_12.json
-    local: ./Schema_3_9_12.json
+**Purpose:** Define strict initialization order and canonical dependencies for the Intervals.icu GPT Coach.  
+**Applies to:** both local runtime and ChatGPT plugin configuration.  
 
 ---
+
+## 📦 Load Sequence
+
+| **Priority** | **Module** | **Description** | **Layer** |
+|:--|:--|:--|:--|
+| 1 | `Schema_3_9_12.json` | Intervals.icu OpenAPI schema (activities, wellness, profile) | API Core |
+| 2 | `audit_core/tier0_pre_audit.py` | Data ingestion and lightweight 28-day snapshot (Tier-0 entry) | Tier-0 |
+| 3 | `audit_core/fetch_utils.py` *(or equivalent)* | Helper for authenticated HTTP fetches with retry logic | Tier-0 |
+| 4 | `audit_core/tier1_controller.py` | Dataset validation and canonical totals registration | Tier-1 |
+| 5 | `audit_core/tier2_enforcement.py` | Derived metrics and event-level integrity checks | Tier-2 |
+| 6 | `audit_core/render_unified_report.py` | Renderer for Unified Reporting Framework (URF v5.2) | Render |
+| 7 | `Unified Reporting Framework v5.2.md` | Canonical metric definitions and 10-section layout | Spec |
+| 8 | `coaching_cheat_sheet.py` | RPE, feel, and zone reference scales | Coaching |
+| 9 | `coaching_heuristics.py` | Fatigue, ACWR, durability, and recovery logic | Coaching |
+| 10 | `coaching_profile.py` | Narrative templates, tone, and persona | Coaching |
+| 11 | `Glossary & Placeholders.md` | Audit state/context tokens (Tier-0 ↔ Tier-1 bridge) | Reference |
+
+---
+
+## 🧩 Runtime Execution Chain
+
+Schema → Tier-0 → Tier-1 → Tier-2 → URF Renderer → Coaching Modules → Output
+
+---
+
+## 🗃 Deprecated / Archived Modules
+
+| **Deprecated File** | **Replaced By** |
+|:--|:--|
+| `Coaching Cheat Sheet.md` | `audit_core/coaching_cheat_sheet.py` |
+| `Coaching Heuristics Pack.md` | `audit_core/coaching_heuristics.py` |
+| `Coaching Profile.md` | `audit_core/coaching_profile.py` |
+
+> ⚠️ Each deprecated file should begin with the line:  
+> `⚠️ DEPRECATED — canonical runtime source: audit_core/coaching_<module>.py`
+
+---
+
+## 🔒 Enforcement Rules
+
+- `report_controller.py` loads and executes modules **in order**.  
+- Each layer must confirm success before advancing.  
+- Any failure in Tier-2, URF, or Coaching halts execution with `AuditHalt`.  
+- `Glossary & Placeholders.md` always loaded last.  
+- Schema and Tier-0 are immutable once loaded.  
+
+---
+
 
 ## 📄 Documentation References
 README: https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/README.md  
