@@ -11,59 +11,62 @@
   ],
   "paths": {
     "/athlete/0/activities": {
-      "get": {
-        "summary": "List activities (≤7–28 days, full or lightweight mode)",
-        "description": "Official Intervals.icu endpoint. Used for both full fetches (7-day detailed) and lightweight mode (28-day snapshot). The lightweight variant trims fields locally in Tier-0 rather than via query parameters.",
-        "operationId": "listActivities",
-        "parameters": [
-          { "name": "oldest", "in": "query", "schema": { "type": "string", "format": "date" } },
-          { "name": "newest", "in": "query", "schema": { "type": "string", "format": "date" } },
-          { "name": "page", "in": "query", "schema": { "type": "integer" } },
-          { "name": "per_page", "in": "query", "schema": { "type": "integer" } },
-          { "name": "chunk", "in": "query", "schema": { "type": "string" } },
-          { "name": "auto", "in": "query", "schema": { "type": "boolean" } }
-        ],
-        "responses": {
-          "200": {
-            "description": "Full Intervals.icu activity list; lightweight filtering applied locally post-fetch.",
-            "content": {
-              "application/json": {
-                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Activity" } }
-              }
+    "get": {
+      "summary": "List activities (≤7–28 days, full or lightweight mode)",
+      "description": "Official Intervals.icu endpoint. Supports both detailed (≤7-day) and lightweight (≤28-day) fetches. The lightweight variant uses the 'fields' query parameter to request only minimal columns directly from the server.",
+      "operationId": "listActivities",
+      "parameters": [
+        { "name": "oldest", "in": "query", "schema": { "type": "string", "format": "date" } },
+        { "name": "newest", "in": "query", "schema": { "type": "string", "format": "date" } },
+        { "name": "page", "in": "query", "schema": { "type": "integer" } },
+        { "name": "per_page", "in": "query", "schema": { "type": "integer" } },
+        { "name": "chunk", "in": "query", "schema": { "type": "string" } },
+        { "name": "auto", "in": "query", "schema": { "type": "boolean" } },
+        { "name": "fields", "in": "query", "schema": { "type": "string" }, "description": "Comma-separated list of fields for lightweight fetch mode." }
+      ],
+      "responses": {
+        "200": {
+          "description": "Hybrid activity list. When 'fields' is present, the response contains only those columns.",
+          "content": {
+            "application/json": {
+              "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Activity" } }
             }
           }
+        }
+      },
+      "x-modes": {
+        "full": {
+          "description": "7-day detailed activity fetch (default mode with full field set)."
         },
-        "x-modes": {
-          "full": {
-            "description": "7-day full detail with all fields."
-          },
-          "lightweight": {
-            "description": "28-day reduced fieldset (client-side filter of columns: id, name, type, start_date_local, distance, moving_time, icu_training_load, IF, average_heartrate, VO2MaxGarmin)."
-          }
+        "lightweight": {
+          "description": "28-day reduced fieldset mode using ?fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin."
         }
       }
-    },
-    "/athlete/0/wellness": {
-      "get": {
-        "summary": "List wellness data (≤7 days, JSON)",
-        "operationId": "listWellness",
-        "parameters": [
-          { "name": "oldest", "in": "query", "schema": { "type": "string", "format": "date" } },
-          { "name": "newest", "in": "query", "schema": { "type": "string", "format": "date" } }
-        ],
-        "responses": {
-          "200": {
-            "description": "Wellness dataset",
-            "content": {
-              "application/json": {
-                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Wellness" } }
-              }
+    }
+  },
+
+  "/athlete/0/wellness": {
+    "get": {
+      "summary": "List wellness data (≤7 days, JSON)",
+      "description": "Fetches athlete wellness metrics for the specified date range. Used by Tier-0 and Tier-2 for CTL, ATL, and Form alignment.",
+      "operationId": "listWellness",
+      "parameters": [
+        { "name": "oldest", "in": "query", "schema": { "type": "string", "format": "date" } },
+        { "name": "newest", "in": "query", "schema": { "type": "string", "format": "date" } },
+        { "name": "fields", "in": "query", "schema": { "type": "string" }, "description": "Optional comma-separated field list (lightweight mode)." }
+      ],
+      "responses": {
+        "200": {
+          "description": "Wellness dataset with optional field filtering when 'fields' is specified.",
+          "content": {
+            "application/json": {
+              "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Wellness" } }
             }
           }
         }
       }
-    },
-
+    }
+  },
     "/athlete/0/profile": {
       "get": {
         "summary": "Fetch athlete profile (official endpoint, hybrid schema)",

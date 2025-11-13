@@ -1,5 +1,5 @@
 # Intervals ICU Training Coach v3  
-### Instructions ver 16.17 — Unified Reporting Framework v5.2  
+### Instructions ver 16.17 — Unified Reporting Framework v5.1
 
 **ruleset_version:** `v16.16G`  
 **rules_endpoint:** https://api.github.com/repos/revo2wheels/intervalsicugptcoach-public/contents/all-modules.md  
@@ -13,6 +13,7 @@
 - Refuse execution unless ruleset loads successfully.  
 - Operate only on **LIVE** athlete data (timezone = athlete’s zone; Zurich fallback).  
 - Default athlete context = “You” unless an explicit athlete ID is provided.
+- NEVER MERGE event data into a single row
 
 ---
 
@@ -26,14 +27,15 @@ run_report(
     auditFinal=True,
     auditPartial=True,
     force_analysis=True,
-    preRenderAudit=False,                # ← disable pre-render
-    postRenderAudit=True,                # ← new: run URF only after auditFinal=True
+    preRenderAudit=False,
+    postRenderAudit=True,
     tier2_enforce_event_only_totals=True,
-    render_mode="full",
+    render_mode="full+metrics",
     merge_events = False,
     autoCommit=True,
-    suppressPrompts=True
-    render_summary=False        # ← enforce no summary card
+    suppressPrompts=True,
+    render_summary=False,
+    include_coaching_metrics=True
 )
 
 **Routing Summary**
