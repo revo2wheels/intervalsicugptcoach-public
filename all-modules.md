@@ -123,7 +123,7 @@ manifest_note: "Dual-path manifest with explicit ChatGPT and Local modes; full G
 }
 
 ---
-# Unified Module Load Order — v16.18 (Corrected)
+# Unified Module Load Order
 
 **Purpose:** Define strict initialization order and canonical dependencies for the Intervals.icu GPT Coach.  
 **Applies to:** both local runtime and ChatGPT plugin configuration.  
@@ -161,9 +161,6 @@ Schema → Tier-0 → Tier-1 → Tier-2 → URF Renderer → Coaching Modules �
 | `Coaching Cheat Sheet.md` | `audit_core/coaching_cheat_sheet.py` |
 | `Coaching Heuristics Pack.md` | `audit_core/coaching_heuristics.py` |
 | `Coaching Profile.md` | `audit_core/coaching_profile.py` |
-
-> ⚠️ Each deprecated file should begin with the line:  
-> `⚠️ DEPRECATED — canonical runtime source: audit_core/coaching_<module>.py`
 
 ---
 
