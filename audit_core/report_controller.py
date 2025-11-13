@@ -25,7 +25,7 @@ def run_report(
     render_mode: str = "full+metrics",
     autoCommit: bool = True,
     suppressPrompts: bool = True,
-    postRenderAudit: bool = True,
+    postRenderAudit: bool = False,
     merge_events: bool = False,
     render_summary: bool = False,
     include_coaching_metrics: bool = True,

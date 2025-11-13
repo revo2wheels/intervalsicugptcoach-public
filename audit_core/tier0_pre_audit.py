@@ -359,19 +359,36 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     if not ICU_TOKEN:
         raise EnvironmentError("Missing Intervals.icu OAuth token. Set ICU_OAUTH env var.")
 
-    # --- Step 0b: Lightweight 28-day snapshot (using /activities endpoint) ---
-    headers = {"Authorization": f"Bearer {ICU_TOKEN}"}
+    # --- Step 0b: Lightweight 28-day snapshot (direct GET) ---
+    
 
-    fields = "id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin"
-    light_url = (
-        f"{INTERVALS_API}/athlete/0/activities?"
-        f"oldest={(pd.Timestamp.now() - pd.Timedelta(days=28)).strftime('%Y-%m-%d')}"
-        f"&newest={pd.Timestamp.now().strftime('%Y-%m-%d')}"
-        f"&fields={fields}"
+    headers = {"Authorization": f"Bearer {ICU_TOKEN}"}
+    fields = (
+        "id,name,type,start_date_local,distance,moving_time,"
+        "icu_training_load,IF,average_heartrate,VO2MaxGarmin"
     )
 
-    debug(context, f"[T0-LIGHT] Fetching lightweight 28-day dataset via /activities → {light_url}")
-    resp = fetch_with_retry(light_url, headers)
+    oldest = (pd.Timestamp.now() - pd.Timedelta(days=28)).strftime("%Y-%m-%d")
+    newest = pd.Timestamp.now().strftime("%Y-%m-%d")
+
+    light_url = (
+        f"{INTERVALS_API}/athlete/0/activities?"
+        f"oldest={oldest}&newest={newest}&fields={fields}"
+    )
+
+    debug(context, f"[T0-LIGHT] Direct GET → {light_url}")
+
+    resp = requests.get(light_url, headers=headers, timeout=60)
+    if resp.status_code != 200:
+        raise AuditHalt(f"❌ Tier-0 lightweight fetch failed → {resp.status_code}: {resp.text[:200]}")
+
+    payload = resp.json()
+    if not payload:
+        raise AuditHalt("❌ Tier-0 lightweight fetch returned no data")
+
+    debug(context, f"[T0-LIGHT] Retrieved {len(payload)} activities with {len(payload[0].keys())} fields")
+
+    df_acts = pd.DataFrame(payload)
 
     if resp.status_code != 200:
         debug(context, f"[T0-LIGHT] ⚠️ HTTP {resp.status_code}: {resp.text[:200]}")
@@ -459,7 +476,7 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     if df_activities.empty:
         raise AuditHalt("❌ No activity data returned after chunked fetch")
 
-        # --- Optional ACWR extension: fetch prior 21 days lightweight for load history ---
+    # --- Optional ACWR extension: fetch prior 21 days lightweight for load history ---
     try:
         acwr_oldest = oldest - timedelta(days=21)
         acwr_newest = oldest - timedelta(days=1)
