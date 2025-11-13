@@ -67,7 +67,21 @@ def safe_metric_entry(k, v):
 def render_report(data):
     ctx = data.get("context", {})
 
-        # --- Canonical totals unification (Tier-1 visible subset preferred) ---
+    # --- Diagnostic: Totals source verification ---
+    if "tier1_visibleTotals" in ctx:
+        debug(ctx, "[VERIFY] Renderer using Tier-1 visibleTotals for totals and metrics.")
+        print("✅ Renderer source: Tier-1 visibleTotals (lightweight 7-day dataset)")
+    elif "tier2_enforced_totals" in ctx:
+        debug(ctx, "[VERIFY] Renderer using Tier-2 enforced totals (canonical dataset).")
+        print("✅ Renderer source: Tier-2 enforced totals (canonical full dataset)")
+    elif "eventTotals" in ctx:
+        debug(ctx, "[VERIFY] Renderer using legacy eventTotals (fallback).")
+        print("✅ Renderer source: eventTotals (legacy fallback)")
+    else:
+        debug(ctx, "[VERIFY] Renderer could not determine totals source — defaulting to context keys.")
+        print("⚠️ Renderer source: undetermined (default context values)")
+
+    # --- Canonical totals unification (Tier-1 visible subset preferred) ---
     if "tier1_visibleTotals" in ctx:
         ctx["eventTotals"] = ctx["tier1_visibleTotals"]
         ctx["totalHours"] = ctx["tier1_visibleTotals"].get("hours", 0)

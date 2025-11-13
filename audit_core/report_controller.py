@@ -134,6 +134,17 @@ def run_report(
     context["render_mode"] = "full+metrics"
     debug(context, "🧩 Render mode forced to full+metrics for Unified 10-section layout")
     
+    # --- Tier-1 override for URF renderer (lightweight 7-day totals) ---
+    if reportType.lower() == "weekly" and "tier1_visibleTotals" in context:
+        vt = context["tier1_visibleTotals"]
+        context["totalHours"] = vt.get("hours")
+        context["totalTss"] = vt.get("tss")
+        context["totalDistance"] = vt.get("distance")
+        context["totalSessions"] = vt.get("count", len(context.get("df_events", [])))
+        debug(context, "[SYNC] URF renderer context overridden with tier1_visibleTotals")
+    else:
+        debug(context, "[SYNC] No tier1_visibleTotals found; using canonical totals")
+
     # --- Final render ---
     report, compliance = finalize_and_validate_render(context, reportType=reportType)
     return report, compliance
