@@ -33,7 +33,7 @@ Refer to the **Report Triggers Clarification** section for operational definitio
 Every report inherits the following structure:  
 1. **Header** — athlete metadata, discipline, audit status, and Friel age modifiers.  
 2. **Key Stats** — load, recovery, intensity distribution, and core metrics.  
-3. **Event Log (Merged Daily View)** — validated merged sessions post Tier-2 audit.  
+3. **Event Log** — lists each activities never merged sessions post Tier-2 audit.  
  3.1 **Event Cards and Relationship Model** — 1:1 mapping between Event Log rows and rendered Event Cards.  
 4. **Training Quality Section** — Zone distribution, endurance–quality ratio, and HIIT density index (Seiler, Laursen).  
 5. **Efficiency & Adaptation Section** — advanced markers (Benchmark, Specificity, Consistency, Durability).  

@@ -144,7 +144,7 @@ correlation_metrics: True
 [Renderer shim] Delegating to render_report() in render_unified_report.py
 
 [DEBUG-TEMPLATE: PRE-CALL]
-Keys in context: ['debug_mode', 'merge_events', 'render_summary', 'include_coaching_metrics', 'postRenderAudit', 'debug_trace', 'tier0_snapshotTotals_7d', 'snapshot_7d_json', 'timezone', 'athleteProfile', 'athlete', 'report_mode', 'window_start', 'window_end', 'df_acwr_base', 'auditPartial', 'auditFinal', 'window_summary', 'knowledge', 'tier1_visibleTotals', 'weeklyEventLogBlock', 'df_events', 'wellness_metrics', 'dailyMerged', 'ctl', 'atl', 'tsb', 'load_metrics', 'zone_dist_power', 'zone_dist_hr', 'zone_dist_pace', 'outliers', 'totalHours', 'totalTss', 'totalDistance', 'eventTotals', 'df_event_only', 'enforcement_layer', '_locked_totals', 'locked_totalHours', 'locked_totalTss', 'locked_totalDistance', 'event_count', 'trace', 'derived_metrics', 'trend_series', 'metrics', 'ACWR', 'Monotony', 'Strain', 'FatigueTrend', 'ZQI', 'FatOxEfficiency', 'Polarisation', 'FOxI', 'CUR', 'GR', 'MES', 'RecoveryIndex', 'ACWR_Risk', 'StressTolerance', 'phases', 'metric_contexts', 'ui_flag', 'actions', '_locked_load_metrics', 'adaptation_metrics', 'trend_metrics', 'correlation_metrics', 'render_mode', 'totalSessions', 'Duration_total', 'icon_pack', 'force_icon_pack', 'event_log_text', 'report_header', 'summary_patch', 'zone_dist']
+Keys in context: ['debug_mode', 'render_summary', 'include_coaching_metrics', 'postRenderAudit', 'debug_trace', 'tier0_snapshotTotals_7d', 'snapshot_7d_json', 'timezone', 'athleteProfile', 'athlete', 'report_mode', 'window_start', 'window_end', 'df_acwr_base', 'auditPartial', 'auditFinal', 'window_summary', 'knowledge', 'tier1_visibleTotals', 'weeklyEventLogBlock', 'df_events', 'wellness_metrics', 'dailyMerged', 'ctl', 'atl', 'tsb', 'load_metrics', 'zone_dist_power', 'zone_dist_hr', 'zone_dist_pace', 'outliers', 'totalHours', 'totalTss', 'totalDistance', 'eventTotals', 'df_event_only', 'enforcement_layer', '_locked_totals', 'locked_totalHours', 'locked_totalTss', 'locked_totalDistance', 'event_count', 'trace', 'derived_metrics', 'trend_series', 'metrics', 'ACWR', 'Monotony', 'Strain', 'FatigueTrend', 'ZQI', 'FatOxEfficiency', 'Polarisation', 'FOxI', 'CUR', 'GR', 'MES', 'RecoveryIndex', 'ACWR_Risk', 'StressTolerance', 'phases', 'metric_contexts', 'ui_flag', 'actions', '_locked_load_metrics', 'adaptation_metrics', 'trend_metrics', 'correlation_metrics', 'render_mode', 'totalSessions', 'Duration_total', 'icon_pack', 'force_icon_pack', 'event_log_text', 'report_header', 'summary_patch', 'zone_dist']
 load_metrics pre-pass: {'CTL': {'value': 91.58, 'status': 'ok'}, 'ATL': {'value': 93.21, 'status': 'ok'}, 'TSB': {'value': -1.63, 'status': 'ok'}, 'ACWR': {'value': 0.79, 'status': 'ok'}, 'Monotony': {'value': np.float64(2.93), 'status': 'ok'}, 'Strain': {'value': np.float64(1825.4), 'status': 'ok'}, 'Polarisation': {'value': 0.729, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.414), 'status': 'ok'}, 'totalHours': np.float64(13.9), 'totalTss': 623}
 _locked_load_metrics pre-pass: {'totalHours': np.float64(13.9), 'totalTss': 623, 'source': 'tier2_final_lock'}
 Report type: weekly
@@ -213,10 +213,10 @@ load_metrics post-render: {'CTL': {'value': 91.58, 'status': 'ok'}, 'ATL': {'val
 Final report keys: ['header', 'markdown', 'type', 'context', 'sections', 'tables', 'lines', 'summary', 'metrics', 'actions', 'phases', 'trends', 'correlation', 'footer']
 Final context load_metrics: {'CTL': {'value': 91.58, 'status': 'ok'}, 'ATL': {'value': 93.21, 'status': 'ok'}, 'TSB': {'value': -1.63, 'status': 'ok'}, 'ACWR': {'value': 0.79, 'status': 'ok'}, 'Monotony': {'value': 2.93, 'status': 'ok'}, 'Strain': {'value': 1825.4, 'status': 'ok'}, 'Polarisation': {'value': 0.729, 'status': 'ok'}, 'RecoveryIndex': {'value': 0.414, 'status': 'ok'}, 'totalHours': 13.9, 'totalTss': 623}
 ================================================================================
-[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Zwift - Tempus Fugit in Watopia', 'period': '2025-11-07 → 2025-11-13', 'timestamp': '2025-11-13T13:38:05.270743', 'discipline': 'cycling'}
+[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Zwift - Tempus Fugit in Watopia', 'period': '2025-11-07 → 2025-11-13', 'timestamp': '2025-11-13T14:41:29.383558', 'discipline': 'cycling'}
 [TRACE-POST-RENDER-CHECK] summary={'totalHours': np.float64(13.9), 'totalTss': 623, 'eventCount': 10, 'period': '2025-11-07 → 2025-11-13'}
 [POST-RENDER] Canonical event-only totals enforced → header + summary synced
-[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Zwift - Tempus Fugit in Watopia', 'period': '2025-11-07 → 2025-11-13', 'timestamp': '2025-11-13T13:38:05.270743', 'discipline': 'cycling', 'Total Hours': '13.90 h', 'Total Load (TSS)': 623}
+[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Zwift - Tempus Fugit in Watopia', 'period': '2025-11-07 → 2025-11-13', 'timestamp': '2025-11-13T14:41:29.383558', 'discipline': 'cycling', 'Total Hours': '13.90 h', 'Total Load (TSS)': 623}
 [PATCH] summary rebuilt for schema compliance: {'totalHours': np.float64(13.9), 'totalTss': 623, 'eventCount': 10, 'period': '2025-11-07 → 2025-11-13', 'variance': 0.0, 'zones': {}}
 [PATCH] Tier-2 summary override applied → canonical event-only totals enforced
 [PATCH] actions dual-structure applied → 24 items
@@ -276,7 +276,6 @@ Final context load_metrics: {'CTL': {'value': 91.58, 'status': 'ok'}, 'ATL': {'v
   - locked_totalDistance
   - locked_totalHours
   - locked_totalTss
-  - merge_events
   - metric_contexts
   - metrics
   - outliers
@@ -327,7 +326,7 @@ Final context load_metrics: {'CTL': {'value': 91.58, 'status': 'ok'}, 'ATL': {'v
 **Athlete:** Clive King
 **Period:** 2025-11-07 → 2025-11-13
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-13T13:38:05.269473
+**Generated:** 2025-11-13T14:41:29.382817
 
 ---
 
@@ -492,6 +491,6 @@ _No pace zone data available._
 **Cycling Metrics — Mean IF:** 0.71 · **Mean HR:** 116 bpm · **VO₂ max:** 68.6
 
 ---
-✅ **Audit Completed:** 2025-11-13T13:38:05.270714
+✅ **Audit Completed:** 2025-11-13T14:41:29.383541
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 

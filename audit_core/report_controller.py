@@ -35,7 +35,6 @@ def run_report(
     context = {}
     context.update(kwargs)
     context.update({
-        "merge_events": merge_events,
         "render_summary": render_summary,
         "include_coaching_metrics": include_coaching_metrics,
         "postRenderAudit": postRenderAudit,
