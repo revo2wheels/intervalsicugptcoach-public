@@ -390,15 +390,6 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         # Enforce correct datatypes
         df_light["start_date_local"] = pd.to_datetime(df_light["start_date_local"], utc=True, errors="coerce")
 
-        # --- Local lightweight filter (Tier-0 client-side trim) ---
-        keep_cols = [
-            "id", "name", "type", "start_date_local",
-            "distance", "moving_time", "icu_training_load",
-            "IF", "average_heartrate", "VO2MaxGarmin"
-        ]
-        df_light = df_light[[c for c in keep_cols if c in df_light.columns]].copy()
-        debug(context, f"[T0-LIGHT] Trimmed columns for lightweight mode: {list(df_light.columns)}")
-
         # --- Strict 7-day window based on report end date (timezone-normalized) ---
         # Strip timezone from activity timestamps to allow direct comparison
         df_light["start_date_local"] = pd.to_datetime(

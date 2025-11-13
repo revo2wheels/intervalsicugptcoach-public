@@ -41,7 +41,8 @@
         "lightweight": {
           "description": "28-day reduced fieldset mode using ?fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin."
         }
-      }
+      },
+      "x-forward-query": ["fields", "oldest", "newest", "page", "per_page", "chunk", "auto"]
     }
   },
 
@@ -64,7 +65,8 @@
             }
           }
         }
-      }
+      },
+      "x-forward-query": ["fields", "oldest", "newest", "page", "per_page", "chunk", "auto"]
     }
   },
     "/athlete/0/profile": {
