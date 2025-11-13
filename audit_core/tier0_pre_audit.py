@@ -367,10 +367,12 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     # --- Step 0b: Lightweight 28-day snapshot (using /activities endpoint) ---
     headers = {"Authorization": f"Bearer {ICU_TOKEN}"}
 
+   fields = "id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin"
     light_url = (
         f"{INTERVALS_API}/athlete/0/activities?"
         f"oldest={(pd.Timestamp.now() - pd.Timedelta(days=28)).strftime('%Y-%m-%d')}"
         f"&newest={pd.Timestamp.now().strftime('%Y-%m-%d')}"
+        f"&fields={fields}"
     )
 
     debug(context, f"[T0-LIGHT] Fetching lightweight 28-day dataset via /activities → {light_url}")
