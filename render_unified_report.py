@@ -67,6 +67,21 @@ def safe_metric_entry(k, v):
 def render_report(data):
     ctx = data.get("context", {})
 
+        # --- Canonical totals unification (Tier-1 visible subset preferred) ---
+    if "tier1_visibleTotals" in ctx:
+        ctx["eventTotals"] = ctx["tier1_visibleTotals"]
+        ctx["totalHours"] = ctx["tier1_visibleTotals"].get("hours", 0)
+        ctx["totalTss"] = ctx["tier1_visibleTotals"].get("tss", 0)
+        ctx["totalDistance"] = ctx["tier1_visibleTotals"].get("distance", 0)
+        debug(ctx, "[SYNC] Unified totals from tier1_visibleTotals")
+    elif "tier0_snapshotTotals_7d" in ctx:
+        ctx["eventTotals"] = ctx["tier0_snapshotTotals_7d"]
+        ctx["totalHours"] = ctx["tier0_snapshotTotals_7d"].get("hours", 0)
+        ctx["totalTss"] = ctx["tier0_snapshotTotals_7d"].get("tss", 0)
+        ctx["totalDistance"] = ctx["tier0_snapshotTotals_7d"].get("distance", 0)
+        debug(ctx, "[SYNC] Unified totals from tier0_snapshotTotals_7d")
+
+
     # --- 🔧 Canonical sync from Tier-2 enforced DataFrame totals (URF v5.2+)
     if "tier2_enforced_totals" in ctx:
         et = ctx["tier2_enforced_totals"]
@@ -346,33 +361,63 @@ def render_report(data):
             md.append(table(headers, rows))
             debug(ctx, f"[Tier-2] Rendered Weekly Events Summary ({len(rows)} rows)")
 
-            # --- Visible Event Log Totals (Tier-1 visible subset preferred) ---
-            if "tier1_visibleTotals" in ctx:
-                vt = ctx["tier1_visibleTotals"]
-                md.append("")
-                md.append(
-                    f"**Visible event subset totals:** "
-                    f"{vt.get('hours', 0):.2f} h · "
-                    f"{vt.get('distance', 0):.1f} km · "
-                    f"{vt.get('elevation_gain', 0):,} m · "
-                    f"{vt.get('tss', 0)} TSS**"
-                )
-                debug(ctx, "[Tier-2] Visible event-log totals appended (Tier-1 subset)")
+    # --- Unified Weekly Totals (Tier-1 / Tier-0 canonical fallback) + Metrics ---
+    if "tier1_visibleTotals" in ctx:
+        vt = ctx["tier1_visibleTotals"]
+        md.append("")
+        md.append(
+            f"**Weekly totals:** "
+            f"{vt.get('hours', 0):.2f} h · "
+            f"{vt.get('distance', 0):.1f} km · "
+            f"{vt.get('tss', 0)} TSS · "
+            f"{vt.get('count', 0)} sessions**"
+        )
 
-            elif "eventTotals" in ctx:
-                et = ctx["eventTotals"]
-                md.append("")
-                md.append(
-                    f"**Canonical totals for reporting period:** "
-                    f"{et.get('hours', 0):.2f} h · "
-                    f"{et.get('tss', 0)} TSS · "
-                    f"{ctx.get('totalDistance', '—')} km**"
-                )
-                debug(ctx, "[Tier-2] Canonical totals appended (fallback)")
+    # --- Cycling-specific mean metrics (Tier-1 visible subset) ---
+    mean_if = vt.get("avg_if")
+    mean_hr = vt.get("avg_hr")
+    mean_vo2 = vt.get("vo2max")
 
-        else:
-            md.append("_No event preview available._")
-            debug(ctx, "[Tier-2 WARN] No event preview found for Weekly Events Summary")
+    summary_parts = []
+    if mean_if is not None:
+        summary_parts.append(f"**Cycling Metrics — Mean IF:** {mean_if:.2f}")
+    if mean_hr is not None:
+        summary_parts.append(f"**Mean HR:** {mean_hr} bpm")
+    if mean_vo2 is not None:
+        summary_parts.append(f"**VO₂ max:** {mean_vo2:.1f}")
+
+    if summary_parts:
+        md.append(" · ".join(summary_parts))
+
+        debug(ctx, "[Tier-2] Weekly totals + mean metrics rendered (Tier-1 subset)")
+
+    elif "tier0_snapshotTotals_7d" in ctx:
+        st = ctx["tier0_snapshotTotals_7d"]
+        md.append("")
+        md.append(
+            f"**Weekly totals:** "
+            f"{st.get('hours', 0):.2f} h · "
+            f"{st.get('distance', 0):.1f} km · "
+            f"{st.get('tss', 0)} TSS · "
+            f"{st.get('count', 0)} sessions**"
+        )
+        debug(ctx, "[Tier-2] Weekly totals rendered from Tier-0 snapshot")
+
+    elif "tier2_enforced_totals" in ctx:
+        et = ctx["tier2_enforced_totals"]
+        md.append("")
+        md.append(
+            f"**Weekly totals:** "
+            f"{et.get('time_h', 0):.2f} h · "
+            f"{et.get('distance_km', 0):.1f} km · "
+            f"{et.get('tss', 0)} TSS**"
+        )
+        debug(ctx, "[Tier-2] Weekly totals rendered from Tier-2 enforced DataFrame")
+
+    else:
+        md.append("_No event preview available._")
+        debug(ctx, "[Tier-2 WARN] No event preview or totals available")
+
 
     # === 🧾 Final Summary ===
     md.append("\n---")

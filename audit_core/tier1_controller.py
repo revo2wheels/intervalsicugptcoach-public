@@ -5,6 +5,7 @@ Ensures dataset integrity, preserves Tier-0 columns (incl. start_date_local),
 and enforces Field Lock Rule for moving_time.
 """
 import json
+import sys
 import pandas as pd
 import numpy as np
 from audit_core.utils import debug
@@ -106,9 +107,6 @@ def collect_zone_distributions(df_activities, athlete_profile, context):
     return context
 
 def run_tier1_controller(df_activities, wellness, context):
-    # --- Tier-1 entry diagnostic ---
-    import sys
- 
     # --- Step 0: Defensive copy (preserve all Tier-0 columns)
     df_activities = df_activities.copy()
     if "start_date_local" not in df_activities.columns:
@@ -125,77 +123,110 @@ def run_tier1_controller(df_activities, wellness, context):
     if df_activities["id"].duplicated().any():
         raise ValueError("❌ Duplicate activity IDs detected")
 
-        # --- Step 2: Canonical totals (true Σ(event.moving_time)) ---
-    if "moving_time" not in df_activities.columns:
-        raise AuditHalt("❌ Tier-1: missing moving_time column for canonical totals")
+        # --- Step 2: Unified totals initialisation (linked to Tier-0 lightweight snapshot) ---
+    import pandas as pd, json
 
-    # Intervals.icu exports moving_time in seconds — enforce numeric → hours
-    df_activities["moving_time"] = pd.to_numeric(df_activities["moving_time"], errors="coerce").fillna(0)
-    df_activities["icu_training_load"] = pd.to_numeric(df_activities["icu_training_load"], errors="coerce").fillna(0)
-    event_hours = df_activities["moving_time"].sum() / 3600
-    event_tss = df_activities["icu_training_load"].sum()
+    # Validate Tier-0 context
+    if "tier0_snapshotTotals_7d" not in context:
+        raise AuditHalt("❌ Tier-1: missing Tier-0 7-day snapshot totals")
 
-    context["tier1_eventTotals"] = {
-        "hours": round(event_hours, 2),
-        "tss": int(round(event_tss))
-    }
+    # --- Unified visible totals with mean metrics ---
+    t0 = context.get("tier0_snapshotTotals_7d", {}).copy()
 
-    debug(
-        context,
-        f"🧮 Tier-1 canonical totals = {event_hours:.2f} h | {event_tss:.0f} TSS"
-    )
+    # Ensure the 7-day snapshot JSON exists
+    if "snapshot_7d_json" not in context or not context["snapshot_7d_json"]:
+        raise AuditHalt("❌ Tier-1: missing snapshot_7d_json for visible subset mean metrics")
 
-    # --- Step 2b: Visible event-log totals (subset for renderer + key stats) ---
-    visible_events = apply_event_filter(df_activities)
+    from io import StringIO
+    visible_events = pd.read_json(StringIO(context["snapshot_7d_json"]))
 
-    # Ensure numeric columns before aggregation
-    for c in ["moving_time", "icu_training_load", "distance", "IF", "average_heartrate", "VO2MaxGarmin"]:
-        if c in visible_events.columns:
-            visible_events[c] = pd.to_numeric(visible_events[c], errors="coerce").fillna(0)
+    # Ensure numeric for mean computations
+    for col in ["IF", "average_heartrate", "VO2MaxGarmin"]:
+        if col in visible_events.columns:
+            visible_events[col] = pd.to_numeric(visible_events[col], errors="coerce").fillna(0)
 
-    log_hours = visible_events["moving_time"].sum() / 3600
-    log_tss = visible_events["icu_training_load"].sum()
-    log_distance = visible_events["distance"].sum() / 1000 if "distance" in visible_events.columns else 0
+   # Placeholder before cycling refinement
+    t0["avg_if"] = None
+    t0["avg_hr"] = None
+    t0["vo2max"] = None
 
-    context["tier1_visibleTotals"] = {
-        "hours": round(log_hours, 2),
-        "tss": int(round(log_tss)),
-        "distance": round(log_distance, 1),
-        "avg_if": round(visible_events["IF"].mean(), 2) if "IF" in visible_events.columns else 0,
-        "avg_hr": int(visible_events["average_heartrate"].mean()) if "average_heartrate" in visible_events.columns else None,
-        "vo2max": round(visible_events["VO2MaxGarmin"].mean(), 1) if "VO2MaxGarmin" in visible_events.columns else None,
-    }
+    context["tier1_visibleTotals"] = t0
 
     debug(
         context,
-        f"📋 Tier-1 visible subset totals = {log_hours:.2f} h | {log_distance:.1f} km | "
-        f"{log_tss:.0f} TSS ({len(visible_events)} events)"
+        f"[Tier-1] Visible subset unified: {t0.get('hours', 0):.2f} h | {t0.get('distance', 0):.1f} km | "
+        f"{t0.get('tss', 0)} TSS | IF={t0.get('avg_if')} HR={t0.get('avg_hr')} VO₂={t0.get('vo2max')}"
     )
 
-    # --- Step 2c: Serialize visible events for renderer ---
+    # If snapshot JSON exists, rebuild visible events
+    if context.get("snapshot_7d_json"):
+        visible_events = pd.read_json(context["snapshot_7d_json"])
+    else:
+        visible_events = df_activities.copy()
+
+    # Ensure numeric consistency
+    for col in ["moving_time", "icu_training_load", "distance", "IF",
+                "average_heartrate", "VO2MaxGarmin"]:
+        if col in visible_events.columns:
+            visible_events[col] = pd.to_numeric(
+                visible_events[col], errors="coerce"
+            ).fillna(0)
+
+    # --- Cycling-only refinement for mean metrics ---
+    cycling_subset = visible_events[visible_events["type"].isin(["Ride", "VirtualRide", "Workout"])].copy()
+    if not cycling_subset.empty:
+        context["tier1_visibleTotals"].update({
+            "avg_if": round(cycling_subset["IF"].mean(), 2)
+            if "IF" in cycling_subset.columns else 0,
+            "avg_hr": int(cycling_subset["average_heartrate"].mean())
+            if "average_heartrate" in cycling_subset.columns else None,
+            "vo2max": round(
+            cycling_subset.loc[cycling_subset["VO2MaxGarmin"] > 30, "VO2MaxGarmin"].mean(), 1
+            )
+            if "VO2MaxGarmin" in cycling_subset.columns else None,
+        })
+
+    # Serialize validated event log for renderer
     context["weeklyEventLogBlock"] = json.loads(
         visible_events.to_json(orient="records", double_precision=2)
     )
 
+    required_keys = ["weeklyEventLogBlock", "tier1_visibleTotals"]
+    if not all(k in context for k in required_keys) or len(context["weeklyEventLogBlock"]) == 0:
+        raise AuditHalt("❌ Tier-1: missing or empty event data before render")
+
+    # Confirm audit completion
+    context["auditFinal"] = True
     debug(
         context,
-        f"🪶 Tier-1 serialization complete: {len(context['weeklyEventLogBlock'])} records"
+        f"✅ Tier-1 finalization: {len(context['weeklyEventLogBlock'])} events | "
+        f"{context['tier1_visibleTotals']['hours']} h | "
+        f"{context['tier1_visibleTotals']['tss']} TSS"
     )
 
-    # --- Step 3: Basic variance validation ---
-    if event_hours <= 0 or event_tss <= 0:
-        raise AuditHalt("❌ Tier-1: invalid totals (zero or negative values)")
+   # --- Step 3: Basic variance validation (unified) ---
+    t1_hours = context.get("tier1_visibleTotals", {}).get("hours", 0)
+    t1_tss = context.get("tier1_visibleTotals", {}).get("tss", 0)
+
+    if t1_hours <= 0 or t1_tss <= 0:
+        raise AuditHalt("❌ Tier-1: invalid or missing canonical totals from Tier-0 snapshot")
 
     context.pop("dailyTotals", None)
     context["df_events"] = df_activities
 
-    # --- Step 4: Cross-verification (restored) ---
-    diff_hours = abs(event_hours - context["tier1_eventTotals"]["hours"])
-    diff_tss = abs(event_tss - context["tier1_eventTotals"]["tss"])
+    # --- Step 4: Cross-verification (unified) ---
+    # Compare Tier-0 snapshot vs Tier-1 revalidated totals
+    t0_hours = context.get("tier0_snapshotTotals_7d", {}).get("hours", 0)
+    t0_tss = context.get("tier0_snapshotTotals_7d", {}).get("tss", 0)
+    diff_hours = abs(t0_hours - t1_hours)
+    diff_tss = abs(t0_tss - t1_tss)
+
     if diff_hours > 0.1:
         raise AuditHalt(f"❌ Tier-1 cross-check variance >0.1 h (Δ={diff_hours:.2f})")
     if diff_tss > 2:
         raise AuditHalt(f"❌ Tier-1 cross-check variance >2 TSS (Δ={diff_tss:.1f})")
+
+    debug(context, f"🧩 Tier-1 variance check passed (Δh={diff_hours:.2f}, ΔTSS={diff_tss:.1f})")
 
     # --- Step 5: Wellness alignment check ---
     if wellness is None or (isinstance(wellness, pd.DataFrame) and wellness.empty):

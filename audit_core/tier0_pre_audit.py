@@ -364,6 +364,75 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     if not ICU_TOKEN:
         raise EnvironmentError("Missing Intervals.icu OAuth token. Set ICU_OAUTH env var.")
 
+    # --- Step 0b: Lightweight 28-day snapshot (reduced fieldset, authenticated) ---
+    headers = {"Authorization": f"Bearer {ICU_TOKEN}"}
+    fields = "id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin"
+    light_url = (
+        f"{INTERVALS_API}/athlete/0/activities?"
+        f"oldest={(pd.Timestamp.now() - pd.Timedelta(days=28)).strftime('%Y-%m-%d')}"
+        f"&newest={pd.Timestamp.now().strftime('%Y-%m-%d')}"
+        f"&fields={fields}"
+    )
+
+    debug(context, f"[T0-LIGHT] Fetching lightweight 28-day dataset → {light_url}")
+    resp = fetch_with_retry(light_url, headers)
+    if resp.status_code != 200:
+        debug(context, f"[T0-LIGHT] ⚠️ HTTP {resp.status_code}: {resp.text[:200]}")
+        df_light = pd.DataFrame()
+    else:
+        df_light = pd.DataFrame(resp.json())
+
+    if df_light.empty:
+        debug(context, "[T0-LIGHT] ⚠️ No lightweight 28-day data returned — continuing normally.")
+    else:
+        df_light["start_date_local"] = pd.to_datetime(df_light["start_date_local"], utc=True, errors="coerce")
+
+    # --- Build strict 7-day window (tz-aware, exclusive end) ---
+    window_end_exclusive = pd.to_datetime(end, utc=True) + pd.Timedelta(days=1)
+    window_start = pd.to_datetime(end, utc=True) - pd.Timedelta(days=6)
+
+    df_7d = df_light[
+        (df_light["start_date_local"] >= window_start)
+        & (df_light["start_date_local"] < window_end_exclusive)
+    ].copy()
+
+    debug(
+        context,
+        f"[T0-SLICE] 7-day window (UTC): {window_start.date()} → {(window_end_exclusive - pd.Timedelta(days=1)).date()} "
+        f"({len(df_7d)} activities selected)"
+    )
+
+    # --- Fix: enforce deduplication before totals ---
+    if "id" in df_7d.columns:
+        before_dedup = len(df_7d)
+        df_7d = df_7d.drop_duplicates(subset=["id"], keep="first")
+        after_dedup = len(df_7d)
+        debug(context, f"[T0-DEDUP] Dropped {before_dedup - after_dedup} duplicate activities → {after_dedup} unique events")
+    else:
+        debug(context, "[T0-DEDUP] ⚠️ No 'id' column found; skipping deduplication")
+
+    for col in ["moving_time", "distance", "icu_training_load"]:
+        if col in df_7d.columns:
+            df_7d[col] = pd.to_numeric(df_7d[col], errors="coerce").fillna(0)
+
+    context["tier0_snapshotTotals_7d"] = {
+        "hours": round(df_7d["moving_time"].sum() / 3600, 2),
+        "distance": round(df_7d["distance"].sum() / 1000, 1),
+        "tss": int(df_7d["icu_training_load"].sum()),
+        "count": len(df_7d),
+        "start": str(window_start.date()),
+        "end": str((window_end_exclusive - pd.Timedelta(days=1)).date())
+    }
+
+    debug(context,
+            f"🧭 Tier-0: 7-day subset from lightweight 28-day snapshot = "
+            f"{context['tier0_snapshotTotals_7d']['hours']} h | "
+            f"{context['tier0_snapshotTotals_7d']['distance']} km | "
+            f"{context['tier0_snapshotTotals_7d']['tss']} TSS "
+            f"({context['tier0_snapshotTotals_7d']['count']} events)")
+
+    context["snapshot_7d_json"] = df_7d.to_json(orient="records")
+
     # --- Reset cumulative totals before Tier-0 calculations ---
     context["totalHours"] = 0
     context["totalTss"] = 0
