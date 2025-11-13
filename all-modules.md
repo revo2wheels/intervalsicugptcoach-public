@@ -29,7 +29,7 @@ manifest_note: "Dual-path manifest with explicit ChatGPT and Local modes; full G
   "enforcement": {
     "auditFinal": true,
     "auditPartial": true,
-    "force_analysis" false,
+    "force_analysis": false,
     "preRenderAudit": true,
     "tier2_event_finalizer_strict": true,
     "tier2_enforce_event_only_totals": true,
