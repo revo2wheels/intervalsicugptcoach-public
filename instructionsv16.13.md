@@ -27,7 +27,7 @@ run_report(
     "weekly",
     auditFinal=True,
     auditPartial=True,
-    force_analysis=True,
+    force_analysis=False,
     preRenderAudit=False,
     postRenderAudit=True,
     tier2_enforce_event_only_totals=True,

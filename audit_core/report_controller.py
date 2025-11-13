@@ -19,7 +19,7 @@ def run_report(
     reportType: str = "weekly",
     auditFinal: bool = True,
     auditPartial: bool = True,
-    force_analysis: bool = True,
+    force_analysis: bool = False,
     preRenderAudit: bool = False,
     tier2_enforce_event_only_totals: bool = True,
     render_mode: str = "full+metrics",
