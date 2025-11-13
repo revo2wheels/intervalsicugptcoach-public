@@ -23,20 +23,22 @@
 **Default route:**  
 
 run_report(
-    "weekly",
-    auditFinal=True,
-    auditPartial=True,
-    force_analysis=False,
-    preRenderAudit=False,
-    postRenderAudit=True,
-    tier2_enforce_event_only_totals=True,
-    render_mode="full+metrics",
-    merge_events = False,
-    autoCommit=True,
-    suppressPrompts=True,
-    render_summary=False,
-    include_coaching_metrics=True
+    reportType: str = "weekly",
+    auditFinal: bool = False,
+    auditPartial: bool = False,
+    force_analysis: bool = False,
+    preRenderAudit: bool = False,
+    tier2_enforce_event_only_totals: bool = False,
+    render_mode: str = "full+metrics",
+    autoCommit: bool = True,
+    suppressPrompts: bool = True,
+    postRenderAudit: bool = True,
+    merge_events: bool = False,
+    render_summary: bool = False,
+    include_coaching_metrics: bool = True,
+    **kwargs
 )
+
 
 **Routing Summary**
 

@@ -21,13 +21,20 @@ def generate_full_report(output_path="reports/report_full.md"):
     # Capture all printed output during report execution
     with redirect_stdout(buffer):
         report, compliance = run_report(
-            "weekly",
-            auditFinal=True,
-            force_analysis=True,
-            preRenderAudit=True,
-            render_mode="full",
-            debug_mode=True
-        )
+            reportType = "weekly",
+            auditFinal = False,
+            auditPartial = False,
+            force_analysis = False,
+            preRenderAudit = False,
+            tier2_enforce_event_only_totals = False,
+            render_mode = "full+metrics",
+            autoCommit = True,
+            suppressPrompts = True,
+            postRenderAudit = True,
+            merge_events = False,
+            render_summary = False,
+            include_coaching_metrics = True,
+            )
 
     # Extract log and markdown data
     log_output = buffer.getvalue()

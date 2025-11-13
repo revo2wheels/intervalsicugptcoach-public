@@ -17,11 +17,11 @@ from audit_core.tier2_extended_metrics import compute_extended_metrics
 
 def run_report(
     reportType: str = "weekly",
-    auditFinal: bool = True,
-    auditPartial: bool = True,
+    auditFinal: bool = False,
+    auditPartial: bool = False,
     force_analysis: bool = False,
     preRenderAudit: bool = False,
-    tier2_enforce_event_only_totals: bool = True,
+    tier2_enforce_event_only_totals: bool = False,
     render_mode: str = "full+metrics",
     autoCommit: bool = True,
     suppressPrompts: bool = True,
