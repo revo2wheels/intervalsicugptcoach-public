@@ -374,6 +374,7 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     light_url = (
         f"{INTERVALS_API}/athlete/0/activities?"
         f"oldest={oldest}&newest={newest}&fields={fields}"
+        f"&_t0light=1"   # <-- dummy param breaks deduplication
     )
 
     debug(context, f"[T0-LIGHT] Direct GET → {light_url}")
