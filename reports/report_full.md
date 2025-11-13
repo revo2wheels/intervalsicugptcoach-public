@@ -4,8 +4,7 @@
 
 ```
 🧭 Running Weekly Report (auditFinal=True, render_mode=full)
-[T0-LIGHT] Fetching lightweight 28-day dataset via /activities → https://intervals.icu/api/v1/athlete/0/activities?oldest=2025-10-16&newest=2025-11-13
-[T0-LIGHT] Trimmed columns for lightweight mode: ['id', 'name', 'type', 'start_date_local', 'distance', 'moving_time', 'icu_training_load', 'IF', 'average_heartrate', 'VO2MaxGarmin']
+[T0-LIGHT] Fetching lightweight 28-day dataset via /activities → https://intervals.icu/api/v1/athlete/0/activities?oldest=2025-10-16&newest=2025-11-13&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin
 [T0-SLICE] 7-day window: 2025-11-07 → 2025-11-14 (10 activities selected)
 [T0-SLICE] 7-day window: 2025-11-07 → 2025-11-14 (10 activities selected)
 [T0-DEDUP] Dropped 0 duplicates → 10 unique events
@@ -214,10 +213,10 @@ load_metrics post-render: {'CTL': {'value': 91.58, 'status': 'ok'}, 'ATL': {'val
 Final report keys: ['header', 'markdown', 'type', 'context', 'sections', 'tables', 'lines', 'summary', 'metrics', 'actions', 'phases', 'trends', 'correlation', 'footer']
 Final context load_metrics: {'CTL': {'value': 91.58, 'status': 'ok'}, 'ATL': {'value': 93.21, 'status': 'ok'}, 'TSB': {'value': -1.63, 'status': 'ok'}, 'ACWR': {'value': 0.79, 'status': 'ok'}, 'Monotony': {'value': 2.93, 'status': 'ok'}, 'Strain': {'value': 1825.4, 'status': 'ok'}, 'Polarisation': {'value': 0.729, 'status': 'ok'}, 'RecoveryIndex': {'value': 0.414, 'status': 'ok'}, 'totalHours': 13.9, 'totalTss': 623}
 ================================================================================
-[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Zwift - Tempus Fugit in Watopia', 'period': '2025-11-07 → 2025-11-13', 'timestamp': '2025-11-13T12:26:07.316099', 'discipline': 'cycling'}
+[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Zwift - Tempus Fugit in Watopia', 'period': '2025-11-07 → 2025-11-13', 'timestamp': '2025-11-13T13:38:05.270743', 'discipline': 'cycling'}
 [TRACE-POST-RENDER-CHECK] summary={'totalHours': np.float64(13.9), 'totalTss': 623, 'eventCount': 10, 'period': '2025-11-07 → 2025-11-13'}
 [POST-RENDER] Canonical event-only totals enforced → header + summary synced
-[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Zwift - Tempus Fugit in Watopia', 'period': '2025-11-07 → 2025-11-13', 'timestamp': '2025-11-13T12:26:07.316099', 'discipline': 'cycling', 'Total Hours': '13.90 h', 'Total Load (TSS)': 623}
+[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Zwift - Tempus Fugit in Watopia', 'period': '2025-11-07 → 2025-11-13', 'timestamp': '2025-11-13T13:38:05.270743', 'discipline': 'cycling', 'Total Hours': '13.90 h', 'Total Load (TSS)': 623}
 [PATCH] summary rebuilt for schema compliance: {'totalHours': np.float64(13.9), 'totalTss': 623, 'eventCount': 10, 'period': '2025-11-07 → 2025-11-13', 'variance': 0.0, 'zones': {}}
 [PATCH] Tier-2 summary override applied → canonical event-only totals enforced
 [PATCH] actions dual-structure applied → 24 items
@@ -328,7 +327,7 @@ Final context load_metrics: {'CTL': {'value': 91.58, 'status': 'ok'}, 'ATL': {'v
 **Athlete:** Clive King
 **Period:** 2025-11-07 → 2025-11-13
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-13T12:26:07.315214
+**Generated:** 2025-11-13T13:38:05.269473
 
 ---
 
@@ -493,6 +492,6 @@ _No pace zone data available._
 **Cycling Metrics — Mean IF:** 0.71 · **Mean HR:** 116 bpm · **VO₂ max:** 68.6
 
 ---
-✅ **Audit Completed:** 2025-11-13T12:26:07.316072
+✅ **Audit Completed:** 2025-11-13T13:38:05.270714
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 
