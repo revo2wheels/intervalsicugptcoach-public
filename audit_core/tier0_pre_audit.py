@@ -128,14 +128,9 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                 chunk_end = min(newest, chunk_start + timedelta(days=act_chunk_days)) - timedelta(seconds=1)
 
                 debug(context,f"[Tier-0 fetch] chunk_start={chunk_start}  chunk_end={chunk_end}")
-                fields = (
-                    "id,name,start_date,start_date_local,moving_time,elapsed_time,"
-                    "icu_training_load,distance,origin,power,hr,avg_power,avg_hr,"
-                    "icu_zone_times,icu_hr_zone_times,pace_zone_times"
-                )
                 acts_url = (
                     f"{INTERVALS_API}/athlete/{athlete_id}/activities?"
-                    f"oldest={chunk_start}&newest={chunk_end}&fields={fields}"
+                    f"oldest={chunk_start}&newest={chunk_end}"
                 )
 
                 acts_resp = fetch_with_retry(acts_url, headers)
