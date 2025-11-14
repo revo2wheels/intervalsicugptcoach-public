@@ -5,6 +5,8 @@ Ensures all output metrics, sections, and formatting meet canonical spec.
 """
 
 import math
+import numpy as np
+
 from audit_core.utils import debug
 from UIcomponents.icon_pack import ICON_CARDS
 
@@ -77,12 +79,32 @@ def validate_report_output(context, report, framework_version="Unified_Reporting
 
     # --- Metrics validation ---
     derived_metrics = ["ACWR", "Monotony", "Strain", "Polarisation", "RecoveryIndex"]
+    import sys
+
     for m in derived_metrics:
         if m not in context:
             raise ValueError(f"❌ Derived metric missing: {m}")
+
         val = context[m]
-        if not isinstance(val, (int, float)) or math.isnan(val):
+
+        # --- flatten dicts before validation ---
+        if isinstance(val, dict):
+            val = val.get("value", np.nan)
+            context[m] = val
+
+        sys.stderr.write(f"[VALIDATOR DEBUG] {m} = {val} ({type(val)})\n")
+        sys.stderr.flush()
+
+        try:
+            valf = float(val)
+        except Exception:
+            valf = np.nan
+
+        if not np.isfinite(valf):
             raise TypeError(f"❌ Derived metric {m} invalid")
+
+
+
 
     # --- Render compliance summary ---
     compliance_log = {

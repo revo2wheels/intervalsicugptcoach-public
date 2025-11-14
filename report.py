@@ -37,17 +37,6 @@ def generate_full_report(report_type="weekly", output_path=None):
     with redirect_stdout(buffer):
         report, compliance = run_report(
             reportType=report_type,
-            auditFinal=False,
-            auditPartial=False,
-            force_analysis=False,
-            preRenderAudit=False,
-            tier2_enforce_event_only_totals=False,
-            render_mode="full+metrics",
-            autoCommit=True,
-            suppressPrompts=True,
-            postRenderAudit=False,
-            merge_events=False,
-            render_summary=(report_type == "summary"),
             include_coaching_metrics=True,
         )
 

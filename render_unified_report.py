@@ -70,6 +70,10 @@ def render_report(data):
     # --- 🧩 Diagnostic & Totals Source Resolution (URF v5.2+ adaptive) ---
     report_type = ctx.get("report_type", data.get("type", "weekly")).lower()
 
+    # --- Ensure Tier-2 derived metrics persist through render ---
+    if "derived_metrics" in ctx:
+        ctx["tier2_derived_metrics"] = ctx["derived_metrics"]
+
     # --- Determine renderer source ---
     if report_type == "season" and "df_events" in ctx:
         debug(ctx, "[VERIFY] Renderer override: using Tier-2 df_events (full dataset) for season summary.")
@@ -100,13 +104,19 @@ def render_report(data):
         ctx["totalTss"] = et.get("tss", 0)
         ctx["totalDistance"] = et.get("distance_km", 0)
         debug(ctx, "[SYNC] Canonical totals restored from Tier-2 enforced totals (season override)")
+
+    # --- Prefer Tier-2 metrics if available before falling back to Tier-1 ---
     elif totals_source == "tier1_visibleTotals":
-        et = ctx["tier1_visibleTotals"]
-        ctx["eventTotals"] = et
-        ctx["totalHours"] = et.get("hours", 0)
-        ctx["totalTss"] = et.get("tss", 0)
-        ctx["totalDistance"] = et.get("distance", 0)
-        debug(ctx, "[SYNC] Unified totals from Tier-1 visibleTotals")
+        if "tier2_derived_metrics" in ctx or "derived_metrics" in ctx:
+            debug(ctx, "[SYNC] Skipping Tier-1 visibleTotals override — Tier-2 derived metrics present.")
+        else:
+            et = ctx["tier1_visibleTotals"]
+            ctx["eventTotals"] = et
+            ctx["totalHours"] = et.get("hours", 0)
+            ctx["totalTss"] = et.get("tss", 0)
+            ctx["totalDistance"] = et.get("distance", 0)
+            debug(ctx, "[SYNC] Unified totals from Tier-1 visibleTotals (fallback only)")
+
     elif totals_source == "tier2_enforced_totals":
         et = ctx["tier2_enforced_totals"]
         ctx["eventTotals"] = et
@@ -114,12 +124,14 @@ def render_report(data):
         ctx["totalTss"] = et.get("tss", 0)
         ctx["totalDistance"] = et.get("distance_km", 0)
         debug(ctx, "[SYNC] Canonical totals restored from Tier-2 enforced totals")
+
     elif totals_source == "eventTotals":
         et = ctx["eventTotals"]
         ctx["totalHours"] = et.get("hours", 0)
         ctx["totalTss"] = et.get("tss", 0)
         ctx["totalDistance"] = et.get("distance", 0)
         debug(ctx, "[SYNC] Legacy totals restored from eventTotals")
+
     else:
         debug(ctx, "[WARN] No Tier-2 totals found — using serialized fallback values")
 
@@ -172,6 +184,15 @@ def render_report(data):
     md.append(f"- HR stream coverage: {safe_get(ctx, 'audit_summary', 'hr_coverage', default='—')}")
     md.append(f"- Power data coverage: {safe_get(ctx, 'audit_summary', 'power_coverage', default='—')}")
     md.append(f"- Time variance ≤ 0.1 h ✅")
+
+    # --- Ensure Tier-2 derived metrics override any Tier-1 fallback ---
+    if "tier2_derived_metrics" in ctx and isinstance(ctx["tier2_derived_metrics"], dict):
+        if "derived_metrics" not in ctx or not ctx["derived_metrics"]:
+            ctx["derived_metrics"] = ctx["tier2_derived_metrics"]
+        else:
+            ctx["derived_metrics"].update(ctx["tier2_derived_metrics"])
+        debug(ctx, "[SYNC] Derived metrics updated from Tier-2 context before render.")
+
 
     # === 4️⃣ Tier-2 Derived Metrics ===
     md.append(section("🧮 Derived Metric Audit (EWMA-based ACWR)"))
@@ -393,10 +414,27 @@ def render_report(data):
             debug(ctx, "[Tier-2 WARN] Missing enforced df_event_only — fallback to rebuild.")
             df_events = ctx.get("df_events")
             if hasattr(df_events, "to_dict") and not getattr(df_events, "empty", True):
-                df_events = df_events.rename(columns={"start_date_local": "date"})
+               # --- Normalize timestamp field for sorting ---
+                if "date" not in df_events.columns:
+                    if "start_date_local" in df_events.columns:
+                        df_events = df_events.rename(columns={"start_date_local": "date"})
+                    elif "start_date" in df_events.columns:
+                        df_events = df_events.rename(columns={"start_date": "date"})
+                    else:
+                        debug(ctx, "[T2 WARN] No valid date column found in df_events; skipping sort.")
+                        df_events["date"] = None  # placeholder to prevent crash
+
+                # --- Safe sort only if date present ---
+                if "date" in df_events.columns and not df_events["date"].isnull().all():
+                    df_events = df_events.sort_values("date", ascending=False)
+                else:
+                    debug(ctx, "[T2 WARN] Could not sort df_events by date (missing or null column).")
+
                 preview = (
-                    df_events[["date", "name", "icu_training_load", "moving_time", "distance", "total_elevation_gain"]]
-                    .sort_values("date", ascending=False)
+                    df_events[
+                        [c for c in ["date", "name", "icu_training_load", "moving_time", "distance", "total_elevation_gain"]
+                        if c in df_events.columns]
+                    ]
                     .head(10)
                     .to_dict("records")
                 )

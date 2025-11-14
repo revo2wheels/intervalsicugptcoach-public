@@ -67,8 +67,8 @@ None [T0] Expanded icu_hr_zone_times safely → 7 cols, max depth=7
 [5 rows x 43 columns]
 [T0] Diagnostic only: 9 rows fetched, moving_time present=True
 [T0] Pre-audit complete: activities=9, wellness_rows=7
-⚙️ Normalization: detected seconds, no conversion (max=8568)
-[T1] Running Tier-1 controller (weekly mode).
+⚙️ Normalization: seconds detected, no conversion (max=8568)
+[T1] Running Tier-1 controller (weekly mode)
 [T1] Columns at entry: ['id', 'start_date_local', 'type', 'icu_ignore_time', 'icu_pm_cp', 'icu_pm_w_prime', 'icu_pm_p_max', 'icu_pm_ftp', 'icu_pm_ftp_secs', 'icu_pm_ftp_watts', 'icu_ignore_power', 'icu_rolling_cp', 'icu_rolling_w_prime', 'icu_rolling_p_max', 'icu_rolling_ftp', 'icu_rolling_ftp_delta', 'icu_training_load', 'icu_atl', 'icu_ctl', 'ss_p_max', 'ss_w_prime', 'ss_cp', 'paired_event_id', 'icu_ftp', 'icu_joules', 'icu_recording_time', 'elapsed_time', 'icu_weighted_avg_watts', 'carbs_used', 'name', 'description', 'start_date', 'distance', 'icu_distance', 'moving_time', 'coasting_time', 'total_elevation_gain', 'total_elevation_loss', 'timezone', 'trainer', 'sub_type', 'commute', 'race', 'max_speed', 'average_speed', 'device_watts', 'has_heartrate', 'max_heartrate', 'average_heartrate', 'average_cadence', 'calories', 'average_temp', 'min_temp', 'max_temp', 'avg_lr_balance', 'gap', 'gap_model', 'use_elevation_correction', 'gear', 'perceived_exertion', 'device_name', 'power_meter', 'power_meter_serial', 'power_meter_battery', 'crank_length', 'external_id', 'file_sport_index', 'file_type', 'icu_athlete_id', 'created', 'icu_sync_date', 'analyzed', 'icu_w_prime', 'p_max', 'threshold_pace', 'icu_hr_zones', 'pace_zones', 'lthr', 'icu_resting_hr', 'icu_weight', 'icu_power_zones', 'icu_sweet_spot_min', 'icu_sweet_spot_max', 'icu_power_spike_threshold', 'trimp', 'icu_warmup_time', 'icu_cooldown_time', 'icu_chat_id', 'icu_ignore_hr', 'ignore_velocity', 'ignore_pace', 'ignore_parts', 'icu_training_load_data', 'interval_summary', 'skyline_chart_bytes', 'stream_types', 'has_weather', 'has_segments', 'power_field_names', 'power_field', 'pace_zone_times', 'gap_zone_times', 'use_gap_zone_times', 'custom_zones', 'tiz_order', 'polarization_index', 'icu_achievements', 'icu_intervals_edited', 'lock_intervals', 'icu_lap_count', 'icu_joules_above_ftp', 'icu_max_wbal_depletion', 'icu_hrr', 'icu_sync_error', 'icu_color', 'icu_power_hr_z2', 'icu_power_hr_z2_mins', 'icu_cadence_z2', 'icu_rpe', 'feel', 'kg_lifted', 'decoupling', 'icu_median_time_delta', 'p30s_exponent', 'workout_shift_secs', 'strava_id', 'lengths', 'pool_length', 'compliance', 'coach_tick', 'source', 'oauth_client_id', 'oauth_client_name', 'average_altitude', 'min_altitude', 'max_altitude', 'power_load', 'hr_load', 'pace_load', 'hr_load_type', 'pace_load_type', 'tags', 'attachments', 'recording_stops', 'average_weather_temp', 'min_weather_temp', 'max_weather_temp', 'average_feels_like', 'min_feels_like', 'max_feels_like', 'average_wind_speed', 'average_wind_gust', 'prevailing_wind_deg', 'headwind_percent', 'tailwind_percent', 'average_clouds', 'max_rain', 'max_snow', 'carbs_ingested', 'route_id', 'pace', 'athlete_max_hr', 'group', 'icu_intensity', 'icu_efficiency_factor', 'icu_power_hr', 'session_rpe', 'average_stride', 'icu_average_watts', 'icu_variability_index', 'strain_score', 'IF', 'VO2MaxGarmin', 'PerformanceCondition', 'ActivityPowerMeter', 'date', 'origin', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7']
 [Tier-1] Visible subset unified: 12.98 h | 295.0 km | 533 TSS | IF=None HR=None VO₂=None
 ✅ Tier-1 finalization: 9 events | 12.98 h | 533 TSS
@@ -109,6 +109,7 @@ None [T0] Expanded icu_hr_zone_times safely → 7 cols, max depth=7
 [DEBUG-OUTLIER] mean TSS=59.2, std=46.8, threshold=70.2
 [DEBUG-OUTLIER] min/max TSS: 6 / 129
 None [T2] Daily completeness summary built — 5 rows
+[WARN] Could not parse snapshot_7d_json for enforcement: cannot access local variable 'pd' where it is not associated with a value
 📁 Tier-2 module loaded from: C:\Users\user\onedrive\documents\git\revo2wheels\intervalsicugptcoach\audit_core\tier2_enforce_event_only_totals.py
 🔍 Tier-2 enforcement source: Tier-2 validated events (9 rows)
 origin counts:
@@ -130,31 +131,20 @@ Name: moving_time, dtype: float64
 [DEBUG-T2] injected preview (7 rows) and preserved full df_event_only (7 rows)
 [DEBUG-T2] enforced load_metrics sync in context: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}}
 [T2] Enriched load_metrics propagated to renderer
-[T1] Wellness alignment window (tz-aware): 2025-11-08 09:56:34+01:00 → 2025-11-13 16:59:36+01:00
-[T1] Wellness date range: 2025-11-08 → 2025-11-14
-✅ Wellness alignment check passed.
-[T2-ACWR] EWMA model applied → acute=103.84, chronic=116.72, ratio=0.89
-[DEBUG] Derived metrics synced: {'ACWR': 0.0, 'Monotony': 0.0, 'Strain': 0.0, 'Polarisation': 0.0, 'RecoveryIndex': 0.0}
-[DEBUG-T2X] post-extended load_metrics: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}, 'ACWR': {'value': 0.89, 'status': 'ok'}, 'Monotony': {'value': np.float64(3.33), 'status': 'ok'}, 'Strain': {'value': np.float64(1774.9), 'status': 'ok'}, 'Polarisation': {'value': 0.764, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.334), 'status': 'ok'}}
+[SYNC] df_events replaced with df_scope (9 rows) for Tier-2 validator
 [T2-ACTIONS] Integrated derived metrics:
-{'ACWR': {'value': 0.89, 'status': 'optimal', 'icon': '🟢'}, 'Monotony': {'value': np.float64(3.33), 'status': 'out of range', 'icon': '🔴'}, 'Strain': {'value': np.float64(1774.9), 'status': 'optimal', 'icon': '🟢'}, 'FatigueTrend': {'value': np.float64(-0.181), 'status': 'optimal', 'icon': '🟢'}, 'ZQI': {'value': 4.0, 'status': 'borderline', 'icon': '🟠'}, 'FatOxEfficiency': {'value': 0.566, 'status': 'optimal', 'icon': '🟢'}, 'Polarisation': {'value': 0.764, 'status': 'optimal', 'icon': '🟢'}, 'FOxI': {'value': 56.6, 'status': 'optimal', 'icon': '🟢'}, 'CUR': {'value': 43.4, 'status': 'optimal', 'icon': '🟢'}, 'GR': {'value': 0.77, 'status': 'optimal', 'icon': '🟢'}, 'MES': {'value': np.float64(46.4), 'status': 'optimal', 'icon': '🟢'}, 'RecoveryIndex': {'value': np.float64(0.334), 'status': 'out of range', 'icon': '🔴'}, 'ACWR_Risk': {'value': '✅', 'status': 'no data', 'icon': '⚪'}, 'StressTolerance': {'value': np.float64(5.33), 'status': 'optimal', 'icon': '🟢'}}
+{'ACWR': {'value': 0.95, 'status': 'ok', 'desc': 'EWMA Acute:Chronic Load Ratio (fallback=1.0 if undefined)'}, 'Monotony': {'value': 2.89, 'status': 'ok', 'desc': 'Load variability'}, 'Strain': {'value': 296.9, 'status': 'ok', 'desc': 'Load × Monotony'}, 'FatigueTrend': {'value': nan, 'status': 'ok', 'desc': '7d vs 28d load delta'}, 'ZQI': {'value': 71.2, 'status': 'ok', 'desc': 'Zone Quality Index'}, 'FatOxEfficiency': {'value': 0.64, 'status': 'ok', 'desc': 'Fat oxidation efficiency'}, 'Polarisation': {'value': 0.9, 'status': 'ok', 'desc': 'Intensity distribution'}, 'FOxI': {'value': 64.0, 'status': 'ok', 'desc': 'Fat oxidation index'}, 'CUR': {'value': 36.0, 'status': 'ok', 'desc': 'Carbohydrate utilisation ratio'}, 'GR': {'value': 1.71, 'status': 'ok', 'desc': 'Glucose ratio'}, 'MES': {'value': 22.5, 'status': 'ok', 'desc': 'Metabolic efficiency score'}, 'RecoveryIndex': {'value': 0.422, 'status': 'ok', 'desc': 'Recovery readiness'}, 'ACWR_Risk': {'value': nan, 'status': 'ok', 'desc': 'Stability risk check'}, 'StressTolerance': {'value': 1.03, 'status': 'ok', 'desc': 'Sustainable training tolerance'}}
 [T2-ACTIONS] Integrated extended metrics:
 {}
-[PATCH-LOCK] Preserved load_metrics before validator: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}, 'ACWR': {'value': 0.89, 'status': 'ok'}, 'Monotony': {'value': np.float64(3.33), 'status': 'ok'}, 'Strain': {'value': np.float64(1774.9), 'status': 'ok'}, 'Polarisation': {'value': 0.764, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.334), 'status': 'ok'}}
-[T2-ACWR] EWMA model applied → acute=103.84, chronic=116.72, ratio=0.89
-[DEBUG] Derived metrics synced: {'ACWR': 0.0, 'Monotony': 0.0, 'Strain': 0.0, 'Polarisation': 0.0, 'RecoveryIndex': 0.0}
-[DEBUG-T2X] post-extended load_metrics: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}, 'ACWR': {'value': 0.89, 'status': 'ok'}, 'Monotony': {'value': np.float64(3.33), 'status': 'ok'}, 'Strain': {'value': np.float64(1774.9), 'status': 'ok'}, 'Polarisation': {'value': 0.764, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.334), 'status': 'ok'}}
-🧩 Render mode forced to full+metrics for Unified 10-section layout
-[SYNC] URF renderer context overridden with tier1_visibleTotals
+[PATCH-LOCK] Preserved load_metrics before validator: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}}
+🧩 Render mode forced to full+metrics for URF layout
 [TRACE-RUNTIME] entering finalize_and_validate_render()
 [TRACE-RUNTIME] context type = <class 'dict'>
 [TRACE-RUNTIME] df_events type = <class 'pandas.core.frame.DataFrame'>
-[TRACE-RUNTIME] df_events.shape = (9, 192)
+[TRACE-RUNTIME] df_events.shape = (9, 196)
 [TRACE-RUNTIME] Σ moving_time/3600 = 12.98 h
 [TRACE-RUNTIME] Σ icu_training_load = 533
-[DEBUG-FINALIZER-ENTRY] load_metrics: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}, 'ACWR': {'value': 0.89, 'status': 'ok'}, 'Monotony': {'value': np.float64(3.33), 'status': 'ok'}, 'Strain': {'value': np.float64(1774.9), 'status': 'ok'}, 'Polarisation': {'value': 0.764, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.334), 'status': 'ok'}}
-[VERIFY] Renderer variance check Δh=0.00, ΔTSS=0.0
-✅ Renderer variance within tolerance Δh=0.00, ΔTSS=0.0
+[DEBUG-FINALIZER-ENTRY] load_metrics: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}}
 ✅ Loaded ICON_CARDS from UIcomponents.icon_pack
 🔎 Render pre-flight — totals by source:
    df_events Σmoving_time = 12.98h
@@ -164,11 +154,11 @@ Name: moving_time, dtype: float64
 [Tier-2 context diagnostic]
 derived_metrics: True
 load_metrics: True
-adaptation_metrics: True
-trend_metrics: True
-correlation_metrics: True
+adaptation_metrics: False
+trend_metrics: False
+correlation_metrics: False
 [DEBUG] report_header injected: {'athlete': 'Clive King', 'discipline': 'cycling', 'report_type': 'weekly', 'framework': 'Unified_Reporting_Framework_v5.1', 'timezone': 'Europe/Zurich', 'date_range': '2025-11-08 → 2025-11-14'}
-[DEBUG-FINALIZER] pre-render load_metrics: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}, 'ACWR': {'value': 0.89, 'status': 'ok'}, 'Monotony': {'value': np.float64(3.33), 'status': 'ok'}, 'Strain': {'value': np.float64(1774.9), 'status': 'ok'}, 'Polarisation': {'value': 0.764, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.334), 'status': 'ok'}}
+[DEBUG-FINALIZER] pre-render load_metrics: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}}
 [STATE-GUARD] _locked_load_metrics set (prevents recomputation)
 [CANONICAL PROPAGATION] hours=9.42, tss=411
 [LOCK] Tier-2 canonical totals re-locked before render
@@ -181,16 +171,16 @@ correlation_metrics: True
 [Renderer shim] Delegating to render_report() in render_unified_report.py
 
 [DEBUG-TEMPLATE: PRE-CALL]
-Keys in context: ['render_summary', 'include_coaching_metrics', 'postRenderAudit', 'debug_mode', 'debug_trace', 'tier0_snapshotTotals_7d', 'snapshot_7d_json', 'timezone', 'athleteProfile', 'athlete', 'report_mode', 'window_start', 'window_end', 'auditPartial', 'auditFinal', 'window_summary', 'report_type', 'knowledge', 'tier1_visibleTotals', 'weeklyEventLogBlock', 'df_events', 'wellness_metrics', 'dailyMerged', 'ctl', 'atl', 'tsb', 'load_metrics', 'zone_dist_power', 'zone_dist_hr', 'zone_dist_pace', 'outliers', 'totalHours', 'totalTss', 'totalDistance', 'eventTotals', 'df_event_only', 'df_event_only_preview', 'df_event_only_full', 'enforcement_layer', '_locked_totals', 'locked_totalHours', 'locked_totalTss', 'locked_totalDistance', 'event_count', 'trace', 'derived_metrics', 'trend_series', 'metrics', 'ACWR', 'Monotony', 'Strain', 'FatigueTrend', 'ZQI', 'FatOxEfficiency', 'Polarisation', 'FOxI', 'CUR', 'GR', 'MES', 'RecoveryIndex', 'ACWR_Risk', 'StressTolerance', 'phases', 'metric_contexts', 'ui_flag', 'actions', '_locked_load_metrics', 'adaptation_metrics', 'trend_metrics', 'correlation_metrics', 'render_mode', 'totalSessions', 'Duration_total', 'icon_pack', 'force_icon_pack', 'event_log_text', 'report_header', 'summary_patch', 'zone_dist']
-load_metrics pre-pass: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}, 'ACWR': {'value': 0.89, 'status': 'ok'}, 'Monotony': {'value': np.float64(3.33), 'status': 'ok'}, 'Strain': {'value': np.float64(1774.9), 'status': 'ok'}, 'Polarisation': {'value': 0.764, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.334), 'status': 'ok'}, 'totalHours': np.float64(9.42), 'totalTss': 411}
+Keys in context: ['render_summary', 'include_coaching_metrics', 'postRenderAudit', 'debug_mode', 'debug_trace', 'tier0_snapshotTotals_7d', 'snapshot_7d_json', 'timezone', 'athleteProfile', 'athlete', 'report_mode', 'window_start', 'window_end', 'auditPartial', 'auditFinal', 'window_summary', 'report_type', 'knowledge', 'tier1_visibleTotals', 'weeklyEventLogBlock', 'df_events', 'wellness_metrics', 'dailyMerged', 'ctl', 'atl', 'tsb', 'load_metrics', 'zone_dist_power', 'zone_dist_hr', 'zone_dist_pace', 'outliers', 'totalHours', 'totalTss', 'totalDistance', 'eventTotals', 'df_event_only', 'df_event_only_preview', 'df_event_only_full', 'enforcement_layer', '_locked_totals', 'locked_totalHours', 'locked_totalTss', 'locked_totalDistance', 'event_count', 'trace', 'ACWR', 'Monotony', 'Strain', 'FatigueTrend', 'ZQI', 'FatOxEfficiency', 'Polarisation', 'FOxI', 'CUR', 'GR', 'MES', 'RecoveryIndex', 'ACWR_Risk', 'StressTolerance', 'derived_metrics', 'phases', 'metric_contexts', 'ui_flag', 'actions', '_locked_load_metrics', 'render_mode', 'Duration_total', 'icon_pack', 'force_icon_pack', 'event_log_text', 'report_header', 'summary_patch', 'zone_dist']
+load_metrics pre-pass: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}, 'totalHours': np.float64(9.42), 'totalTss': 411}
 _locked_load_metrics pre-pass: {'totalHours': np.float64(9.42), 'totalTss': 411, 'source': 'tier2_final_lock'}
 Report type: weekly
 ------------------------------------------------------------
 [VERIFY] Renderer using Tier-1 visibleTotals for totals and metrics.
 ✅ Renderer source: Tier-1 visibleTotals (lightweight 7-day dataset)
-[SYNC] Unified totals from Tier-1 visibleTotals
-[TRACE-RENDER-ENTRY] totalHours = 12.98
-[TRACE-RENDER-ENTRY] totalTss   = 533
+[SYNC] Skipping Tier-1 visibleTotals override — Tier-2 derived metrics present.
+[TRACE-RENDER-ENTRY] totalHours = 9.42
+[TRACE-RENDER-ENTRY] totalTss   = 411
 [DEBUG-RENDER] incoming load_metrics: {
   "CTL": {
     "value": 91.61,
@@ -204,158 +194,41 @@ Report type: weekly
     "value": -1.67,
     "status": "ok"
   },
-  "ACWR": {
-    "value": 0.89,
-    "status": "ok"
-  },
-  "Monotony": {
-    "value": 3.33,
-    "status": "ok"
-  },
-  "Strain": {
-    "value": 1774.9,
-    "status": "ok"
-  },
-  "Polarisation": {
-    "value": 0.764,
-    "status": "ok"
-  },
-  "RecoveryIndex": {
-    "value": 0.334,
-    "status": "ok"
-  },
-  "totalHours": 12.98,
-  "totalTss": 533
+  "totalHours": 9.42,
+  "totalTss": 411
 }
-[TRACE-HEADER] ctx.totalHours = 12.98
-[TRACE-HEADER] ctx.totalTss   = 533
-[DEBUG] Adaptation metric keys: ['Efficiency Factor', 'Fatigue Resistance', 'Endurance Decay', 'Z2 Stability', 'Aerobic Decay']
+[TRACE-HEADER] ctx.totalHours = 9.42
+[TRACE-HEADER] ctx.totalTss   = 411
+[SYNC] Derived metrics updated from Tier-2 context before render.
 [Tier-2] Using enforced df_event_only preview (no rebuild).
 [Tier-2] Rendered Weekly Events Summary (9 rows)
 [Tier-2] Weekly totals + mean metrics rendered (Tier-1 subset)
 [Tier-2] Using canonical summary_patch from Tier-2 validator
-[TRACE-DESERIALIZE] wrapped.context totals=12.98, 533
+[TRACE-DESERIALIZE] wrapped.context totals=9.42, 411
 
 [DEBUG-TEMPLATE: POST-CALL]
 Renderer function executed: render_report
 Result type: Report
 Result keys: ['header', 'markdown', 'type', 'context', 'sections', 'tables', 'lines', 'summary', 'metrics', 'actions', 'phases', 'trends', 'correlation', 'footer']
 load_metrics still in context: True
-load_metrics post-render: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}, 'ACWR': {'value': 0.89, 'status': 'ok'}, 'Monotony': {'value': 3.33, 'status': 'ok'}, 'Strain': {'value': 1774.9, 'status': 'ok'}, 'Polarisation': {'value': 0.764, 'status': 'ok'}, 'RecoveryIndex': {'value': 0.334, 'status': 'ok'}, 'totalHours': 9.42, 'totalTss': 411}
+load_metrics post-render: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}, 'totalHours': 9.42, 'totalTss': 411}
 ------------------------------------------------------------
 [DEBUG-TEMPLATE] Renderer returned dict — updating report.
 
 [DEBUG-TEMPLATE: FINAL]
 Final report keys: ['header', 'markdown', 'type', 'context', 'sections', 'tables', 'lines', 'summary', 'metrics', 'actions', 'phases', 'trends', 'correlation', 'footer']
-Final context load_metrics: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}, 'ACWR': {'value': 0.89, 'status': 'ok'}, 'Monotony': {'value': 3.33, 'status': 'ok'}, 'Strain': {'value': 1774.9, 'status': 'ok'}, 'Polarisation': {'value': 0.764, 'status': 'ok'}, 'RecoveryIndex': {'value': 0.334, 'status': 'ok'}, 'totalHours': 9.42, 'totalTss': 411}
+Final context load_metrics: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}, 'totalHours': 9.42, 'totalTss': 411}
 ================================================================================
-[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Otto walk', 'period': '2025-11-08 → 2025-11-14', 'timestamp': '2025-11-14T16:01:28.241639', 'discipline': 'cycling'}
+[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': '2hrs in the sunshine', 'period': '2025-11-08 → 2025-11-14', 'timestamp': '2025-11-14T20:15:21.843427', 'discipline': 'cycling'}
 [TRACE-POST-RENDER-CHECK] summary={'totalHours': np.float64(9.42), 'totalTss': 411, 'eventCount': 7, 'period': '2025-11-08 → 2025-11-14'}
 [POST-RENDER] Canonical event-only totals enforced → header + summary synced
-[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Otto walk', 'period': '2025-11-08 → 2025-11-14', 'timestamp': '2025-11-14T16:01:28.241639', 'discipline': 'cycling', 'Total Hours': '12.98 h', 'Total Load (TSS)': 533}
-[PATCH] summary rebuilt for schema compliance: {'totalHours': np.float64(12.98), 'totalTss': 533, 'eventCount': 7, 'period': '2025-11-08 → 2025-11-14', 'variance': 0.0, 'zones': {}}
+[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': '2hrs in the sunshine', 'period': '2025-11-08 → 2025-11-14', 'timestamp': '2025-11-14T20:15:21.843427', 'discipline': 'cycling', 'Total Hours': '9.42 h', 'Total Load (TSS)': 411}
+[PATCH] summary rebuilt for schema compliance: {'totalHours': np.float64(9.42), 'totalTss': 411, 'eventCount': 7, 'period': '2025-11-08 → 2025-11-14', 'variance': 0.0, 'zones': {}}
 [PATCH] Tier-2 summary override applied → canonical event-only totals enforced
-[PATCH] actions dual-structure applied → 24 items
+[PATCH] actions dual-structure applied → 9 items
 ✅ Loaded ICON_CARDS from UIcomponents.icon_pack
 ✅ Report validated — framework compliant.
-
-[DEBUG-GUARD] --- Report schema diagnostic ---
-[DEBUG-GUARD] Report top-level keys: ['header', 'markdown', 'type', 'context', 'sections', 'tables', 'lines', 'summary', 'metrics', 'actions', 'phases', 'trends', 'correlation', 'footer', 'actions_block']
-[DEBUG-GUARD] ✅ Schema validation passed for all sections
-
-✅ Final renderer consistency within tolerance Δh=0.00, ΔTSS=0.0
-
-[DEBUG] Context keys available before finalize_and_validate_render() return:
-  - ACWR
-  - ACWR_Risk
-  - CUR
-  - Duration_total
-  - FOxI
-  - FatOxEfficiency
-  - FatigueTrend
-  - GR
-  - ICON_CARDS
-  - MES
-  - Monotony
-  - Polarisation
-  - RecoveryIndex
-  - Strain
-  - StressTolerance
-  - ZQI
-  - _locked_load_metrics
-  - _locked_totals
-  - actions
-  - adaptation_metrics
-  - athlete
-  - athleteProfile
-  - atl
-  - auditFinal
-  - auditPartial
-  - correlation_metrics
-  - ctl
-  - dailyMerged
-  - debug_mode
-  - debug_trace
-  - derived_metrics
-  - df_event_only
-  - df_event_only_full
-  - df_event_only_preview
-  - df_events
-  - enforcement_layer
-  - eventTotals
-  - event_count
-  - event_log_text
-  - force_icon_pack
-  - header
-  - icon_pack
-  - include_coaching_metrics
-  - knowledge
-  - load_metrics
-  - locked_totalDistance
-  - locked_totalHours
-  - locked_totalTss
-  - metric_contexts
-  - metrics
-  - outliers
-  - phases
-  - postRenderAudit
-  - render_mode
-  - render_summary
-  - report_header
-  - report_mode
-  - report_type
-  - snapshot_7d_json
-  - summary_patch
-  - tier0_snapshotTotals_7d
-  - tier1_visibleTotals
-  - timezone
-  - totalDistance
-  - totalHours
-  - totalSessions
-  - totalTss
-  - totals_source
-  - totals_verified
-  - trace
-  - trend_metrics
-  - trend_series
-  - tsb
-  - ui_flag
-  - weeklyEventLogBlock
-  - wellness_metrics
-  - window_end
-  - window_start
-  - window_summary
-  - zone_dist
-  - zone_dist_hr
-  - zone_dist_pace
-  - zone_dist_power
-[DEBUG] End of context key list
-
-✅ Report passed framework + schema validation (event-only, markdown).
-[TRACE-FINAL] totalHours = 12.98
-[TRACE-FINAL] totalTss   = 533
-[TRACE-FINAL] eventTotals(hours,tss) = 12.98 533
-[TRACE-FINAL] summary_patch = {'totalHours': np.float64(12.98), 'totalTss': 533, 'eventCount': 7, 'period': '2025-11-08 → 2025-11-14', 'variance': 0.0, 'zones': {}}
+✅ Render + validation completed for weekly
 
 ```
 
@@ -365,7 +238,7 @@ Final context load_metrics: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'v
 **Athlete:** Clive King
 **Period:** 2025-11-08 → 2025-11-14
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-14T16:01:28.240835
+**Generated:** 2025-11-14T20:15:21.841952
 
 ---
 
@@ -391,20 +264,20 @@ Final context load_metrics: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'v
 
 | Metric | Value | Status | Context |
 |:-- |:-- |:-- |:--|
-| ACWR | 0.89 | 🟢 optimal | EWMA Acute:Chronic Load Ratio — compares 7-day vs 28-day weighted loads. 0.8–1.3 = productive training, <0.8 = recovery or detraining, >1.5 = overload/injury risk. |
-| Monotony | 3.33 | 🔴 out of range | 1–2 shows healthy variation; >2.5 means repetitive stress pattern. |
-| Strain | 1774.9 | 🟢 optimal | Product of load × monotony; >3500 signals potential overreach. |
-| FatigueTrend | -0.181 | 🟢 optimal | 0±0.2 indicates balance; positive trend means accumulating fatigue. |
-| ZQI | 400.0 | 🟠 borderline | Zone Quality Index (%) 5-15 high-intensity time is normal <3% too easy, >20% too intense or erratic pacing. |
-| FatOxEfficiency | 0.566 | 🟢 optimal | 0.4–0.8 means balanced fat oxidation; lower = carb dependence. |
-| Polarisation | 0.764 | 🟢 optimal | 0.75–0.9 matches Seiler 80/20 distribution; <0.7 = too intense. |
-| FOxI | 56.6 | 🟢 optimal | FatOx index %; higher values mean more efficient aerobic base. |
-| CUR | 43.4 | 🟢 optimal | Carbohydrate Utilisation Ratio; 30-80 balanced metabolic use. |
-| GR | 0.77 | 🟢 optimal | Glucose Ratio; >2 indicates excess glycolytic bias. |
-| MES | 46.4 | 🟢 optimal | Metabolic Efficiency Score; >20 is good endurance economy. |
-| RecoveryIndex | 0.334 | 🔴 out of range | 0.6–1.0 means recovered; <0.5 = heavy fatigue. |
-| ACWR_Risk | ✅ | ⚪ no data | Used internally for stability check. |
-| StressTolerance | 5.33 | 🟢 optimal | 2–8 indicates sustainable training strain capacity. |
+| ACWR | 0.95 |  ok | EWMA Acute:Chronic Load Ratio — compares 7-day vs 28-day weighted loads. 0.8–1.3 = productive training, <0.8 = recovery or detraining, >1.5 = overload/injury risk. |
+| Monotony | 2.89 |  ok | 1–2 shows healthy variation; >2.5 means repetitive stress pattern. |
+| Strain | 296.9 |  ok | Product of load × monotony; >3500 signals potential overreach. |
+| FatigueTrend | nan |  ok | 0±0.2 indicates balance; positive trend means accumulating fatigue. |
+| ZQI | 7120.0 |  ok | Zone Quality Index (%) 5-15 high-intensity time is normal <3% too easy, >20% too intense or erratic pacing. |
+| FatOxEfficiency | 0.64 |  ok | 0.4–0.8 means balanced fat oxidation; lower = carb dependence. |
+| Polarisation | 0.9 |  ok | 0.75–0.9 matches Seiler 80/20 distribution; <0.7 = too intense. |
+| FOxI | 64.0 |  ok | FatOx index %; higher values mean more efficient aerobic base. |
+| CUR | 36.0 |  ok | Carbohydrate Utilisation Ratio; 30-80 balanced metabolic use. |
+| GR | 1.71 |  ok | Glucose Ratio; >2 indicates excess glycolytic bias. |
+| MES | 22.5 |  ok | Metabolic Efficiency Score; >20 is good endurance economy. |
+| RecoveryIndex | 0.422 |  ok | 0.6–1.0 means recovered; <0.5 = heavy fatigue. |
+| ACWR_Risk | nan |  ok | Used internally for stability check. |
+| StressTolerance | 1.03 |  ok | 2–8 indicates sustainable training strain capacity. |
 
 
 ### Power Zones
@@ -454,13 +327,7 @@ _No outliers detected._
 
 ## 🔬 Efficiency & Adaptation
 
-| Metric | Value | Status | Context |
-|:-- |:-- |:-- |:--|
-| Efficiency Factor | 1.9 | ✅ | Ratio of power to heart rate — higher indicates improved aerobic efficiency. |
-| Fatigue Resistance | 0.95 | ✅ | Ability to maintain power over time; >0.9 shows strong endurance resilience. |
-| Endurance Decay | 0.02 | ✅ | Rate of endurance loss; <0.05 indicates sustainable aerobic base. |
-| Z2 Stability | 0.04 | ✅ | Consistency in Zone 2 heart rate vs. power; <0.05 suggests steady aerobic control. |
-| Aerobic Decay | 0.02 | ✅ | Long-term aerobic deterioration rate; <0.03 means stable base conditioning. |
+_No adaptation data._
 
 
 ## 🧠 Performance & Coaching Actions
@@ -471,26 +338,11 @@ _No outliers detected._
 2. ⚠ Improve Zone 2 efficiency: extend duration or adjust IF.
 3. ⚠ Apply 10–15 % deload (Friel microcycle logic).
 4. ✅ Durability improving (1.00) — maintain current long-ride structure.
-5. ⚠ Load intensity low (LIR=0.00) — consider adding tempo or sweet-spot intervals.
+5. ⚠ Load intensity low (LIR=0.00) — add tempo or sweet-spot intervals.
 6. ✅ Endurance reserve strong (1.00).
 7. ✅ Efficiency drift stable (0.00%).
-8. ✅ Polarisation optimal (76%).
-9. ⚠ Recovery Index poor (0.33) — insert deload or reduce intensity.
-10. ---
-11. 📊 Metric-based Feedback:
-12. ✅ ACWR (0.89) — Guides short-term vs. chronic load balance adjustments.
-13. ⚠ Monotony (3.33) — Used to determine need for rest or deload variation.
-14. ✅ Strain (1774.9) — Informs total stress tolerance and recovery planning.
-15. ✅ FatigueTrend (-0.181) — Signals need for load stabilization or downshift.
-16. ⚠ ZQI (4.0) — Represents proportion of high-intensity time; 5–15 % indicates balanced intensity distribution.
-17. ✅ FatOxEfficiency (0.566) — Drives aerobic base and metabolic conditioning feedback.
-18. ✅ Polarisation (0.764) — Determines intensity mix correction (Seiler balance).
-19. ✅ FOxI (56.6) — Helps assess Zone 2 progression and fat adaptation.
-20. ✅ CUR (43.4) — Advises on fueling strategy and carbohydrate dependency.
-21. ✅ GR (0.77) — Glucose Ratio; gauges glycolytic bias — higher values indicate heavy carbohydrate reliance.
-22. ✅ MES (46.4) — Summarizes efficiency adaptation response.
-23. ⚠ RecoveryIndex (0.334) — Influences rest day scheduling and microcycle tapering.
-24. ✅ StressTolerance (5.33) — Reflects sustainable strain capacity; 2–8 indicates robust adaptation to training load.
+8. ✅ Polarisation optimal (90%).
+9. ⚠ Recovery Index poor (0.42) — insert deload or reduce intensity.
 
 
 ## 🚴 Weekly Events Summary
@@ -499,18 +351,18 @@ _No outliers detected._
 |:-- |:-- |:-- |:-- |:--|
 | 2025-11-13 | Zwift - Group Ride: DBR Base Endurance Ride | 88 | 01:31:47 | 58.3 |
 | 2025-11-12 | Zwift - 90 base sometimes with coco | 63 | 01:33:49 | 60.4 |
-| 2025-11-11 | zAlp low cadence | 88 | 01:23:00 | 35.9 |
-| 2025-11-11 | Zwift - Tick Tock in Watopia | 6 | 00:10:13 | 6.4 |
 | 2025-11-11 | Otto Walk | 20 | 01:31:04 | 7.0 |
-| 2025-11-09 | Rathvel | 129 | 02:07:33 | 54.9 |
+| 2025-11-11 | Zwift - Tick Tock in Watopia | 6 | 00:10:13 | 6.4 |
+| 2025-11-11 | zAlp low cadence | 88 | 01:23:00 | 35.9 |
 | 2025-11-09 | Otto walk | 17 | 01:07:49 | 6.1 |
-| 2025-11-08 | 2hrs in the sunshine | 110 | 02:22:48 | 59.3 |
+| 2025-11-09 | Rathvel | 129 | 02:07:33 | 54.9 |
 | 2025-11-08 | Otto walk | 12 | 01:10:39 | 6.6 |
+| 2025-11-08 | 2hrs in the sunshine | 110 | 02:22:48 | 59.3 |
 
 **Totals:** 12.98 h · 295.0 km · 533 TSS · 9 sessions**
 **Cycling Metrics — Mean IF:** 0.71 · **Mean HR:** 112 bpm · **VO₂ max:** 68.6
 
 ---
-✅ **Audit Completed:** 2025-11-14T16:01:28.241619
+✅ **Audit Completed:** 2025-11-14T20:15:21.843395
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 

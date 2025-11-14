@@ -80,11 +80,23 @@ CHEAT_SHEET["labels"] = {
 def summarize_load_block(context):
     """
     Summarize current training block load distribution using CHEAT_SHEET_RULES.
+    Supports both numeric and structured ACWR contexts.
     """
+
     load = context.get("totalTss", 0)
     duration = context.get("totalHours", 0)
-    acwr = context.get("ACWR", 1.0)
+    acwr_raw = context.get("ACWR", 1.0)
 
+    # Handle new structured ACWR (dict with ratio)
+    if isinstance(acwr_raw, dict):
+        acwr = float(acwr_raw.get("ratio", 1.0) or 1.0)
+    else:
+        try:
+            acwr = float(acwr_raw or 1.0)
+        except (TypeError, ValueError):
+            acwr = 1.0
+
+    # --- Classification ---
     if acwr > 1.5:
         load_type = "🚨 High Load / Overreaching"
     elif acwr < 0.8:
@@ -97,3 +109,4 @@ def summarize_load_block(context):
         "load_type": load_type,
         "acwr": acwr,
     }
+
