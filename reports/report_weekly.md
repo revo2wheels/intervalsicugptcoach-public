@@ -1,4 +1,4 @@
-# 🧾 Full Weekly Audit Report
+# 🧾 Weekly Audit Report
 
 ## Execution Logs
 
@@ -81,7 +81,7 @@ None [T0] Expanded icu_hr_zone_times safely → 7 cols, max depth=7
 [T1] Wellness alignment window (tz-aware): 2025-11-08 09:56:34+01:00 → 2025-11-13 16:59:36+01:00
 [T1] Wellness date range: 2025-11-08 → 2025-11-14
 ✅ Wellness alignment check passed.
-[T1] Wellness summary → rest_days=1, rest_hr=42.6, hrv_trend=0.025
+[T1] Wellness summary → rest_days=1, rest_hr=42.4, hrv_trend=0.025
 [DEBUG-T1] merging load metrics from wellness: ['ctl', 'atl']
 [DEBUG-T1] derived TSB column added from CTL-ATL.
 [DEBUG-T1] promoted CTL=91.61 ATL=93.28 TSB=-1.67 to context.
@@ -252,10 +252,10 @@ load_metrics post-render: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'val
 Final report keys: ['header', 'markdown', 'type', 'context', 'sections', 'tables', 'lines', 'summary', 'metrics', 'actions', 'phases', 'trends', 'correlation', 'footer']
 Final context load_metrics: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}, 'ACWR': {'value': 0.89, 'status': 'ok'}, 'Monotony': {'value': 3.33, 'status': 'ok'}, 'Strain': {'value': 1774.9, 'status': 'ok'}, 'Polarisation': {'value': 0.764, 'status': 'ok'}, 'RecoveryIndex': {'value': 0.334, 'status': 'ok'}, 'totalHours': 12.98, 'totalTss': 533}
 ================================================================================
-[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Otto walk', 'period': '2025-11-08 → 2025-11-14', 'timestamp': '2025-11-14T11:52:53.288518', 'discipline': 'cycling'}
+[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Otto walk', 'period': '2025-11-08 → 2025-11-14', 'timestamp': '2025-11-14T13:15:46.047544', 'discipline': 'cycling'}
 [TRACE-POST-RENDER-CHECK] summary={'totalHours': np.float64(12.98), 'totalTss': 533, 'eventCount': 9, 'period': '2025-11-08 → 2025-11-14'}
 [POST-RENDER] Canonical event-only totals enforced → header + summary synced
-[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Otto walk', 'period': '2025-11-08 → 2025-11-14', 'timestamp': '2025-11-14T11:52:53.288518', 'discipline': 'cycling', 'Total Hours': '12.98 h', 'Total Load (TSS)': 533}
+[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Otto walk', 'period': '2025-11-08 → 2025-11-14', 'timestamp': '2025-11-14T13:15:46.047544', 'discipline': 'cycling', 'Total Hours': '12.98 h', 'Total Load (TSS)': 533}
 [PATCH] summary rebuilt for schema compliance: {'totalHours': np.float64(12.98), 'totalTss': 533, 'eventCount': 9, 'period': '2025-11-08 → 2025-11-14', 'variance': 0.0, 'zones': {}}
 [PATCH] Tier-2 summary override applied → canonical event-only totals enforced
 [PATCH] actions dual-structure applied → 24 items
@@ -365,7 +365,7 @@ Final context load_metrics: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'v
 **Athlete:** Clive King
 **Period:** 2025-11-08 → 2025-11-14
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-14T11:52:53.287682
+**Generated:** 2025-11-14T13:15:46.046707
 
 ---
 
@@ -443,7 +443,7 @@ _No outliers detected._
 ## 💓 Wellness & Recovery
 
 - Rest Days: 1
-- Resting HR: 42.6 bpm
+- Resting HR: 42.4 bpm
 - HRV: 56.0 ms (↑ improving (+3.0 ms), prev 53.0 ms)
 - Avg Sleep: 8.0 h/night
 - Fatigue: 2.0/5
@@ -511,6 +511,6 @@ _No outliers detected._
 **Cycling Metrics — Mean IF:** 0.71 · **Mean HR:** 112 bpm · **VO₂ max:** 68.6
 
 ---
-✅ **Audit Completed:** 2025-11-14T11:52:53.288493
+✅ **Audit Completed:** 2025-11-14T13:15:46.047519
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 

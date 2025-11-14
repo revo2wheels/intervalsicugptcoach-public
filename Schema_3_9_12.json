@@ -23,6 +23,12 @@
         "responses": {
           "200": {
             "description": "Unified report output",
+            "x-render": {
+              "mode": "full+metrics",
+              "chunk": "auto",
+              "auto": true,
+              "title": "Unified Training Report"
+            },
             "content": {
               "application/json": {
                 "schema": {

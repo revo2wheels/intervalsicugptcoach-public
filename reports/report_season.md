@@ -1,9 +1,9 @@
-# 🧾 Full Weekly Audit Report
+# 🧾 Season Audit Report
 
 ## Execution Logs
 
 ```
-🧭 Running Weekly Report (auditFinal=False, render_mode=full+metrics)
+🧭 Running Season Report (auditFinal=False, render_mode=full+metrics)
 [T0-LIGHT] Forcing Tier-0 lightweight prefetch before full audit
 [Tier-0] Using API endpoint: https://intervalsicugptcoach.clive-a5a.workers.dev
 [Tier-0 DEBUG] Calling lightweight URL → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/activities_t0light?oldest=2025-10-17&newest=2025-11-14&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin
@@ -149,7 +149,7 @@ Name: moving_time, dtype: float64
 [DEBUG] Derived metrics synced: {'ACWR': 0.0, 'Monotony': 0.0, 'Strain': 0.0, 'Polarisation': 0.0, 'RecoveryIndex': 0.0}
 [DEBUG-T2X] post-extended load_metrics: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}, 'ACWR': {'value': 0.89, 'status': 'ok'}, 'Monotony': {'value': np.float64(3.33), 'status': 'ok'}, 'Strain': {'value': np.float64(1774.9), 'status': 'ok'}, 'Polarisation': {'value': 0.764, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.334), 'status': 'ok'}}
 🧩 Render mode forced to full+metrics for Unified 10-section layout
-[SYNC] URF renderer context overridden with tier1_visibleTotals
+[SYNC] No tier1_visibleTotals found; using canonical totals
 [TRACE-RUNTIME] entering finalize_and_validate_render()
 [TRACE-RUNTIME] context type = <class 'dict'>
 [TRACE-RUNTIME] df_events type = <class 'pandas.core.frame.DataFrame'>
@@ -169,7 +169,7 @@ load_metrics: True
 adaptation_metrics: True
 trend_metrics: True
 correlation_metrics: True
-[DEBUG] report_header injected: {'athlete': 'Clive King', 'discipline': 'cycling', 'report_type': 'weekly', 'framework': 'Unified_Reporting_Framework_v5.1', 'timezone': 'Europe/Zurich', 'date_range': '2025-11-08 → 2025-11-14'}
+[DEBUG] report_header injected: {'athlete': 'Clive King', 'discipline': 'cycling', 'report_type': 'season', 'framework': 'Unified_Reporting_Framework_v5.1', 'timezone': 'Europe/Zurich', 'date_range': '2025-11-08 → 2025-11-14'}
 [DEBUG-FINALIZER] pre-render load_metrics: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}, 'ACWR': {'value': 0.89, 'status': 'ok'}, 'Monotony': {'value': np.float64(3.33), 'status': 'ok'}, 'Strain': {'value': np.float64(1774.9), 'status': 'ok'}, 'Polarisation': {'value': 0.764, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.334), 'status': 'ok'}}
 [STATE-GUARD] _locked_load_metrics set (prevents recomputation)
 [CANONICAL PROPAGATION] hours=12.98, tss=533
@@ -183,10 +183,10 @@ correlation_metrics: True
 [Renderer shim] Delegating to render_report() in render_unified_report.py
 
 [DEBUG-TEMPLATE: PRE-CALL]
-Keys in context: ['render_summary', 'include_coaching_metrics', 'postRenderAudit', 'debug_mode', 'debug_trace', 'tier0_snapshotTotals_7d', 'snapshot_7d_json', 'timezone', 'athleteProfile', 'athlete', 'report_mode', 'window_start', 'window_end', 'df_acwr_base', 'auditPartial', 'auditFinal', 'window_summary', 'knowledge', 'tier1_visibleTotals', 'weeklyEventLogBlock', 'df_events', 'wellness_metrics', 'dailyMerged', 'ctl', 'atl', 'tsb', 'load_metrics', 'zone_dist_power', 'zone_dist_hr', 'zone_dist_pace', 'outliers', 'totalHours', 'totalTss', 'totalDistance', 'eventTotals', 'df_event_only', 'enforcement_layer', '_locked_totals', 'locked_totalHours', 'locked_totalTss', 'locked_totalDistance', 'event_count', 'trace', 'derived_metrics', 'trend_series', 'metrics', 'ACWR', 'Monotony', 'Strain', 'FatigueTrend', 'ZQI', 'FatOxEfficiency', 'Polarisation', 'FOxI', 'CUR', 'GR', 'MES', 'RecoveryIndex', 'ACWR_Risk', 'StressTolerance', 'phases', 'metric_contexts', 'ui_flag', 'actions', '_locked_load_metrics', 'adaptation_metrics', 'trend_metrics', 'correlation_metrics', 'render_mode', 'totalSessions', 'Duration_total', 'icon_pack', 'force_icon_pack', 'event_log_text', 'report_header', 'summary_patch', 'zone_dist']
+Keys in context: ['render_summary', 'include_coaching_metrics', 'postRenderAudit', 'debug_mode', 'debug_trace', 'tier0_snapshotTotals_7d', 'snapshot_7d_json', 'timezone', 'athleteProfile', 'athlete', 'report_mode', 'window_start', 'window_end', 'df_acwr_base', 'auditPartial', 'auditFinal', 'window_summary', 'knowledge', 'tier1_visibleTotals', 'weeklyEventLogBlock', 'df_events', 'wellness_metrics', 'dailyMerged', 'ctl', 'atl', 'tsb', 'load_metrics', 'zone_dist_power', 'zone_dist_hr', 'zone_dist_pace', 'outliers', 'totalHours', 'totalTss', 'totalDistance', 'eventTotals', 'df_event_only', 'enforcement_layer', '_locked_totals', 'locked_totalHours', 'locked_totalTss', 'locked_totalDistance', 'event_count', 'trace', 'derived_metrics', 'trend_series', 'metrics', 'ACWR', 'Monotony', 'Strain', 'FatigueTrend', 'ZQI', 'FatOxEfficiency', 'Polarisation', 'FOxI', 'CUR', 'GR', 'MES', 'RecoveryIndex', 'ACWR_Risk', 'StressTolerance', 'phases', 'metric_contexts', 'ui_flag', 'actions', '_locked_load_metrics', 'adaptation_metrics', 'trend_metrics', 'correlation_metrics', 'render_mode', 'Duration_total', 'icon_pack', 'force_icon_pack', 'event_log_text', 'report_header', 'summary_patch', 'zone_dist']
 load_metrics pre-pass: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}, 'ACWR': {'value': 0.89, 'status': 'ok'}, 'Monotony': {'value': np.float64(3.33), 'status': 'ok'}, 'Strain': {'value': np.float64(1774.9), 'status': 'ok'}, 'Polarisation': {'value': 0.764, 'status': 'ok'}, 'RecoveryIndex': {'value': np.float64(0.334), 'status': 'ok'}, 'totalHours': np.float64(12.98), 'totalTss': 533}
 _locked_load_metrics pre-pass: {'totalHours': np.float64(12.98), 'totalTss': 533, 'source': 'tier2_final_lock'}
-Report type: weekly
+Report type: season
 ------------------------------------------------------------
 [VERIFY] Renderer using Tier-1 visibleTotals for totals and metrics.
 ✅ Renderer source: Tier-1 visibleTotals (lightweight 7-day dataset)
@@ -233,8 +233,6 @@ Report type: weekly
 [TRACE-HEADER] ctx.totalHours = 12.98
 [TRACE-HEADER] ctx.totalTss   = 533
 [DEBUG] Adaptation metric keys: ['Efficiency Factor', 'Fatigue Resistance', 'Endurance Decay', 'Z2 Stability', 'Aerobic Decay']
-[Tier-2] Using enforced df_event_only preview (no rebuild).
-[Tier-2] Rendered Weekly Events Summary (9 rows)
 [Tier-2] Weekly totals + mean metrics rendered (Tier-1 subset)
 [Tier-2] Using canonical summary_patch from Tier-2 validator
 [TRACE-DESERIALIZE] wrapped.context totals=12.98, 533
@@ -252,10 +250,10 @@ load_metrics post-render: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'val
 Final report keys: ['header', 'markdown', 'type', 'context', 'sections', 'tables', 'lines', 'summary', 'metrics', 'actions', 'phases', 'trends', 'correlation', 'footer']
 Final context load_metrics: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}, 'ACWR': {'value': 0.89, 'status': 'ok'}, 'Monotony': {'value': 3.33, 'status': 'ok'}, 'Strain': {'value': 1774.9, 'status': 'ok'}, 'Polarisation': {'value': 0.764, 'status': 'ok'}, 'RecoveryIndex': {'value': 0.334, 'status': 'ok'}, 'totalHours': 12.98, 'totalTss': 533}
 ================================================================================
-[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Otto walk', 'period': '2025-11-08 → 2025-11-14', 'timestamp': '2025-11-14T11:52:53.288518', 'discipline': 'cycling'}
+[TRACE-POST-RENDER-CHECK] header={'title': 'Season Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Clive King', 'period': '2025-11-08 → 2025-11-14', 'timestamp': '2025-11-14T12:15:18.126323', 'discipline': 'cycling'}
 [TRACE-POST-RENDER-CHECK] summary={'totalHours': np.float64(12.98), 'totalTss': 533, 'eventCount': 9, 'period': '2025-11-08 → 2025-11-14'}
 [POST-RENDER] Canonical event-only totals enforced → header + summary synced
-[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Otto walk', 'period': '2025-11-08 → 2025-11-14', 'timestamp': '2025-11-14T11:52:53.288518', 'discipline': 'cycling', 'Total Hours': '12.98 h', 'Total Load (TSS)': 533}
+[PATCH] header rebuilt for schema compliance: {'title': 'Season Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Clive King', 'period': '2025-11-08 → 2025-11-14', 'timestamp': '2025-11-14T12:15:18.126323', 'discipline': 'cycling', 'Total Hours': '12.98 h', 'Total Load (TSS)': 533}
 [PATCH] summary rebuilt for schema compliance: {'totalHours': np.float64(12.98), 'totalTss': 533, 'eventCount': 9, 'period': '2025-11-08 → 2025-11-14', 'variance': 0.0, 'zones': {}}
 [PATCH] Tier-2 summary override applied → canonical event-only totals enforced
 [PATCH] actions dual-structure applied → 24 items
@@ -331,7 +329,6 @@ Final context load_metrics: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'v
   - timezone
   - totalDistance
   - totalHours
-  - totalSessions
   - totalTss
   - totals_source
   - totals_verified
@@ -361,11 +358,11 @@ Final context load_metrics: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'v
 
 ## Rendered Markdown Report
 
-# 🧭 weekly Training Report — URF v5.1
+# 🧭 season Training Report — URF v5.1
 **Athlete:** Clive King
 **Period:** 2025-11-08 → 2025-11-14
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-14T11:52:53.287682
+**Generated:** 2025-11-14T12:15:18.125689
 
 ---
 
@@ -492,25 +489,10 @@ _No outliers detected._
 23. ⚠ RecoveryIndex (0.334) — Influences rest day scheduling and microcycle tapering.
 24. ✅ StressTolerance (5.33) — Reflects sustainable strain capacity; 2–8 indicates robust adaptation to training load.
 
-
-## 🚴 Weekly Events Summary
-
-| date | name | icu_training_load | moving_time | distance |
-|:-- |:-- |:-- |:-- |:--|
-| 2025-11-13 | Zwift - Group Ride: DBR Base Endurance Ride | 88 | 01:31:47 | 58.3 |
-| 2025-11-12 | Zwift - 90 base sometimes with coco | 63 | 01:33:49 | 60.4 |
-| 2025-11-11 | zAlp low cadence | 88 | 01:23:00 | 35.9 |
-| 2025-11-11 | Zwift - Tick Tock in Watopia | 6 | 00:10:13 | 6.4 |
-| 2025-11-11 | Otto Walk | 20 | 01:31:04 | 7.0 |
-| 2025-11-09 | Rathvel | 129 | 02:07:33 | 54.9 |
-| 2025-11-09 | Otto walk | 17 | 01:07:49 | 6.1 |
-| 2025-11-08 | 2hrs in the sunshine | 110 | 02:22:48 | 59.3 |
-| 2025-11-08 | Otto walk | 12 | 01:10:39 | 6.6 |
-
 **Weekly totals:** 12.98 h · 295.0 km · 533 TSS · 9 sessions**
 **Cycling Metrics — Mean IF:** 0.71 · **Mean HR:** 112 bpm · **VO₂ max:** 68.6
 
 ---
-✅ **Audit Completed:** 2025-11-14T11:52:53.288493
+✅ **Audit Completed:** 2025-11-14T12:15:18.126299
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 

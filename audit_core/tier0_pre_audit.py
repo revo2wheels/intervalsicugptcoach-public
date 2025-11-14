@@ -6,6 +6,8 @@ import pandas as pd
 from audit_core.utils import debug
 from datetime import datetime, timedelta
 from audit_core.errors import AuditHalt
+import json
+import numpy as np
 
 INTERVALS_API = os.getenv("INTERVALS_API", "https://intervals.icu/api/v1")
 ICU_TOKEN = os.getenv("ICU_OAUTH")  # OAuth-only
@@ -105,15 +107,19 @@ def fetch_wellness_chunked(athlete_id, oldest, newest, headers, context=None, ma
     return df_well
 
 
-#ACTIVITIES FETCH CHUNKED
+# ACTIVITIES FETCH CHUNKED
 def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, max_retries=2):
     """
     Adaptive and retryable chunked fetch for activities.
     Handles zone expansion, deduplication, canonical timezone/date normalization,
     and diagnostic summaries exactly as in the original Tier-0 pipeline.
     """
-    import json
-    from datetime import timedelta
+    # --- SEASON MODE GUARD ---
+    # If context indicates a season report, skip the heavy full-detail activity fetch.
+    # This prevents ResponseTooLarge errors while maintaining schema compatibility.
+    if context and isinstance(context, dict) and context.get("report_type", "").lower() == "season":
+        debug(context, "🧩 Tier-0: Skipping full activity fetch for season report (lightweight-only mode).")
+        return pd.DataFrame()
 
     activities = []
     est_payload_acts = estimate_payload_size((newest - oldest).days + 1, "activities")
@@ -127,7 +133,7 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                 chunk_start = oldest + timedelta(days=offset)
                 chunk_end = min(newest, chunk_start + timedelta(days=act_chunk_days)) - timedelta(seconds=1)
 
-                debug(context,f"[Tier-0 fetch] chunk_start={chunk_start}  chunk_end={chunk_end}")
+                debug(context, f"[Tier-0 fetch] chunk_start={chunk_start}  chunk_end={chunk_end}")
                 acts_url = (
                     f"{INTERVALS_API}/athlete/{athlete_id}/activities?"
                     f"oldest={chunk_start}&newest={chunk_end}"
@@ -151,29 +157,28 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
 
                 # --- Build DataFrame once ---
                 df_chunk = pd.DataFrame(payload)
-
                 if not df_chunk.empty:
                     df_activities_list.append(df_chunk)
 
-                # After loop ends
-                if not df_activities_list:
-                    debug(context, "⚠ No activity chunks returned from API (all payloads empty).")
-                    return pd.DataFrame()
+            # After loop ends
+            if not df_activities_list:
+                debug(context, "⚠ No activity chunks returned from API (all payloads empty).")
+                return pd.DataFrame()
 
-                df_activities = pd.concat(df_activities_list, ignore_index=True)
+            df_activities = pd.concat(df_activities_list, ignore_index=True)
 
             # --- Deduplication ---
             if "id" in df_activities.columns:
                 before = len(df_activities)
                 df_activities.drop_duplicates(subset=["id"], keep="first", inplace=True)
-                debug(context,f"🧩 Tier-0 deduplication: {before - len(df_activities)} duplicates removed.")
+                debug(context, f"🧩 Tier-0 deduplication: {before - len(df_activities)} duplicates removed.")
 
             # --- Unit Normalization: ensure moving_time is in seconds ---
             if "moving_time" in df_activities.columns:
-               max_val = df_activities["moving_time"].max()
-            if max_val < 1000:  # likely already in hours
-               debug(context,f"⚙️ Tier-0 normalization: converting moving_time from hours → seconds (max={max_val})")
-               df_activities["moving_time"] *= 3600
+                max_val = df_activities["moving_time"].max()
+                if max_val < 1000:  # likely already in hours
+                    debug(context, f"⚙️ Tier-0 normalization: converting moving_time from hours → seconds (max={max_val})")
+                    df_activities["moving_time"] *= 3600
 
             # --- Canonical timezone & date window normalization ---
             context = context or {}
@@ -191,14 +196,14 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                 & (df_activities["start_date_local"].dt.date <= end_date)
             ]
             sliced_rows = len(df_activities)
-            debug(context,f"[T0] Canonical slice → {sliced_rows}/{before_rows} rows retained ({start_date}–{end_date}, tz={tz})")
+            debug(context, f"[T0] Canonical slice → {sliced_rows}/{before_rows} rows retained ({start_date}–{end_date}, tz={tz})")
 
             # Post-slice dedup
             before = len(df_activities)
             df_activities.drop_duplicates(subset=["id"], keep="first", inplace=True)
             dropped = before - len(df_activities)
             if dropped > 0:
-                debug(context,f"[T0] Post-slice deduplication removed {dropped} duplicates.")
+                debug(context, f"[T0] Post-slice deduplication removed {dropped} duplicates.")
 
             # Canonical columns
             df_activities["date"] = df_activities["start_date_local"].dt.date
@@ -212,30 +217,19 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                 Handles malformed JSON, nested lists, or dict-style entries.
                 Guarantees numeric output and prevents sandbox fallback.
                 """
-                import numpy as np
-                import pandas as pd
-                import json
-
                 if field not in df.columns:
                     return df
 
                 def safe_parse(x):
-                    # Normalize null-like values
                     if x in [None, "null", "None", np.nan]:
                         return []
-
-                    # Parse if stringified JSON
                     if isinstance(x, str):
                         try:
                             x = json.loads(x)
                         except Exception:
                             return []
-
-                    # Handle nested lists: [[...]] → [...]
                     while isinstance(x, list) and len(x) == 1 and isinstance(x[0], list):
                         x = x[0]
-
-                    # Extract seconds if dict-style
                     if isinstance(x, list):
                         flat = []
                         for z in x:
@@ -243,9 +237,6 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                                 flat.append(z.get("secs", 0))
                             elif isinstance(z, (int, float)):
                                 flat.append(z)
-                            else:
-                                # Unknown element type
-                                continue
                         return flat
                     return []
 
@@ -254,19 +245,14 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                     max_len = parsed.map(len).max() if not parsed.empty else 0
                     if max_len == 0:
                         return df
-
-                    # Build zone dataframe with consistent numeric dtype
                     z = pd.DataFrame(parsed.tolist(), index=df.index)
                     z = z.reindex(columns=range(max_len)).fillna(0).astype(float)
                     z.columns = [f"{prefix}_z{i+1}" for i in range(max_len)]
-
                     df = pd.concat([df.drop(columns=[field]), z], axis=1)
                     debug(None, f"[T0] Expanded {field} safely → {len(z.columns)} cols, max depth={max_len}")
                 except Exception as e:
                     debug(None, f"[T0] Zone expansion failed for {field}: {e}")
-                    # On failure, drop offending column to prevent renderer fallback
                     df.drop(columns=[field], inplace=True, errors="ignore")
-
                 return df
 
             df_activities = expand_zones(df_activities, "icu_zone_times", "power")
@@ -277,18 +263,18 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
             if "moving_time" in df_activities.columns:
                 raw_sum = df_activities["moving_time"].sum()
                 max_val = df_activities["moving_time"].max()
-                if max_val < 1000:  # hours already
+                if max_val < 1000:
                     total_hours = raw_sum
-                    debug(context,f"[T0] Diagnostic: true Σ(event.moving_time)={raw_sum:.2f} h (input already hours)")
+                    debug(context, f"[T0] Diagnostic: true Σ(event.moving_time)={raw_sum:.2f} h (input already hours)")
                 else:
                     total_hours = raw_sum / 3600
-                    debug(context,f"[T0] Diagnostic: true Σ(event.moving_time)={raw_sum:.0f} s → {total_hours:.2f} h")
+                    debug(context, f"[T0] Diagnostic: true Σ(event.moving_time)={raw_sum:.0f} s → {total_hours:.2f} h")
             else:
                 total_hours = 0
-                debug(context,"[T0] Diagnostic: no moving_time column found")
+                debug(context, "[T0] Diagnostic: no moving_time column found")
 
             total_tss = df_activities["icu_training_load"].sum() if "icu_training_load" in df_activities else 0
-            debug(context,f"[T0] Canonical totals → Σ(TSS)={total_tss:.1f}")
+            debug(context, f"[T0] Canonical totals → Σ(TSS)={total_tss:.1f}")
 
             return df_activities
 
@@ -297,8 +283,9 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                 raise AuditHalt(f"❌ Activities fetch failed after {max_retries + 1} meta-retries: {e}")
             continue
 
-    debug(context,"⚠ No activities data available after chunked fetch.")
+    debug(context, "⚠ No activities data available after chunked fetch.")
     return pd.DataFrame()
+
 
 #FETCH AHLETEPROFILE
 def fetch_athlete_profile(headers, context=None):
