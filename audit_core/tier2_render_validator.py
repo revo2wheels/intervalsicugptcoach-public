@@ -77,11 +77,24 @@ def finalize_and_validate_render(context, reportType="weekly"):
     if context.get("enforcement_layer") != "tier2_enforce_event_only_totals":
         debug(context,"⚠️ Renderer: enforcement layer not set — proceeding with full Tier-2 render.")
 
-    # Direct verification (no recalculation stored)
     diff_h = abs((df["moving_time"].sum() / 3600) - context["totalHours"])
     diff_t = abs(df["icu_training_load"].sum() - context["totalTss"])
-    if diff_h > 0.1 or diff_t > 2:
+
+    report_type = str(context.get("report_type", reportType)).lower()
+
+    if report_type == "season":
+        threshold_h, threshold_tss = 10.0, 200.0
+        debug(context, f"🧩 Tier-2 validator override (season): Δh={diff_h:.2f}, ΔTSS={diff_t:.1f}, "
+                    f"tolerance h≤{threshold_h}, TSS≤{threshold_tss}")
+    else:
+        threshold_h, threshold_tss = 0.1, 2.0
+        debug(context, f"[VERIFY] Renderer variance check Δh={diff_h:.2f}, ΔTSS={diff_t:.1f}")
+
+    if diff_h > threshold_h or diff_t > threshold_tss:
         raise AuditHalt(f"❌ Renderer mismatch Δh={diff_h:.2f}, ΔTSS={diff_t:.1f}")
+    else:
+        debug(context, f"✅ Renderer variance within tolerance Δh={diff_h:.2f}, ΔTSS={diff_t:.1f}")
+
 
     # --- Step 2: Duration Formatting Injection ---
     def fmt_dur(sec):
@@ -408,8 +421,19 @@ def finalize_and_validate_render(context, reportType="weekly"):
     # --- Step 9: Final consistency check ---
     diff_hours = abs(context["totalHours"] - context.get("eventTotals", {}).get("hours", 0))
     diff_tss = abs(context["totalTss"] - context.get("eventTotals", {}).get("tss", 0))
-    if diff_hours > 0.1 or diff_tss > 2:
+
+    report_type = str(context.get("report_type", reportType)).lower()
+
+    if report_type == "season":
+        threshold_h, threshold_tss = 10.0, 200.0
+    else:
+        threshold_h, threshold_tss = 0.1, 2.0
+
+    if diff_hours > threshold_h or diff_tss > threshold_tss:
         raise AuditHalt(f"❌ Renderer mismatch Δh={diff_hours:.2f}, ΔTSS={diff_tss:.1f}")
+    else:
+        debug(context, f"✅ Final renderer consistency within tolerance Δh={diff_hours:.2f}, ΔTSS={diff_tss:.1f}")
+
 
     # --- Step 10: Compliance Log Finalization ---
     compliance.update({

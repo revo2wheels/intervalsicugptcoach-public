@@ -248,6 +248,13 @@ export default {
     // ====================================================================
     // DEFAULT
     // ====================================================================
+    // --- Inject explicit context for downstream Tier-0 ---
+    const context = {
+      report_type: reportType,
+      range,
+    };
+    console.log(`[CTX] Injected report_type=${reportType}, lightDays=${range.lightDays}, fullDays=${range.fullDays}`);
+ 
     return new Response(
       JSON.stringify({ status: 404, error: `No matching route for ${pathname}` }),
       { status: 404, headers: { "content-type": "application/json" } }

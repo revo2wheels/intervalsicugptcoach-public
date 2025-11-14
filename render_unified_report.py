@@ -67,52 +67,62 @@ def safe_metric_entry(k, v):
 def render_report(data):
     ctx = data.get("context", {})
 
-    # --- Diagnostic: Totals source verification ---
-    if "tier1_visibleTotals" in ctx:
+    # --- 🧩 Diagnostic & Totals Source Resolution (URF v5.2+ adaptive) ---
+    report_type = ctx.get("report_type", data.get("type", "weekly")).lower()
+
+    # --- Determine renderer source ---
+    if report_type == "season" and "df_events" in ctx:
+        debug(ctx, "[VERIFY] Renderer override: using Tier-2 df_events (full dataset) for season summary.")
+        print("🧩 Renderer override: using Tier-2 df_events (full dataset) for season summary.")
+        totals_source = "tier2_enforced_totals" if "tier2_enforced_totals" in ctx else "eventTotals"
+    elif "tier1_visibleTotals" in ctx:
         debug(ctx, "[VERIFY] Renderer using Tier-1 visibleTotals for totals and metrics.")
         print("✅ Renderer source: Tier-1 visibleTotals (lightweight 7-day dataset)")
+        totals_source = "tier1_visibleTotals"
     elif "tier2_enforced_totals" in ctx:
         debug(ctx, "[VERIFY] Renderer using Tier-2 enforced totals (canonical dataset).")
         print("✅ Renderer source: Tier-2 enforced totals (canonical full dataset)")
+        totals_source = "tier2_enforced_totals"
     elif "eventTotals" in ctx:
         debug(ctx, "[VERIFY] Renderer using legacy eventTotals (fallback).")
         print("✅ Renderer source: eventTotals (legacy fallback)")
+        totals_source = "eventTotals"
     else:
         debug(ctx, "[VERIFY] Renderer could not determine totals source — defaulting to context keys.")
         print("⚠️ Renderer source: undetermined (default context values)")
+        totals_source = None
 
-    # --- Canonical totals unification (Tier-1 visible subset preferred) ---
-    if "tier1_visibleTotals" in ctx:
-        ctx["eventTotals"] = ctx["tier1_visibleTotals"]
-        ctx["totalHours"] = ctx["tier1_visibleTotals"].get("hours", 0)
-        ctx["totalTss"] = ctx["tier1_visibleTotals"].get("tss", 0)
-        ctx["totalDistance"] = ctx["tier1_visibleTotals"].get("distance", 0)
-        debug(ctx, "[SYNC] Unified totals from tier1_visibleTotals")
-    elif "tier0_snapshotTotals_7d" in ctx:
-        ctx["eventTotals"] = ctx["tier0_snapshotTotals_7d"]
-        ctx["totalHours"] = ctx["tier0_snapshotTotals_7d"].get("hours", 0)
-        ctx["totalTss"] = ctx["tier0_snapshotTotals_7d"].get("tss", 0)
-        ctx["totalDistance"] = ctx["tier0_snapshotTotals_7d"].get("distance", 0)
-        debug(ctx, "[SYNC] Unified totals from tier0_snapshotTotals_7d")
-
-
-    # --- 🔧 Canonical sync from Tier-2 enforced DataFrame totals (URF v5.2+)
-    if "tier2_enforced_totals" in ctx:
+    # --- Canonical totals unification ---
+    if report_type == "season" and "tier2_enforced_totals" in ctx:
         et = ctx["tier2_enforced_totals"]
-        ctx["totalHours"] = et.get("time_h")
-        ctx["totalTss"] = et.get("tss")
-        ctx["totalDistance"] = et.get("distance_km")
-        debug(ctx, "[SYNC] Canonical totals restored from tier2_enforced_totals")
-
-    elif "eventTotals" in ctx:
+        ctx["eventTotals"] = et
+        ctx["totalHours"] = et.get("time_h", 0)
+        ctx["totalTss"] = et.get("tss", 0)
+        ctx["totalDistance"] = et.get("distance_km", 0)
+        debug(ctx, "[SYNC] Canonical totals restored from Tier-2 enforced totals (season override)")
+    elif totals_source == "tier1_visibleTotals":
+        et = ctx["tier1_visibleTotals"]
+        ctx["eventTotals"] = et
+        ctx["totalHours"] = et.get("hours", 0)
+        ctx["totalTss"] = et.get("tss", 0)
+        ctx["totalDistance"] = et.get("distance", 0)
+        debug(ctx, "[SYNC] Unified totals from Tier-1 visibleTotals")
+    elif totals_source == "tier2_enforced_totals":
+        et = ctx["tier2_enforced_totals"]
+        ctx["eventTotals"] = et
+        ctx["totalHours"] = et.get("time_h", 0)
+        ctx["totalTss"] = et.get("tss", 0)
+        ctx["totalDistance"] = et.get("distance_km", 0)
+        debug(ctx, "[SYNC] Canonical totals restored from Tier-2 enforced totals")
+    elif totals_source == "eventTotals":
         et = ctx["eventTotals"]
-        ctx["totalHours"] = et.get("hours")
-        ctx["totalTss"] = et.get("tss")
-        ctx["totalDistance"] = et.get("distance")
+        ctx["totalHours"] = et.get("hours", 0)
+        ctx["totalTss"] = et.get("tss", 0)
+        ctx["totalDistance"] = et.get("distance", 0)
         debug(ctx, "[SYNC] Legacy totals restored from eventTotals")
-
     else:
         debug(ctx, "[WARN] No Tier-2 totals found — using serialized fallback values")
+
 
     # --- Ensure downstream load metrics consistency
     ctx.setdefault("load_metrics", {})
@@ -325,8 +335,41 @@ def render_report(data):
     else:
         md.append("_No coaching actions recorded._")
 
-    # === 🪜 Weekly Events Summary (Tier-2 Safe) ===
-    if report_type.lower() == "weekly":
+    # === 🪜 Events or Phases Summary (Tier-2 Safe) ===
+    if report_type.lower() == "season":
+        # --- Phase-based aggregation instead of per-event list ---
+        df_events = ctx.get("df_events")
+        if hasattr(df_events, "empty") and not df_events.empty:
+            df_events["start_date_local"] = pd.to_datetime(df_events["start_date_local"], errors="coerce")
+            df_events["week"] = df_events["start_date_local"].dt.isocalendar().week
+            df_phase = (
+                df_events.groupby("week")
+                .agg({
+                    "icu_training_load": "sum",
+                    "moving_time": "sum",
+                    "distance": "sum"
+                })
+                .reset_index()
+                .sort_values("week")
+            )
+
+            md.append(section("🪜 Seasonal Phases Summary"))
+            rows = []
+            for _, r in df_phase.iterrows():
+                rows.append([
+                    f"Week {int(r['week'])}",
+                    f"{r['distance']:.1f} km",
+                    f"{r['moving_time']/3600:.1f} h",
+                    f"{r['icu_training_load']:.0f} TSS"
+                ])
+            md.append(table(["Phase", "Distance", "Hours", "TSS"], rows))
+            debug(ctx, f"[Tier-2] Rendered Seasonal Phase Summary ({len(rows)} weeks)")
+        else:
+            md.append(section("🪜 Seasonal Phases Summary"))
+            md.append("_No event data available for phase summary._")
+
+    elif report_type.lower() == "weekly":
+        # --- Retain standard event preview logic for weekly ---
         if "df_event_only" in ctx and ctx.get("df_event_only", {}).get("preview"):
             preview = ctx["df_event_only"]["preview"]
             debug(ctx, "[Tier-2] Using enforced df_event_only preview (no rebuild).")
@@ -334,7 +377,6 @@ def render_report(data):
             debug(ctx, "[Tier-2 WARN] Missing enforced df_event_only — fallback to rebuild.")
             df_events = ctx.get("df_events")
             if hasattr(df_events, "to_dict") and not getattr(df_events, "empty", True):
-                # rename for compatibility
                 df_events = df_events.rename(columns={"start_date_local": "date"})
                 preview = (
                     df_events[["date", "name", "icu_training_load", "moving_time", "distance", "total_elevation_gain"]]
@@ -348,12 +390,9 @@ def render_report(data):
         md.append(section("🚴 Weekly Events Summary"))
 
         if preview:
-            # Normalize column names and ensure date column exists
             headers = ["date", "name", "icu_training_load", "moving_time", "distance"]
             rows = []
-
             for e in preview:
-                # Build each row explicitly by key, not by preview[0].keys()
                 date_val = e.get("date") or e.get("start_date_local") or ""
                 if isinstance(date_val, str) and " " in date_val:
                     date_val = date_val.split(" ")[0]
@@ -371,16 +410,16 @@ def render_report(data):
                     dist = f"{dist / 1000:.1f}"
 
                 rows.append([date_val, name, tss, move, dist])
-
             md.append(table(headers, rows))
             debug(ctx, f"[Tier-2] Rendered Weekly Events Summary ({len(rows)} rows)")
+
 
     # --- Unified Weekly Totals (Tier-1 / Tier-0 canonical fallback) + Metrics ---
     if "tier1_visibleTotals" in ctx:
         vt = ctx["tier1_visibleTotals"]
         md.append("")
         md.append(
-            f"**Weekly totals:** "
+            f"**Totals:** "
             f"{vt.get('hours', 0):.2f} h · "
             f"{vt.get('distance', 0):.1f} km · "
             f"{vt.get('tss', 0)} TSS · "

@@ -115,11 +115,10 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
     and diagnostic summaries exactly as in the original Tier-0 pipeline.
     """
     # --- SEASON MODE GUARD ---
-    # If context indicates a season report, skip the heavy full-detail activity fetch.
-    # This prevents ResponseTooLarge errors while maintaining schema compatibility.
+    # For season reports, reduce field scope but still perform lightweight fetch.
     if context and isinstance(context, dict) and context.get("report_type", "").lower() == "season":
-        debug(context, "🧩 Tier-0: Skipping full activity fetch for season report (lightweight-only mode).")
-        return pd.DataFrame()
+        debug(context, "🧩 Tier-0: Using lightweight activity fetch for season report (no early return).")
+        context["fetch_mode"] = "light"
 
     activities = []
     est_payload_acts = estimate_payload_size((newest - oldest).days + 1, "activities")
@@ -355,8 +354,16 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         "icu_training_load,IF,average_heartrate,VO2MaxGarmin"
     )
 
-    oldest = (pd.Timestamp.now() - pd.Timedelta(days=28)).strftime("%Y-%m-%d")
+    # --- Adaptive oldest/newest range ---
+    report_type = context.get("report_type", "").lower() if isinstance(context, dict) else "weekly"
+    if report_type == "season":
+        oldest = (pd.Timestamp.now() - pd.Timedelta(days=90)).strftime("%Y-%m-%d")
+        debug(context, "🧩 Tier-0 override: requesting 90-day dataset from worker for season report.")
+    else:
+        oldest = (pd.Timestamp.now() - pd.Timedelta(days=28)).strftime("%Y-%m-%d")
+
     newest = pd.Timestamp.now().strftime("%Y-%m-%d")
+
     
     # Replace the direct Intervals URL with your Worker endpoint
     light_url = (
@@ -364,7 +371,7 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         f"oldest={oldest}&newest={newest}&fields={fields}"
     )
     debug(context, f"[Tier-0 DEBUG] Calling lightweight URL → {light_url}")
-    debug(context, f"[T0-LIGHT] Fetching lightweight 28-day dataset → {light_url}")
+    debug(context, f"[T0-LIGHT] Fetching lightweight {90 if report_type == 'season' else 28}-day dataset → {light_url}")
     resp = fetch_with_retry(light_url, headers)
 
 
@@ -394,73 +401,82 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         # Enforce correct datatypes
         df_light["start_date_local"] = pd.to_datetime(df_light["start_date_local"], utc=True, errors="coerce")
 
-        # --- Strict 7-day window based on report end date (timezone-normalized) ---
-        # Strip timezone from activity timestamps to allow direct comparison
+        # --- Adaptive window based on report_type ---
+        report_type = context.get("report_type", "").lower() if isinstance(context, dict) else "weekly"
+
         df_light["start_date_local"] = pd.to_datetime(
             df_light["start_date_local"], errors="coerce"
         ).dt.tz_localize(None)
 
-        # Define window bounds (naive timestamps)
-        window_end_exclusive = pd.to_datetime(end) + pd.Timedelta(days=1)
-        window_start = pd.to_datetime(end) - pd.Timedelta(days=6)
+        if report_type == "season":
+            slice_days = 90
+            debug(context, f"🧩 Tier-0 override: using {slice_days}-day slice for season report.")
+        else:
+            slice_days = 7
 
-        # Slice to 7-day subset
-        df_7d = df_light[
+        window_end_exclusive = pd.to_datetime(end) + pd.Timedelta(days=1)
+        window_start = pd.to_datetime(end) - pd.Timedelta(days=slice_days - 1)
+
+        # Slice to the adaptive subset
+        df_light_slice = df_light[
             (df_light["start_date_local"] >= window_start)
             & (df_light["start_date_local"] < window_end_exclusive)
         ].copy()
 
         debug(
             context,
-            f"[T0-SLICE] 7-day window: {window_start.date()} → {window_end_exclusive.date()} "
-            f"({len(df_7d)} activities selected)"
-        )
-
-        debug(
-            context,
-            f"[T0-SLICE] 7-day window: {window_start.date()} → {window_end_exclusive.date()} "
-            f"({len(df_7d)} activities selected)"
+            f"[T0-SLICE] {slice_days}-day window: {window_start.date()} → {window_end_exclusive.date()} "
+            f"({len(df_light_slice)} activities selected)"
         )
 
         # --- Deduplicate before totals ---
-        if "id" in df_7d.columns:
-            before_dedup = len(df_7d)
-            df_7d = df_7d.drop_duplicates(subset=["id"], keep="first")
-            after_dedup = len(df_7d)
+        if "id" in df_light_slice.columns:
+            before_dedup = len(df_light_slice)
+            df_light_slice = df_light_slice.drop_duplicates(subset=["id"], keep="first")
+            after_dedup = len(df_light_slice)
             debug(context, f"[T0-DEDUP] Dropped {before_dedup - after_dedup} duplicates → {after_dedup} unique events")
 
         # --- Numeric conversion ---
         for col in ["moving_time", "distance", "icu_training_load"]:
-            if col in df_7d.columns:
-                df_7d[col] = pd.to_numeric(df_7d[col], errors="coerce").fillna(0)
+            if col in df_light_slice.columns:
+                df_light_slice[col] = pd.to_numeric(df_light_slice[col], errors="coerce").fillna(0)
 
-        # --- Compute 7-day totals ---
-        context["tier0_snapshotTotals_7d"] = {
-            "hours": round(df_7d["moving_time"].sum() / 3600, 2),
-            "distance": round(df_7d["distance"].sum() / 1000, 1),
-            "tss": int(df_7d["icu_training_load"].sum()),
-            "count": len(df_7d),
+        # --- Compute adaptive totals ---
+        totals_key = f"tier0_snapshotTotals_{slice_days}d"
+        context[totals_key] = {
+            "hours": round(df_light_slice["moving_time"].sum() / 3600, 2),
+            "distance": round(df_light_slice["distance"].sum() / 1000, 1),
+            "tss": int(df_light_slice["icu_training_load"].sum()),
+            "count": len(df_light_slice),
             "start": str(window_start.date()),
             "end": str(window_end_exclusive.date())
         }
 
         debug(
             context,
-            f"🧭 Tier-0: 7-day subset (lightweight) = "
-            f"{context['tier0_snapshotTotals_7d']['hours']} h | "
-            f"{context['tier0_snapshotTotals_7d']['distance']} km | "
-            f"{context['tier0_snapshotTotals_7d']['tss']} TSS "
-            f"({context['tier0_snapshotTotals_7d']['count']} events)"
+            f"🧭 Tier-0: {slice_days}-day subset (lightweight) = "
+            f"{context[totals_key]['hours']} h | "
+            f"{context[totals_key]['distance']} km | "
+            f"{context[totals_key]['tss']} TSS "
+            f"({context[totals_key]['count']} events)"
         )
 
         # --- Serialize for Tier-1 use ---
-        context["snapshot_7d_json"] = df_7d.to_json(orient="records")
+        context["snapshot_7d_json"] = df_light_slice.to_json(orient="records")
 
     # --- Step 1: Fetch athlete profile ---
     athlete, context = fetch_athlete_profile(headers, context)
 
     # --- Step 2: Determine date window ---
-    mode, oldest, newest = resolve_report_trigger("weekly", context["timezone"])
+    # Preserve 90-day range for season reports; fallback to 7-day for others
+    if context.get("report_type", "").lower() == "season":
+        mode = "season"
+        oldest = pd.Timestamp.now() - pd.Timedelta(days=90)
+        newest = pd.Timestamp.now()
+        debug(context, f"🧩 Tier-0 override: using 90-day oldest/newest for season mode.")
+    else:
+        mode, oldest, newest = resolve_report_trigger("weekly", context["timezone"])
+
     context.update({"report_mode": mode, "window_start": oldest, "window_end": newest})
 
     # --- Step 3: Fetch activities using chunked adaptive method ---

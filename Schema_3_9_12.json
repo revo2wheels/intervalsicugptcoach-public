@@ -6,7 +6,9 @@
     "description": "Splits lightweight (Tier-0) and full (Tier-1) fetches into separate operations to prevent connector deduplication."
   },
   "servers": [
-    { "url": "https://intervalsicugptcoach.clive-a5a.workers.dev" }
+    {
+      "url": "https://intervalsicugptcoach.clive-a5a.workers.dev"
+    }
   ],
   "paths": {
     "/run_report": {
@@ -17,7 +19,12 @@
           {
             "name": "reportType",
             "in": "query",
-            "schema": { "type": "string", "enum": ["weekly", "tier0", "season"], "default": "weekly" }
+            "schema": {
+              "type": "string",
+              "enum": ["weekly", "tier0", "season"],
+              "default": "weekly"
+            },
+            "description": "Specifies which report to run: weekly (7-day), tier0 (diagnostic), or season (90-day lightweight)."
           }
         ],
         "responses": {
@@ -34,11 +41,44 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "string" },
-                    "message": { "type": "string" },
-                    "activities_light": { "type": "array", "items": { "$ref": "#/components/schemas/Activity" } },
-                    "activities_full": { "type": "array", "items": { "$ref": "#/components/schemas/Activity" } },
-                    "wellness": { "type": "array", "items": { "$ref": "#/components/schemas/Wellness" } }
+                    "status": { "type": "string", "example": "ok" },
+                    "message": { "type": "string", "example": "Unified report (season) data fetched successfully." },
+                    "reportType": { "type": "string", "example": "season" },
+                    "athlete_id": { "type": "string", "example": "0" },
+                    "chunked": { "type": "boolean", "example": true },
+                    "render_hint": { "type": "string", "example": "data" },
+                    "athlete_profile": { "type": "object" },
+                    "activities_light": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Activity" }
+                    },
+                    "activities_full": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Activity" }
+                    },
+                    "wellness": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Wellness" }
+                    },
+                    "context": {
+                      "type": "object",
+                      "description": "Downstream execution context for Tier-0 and Tier-1 audits.",
+                      "properties": {
+                        "report_type": {
+                          "type": "string",
+                          "example": "season",
+                          "description": "Indicates the report type for Tier-0 pre-audit logic."
+                        },
+                        "range": {
+                          "type": "object",
+                          "properties": {
+                            "lightDays": { "type": "integer", "example": 90 },
+                            "fullDays": { "type": "integer", "example": 42 },
+                            "chunk": { "type": "boolean", "example": true }
+                          }
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -73,7 +113,6 @@
         }
       }
     },
-
     "/athlete/0/activities": {
       "get": {
         "summary": "List activities (Tier-0/Tier-1 full, 7-day detailed fields)",
@@ -98,7 +137,6 @@
         }
       }
     },
-
     "/athlete/0/wellness": {
       "get": {
         "summary": "List wellness data (≤7 days, JSON)",
@@ -119,7 +157,6 @@
         }
       }
     },
-
     "/athlete/0/profile": {
       "get": {
         "summary": "Fetch athlete profile",
@@ -153,7 +190,6 @@
       }
     }
   },
-
   "components": {
     "schemas": {
       "Activity": {
@@ -204,8 +240,9 @@
       }
     }
   },
-
-  "security": [{ "OAuth2": ["ACTIVITY:READ", "WELLNESS:READ", "SETTINGS:READ"] }],
+  "security": [
+    { "OAuth2": ["ACTIVITY:READ", "WELLNESS:READ", "SETTINGS:READ"] }
+  ],
   "x-intents": [
     {
       "trigger": [
@@ -248,9 +285,7 @@
     "runReportOrchestrated": {
       "type": "operation",
       "operationId": "runReportOrchestrated",
-      "args": {
-        "reportType": "weekly"
-      }
+      "args": { "reportType": "weekly" }
     },
     "renderFullWeeklyReport": {
       "type": "render",
@@ -258,20 +293,11 @@
     },
     "run_full_audit_pipeline": {
       "type": "chain",
-      "steps": [
-        "getAthleteProfile",
-        "listActivitiesFull",
-        "listWellness"
-      ]
+      "steps": ["getAthleteProfile", "listActivitiesFull", "listWellness"]
     },
     "run_lightweight_audit_pipeline": {
       "type": "chain",
-      "steps": [
-        "getAthleteProfile",
-        "listActivitiesLight",
-        "listWellness"
-      ]
+      "steps": ["getAthleteProfile", "listActivitiesLight", "listWellness"]
     }
   }
 }
-
