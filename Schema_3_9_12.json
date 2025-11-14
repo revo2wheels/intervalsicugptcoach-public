@@ -168,7 +168,6 @@
   },
 
   "security": [{ "OAuth2": ["ACTIVITY:READ", "WELLNESS:READ", "SETTINGS:READ"] }],
-
   "x-intents": [
     {
       "trigger": [
@@ -189,19 +188,20 @@
         "run full fetch",
         "tier1 analysis",
         "run 7-day report",
-        "fetch full dataset",
+        "fetch full dataset"
+      ],
+      "action": "run_full_audit_pipeline"
+    },
+    {
+      "trigger": [
         "weekly report",
         "run weekly report"
       ],
-      "action": "run_full_audit_pipeline"
+      "action": "run_report_orchestrated"
     }
   ],
-    "x-actions": {
-    "run_full_audit_chain": {
-      "type": "chain",
-      "steps": ["getAthleteProfile", "listActivitiesLight", "listActivitiesFull", "listWellness"]
-    },
-    "run_full_audit_pipeline": {
+  "x-actions": {
+    "run_report_orchestrated": {
       "type": "python",
       "entrypoint": "run_report",
       "args": {
@@ -210,14 +210,21 @@
         "suppressPrompts": true
       }
     },
+    "run_full_audit_pipeline": {
+      "type": "chain",
+      "steps": [
+        "getAthleteProfile",
+        "listActivitiesFull",
+        "listWellness"
+      ]
+    },
     "run_lightweight_audit_pipeline": {
-      "type": "python",
-      "entrypoint": "run_report",
-      "args": {
-        "reportType": "tier0",
-        "autoCommit": true,
-        "suppressPrompts": true
-      }
+      "type": "chain",
+      "steps": [
+        "getAthleteProfile",
+        "listActivitiesLight",
+        "listWellness"
+      ]
     }
   }
 }
