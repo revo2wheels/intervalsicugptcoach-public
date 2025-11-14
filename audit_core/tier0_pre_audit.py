@@ -7,7 +7,7 @@ from audit_core.utils import debug
 from datetime import datetime, timedelta
 from audit_core.errors import AuditHalt
 
-INTERVALS_API = "https://intervals.icu/api/v1"
+INTERVALS_API = os.getenv("INTERVALS_API", "https://intervals.icu/api/v1")
 ICU_TOKEN = os.getenv("ICU_OAUTH")  # OAuth-only
 
 
@@ -358,7 +358,7 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     """Tier-0: OAuth-only Pre-audit fetch chain with adaptive chunking and meta-retry."""
     if not ICU_TOKEN:
         raise EnvironmentError("Missing Intervals.icu OAuth token. Set ICU_OAUTH env var.")
-
+    debug(context, f"[Tier-0] Using API endpoint: {INTERVALS_API}")
     # --- Step 0b: Lightweight 28-day snapshot (via proxy GET) ---
 
     headers = {"Authorization": f"Bearer {ICU_TOKEN}"}
@@ -370,13 +370,13 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
 
     oldest = (pd.Timestamp.now() - pd.Timedelta(days=28)).strftime("%Y-%m-%d")
     newest = pd.Timestamp.now().strftime("%Y-%m-%d")
-
+    
     # Replace the direct Intervals URL with your Worker endpoint
     light_url = (
         f"{INTERVALS_API}/athlete/0/activities_t0light?"
         f"oldest={oldest}&newest={newest}&fields={fields}"
     )
-
+    debug(context, f"[Tier-0 DEBUG] Calling lightweight URL → {light_url}")
     debug(context, f"[T0-LIGHT] Fetching lightweight 28-day dataset → {light_url}")
     resp = fetch_with_retry(light_url, headers)
 

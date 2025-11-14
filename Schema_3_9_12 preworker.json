@@ -1,0 +1,258 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Intervals.icu API + Unified Reporting Framework (Hybrid Full Profile Schema)",
+    "version": "3.9.12-hybrid-full-profile",
+    "x-origin": "refactored for client-side lightweight filtering (Nov 2025)",
+    "description": "Hybrid schema aligned with Intervals.icu API (no server-side field filtering). Lightweight mode achieved by local DataFrame column trimming post-fetch in Tier-0."
+  },
+  "servers": [
+    { "url": "https://intervals.icu/api/v1" }
+  ],
+  "paths": {
+    "/athlete/0/activities": {
+    "get": {
+      "summary": "List activities (≤7–28 days, full or lightweight mode)",
+      "description": "Official Intervals.icu endpoint. Supports both detailed (≤7-day) and lightweight (≤28-day) fetches. The lightweight variant uses the 'fields' query parameter to request only minimal columns directly from the server.",
+      "operationId": "listActivities",
+      "parameters": [
+        { "name": "oldest", "in": "query", "schema": { "type": "string", "format": "date" } },
+        { "name": "newest", "in": "query", "schema": { "type": "string", "format": "date" } },
+        { "name": "page", "in": "query", "schema": { "type": "integer" } },
+        { "name": "per_page", "in": "query", "schema": { "type": "integer" } },
+        { "name": "chunk", "in": "query", "schema": { "type": "string" } },
+        { "name": "auto", "in": "query", "schema": { "type": "boolean" } },
+        { "name": "fields", "in": "query", "schema": { "type": "string" }, "description": "Comma-separated list of fields for lightweight fetch mode." }
+      ],
+      "responses": {
+        "200": {
+          "description": "Hybrid activity list. When 'fields' is present, the response contains only those columns.",
+          "content": {
+            "application/json": {
+              "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Activity" } }
+            }
+          }
+        }
+      },
+      "x-modes": {
+        "full": {
+          "description": "7-day detailed activity fetch (default mode with full field set)."
+        },
+        "lightweight": {
+          "description": "28-day reduced fieldset mode using ?fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin."
+        }
+      },
+      "x-forward-query": ["fields", "oldest", "newest", "page", "per_page", "chunk", "auto"]
+    }
+  },
+
+  "/athlete/0/wellness": {
+    "get": {
+      "summary": "List wellness data (≤7 days, JSON)",
+      "description": "Fetches athlete wellness metrics for the specified date range. Used by Tier-0 and Tier-2 for CTL, ATL, and Form alignment.",
+      "operationId": "listWellness",
+      "parameters": [
+        { "name": "oldest", "in": "query", "schema": { "type": "string", "format": "date" } },
+        { "name": "newest", "in": "query", "schema": { "type": "string", "format": "date" } },
+        { "name": "fields", "in": "query", "schema": { "type": "string" }, "description": "Optional comma-separated field list (lightweight mode)." }
+      ],
+      "responses": {
+        "200": {
+          "description": "Wellness dataset with optional field filtering when 'fields' is specified.",
+          "content": {
+            "application/json": {
+              "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Wellness" } }
+            }
+          }
+        }
+      },
+      "x-forward-query": ["fields", "oldest", "newest", "page", "per_page", "chunk", "auto"]
+    }
+  },
+    "/athlete/0/profile": {
+      "get": {
+        "summary": "Fetch athlete profile (official endpoint, hybrid schema)",
+        "operationId": "getAthleteProfile",
+        "responses": {
+          "200": {
+            "description": "Athlete profile object",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AthleteProfile" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized or invalid token" },
+          "404": { "description": "Profile not found or athlete_id mismatch" }
+        }
+      }
+    },
+
+    "/athlete/0/activities.csv": {
+      "get": {
+        "summary": "Export activities as CSV (archival only)",
+        "operationId": "listActivitiesCsv",
+        "deprecated": true,
+        "responses": { "410": { "description": "Deprecated – use JSON endpoints" } }
+      }
+    },
+
+    "/athlete/0/wellness.csv": {
+      "get": {
+        "summary": "Export wellness data as CSV (archival only)",
+        "operationId": "listWellnessCsv",
+        "deprecated": true,
+        "responses": { "410": { "description": "Deprecated – use JSON endpoints" } }
+      }
+    }
+  },
+
+  "components": {
+    "schemas": {
+      "Activity": {
+        "type": "object",
+        "required": ["id", "start_date_local", "type", "distance", "moving_time"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": ["string", "null"] },
+          "type": { "type": "string" },
+          "sport_type": { "type": ["string", "null"] },
+          "start_date_local": { "type": "string", "format": "date-time" },
+          "distance": { "type": "number" },
+          "moving_time": { "type": "number" },
+          "icu_training_load": { "type": ["number", "null"] },
+          "average_heartrate": { "type": ["number", "null"] },
+          "IF": { "type": ["number", "null"] },
+          "VO2MaxGarmin": { "type": ["number", "null"] }
+        },
+        "description": "Activity schema — full payload returned by API; lightweight mode trims fields locally."
+      },
+
+      "Wellness": {
+        "type": "object",
+        "required": ["date"],
+        "properties": {
+          "date": { "type": "string", "format": "date" },
+          "ctl": { "type": ["number", "null"] },
+          "atl": { "type": ["number", "null"] },
+          "form": { "type": ["number", "null"] },
+          "vo2max": { "type": ["number", "null"] },
+          "restingHr": { "type": ["number", "null"] },
+          "fatigue": { "type": ["number", "null"] }
+        }
+      },
+
+      "AthleteProfile": {
+        "type": "object",
+        "properties": {
+          "athlete": { "$ref": "#/components/schemas/Athlete" }
+        },
+        "required": ["athlete"]
+      },
+
+      "Athlete": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "timezone": { "type": ["string", "null"] },
+          "country": { "type": ["string", "null"] },
+          "sex": { "type": ["string", "null"] }
+        }
+      }
+    },
+
+    "securitySchemes": {
+      "OAuth2": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://intervals.icu/oauth/authorize",
+            "tokenUrl": "https://intervals.icu/api/oauth/token",
+            "scopes": {
+              "ACTIVITY:READ": "Read activities",
+              "WELLNESS:READ": "Read wellness data",
+              "SETTINGS:READ": "Read athlete profile"
+            }
+          }
+        }
+      }
+    }
+  },
+
+  "security": [{ "OAuth2": ["ACTIVITY:READ", "WELLNESS:READ", "SETTINGS:READ"] }],
+
+  "x-validation-rules": [
+    {
+      "id": "field_enforcement",
+      "description": "Ensure static Activity fields exist for Tier-0 normalization",
+      "rules": {
+        "fields_required": ["id", "start_date_local", "type", "distance", "moving_time"],
+        "fields_optional": ["icu_training_load", "average_heartrate", "IF", "VO2MaxGarmin"]
+      }
+    },
+    {
+      "id": "discipline_filter",
+      "description": "Discipline inclusion mapping for totals",
+      "rules": {
+        "cycling": ["Ride", "VirtualRide"],
+        "running": ["Run", "VirtualRun"],
+        "swimming": ["Swim"],
+        "other": ["*"]
+      }
+    },
+    {
+      "id": "conversions",
+      "description": "Numeric conversions and rounding",
+      "rules": {
+        "distanceKm": "distance/1000, round 2 decimals",
+        "volumeH": "moving_time/3600, round 1 decimal",
+        "tss": "sum of icu_training_load, exact"
+      }
+    },
+    {
+      "id": "precision",
+      "description": "Rounding precision enforcement",
+      "rules": {
+        "distanceKm": 2,
+        "volumeH": 1,
+        "tss": 0
+      }
+    },
+    {
+      "id": "integrity",
+      "description": "Discipline and dataset integrity checks",
+      "rules": {
+        "no_elapsed_time": true,
+        "discipline_totals_must_match": true,
+        "no_cross_discipline_sums": true,
+        "halt_on_mismatch": true
+      }
+    },
+    {
+      "id": "render_event_totals_integrity",
+      "description": "Ensure renderer uses Tier-2 Σ(eventTotals)",
+      "target": "tier2.finalizer",
+      "method": "validate_render_source",
+      "expected_source": "event_totals",
+      "halt_on_fail": true,
+      "severity": "critical"
+    }
+  ],
+
+  "x-actions": {
+    "run_audit_pipeline": {
+      "type": "python",
+      "entrypoint": "run_audit_pipeline",
+      "args": { "conn": "intervals_icu__jit_plugin", "src": "intervals" }
+    }
+  },
+
+  "x-intents": [
+    {
+      "trigger": ["weekly report", "check active connection", "run weekly report", "run season report", "run wellness report"],
+      "action": "run_audit_pipeline"
+    }
+  ]
+}
