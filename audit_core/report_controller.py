@@ -46,6 +46,16 @@ def run_report(
 
     # --- Tier-0 — Ruleset and pre-audit ---
     loadAllRules()
+    # --- Tier-0 Prefetch: Always run lightweight 28-day snapshot first ---
+    debug(context, "[T0-LIGHT] Forcing Tier-0 lightweight prefetch before full audit")
+    try:
+        _ = run_tier0_pre_audit(
+            str((datetime.now().date() - timedelta(days=28))),
+            str(datetime.now().date()),
+            context
+        )
+    except Exception as e:
+        debug(context, f"[T0-LIGHT] Prefetch failed (non-fatal): {e}")
 
     from datetime import datetime, timedelta
 
