@@ -359,10 +359,10 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     if not ICU_TOKEN:
         raise EnvironmentError("Missing Intervals.icu OAuth token. Set ICU_OAUTH env var.")
 
-    # --- Step 0b: Lightweight 28-day snapshot (direct GET) ---
-    
+    # --- Step 0b: Lightweight 28-day snapshot (via proxy GET) ---
 
     headers = {"Authorization": f"Bearer {ICU_TOKEN}"}
+
     fields = (
         "id,name,type,start_date_local,distance,moving_time,"
         "icu_training_load,IF,average_heartrate,VO2MaxGarmin"
@@ -371,11 +371,15 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     oldest = (pd.Timestamp.now() - pd.Timedelta(days=28)).strftime("%Y-%m-%d")
     newest = pd.Timestamp.now().strftime("%Y-%m-%d")
 
+    # Replace the direct Intervals URL with your Worker endpoint
     light_url = (
-        f"{INTERVALS_API}/athlete/0/activities?"
-        f"oldest={oldest}&newest={newest}&fields={fields}"
-        f"&_t0light=1"   # <-- dummy param breaks deduplication
+        f"https://intervalsicugptcoach.clive-a5a.workers.dev/activities?"
+        f"oldest={oldest}&newest={newest}&fields={fields}&_t0light=1"
     )
+
+    debug(context, f"[T0-LIGHT] Fetching lightweight 28-day dataset → {light_url}")
+    resp = fetch_with_retry(light_url, headers)
+
 
     debug(context, f"[T0-LIGHT] Direct GET → {light_url}")
 
