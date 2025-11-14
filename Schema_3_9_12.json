@@ -180,7 +180,7 @@
         "fetch 28-day summary",
         "tier0 start"
       ],
-      "action": "listActivitiesLight"
+      "action": "run_lightweight_audit_pipeline"
     },
     {
       "trigger": [
@@ -193,7 +193,32 @@
         "weekly report",
         "run weekly report"
       ],
-      "action": "listActivitiesFull"
+      "action": "run_full_audit_pipeline"
     }
-  ]
+  ],
+    "x-actions": {
+    "run_full_audit_chain": {
+      "type": "chain",
+      "steps": ["getAthleteProfile", "listActivitiesLight", "listActivitiesFull", "listWellness"]
+    },
+    "run_full_audit_pipeline": {
+      "type": "python",
+      "entrypoint": "run_report",
+      "args": {
+        "reportType": "weekly",
+        "autoCommit": true,
+        "suppressPrompts": true
+      }
+    },
+    "run_lightweight_audit_pipeline": {
+      "type": "python",
+      "entrypoint": "run_report",
+      "args": {
+        "reportType": "tier0",
+        "autoCommit": true,
+        "suppressPrompts": true
+      }
+    }
+  }
 }
+
