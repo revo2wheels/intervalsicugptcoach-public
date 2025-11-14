@@ -9,6 +9,38 @@
     { "url": "https://intervalsicugptcoach.clive-a5a.workers.dev" }
   ],
   "paths": {
+    "/run_report": {
+      "get": {
+        "summary": "Run full unified audit (calls lightweight + full fetch internally)",
+        "operationId": "runReportOrchestrated",
+        "parameters": [
+          {
+            "name": "reportType",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["weekly", "tier0", "season"], "default": "weekly" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unified report output",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string" },
+                    "message": { "type": "string" },
+                    "activities_light": { "type": "array", "items": { "$ref": "#/components/schemas/Activity" } },
+                    "activities_full": { "type": "array", "items": { "$ref": "#/components/schemas/Activity" } },
+                    "wellness": { "type": "array", "items": { "$ref": "#/components/schemas/Wellness" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/athlete/0/activities_t0light": {
       "get": {
         "summary": "List activities (Tier-0 lightweight, 28-day reduced fieldset)",
@@ -195,20 +227,28 @@
     {
       "trigger": [
         "weekly report",
-        "run weekly report"
+        "run weekly report",
+        "generate weekly report",
+        "full weekly report"
       ],
-      "action": "run_report_orchestrated"
+      "action": "run_report_orchestrated_render"
     }
   ],
   "x-actions": {
-    "run_report_orchestrated": {
-      "type": "python",
-      "entrypoint": "run_report",
+    "run_report_orchestrated_render": {
+      "type": "chain",
+      "steps": ["runReportOrchestrated", "renderFullWeeklyReport"]
+    },
+    "runReportOrchestrated": {
+      "type": "operation",
+      "operationId": "runReportOrchestrated",
       "args": {
-        "reportType": "weekly",
-        "autoCommit": true,
-        "suppressPrompts": true
+        "reportType": "weekly"
       }
+    },
+    "renderFullWeeklyReport": {
+      "type": "render",
+      "mode": "report"
     },
     "run_full_audit_pipeline": {
       "type": "chain",
