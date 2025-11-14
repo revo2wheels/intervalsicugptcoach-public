@@ -47,6 +47,8 @@ def run_report(
     # --- Tier-0 — Ruleset and pre-audit ---
     loadAllRules()
     # --- Tier-0 Prefetch: Always run lightweight 28-day snapshot first ---
+    from datetime import datetime, timedelta  # ensure datetime in scope
+
     debug(context, "[T0-LIGHT] Forcing Tier-0 lightweight prefetch before full audit")
     try:
         _ = run_tier0_pre_audit(
@@ -56,8 +58,6 @@ def run_report(
         )
     except Exception as e:
         debug(context, f"[T0-LIGHT] Prefetch failed (non-fatal): {e}")
-
-    from datetime import datetime, timedelta
 
     # Determine date window
     if reportType.lower() == "weekly":

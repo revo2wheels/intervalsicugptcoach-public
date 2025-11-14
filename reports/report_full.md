@@ -4,6 +4,41 @@
 
 ```
 🧭 Running Weekly Report (auditFinal=False, render_mode=full+metrics)
+[T0-LIGHT] Forcing Tier-0 lightweight prefetch before full audit
+[Tier-0] Using API endpoint: https://intervalsicugptcoach.clive-a5a.workers.dev
+[Tier-0 DEBUG] Calling lightweight URL → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/activities_t0light?oldest=2025-10-17&newest=2025-11-14&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin
+[T0-LIGHT] Fetching lightweight 28-day dataset → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/activities_t0light?oldest=2025-10-17&newest=2025-11-14&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin
+[T0-LIGHT] Direct GET → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/activities_t0light?oldest=2025-10-17&newest=2025-11-14&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin
+[T0-LIGHT] Retrieved 41 activities with 10 fields
+[T0-SLICE] 7-day window: 2025-11-08 → 2025-11-15 (9 activities selected)
+[T0-SLICE] 7-day window: 2025-11-08 → 2025-11-15 (9 activities selected)
+[T0-DEDUP] Dropped 0 duplicates → 9 unique events
+🧭 Tier-0: 7-day subset (lightweight) = 12.98 h | 295.0 km | 533 TSS (9 events)
+[T0] Fetching athlete profile via OAuth2: https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/profile
+[T0] Athlete profile fetched successfully — id=1914741 name=Clive King
+[Tier-0 fetch] chunk_start=2025-11-08  chunk_end=2025-11-14
+🧩 Tier-0 deduplication: 0 duplicates removed.
+[T0] Canonical slice → 9/9 rows retained (2025-11-08–2025-11-14, tz=Europe/Zurich)
+None [T0] Expanded icu_zone_times safely → 8 cols, max depth=8
+None [T0] Expanded icu_hr_zone_times safely → 7 cols, max depth=7
+[T0] Diagnostic: true Σ(event.moving_time)=46722 s → 12.98 h
+[T0] Canonical totals → Σ(TSS)=533.0
+[T0-ACWR] Fetching historical load window 2025-10-18 → 2025-11-07
+[T0-ACWR] Stored 31 baseline activities (ACWR only).
+[T0-WELLNESS] Final wellness shape=(7, 43), columns=['date', 'ctl', 'atl', 'rampRate', 'ctlLoad', 'atlLoad', 'sportInfo', 'updated', 'weight', 'restingHR', 'hrv', 'hrvSDNN', 'menstrualPhase', 'menstrualPhasePredicted', 'kcalConsumed', 'sleepSecs', 'sleepScore', 'sleepQuality', 'avgSleepingHR', 'soreness', 'fatigue', 'stress', 'mood', 'motivation', 'injury', 'spO2', 'systolic', 'diastolic', 'hydration', 'hydrationVolume', 'readiness', 'baevskySI', 'bloodGlucose', 'lactate', 'bodyFat', 'abdomen', 'vo2max', 'comments', 'steps', 'respiration', 'locked', 'tempWeight', 'tempRestingHR']
+[DEBUG] wellness raw: <class 'pandas.core.frame.DataFrame'> 7
+[DEBUG] wellness columns: ['date', 'ctl', 'atl', 'rampRate', 'ctlLoad', 'atlLoad', 'sportInfo', 'updated', 'weight', 'restingHR', 'hrv', 'hrvSDNN', 'menstrualPhase', 'menstrualPhasePredicted', 'kcalConsumed', 'sleepSecs', 'sleepScore', 'sleepQuality', 'avgSleepingHR', 'soreness', 'fatigue', 'stress', 'mood', 'motivation', 'injury', 'spO2', 'systolic', 'diastolic', 'hydration', 'hydrationVolume', 'readiness', 'baevskySI', 'bloodGlucose', 'lactate', 'bodyFat', 'abdomen', 'vo2max', 'comments', 'steps', 'respiration', 'locked', 'tempWeight', 'tempRestingHR']
+[DEBUG] wellness head:
+          date        ctl         atl  ...  locked  tempWeight  tempRestingHR
+0  2025-11-08  91.679720   94.292450  ...    None       False          False
+1  2025-11-09  92.957780  101.175865  ...    None        True          False
+2  2025-11-10  90.770640   87.707120  ...    None       False          False
+3  2025-11-11  91.317184   91.207280  ...    None        True          False
+4  2025-11-12  90.650930   87.452270  ...    None        True          False
+
+[5 rows x 43 columns]
+[T0] Diagnostic only: 9 rows fetched, moving_time present=True
+[T0] Pre-audit complete: activities=9, wellness_rows=7
 [Tier-0] Using API endpoint: https://intervalsicugptcoach.clive-a5a.workers.dev
 [Tier-0 DEBUG] Calling lightweight URL → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/activities_t0light?oldest=2025-10-17&newest=2025-11-14&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin
 [T0-LIGHT] Fetching lightweight 28-day dataset → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/activities_t0light?oldest=2025-10-17&newest=2025-11-14&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin
@@ -217,10 +252,10 @@ load_metrics post-render: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'val
 Final report keys: ['header', 'markdown', 'type', 'context', 'sections', 'tables', 'lines', 'summary', 'metrics', 'actions', 'phases', 'trends', 'correlation', 'footer']
 Final context load_metrics: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'value': 93.28, 'status': 'ok'}, 'TSB': {'value': -1.67, 'status': 'ok'}, 'ACWR': {'value': 0.89, 'status': 'ok'}, 'Monotony': {'value': 3.33, 'status': 'ok'}, 'Strain': {'value': 1774.9, 'status': 'ok'}, 'Polarisation': {'value': 0.764, 'status': 'ok'}, 'RecoveryIndex': {'value': 0.334, 'status': 'ok'}, 'totalHours': 12.98, 'totalTss': 533}
 ================================================================================
-[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Otto walk', 'period': '2025-11-08 → 2025-11-14', 'timestamp': '2025-11-14T10:47:28.030013', 'discipline': 'cycling'}
+[TRACE-POST-RENDER-CHECK] header={'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Otto walk', 'period': '2025-11-08 → 2025-11-14', 'timestamp': '2025-11-14T10:55:19.889693', 'discipline': 'cycling'}
 [TRACE-POST-RENDER-CHECK] summary={'totalHours': np.float64(12.98), 'totalTss': 533, 'eventCount': 9, 'period': '2025-11-08 → 2025-11-14'}
 [POST-RENDER] Canonical event-only totals enforced → header + summary synced
-[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Otto walk', 'period': '2025-11-08 → 2025-11-14', 'timestamp': '2025-11-14T10:47:28.030013', 'discipline': 'cycling', 'Total Hours': '12.98 h', 'Total Load (TSS)': 533}
+[PATCH] header rebuilt for schema compliance: {'title': 'Weekly Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Otto walk', 'period': '2025-11-08 → 2025-11-14', 'timestamp': '2025-11-14T10:55:19.889693', 'discipline': 'cycling', 'Total Hours': '12.98 h', 'Total Load (TSS)': 533}
 [PATCH] summary rebuilt for schema compliance: {'totalHours': np.float64(12.98), 'totalTss': 533, 'eventCount': 9, 'period': '2025-11-08 → 2025-11-14', 'variance': 0.0, 'zones': {}}
 [PATCH] Tier-2 summary override applied → canonical event-only totals enforced
 [PATCH] actions dual-structure applied → 24 items
@@ -330,7 +365,7 @@ Final context load_metrics: {'CTL': {'value': 91.61, 'status': 'ok'}, 'ATL': {'v
 **Athlete:** Clive King
 **Period:** 2025-11-08 → 2025-11-14
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-14T10:47:28.029019
+**Generated:** 2025-11-14T10:55:19.888855
 
 ---
 
@@ -476,6 +511,6 @@ _No outliers detected._
 **Cycling Metrics — Mean IF:** 0.71 · **Mean HR:** 112 bpm · **VO₂ max:** 68.6
 
 ---
-✅ **Audit Completed:** 2025-11-14T10:47:28.029982
+✅ **Audit Completed:** 2025-11-14T10:55:19.889673
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: tier2_enforce_event_only_totals
 
