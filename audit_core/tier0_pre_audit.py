@@ -373,8 +373,8 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
 
     # Replace the direct Intervals URL with your Worker endpoint
     light_url = (
-        f"https://intervalsicugptcoach.clive-a5a.workers.dev/activities?"
-        f"oldest={oldest}&newest={newest}&fields={fields}&_t0light=1"
+        f"{INTERVALS_API}/athlete/0/activities_t0light?"
+        f"oldest={oldest}&newest={newest}&fields={fields}"
     )
 
     debug(context, f"[T0-LIGHT] Fetching lightweight 28-day dataset → {light_url}")
