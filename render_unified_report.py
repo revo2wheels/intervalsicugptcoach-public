@@ -337,11 +337,12 @@ def render_report(data):
 
     # === 🪜 Events or Phases Summary (Tier-2 Safe) ===
     if report_type.lower() == "season":
-        # --- Phase-based aggregation instead of per-event list ---
+        # --- Phase-based aggregation for season mode ---
         df_events = ctx.get("df_events")
         if hasattr(df_events, "empty") and not df_events.empty:
             df_events["start_date_local"] = pd.to_datetime(df_events["start_date_local"], errors="coerce")
             df_events["week"] = df_events["start_date_local"].dt.isocalendar().week
+
             df_phase = (
                 df_events.groupby("week")
                 .agg({
@@ -353,17 +354,32 @@ def render_report(data):
                 .sort_values("week")
             )
 
+            # --- Convert meters → kilometers ---
+            df_phase["distance_km"] = df_phase["distance"] / 1000
+
             md.append(section("🪜 Seasonal Phases Summary"))
             rows = []
             for _, r in df_phase.iterrows():
                 rows.append([
                     f"Week {int(r['week'])}",
-                    f"{r['distance']:.1f} km",
-                    f"{r['moving_time']/3600:.1f} h",
-                    f"{r['icu_training_load']:.0f} TSS"
+                    f"{r['distance_km']:.1f}",
+                    f"{r['moving_time']/3600:.1f}",
+                    f"{r['icu_training_load']:.0f}"
                 ])
-            md.append(table(["Phase", "Distance", "Hours", "TSS"], rows))
-            debug(ctx, f"[Tier-2] Rendered Seasonal Phase Summary ({len(rows)} weeks)")
+            md.append(table(["Phase", "Distance (km)", "Hours", "TSS"], rows))
+
+            # --- Season totals ---
+            total_hours = df_phase["moving_time"].sum() / 3600
+            total_km = df_phase["distance_km"].sum()
+            total_tss = df_phase["icu_training_load"].sum()
+            total_sessions = len(df_events)
+
+            md.append("")
+            md.append(
+                f"**Season Totals:** {total_hours:.1f} h · {total_km:.1f} km · {total_tss:.0f} TSS · {total_sessions} sessions**"
+            )
+
+            debug(ctx, f"[Tier-2] Rendered Seasonal Phase Summary ({len(rows)} weeks, totals OK)")
         else:
             md.append(section("🪜 Seasonal Phases Summary"))
             md.append("_No event data available for phase summary._")
@@ -413,63 +429,62 @@ def render_report(data):
             md.append(table(headers, rows))
             debug(ctx, f"[Tier-2] Rendered Weekly Events Summary ({len(rows)} rows)")
 
+    # --- Totals and metrics block ---
+    if report_type.lower() == "weekly":
+        # Only include weekly totals and metrics for weekly reports
+        if "tier1_visibleTotals" in ctx:
+            vt = ctx["tier1_visibleTotals"]
+            md.append("")
+            md.append(
+                f"**Totals:** "
+                f"{vt.get('hours', 0):.2f} h · "
+                f"{vt.get('distance', 0):.1f} km · "
+                f"{vt.get('tss', 0)} TSS · "
+                f"{vt.get('count', 0)} sessions**"
+            )
 
-    # --- Unified Weekly Totals (Tier-1 / Tier-0 canonical fallback) + Metrics ---
-    if "tier1_visibleTotals" in ctx:
-        vt = ctx["tier1_visibleTotals"]
-        md.append("")
-        md.append(
-            f"**Totals:** "
-            f"{vt.get('hours', 0):.2f} h · "
-            f"{vt.get('distance', 0):.1f} km · "
-            f"{vt.get('tss', 0)} TSS · "
-            f"{vt.get('count', 0)} sessions**"
-        )
+            mean_if = vt.get("avg_if")
+            mean_hr = vt.get("avg_hr")
+            mean_vo2 = vt.get("vo2max")
 
-    # --- Cycling-specific mean metrics (Tier-1 visible subset) ---
-    mean_if = vt.get("avg_if")
-    mean_hr = vt.get("avg_hr")
-    mean_vo2 = vt.get("vo2max")
+            summary_parts = []
+            if mean_if is not None:
+                summary_parts.append(f"**Cycling Metrics — Mean IF:** {mean_if:.2f}")
+            if mean_hr is not None:
+                summary_parts.append(f"**Mean HR:** {mean_hr} bpm")
+            if mean_vo2 is not None:
+                summary_parts.append(f"**VO₂ max:** {mean_vo2:.1f}")
 
-    summary_parts = []
-    if mean_if is not None:
-        summary_parts.append(f"**Cycling Metrics — Mean IF:** {mean_if:.2f}")
-    if mean_hr is not None:
-        summary_parts.append(f"**Mean HR:** {mean_hr} bpm")
-    if mean_vo2 is not None:
-        summary_parts.append(f"**VO₂ max:** {mean_vo2:.1f}")
+            if summary_parts:
+                md.append(" · ".join(summary_parts))
+                debug(ctx, "[Tier-2] Weekly totals + mean metrics rendered (Tier-1 subset)")
 
-    if summary_parts:
-        md.append(" · ".join(summary_parts))
+        elif "tier0_snapshotTotals_7d" in ctx:
+            st = ctx["tier0_snapshotTotals_7d"]
+            md.append("")
+            md.append(
+                f"**Weekly totals:** "
+                f"{st.get('hours', 0):.2f} h · "
+                f"{st.get('distance', 0):.1f} km · "
+                f"{st.get('tss', 0)} TSS · "
+                f"{st.get('count', 0)} sessions**"
+            )
+            debug(ctx, "[Tier-2] Weekly totals rendered from Tier-0 snapshot")
 
-        debug(ctx, "[Tier-2] Weekly totals + mean metrics rendered (Tier-1 subset)")
+        elif "tier2_enforced_totals" in ctx:
+            et = ctx["tier2_enforced_totals"]
+            md.append("")
+            md.append(
+                f"**Weekly totals:** "
+                f"{et.get('time_h', 0):.2f} h · "
+                f"{et.get('distance_km', 0):.1f} km · "
+                f"{et.get('tss', 0)} TSS**"
+            )
+            debug(ctx, "[Tier-2] Weekly totals rendered from Tier-2 enforced DataFrame")
 
-    elif "tier0_snapshotTotals_7d" in ctx:
-        st = ctx["tier0_snapshotTotals_7d"]
-        md.append("")
-        md.append(
-            f"**Weekly totals:** "
-            f"{st.get('hours', 0):.2f} h · "
-            f"{st.get('distance', 0):.1f} km · "
-            f"{st.get('tss', 0)} TSS · "
-            f"{st.get('count', 0)} sessions**"
-        )
-        debug(ctx, "[Tier-2] Weekly totals rendered from Tier-0 snapshot")
-
-    elif "tier2_enforced_totals" in ctx:
-        et = ctx["tier2_enforced_totals"]
-        md.append("")
-        md.append(
-            f"**Weekly totals:** "
-            f"{et.get('time_h', 0):.2f} h · "
-            f"{et.get('distance_km', 0):.1f} km · "
-            f"{et.get('tss', 0)} TSS**"
-        )
-        debug(ctx, "[Tier-2] Weekly totals rendered from Tier-2 enforced DataFrame")
-
-    else:
-        md.append("_No event preview available._")
-        debug(ctx, "[Tier-2 WARN] No event preview or totals available")
+        else:
+            md.append("_No event preview available._")
+            debug(ctx, "[Tier-2 WARN] No event preview or totals available")
 
 
     # === 🧾 Final Summary ===

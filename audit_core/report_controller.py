@@ -1,5 +1,5 @@
 import pandas as pd
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from audit_core.utils import debug
 from api_github_com__jit_plugin import loadAllRules
@@ -46,29 +46,39 @@ def run_report(
 
     # --- Tier-0 — Ruleset and pre-audit ---
     loadAllRules()
-    # --- Tier-0 Prefetch: Always run lightweight 28-day snapshot first ---
-    from datetime import datetime, timedelta  # ensure datetime in scope
-
     debug(context, "[T0-LIGHT] Forcing Tier-0 lightweight prefetch before full audit")
     try:
-        _ = run_tier0_pre_audit(
-            str((datetime.now().date() - timedelta(days=28))),
-            str(datetime.now().date()),
-            context
-        )
+        if reportType.lower() == "season":
+            _ = run_tier0_pre_audit(
+                str((datetime.now().date() - timedelta(days=90))),
+                str(datetime.now().date()),
+                context
+            )
+        else:
+            _ = run_tier0_pre_audit(
+                str((datetime.now().date() - timedelta(days=28))),
+                str(datetime.now().date()),
+                context
+            )
     except Exception as e:
         debug(context, f"[T0-LIGHT] Prefetch failed (non-fatal): {e}")
 
-    # Determine date window
+     # --- Determine date window based on report type ---
+    today = datetime.now().date()
+
     if reportType.lower() == "weekly":
-        end_date = datetime.now().date()
-        start_date = end_date - timedelta(days=7)
+        start_date = today - timedelta(days=7)
+        end_date = today
     elif reportType.lower() == "season":
-        end_date = datetime.now().date()
-        start_date = end_date - timedelta(days=42)
+        start_date = today - timedelta(days=90)
+        end_date = today
     else:
-        end_date = datetime.now().date()
-        start_date = end_date - timedelta(days=7)
+        start_date = today - timedelta(days=7)
+        end_date = today
+
+
+    # --- Ensure Tier-0 context carries report type correctly ---
+    context["report_type"] = reportType.lower() if isinstance(reportType, str) else "weekly"
 
     # Run Tier-0 pre-audit
     df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
@@ -115,8 +125,13 @@ def run_report(
         else:
             debug(context, f"⚙️ Normalization: detected seconds, no conversion (max={max_val})")
 
-    # --- Tier-1 — Dataset validation ---
+    if reportType.lower() == "season":
+        debug(context, "[T1] Running Tier-1 controller (season mode, limited metrics).")
+    else:
+        debug(context, "[T1] Running Tier-1 controller (weekly mode).")
+
     df_master, wellness, context = run_tier1_controller(df_master, wellness, context)
+
     
     # --- Tier-2 — Full audit chain ---
     df_master, daily = validate_event_completeness(df_master)

@@ -135,8 +135,8 @@ export default {
                 }).then(r => r.json()),
 
             range.chunk
-              ? fetchChunked(baseWellUrl, range.fullDays, 7)
-              : fetch(`${baseWellUrl}?oldest=${getDate(range.fullDays)}&newest=${getDate(0)}`, {
+              ? fetchChunked(baseWellUrl, range.lightDays, 7)
+              : fetch(`${baseWellUrl}?oldest=${getDate(range.lightDays)}&newest=${getDate(0)}`, {
                   headers: { Authorization: authHeader }
                 }).then(r => r.json()),
 

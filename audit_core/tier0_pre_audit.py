@@ -135,9 +135,8 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                 debug(context, f"[Tier-0 fetch] chunk_start={chunk_start}  chunk_end={chunk_end}")
                 acts_url = (
                     f"{INTERVALS_API}/athlete/{athlete_id}/activities?"
-                    f"oldest={chunk_start}&newest={chunk_end}"
+                    f"oldest={chunk_start.strftime('%Y-%m-%d')}&newest={chunk_end.strftime('%Y-%m-%d')}"
                 )
-
                 acts_resp = fetch_with_retry(acts_url, headers)
                 if acts_resp.status_code != 200:
                     raise AuditHalt(f"❌ Failed to fetch activities ({acts_resp.status_code}) → {acts_resp.text[:200]}")
@@ -164,7 +163,14 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                 debug(context, "⚠ No activity chunks returned from API (all payloads empty).")
                 return pd.DataFrame()
 
-            df_activities = pd.concat(df_activities_list, ignore_index=True)
+            # --- Filter out None or empty frames before concatenation ---
+            df_activities_list = [df for df in df_activities_list if df is not None and not df.empty]
+
+            if df_activities_list:
+                df_activities = pd.concat(df_activities_list, ignore_index=True)
+            else:
+                df_activities = pd.DataFrame()
+                debug(context, "[T0] No valid activity data to concatenate — returning empty DataFrame.")
 
             # --- Deduplication ---
             if "id" in df_activities.columns:
@@ -483,41 +489,6 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     df_activities = fetch_activities_chunked(athlete["id"], oldest, newest, headers, context)
     if df_activities.empty:
         raise AuditHalt("❌ No activity data returned after chunked fetch")
-
-    # --- Optional ACWR extension: fetch prior 21 days lightweight for load history ---
-    try:
-        acwr_oldest = oldest - timedelta(days=21)
-        acwr_newest = oldest - timedelta(days=1)
-
-        debug(context, f"[T0-ACWR] Fetching historical load window {acwr_oldest} → {acwr_newest}")
-
-        fields = "id,name,start_date_local,icu_training_load,moving_time"
-        acwr_url = (
-            f"{INTERVALS_API}/athlete/{athlete['id']}/activities?"
-            f"oldest={acwr_oldest}&newest={acwr_newest}&fields={fields}"
-        )
-
-        acwr_resp = fetch_with_retry(acwr_url, headers)
-        if acwr_resp.status_code == 200 and acwr_resp.json():
-            df_hist = pd.DataFrame(acwr_resp.json())
-            if not df_hist.empty:
-                df_hist["origin"] = "acwr_baseline"
-
-                # --- Normalize timezone ---
-                df_hist["start_date_local"] = pd.to_datetime(
-                    df_hist["start_date_local"], utc=True, errors="coerce"
-                ).dt.tz_convert(context.get("timezone", "Europe/Zurich"))
-
-                # --- Store separately for ACWR computation ---
-                context["df_acwr_base"] = df_hist
-                debug(context, f"[T0-ACWR] Stored {len(df_hist)} baseline activities (ACWR only).")
-            else:
-                debug(context, "[T0-ACWR] No historical activities found.")
-        else:
-            debug(context, f"[T0-ACWR] Historical fetch failed ({acwr_resp.status_code})")
-
-    except Exception as e:
-        debug(context, f"[T0-ACWR] Skipped ACWR extension due to error: {e}")
 
     # --- Step 4: Fetch wellness with adaptive chunking + meta-retry ---
     wellness = fetch_wellness_chunked(athlete["id"], oldest, newest, headers, context)
