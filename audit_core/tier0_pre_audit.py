@@ -9,7 +9,8 @@ from audit_core.errors import AuditHalt
 import json
 import numpy as np
 
-INTERVALS_API = os.getenv("INTERVALS_API", "https://intervals.icu/api/v1")
+INTERVALS_API = os.getenv("INTERVALS_API", "https://intervalsicugptcoach.clive-a5a.workers.dev")
+
 ICU_TOKEN = os.getenv("ICU_OAUTH")  # OAuth-only
 
 
@@ -574,6 +575,9 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
 
     # --- Step 4: Fetch wellness with adaptive chunking + meta-retry ---
     wellness = fetch_wellness_chunked(athlete["id"], oldest, newest, headers, context)
+    if isinstance(wellness, pd.DataFrame) and not wellness.empty:
+        context["wellness"] = wellness
+        debug(context, f"[T0] Stored wellness in context ({len(wellness)} rows)")
     if wellness is None or wellness.empty:
         raise AuditHalt("❌ No wellness data returned after chunked fetch")
 
@@ -608,6 +612,42 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
 
     debug(context, f"[T0] Pre-audit complete: activities={len(df_activities)}, wellness_rows={len(wellness)}")
 
+    # --- Preserve wellness for Tier-1 ---
+    if isinstance(wellness, pd.DataFrame) and not wellness.empty:
+        context["wellness"] = wellness
+        debug(context, f"[T0] Stored wellness for Tier-1 ({len(wellness)} rows)")
+
+    # --- 🧮 Mode-specific snapshot & totals creation ---
+    report_type = context.get("report_type", "").lower() or os.environ.get("REPORT_TYPE", "weekly")
+
+    if not df_light.empty:
+        if report_type == "season":
+            # 42-day visible slice from 90-day lightweight fetch
+            df_snap = df_light.tail(42)
+            context["snapshot_42d_json"] = df_snap.to_dict(orient="records")
+            context["tier0_snapshotTotals_42d"] = {
+                "hours": df_snap["moving_time"].sum() / 3600,
+                "distance": df_snap["distance"].sum() / 1000,
+                "tss": df_snap["icu_training_load"].sum(),
+                "weeks": df_snap["start_date_local"].dt.isocalendar().week.nunique(),
+                "source": "Tier-0 lightweight 90-day dataset"
+            }
+            debug(context, f"[T0] Created 42d snapshot for season ({len(df_snap)} rows)")
+        else:
+            # Weekly: 7-day visible slice from 28-day lightweight fetch
+            df_snap = df_light.tail(7)
+            context["snapshot_7d_json"] = df_snap.to_dict(orient="records")
+            context["tier0_snapshotTotals_7d"] = {
+                "hours": df_snap["moving_time"].sum() / 3600,
+                "distance": df_snap["distance"].sum() / 1000,
+                "tss": df_snap["icu_training_load"].sum(),
+                "count": len(df_snap),
+                "source": "Tier-0 lightweight 28-day dataset"
+            }
+            debug(context, f"[T0] Created 7d snapshot for weekly ({len(df_snap)} rows)")
+    else:
+        debug(context, "[T0] ⚠ No df_light data available to build snapshots")
+
     # --- Final sanity: ensure 'start_date_local' exists for Tier-1 ---
     if "start_date_local" not in df_activities.columns:
         debug(context, "⚠️ 'start_date_local' missing — attempting reconstruction from 'start_date' or 'date'.")
@@ -620,4 +660,30 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         df_activities["start_date_local"] = df_activities["start_date_local"].dt.tz_localize(None)
         debug(context, f"[T0-FIX] Injected synthetic start_date_local for {len(df_activities)} activities.")
 
-    return df_activities, wellness, context, context["auditPartial"], context["auditFinal"]
+    # --- Season-mode extended snapshot (42-day full fetch) ---
+    if report_type == "season":
+        try:
+            df_season_full = df_activities.copy()
+
+            # Store extended snapshot for Tier-1 normalization
+            context["snapshot_42d_json"] = df_season_full.to_dict(orient="records")
+
+            context["tier0_snapshotTotals_42d"] = {
+                "hours": df_season_full["moving_time"].sum() / 3600,
+                "distance": df_season_full["distance"].sum() / 1000,
+                "tss": df_season_full["icu_training_load"].sum(),
+                "count": len(df_season_full),
+                "source": "Tier-0 42d full dataset",
+            }
+
+            debug(context, "[T0-SEASON] Exported snapshot_42d_json + tier0_snapshotTotals_42d for season mode.")
+        except Exception as e:
+            debug(context, f"[T0-SEASON WARN] Failed to create season snapshot: {e}")
+
+    # --- Final sync for controller ---
+    context["df_light"] = df_light
+    context["df_light_slice"] = df_light_slice
+    context["activities_light"] = activities_light if "activities_light" in locals() else df_light
+    context["df_master"] = df_activities
+
+    return df_activities, wellness, context, context.get("auditPartial"), context.get("auditFinal")

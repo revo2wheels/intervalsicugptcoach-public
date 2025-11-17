@@ -46,34 +46,143 @@ def run_report(
 
     debug(context, f"🧭 Running {reportType.title()} Report (auditFinal={auditFinal}, render_mode={render_mode})")
 
-    # --- Tier-0 Prefetch ---
+    # --- Load validation and rule base ---
     loadAllRules()
-    debug(context, "[T0-LIGHT] Forcing Tier-0 lightweight prefetch before full audit")
+
+    # --- Tier-0 Range Configuration (aligned with worker) ---
+    today = datetime.now().date()
+    if reportType.lower() == "season":
+        light_days = 90
+        full_days = 42
+        chunk = True
+    else:  # weekly / wellness / summary
+        light_days = 28
+        full_days = 7
+        chunk = False
+
+    debug(context, f"[T0] Config → light={light_days}d full={full_days}d chunk={chunk}")
+
+    # --- Tier-0 Lightweight Prefetch ---
+    context["report_type"] = reportType.lower() if isinstance(reportType, str) else "weekly"
     try:
-        prefetch_days = 90 if reportType.lower() == "season" else 28
-        _ = run_tier0_pre_audit(
-            str((datetime.now().date() - timedelta(days=prefetch_days))),
-            str(datetime.now().date()),
+        light_start = today - timedelta(days=light_days)
+        light_end = today
+        debug(context, f"[T0-LIGHT] Running lightweight prefetch → {light_start} → {light_end}")
+        # Inject into context only, not as argument
+        context["light_range"] = run_tier0_pre_audit(
+            str(light_start),
+            str(light_end),
             context,
         )
     except Exception as e:
         debug(context, f"[T0-LIGHT] Prefetch failed (non-fatal): {e}")
 
-    # --- Determine date range ---
-    today = datetime.now().date()
-    if reportType.lower() == "season":
-        start_date, end_date = today - timedelta(days=90), today
-    else:
-        start_date, end_date = today - timedelta(days=7), today
+        # --- Tier-0 Full Audit (short detailed window only) ---
+    import pandas as pd
 
+    try:
+        full_start = today - timedelta(days=full_days)
+        full_end = today
+
+        # --- Mode-aware control ---
+        if reportType.lower() == "season":
+            debug(context, "[T0-FULL] Skipping full audit for season mode (lightweight only).")
+            df_master, wellness, auditPartial, auditFinal = None, None, None, None
+
+        elif reportType.lower() == "weekly":
+            debug(context, f"[T0-FULL] Running 7-day detailed audit for weekly mode → {full_start} → {full_end}")
+
+            # If prefetch already captured the window, avoid refetch
+            if context.get("prefetch_done") and context.get("snapshot_7d_json"):
+                debug(context, "[T0-FULL] Prefetch contained full window — skipping redundant re-fetch.")
+                df_master, wellness, auditPartial, auditFinal = None, None, None, None
+            else:
+                df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
+                    str(full_start),
+                    str(full_end),
+                    context,
+                )
+
+        else:
+            debug(context, f"[T0-FULL] Running standard audit window → {full_start} → {full_end}")
+            df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
+                str(full_start),
+                str(full_end),
+                context,
+            )
+
+    except Exception as e:
+        debug(context, f"[T0-FULL] Full audit failed: {e}")
+        df_master, wellness, auditPartial, auditFinal = None, None, None, None
+
+    # --- Preserve existing full fetch if prefetch already covered it ---
+    if context.get("prefetch_done") and context.get("snapshot_7d_json"):
+        debug(context, "[T0-FULL] Prefetch contained full window — skipping redundant re-fetch.")
+        # Retain previously fetched detailed dataset and wellness
+        if context.get("df_master") is not None:
+            df_master = context.get("df_master")
+            debug(context, f"[T0-FULL] Reusing prefetch df_master with {len(df_master)} rows.")
+        elif "df_light_slice" in context:
+            df_master = context.get("df_light_slice")
+            debug(context, f"[T0-FULL] Fallback to df_light_slice ({len(df_master)} rows).")
+
+        # Preserve wellness if available in context
+        if (wellness is None or not isinstance(wellness, pd.DataFrame) or wellness.empty) and \
+        isinstance(context.get("wellness"), pd.DataFrame):
+            wellness = context["wellness"].copy()
+            debug(context, "[T0-FULL] Rehydrated wellness DataFrame from context.")
+
+    # --- Capture post-audit context safely for fallback use ---
+    context_pre_audit = context.copy()
+
+
+    if df_master is None or not isinstance(df_master, pd.DataFrame) or df_master.empty:
+        debug(context, "[T0-FULL] No df_master returned — using pre-audit lightweight dataset as fallback.")
+
+        # Helper function for safe extraction
+        def pick_valid_df(*candidates):
+            for df in candidates:
+                if isinstance(df, pd.DataFrame) and not df.empty:
+                    return df
+            return None
+
+        df_master = pick_valid_df(
+            context_pre_audit.get("df_light_slice"),
+            context_pre_audit.get("df_light"),
+            context_pre_audit.get("activities_light"),
+            context.get("df_light_slice"),
+            context.get("df_light"),
+            context.get("activities_light"),
+        )
+
+        if df_master is None:
+            debug(context, "[T0-FULL] WARNING: no valid fallback dataset — initializing empty DataFrame.")
+            df_master = pd.DataFrame()
+        else:
+            debug(context, f"[T0-FULL] Using fallback df_master with {len(df_master)} rows and columns={list(df_master.columns)}")
+
+        # --- Sync fallback dataset into context for Tier-1 ---
+        context["df_master"] = df_master
+        context["df_light"] = context_pre_audit.get("df_light", context.get("df_light"))
+        context["df_light_slice"] = context_pre_audit.get("df_light_slice", context.get("df_light_slice"))
+        context["snapshot_7d_json"] = context_pre_audit.get("snapshot_7d_json", context.get("snapshot_7d_json"))
+
+        debug(context, f"[T0-FULL] Context synced for Tier-1 — df_master={len(df_master)} rows, snapshot_7d_json={'ok' if 'snapshot_7d_json' in context else 'missing'}")
+
+    # --- Preserve wellness for Tier-1 downstream ---
+    if isinstance(wellness, pd.DataFrame) and not wellness.empty:
+        context["wellness"] = wellness.copy()
+        debug(context, f"[T0-FULL] Preserved wellness in context ({len(wellness)} rows)")
+
+    # --- Mark mode in context for downstream components ---
     context["report_type"] = reportType.lower() if isinstance(reportType, str) else "weekly"
+    context["chunk_mode"] = chunk
+    context["light_days"] = light_days
+    context["full_days"] = full_days
 
-    # --- Tier-0 Full Pre-Audit ---
-    df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
-        str(start_date),
-        str(end_date),
-        context,
-    )
+    debug(context, f"[T0] Completed range alignment → chunk_mode={chunk}")
+
+
 
     # --- Merge static knowledge base ---
     from athlete_profile import ATHLETE_PROFILE
@@ -212,29 +321,56 @@ def run_report(
         debug(context, f"[TIER-2 INIT] Injected Tier-0 full dataset ({len(context['activities_light'])} activities)")
 
 
-    # --- Ensure Tier-2 totals exist ---
-    if "totalHours" not in context or context.get("totalHours", 0) == 0:
-        if "tier1_visibleTotals" in context:
-            vt = context["tier1_visibleTotals"]
-            context["totalHours"] = vt.get("hours", 0)
-            context["totalTss"] = vt.get("tss", 0)
-            debug(context, "[T2-FIX] Restored totals from tier1_visibleTotals.")
-        elif "tier2_enforced_totals" in context:
-            et = context["tier2_enforced_totals"]
-            context["totalHours"] = et.get("time_h", 0)
-            context["totalTss"] = et.get("tss", 0)
-            debug(context, "[T2-FIX] Restored totals from tier2_enforced_totals.")
+    # --- 🧩 Canonical totals resolution before render ---
+    # Priority: Tier-2 enforced → Tier-1 visible → Derived fallback
+    totals_source = None
+
+    if "tier2_enforced_totals" in context:
+        et = context["tier2_enforced_totals"]
+        context["totalHours"] = et.get("time_h") or et.get("hours", 0)
+        context["totalTss"] = et.get("tss", 0)
+        context["totalDistance"] = et.get("distance_km") or et.get("distance", 0)
+        totals_source = "tier2_enforced_totals"
+        debug(context, "[SYNC] Canonical totals restored from Tier-2 enforced totals.")
+
+    elif "tier1_visibleTotals" in context:
+        vt = context["tier1_visibleTotals"]
+        context["totalHours"] = vt.get("hours", 0)
+        context["totalTss"] = vt.get("tss", 0)
+        context["totalDistance"] = vt.get("distance", 0)
+        totals_source = "tier1_visibleTotals"
+        debug(context, "[SYNC] Fallback totals restored from Tier-1 visibleTotals.")
+
+    else:
+        df_events = context.get("df_events", pd.DataFrame())
+        if not df_events.empty:
+            context["totalHours"] = df_events["moving_time"].sum() / 3600 if "moving_time" in df_events else 0
+            context["totalTss"] = df_events["icu_training_load"].sum() if "icu_training_load" in df_events else 0
+            context["totalDistance"] = df_events["distance"].sum() if "distance" in df_events else 0
+            totals_source = "df_events"
+            debug(context, "[SYNC] Totals derived directly from df_events.")
         else:
-            df_events = context.get("df_events", pd.DataFrame())
-            if not df_events.empty:
-                context["totalHours"] = df_events["moving_time"].sum() / 3600 if "moving_time" in df_events else 0
-                context["totalTss"] = df_events["icu_training_load"].sum() if "icu_training_load" in df_events else 0
-                debug(context, "[T2-FIX] Derived totals directly from df_events.")
-            else:
-                debug(context, "[T2-FIX] Injecting fallback zero totals to pass validator.")
-                context["totalHours"] = 0
-                context["totalTss"] = 0
-                
+            context["totalHours"], context["totalTss"], context["totalDistance"] = 0, 0, 0
+            totals_source = "fallback"
+            debug(context, "[SYNC] Injected fallback zero totals (no valid source).")
+
+    # --- Prefer locked canonical values if present ---
+    context["totalHours"] = context.get("locked_totalHours") or context["totalHours"]
+    context["totalTss"] = context.get("locked_totalTss") or context["totalTss"]
+    context["totalDistance"] = context.get("locked_totalDistance") or context["totalDistance"]
+
+    debug(context, f"[RENDER-READY] Totals source={totals_source} | "
+                f"hours={context['totalHours']} | tss={context['totalTss']} | "
+                f"distance={context.get('totalDistance')}")
+
+    # --- 🧱 Prevent duplicate render/finalization ---
+    if context.get("FINALIZER_LOCKED_GLOBAL"):
+        debug(context, "[FINALIZER] Duplicate render prevented (global lock active).")
+        return final_output if 'final_output' in locals() else {}, None
+
+    context["FINALIZER_LOCKED_GLOBAL"] = True
+    debug(context, "[FINALIZER] First and only render pass permitted.")
+
     # --- Final render ---
     final_output, compliance = finalize_and_validate_render(context, reportType=reportType)
 
@@ -251,6 +387,7 @@ def run_report(
 
     debug(context, f"✅ Render + validation completed for {reportType}")
     return final_output, compliance
+
 
 
 if __name__ == "__main__":

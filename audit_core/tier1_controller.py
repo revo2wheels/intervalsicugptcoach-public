@@ -35,11 +35,11 @@ def apply_event_filter(df):
 
 
 
-def collect_zone_distributions(df_activities, athlete_profile, context):
+def collect_zone_distributions(df_master, athlete_profile, context):
     """Compute separate zone distributions for Power, HR, and Pace."""
 
-    if df_activities is None or df_activities.empty:
-        debug(context,"⚠ collect_zone_distributions: empty df_activities")
+    if df_master is None or df_master.empty:
+        debug(context,"⚠ collect_zone_distributions: empty df_master")
         context["zone_dist_power"] = {}
         context["zone_dist_hr"] = {}
         context["zone_dist_pace"] = {}
@@ -51,25 +51,25 @@ def collect_zone_distributions(df_activities, athlete_profile, context):
     context["zone_dist_pace"] = {}
 
     # --- Debug: show available columns ---
-    debug(context,"[DEBUG-ZONE] Available columns:", df_activities.columns.tolist())
+    debug(context,"[DEBUG-ZONE] Available columns:", df_master.columns.tolist())
 
     # --- POWER ZONES ---
     power_cols = [
-        c for c in df_activities.columns
+        c for c in df_master.columns
         if c.lower().startswith(("power_z", "icu_power_z", "icu_zone_times"))
     ]
     debug(context,"[DEBUG-ZONE] Detected Power zone columns:", power_cols)
 
     # --- HEART RATE ZONES ---
     hr_cols = [
-        c for c in df_activities.columns
+        c for c in df_master.columns
         if c.lower().startswith(("hr_z", "icu_hr_zone_times"))
     ]
     debug(context,"[DEBUG-ZONE] Detected HR zone columns:", hr_cols)
 
     # --- PACE ZONES ---
     pace_cols = [
-        c for c in df_activities.columns
+        c for c in df_master.columns
         if c.lower().startswith(("pace_z", "pace_zone_times", "gap_zone_times"))
     ]
     debug(context,"[DEBUG-ZONE] Detected Pace zone columns:", pace_cols)
@@ -79,7 +79,7 @@ def collect_zone_distributions(df_activities, athlete_profile, context):
         if not cols:
             debug(context,f"[DEBUG-ZONES] No {label} columns found — skipping.")
             return {}
-        subset = df_activities[cols].select_dtypes(include=[np.number])
+        subset = df_master[cols].select_dtypes(include=[np.number])
         total = subset.sum().sum()
         if total <= 0:
             debug(context,f"[DEBUG-ZONES] No valid data for {label} zones — total=0.")
@@ -106,22 +106,88 @@ def collect_zone_distributions(df_activities, athlete_profile, context):
 
     return context
 
-def run_tier1_controller(df_activities, wellness, context):
+def run_tier1_controller(df_master, wellness, context):
+    import pandas as pd
+    from audit_core.errors import AuditHalt
+    df_well=None
+    debug(context, "[T1] Running Tier-1 controller (weekly mode)")
+
+    # --- Early rehydration of wellness from context if dropped ---
+    if (wellness is None or not isinstance(wellness, pd.DataFrame) or wellness.empty):
+        if isinstance(context.get("wellness"), pd.DataFrame):
+            wellness = context["wellness"]
+            debug(context, f"[T1] Recovered wellness from context ({len(wellness)} rows)")
+
+
+    # Defensive copy of the input DataFrame
+    if isinstance(df_master, pd.DataFrame):
+        df_master = df_master.copy()
+    else:
+        raise AuditHalt("❌ Tier-1 received invalid or missing df_master dataset")
+
+    # --- Tier-1 early restoration safeguards ---
+    # Rehydrate wellness if dropped during Tier-0 fallback
+    if (wellness is None or (isinstance(wellness, pd.DataFrame) and wellness.empty)) \
+       and "wellness" in context and isinstance(context["wellness"], pd.DataFrame):
+        wellness = context["wellness"].copy()
+        debug(context, "[T1] Rehydrated wellness DataFrame from context.")
+
+    # Restore zone/time columns if fallback dataset arrived stripped
+    if not df_master.empty:
+        zone_cols = [c for c in df_master.columns if c.startswith("icu_zone_") or c.startswith("icu_hr_zone_")]
+        if not zone_cols and "icu_zone_times" in context:
+            debug(context, "[T1] Rehydrating zone columns from context.")
+            try:
+                df_master = pd.concat([df_master, context["icu_zone_times"]], axis=1)
+            except Exception as e:
+                debug(context, f"[T1-WARN] Zone column merge failed: {e}")
+
+
     # --- Step 0: Defensive copy (preserve all Tier-0 columns)
-    df_activities = df_activities.copy()
-    if "start_date_local" not in df_activities.columns:
+    df_master = df_master.copy()
+    if "start_date_local" not in df_master.columns:
         raise AuditHalt("❌ Tier-1 missing start_date_local column — verify Tier-0 output")
-    debug(context,f"[T1] Columns at entry: {list(df_activities.columns)}")
+    debug(context,f"[T1] Columns at entry: {list(df_master.columns)}")
 
     # --- Step 1: Dataset integrity ---
-    if df_activities.empty:
+    if df_master.empty:
         raise ValueError("❌ No activity data received")
 
-    assert "moving_time" in df_activities.columns, "❌ moving_time field missing from dataset"
-    assert df_activities["moving_time"].gt(0).all(), "❌ moving_time contains zero or negative values"
+    assert "moving_time" in df_master.columns, "❌ moving_time field missing from dataset"
+    assert df_master["moving_time"].gt(0).all(), "❌ moving_time contains zero or negative values"
 
-    if df_activities["id"].duplicated().any():
+    if df_master["id"].duplicated().any():
         raise ValueError("❌ Duplicate activity IDs detected")
+
+    report_type = str(context.get("report_type", "")).lower()
+
+    # --- 🧩 Tier-1 normalization for snapshot sources ---
+    if report_type == "season":
+        # Map Tier-0 42-day snapshot → expected 7-day key
+        context["tier0_snapshotTotals_7d"] = context.get("tier0_snapshotTotals_42d")
+        context["snapshot_7d_json"] = context.get("snapshot_42d_json")
+
+        # Build per-week rollup for season totals
+        if "snapshot_42d_json" in context and context["snapshot_42d_json"]:
+            import pandas as pd
+            df = pd.DataFrame(context["snapshot_42d_json"])
+            if not df.empty and "start_date_local" in df.columns:
+                df["start_date_local"] = pd.to_datetime(df["start_date_local"], errors="coerce")
+                df["week"] = df["start_date_local"].dt.isocalendar().week
+                weekly = df.groupby("week", as_index=False).agg({
+                    "moving_time": "sum",
+                    "distance": "sum",
+                    "icu_training_load": "sum"
+                })
+                context["tier1_weekly_summary"] = weekly.to_dict(orient="records")
+                context["tier1_visibleTotals"] = {
+                    "hours": weekly["moving_time"].sum() / 3600,
+                    "distance": weekly["distance"].sum() / 1000,
+                    "tss": weekly["icu_training_load"].sum(),
+                    "weeks": len(weekly),
+                    "source": "Tier-1 seasonal weekly roll-up"
+                }
+                debug(context, f"[T1] Built seasonal weekly roll-up ({len(weekly)} weeks)")
 
     # --- Step 2: Unified totals initialisation (linked to Tier-0 lightweight snapshot) ---
     import pandas as pd, json
@@ -215,7 +281,7 @@ def run_tier1_controller(df_activities, wellness, context):
         raise AuditHalt("❌ Tier-1: invalid or missing canonical totals from Tier-0 snapshot")
 
     context.pop("dailyTotals", None)
-    context["df_events"] = df_activities
+    context["df_events"] = df_master
 
     # --- Step 4: Cross-verification (unified) ---
     # Compare Tier-0 snapshot vs Tier-1 revalidated totals
@@ -231,14 +297,42 @@ def run_tier1_controller(df_activities, wellness, context):
 
     debug(context, f"🧩 Tier-1 variance check passed (Δh={diff_hours:.2f}, ΔTSS={diff_tss:.1f})")
 
+    # --- Step 4.5: Normalize and pre-merge wellness with activities ---
+    if isinstance(wellness, pd.DataFrame) and not wellness.empty:
+        debug(context, "[T1] Normalizing and merging wellness with activity dataset before alignment check.")
+        try:
+            # Normalize merge keys to dates (no timezone)
+            if "start_date_local" in df_master.columns:
+                df_master["merge_date"] = pd.to_datetime(df_master["start_date_local"], errors="coerce").dt.date
+            elif "date" in df_master.columns:
+                df_master["merge_date"] = pd.to_datetime(df_master["date"], errors="coerce").dt.date
+
+            wellness["merge_date"] = pd.to_datetime(wellness["date"], errors="coerce").dt.date
+
+            # Merge wellness data into df_master for enriched downstream analysis
+            df_master = pd.merge(
+                df_master,
+                wellness,
+                on="merge_date",
+                how="left",
+                suffixes=("", "_well"),
+            )
+
+            debug(context, f"[T1] Wellness merged successfully — shape={df_master.shape}")
+        except Exception as e:
+            debug(context, f"[T1-WELLNESS-MERGE-WARN] Failed to merge wellness data: {e}")
+    else:
+        debug(context, "[T1] No valid wellness data found pre-merge; skipping normalization.")
+
+
     # --- Step 5: Wellness alignment check ---
     if wellness is None or (isinstance(wellness, pd.DataFrame) and wellness.empty):
         debug(context,"⚠ No wellness data available for window; continuing with activity-only audit")
     else:
-        validate_wellness_alignment(df_activities, wellness)
+        validate_wellness_alignment(df_master, wellness)
 
         # --- Step 6: Daily wellness normalization & summary build ---
-    df_activities["date"] = pd.to_datetime(df_activities["start_date_local"]).dt.date
+    df_master["date"] = pd.to_datetime(df_master["start_date_local"]).dt.date
     daily_summary = pd.DataFrame()
 
     if isinstance(wellness, (list, pd.DataFrame)) and len(wellness) > 0:
@@ -247,13 +341,16 @@ def run_tier1_controller(df_activities, wellness, context):
 
         # --- Normalize field names for consistency ---
         rename_map = {
-            "restinghr": "rest_hr",
-            "fatigue_score": "fatigue",
-            "stress_score": "stress",
-            "readiness_score": "readiness",
-            "atl_load": "atl",
-            "ctl_load": "ctl",
+        "restinghr": "rest_hr",
+        "fatigue_score": "fatigue",
+        "stress_score": "stress",
+        "readiness_score": "readiness",
+        "atl_load": "atl",
+        "ctl_load": "ctl",
+        "atlload": "atl",
+        "ctlload": "ctl",
         }
+
         df_well.rename(columns={k: v for k, v in rename_map.items() if k in df_well.columns}, inplace=True)
 
         # --- Guarantee a valid date column ---
@@ -266,10 +363,13 @@ def run_tier1_controller(df_activities, wellness, context):
                 df_well["date"] = pd.NaT
         df_well["date"] = pd.to_datetime(df_well["date"], errors="coerce")
 
-        # --- Convert key wellness fields to numeric ---
         for col in ["fatigue", "stress", "readiness", "atl", "ctl", "rest_hr", "hrv"]:
             if col in df_well.columns:
-                df_well[col] = pd.to_numeric(df_well[col], errors="coerce")
+                try:
+                    df_well[col] = pd.to_numeric(df_well[col], errors="coerce")
+                except Exception as e:
+                    debug(context, f"[T1-WELLNESS] numeric coercion failed for {col}: {e}")
+
 
         # --- Derived wellness metrics ---
         rest_hr = round(df_well["rest_hr"].tail(7).mean(skipna=True), 1) if "rest_hr" in df_well.columns else np.nan
@@ -294,36 +394,36 @@ def run_tier1_controller(df_activities, wellness, context):
                 break
 
        # --- Determine rest days based on *no training load* days before today ---
-        debug(context, "[T1-REST] Starting rest day calculation from df_activities.")
+        debug(context, "[T1-REST] Starting rest day calculation from df_master.")
 
         # Normalize all timestamps to naive local midnight (no tz offset)
-        df_activities["date"] = (
-            pd.to_datetime(df_activities["start_date_local"], errors="coerce")
+        df_master["date"] = (
+            pd.to_datetime(df_master["start_date_local"], errors="coerce")
             .dt.tz_localize(None)
             .dt.normalize()
         )
 
-        min_date = df_activities["date"].min()
+        min_date = df_master["date"].min()
         today = pd.Timestamp.now().normalize()
 
         debug(context, f"[T1-REST] Normalized date range base → {min_date} to {today}")
 
-        window_start = pd.to_datetime(context.get("window_start", df_activities["date"].min())).normalize()
+        window_start = pd.to_datetime(context.get("window_start", df_master["date"].min())).normalize()
         today = pd.Timestamp.now().normalize()
         date_range = pd.date_range(window_start, today, freq="D")
 
         # --- Aggregate daily load correctly ---
-        if "icu_training_load" in df_activities.columns:
+        if "icu_training_load" in df_master.columns:
             debug(context, "[T1-REST] Using icu_training_load as primary load source.")
             daily_load = (
-                df_activities.groupby("date")["icu_training_load"]
+                df_master.groupby("date")["icu_training_load"]
                 .sum(min_count=1)
                 .reindex(date_range, fill_value=0)
             )
-        elif "tss" in df_activities.columns:
+        elif "tss" in df_master.columns:
             debug(context, "[T1-REST] Fallback: using TSS as load source.")
             daily_load = (
-                df_activities.groupby("date")["tss"]
+                df_master.groupby("date")["tss"]
                 .sum(min_count=1)
                 .reindex(date_range, fill_value=0)
             )
@@ -371,78 +471,62 @@ def run_tier1_controller(df_activities, wellness, context):
 
     context["dailyMerged"] = daily_summary
 
-    # --- Step 6a: Append training load metrics (CTL / ATL / TSB) if present ---
-    if isinstance(df_well, pd.DataFrame) and not df_well.empty:
+    # --- Step 6a: Extract training load metrics (CTL / ATL / TSB) directly from wellness ---
+    if isinstance(wellness, pd.DataFrame) and not wellness.empty:
+        df_well = wellness.copy()
         df_well.columns = [c.strip().lower() for c in df_well.columns]
         load_cols = [c for c in ["ctl", "atl", "tsb"] if c in df_well.columns]
+
         if load_cols:
-            debug(context,f"[DEBUG-T1] merging load metrics from wellness: {load_cols}")
-            # --- Normalize merge keys to timezone-naive daily dates ---
-            df_well["date"] = (
-                pd.to_datetime(df_well["date"])
-                .dt.tz_localize(None)
-                .dt.floor("D")
-            )
-            df_activities["date"] = (
-                pd.to_datetime(df_activities["start_date_local"])
-                .dt.tz_localize(None)
-                .dt.floor("D")
-            )
-            df_activities = df_activities.merge(
-                df_well[["date"] + load_cols], on="date", how="left"
-            )
-            # --- Step 6a.1: derive TSB if ctl/atl exist but tsb missing ---
-            if "ctl" in df_activities.columns and "atl" in df_activities.columns:
-                if "tsb" not in df_activities.columns:
-                    df_activities["tsb"] = (df_activities["ctl"] - df_activities["atl"]).round(2)
-                    debug(context,"[DEBUG-T1] derived TSB column added from CTL-ATL.")
-                else:
-                    debug(context,"[DEBUG-T1] TSB already present.")
-            else:
-                debug(context,"[DEBUG-T1] cannot derive TSB — ctl/atl missing.")
+            debug(context, f"[T1] Using wellness-derived load metrics: {load_cols}")
 
-            # --- Step 6a.2: promote CTL/ATL/TSB to context for Tier-2 ---
-            if all(c in df_activities.columns for c in ["ctl", "atl", "tsb"]):
-                ctl_mean = df_activities["ctl"].mean(skipna=True)
-                atl_mean = df_activities["atl"].mean(skipna=True)
-                tsb_mean = df_activities["tsb"].mean(skipna=True)
+            # Convert numeric safely
+            for col in load_cols:
+                try:
+                    df_well[col] = pd.to_numeric(df_well[col], errors="coerce")
+                except Exception as e:
+                    debug(context, f"[T1-WELLNESS] numeric coercion failed for {col}: {e}")
 
-                context["ctl"] = round(float(ctl_mean), 2) if pd.notna(ctl_mean) else np.nan
-                context["atl"] = round(float(atl_mean), 2) if pd.notna(atl_mean) else np.nan
-                context["tsb"] = round(float(tsb_mean), 2) if pd.notna(tsb_mean) else np.nan
+            # Derive TSB if missing
+            if "tsb" not in df_well.columns and all(c in df_well.columns for c in ["ctl", "atl"]):
+                df_well["tsb"] = (df_well["ctl"] - df_well["atl"]).round(2)
+                debug(context, "[T1] Derived TSB column added from CTL–ATL")
 
-                debug(
-                    context,
-                    f"[DEBUG-T1] promoted CTL={context['ctl']} ATL={context['atl']} TSB={context['tsb']} to context."
-                )
-            else:
-                debug(context, "[DEBUG-T1] cannot promote CTL/ATL/TSB — missing column(s).")
+            # Compute means over the window
+            ctl_mean = df_well["ctl"].mean(skipna=True) if "ctl" in df_well.columns else np.nan
+            atl_mean = df_well["atl"].mean(skipna=True) if "atl" in df_well.columns else np.nan
+            tsb_mean = df_well["tsb"].mean(skipna=True) if "tsb" in df_well.columns else np.nan
 
-            # --- Step 6a.3: inject nested load_metrics dict for Tier-2/Renderer ---
+            context["ctl"] = round(float(ctl_mean), 2) if pd.notna(ctl_mean) else np.nan
+            context["atl"] = round(float(atl_mean), 2) if pd.notna(atl_mean) else np.nan
+            context["tsb"] = round(float(tsb_mean), 2) if pd.notna(tsb_mean) else np.nan
+
+            debug(context, f"[T1] Promoted CTL={context['ctl']} ATL={context['atl']} TSB={context['tsb']} to context")
+
+            # Inject simple load_metrics block for downstream use
             context["load_metrics"] = {
-                "CTL": {"value": round(context.get("ctl", 0), 2), "status": "ok"},
-                "ATL": {"value": round(context.get("atl", 0), 2), "status": "ok"},
-                "TSB": {"value": round(context.get("tsb", 0), 2), "status": "ok"},
+                "CTL": {"value": context["ctl"], "status": "ok"},
+                "ATL": {"value": context["atl"], "status": "ok"},
+                "TSB": {"value": context["tsb"], "status": "ok"},
             }
-            debug(context,"[DEBUG-T1] injected load_metrics for renderer:", context["load_metrics"])
-
-            debug(context,"[DEBUG-T1] sample merged CTL/ATL/TSB:", df_activities[["date"] + load_cols].head())
         else:
-            debug(context,"[DEBUG-T1] no ctl/atl/tsb columns found in wellness data.")
+            debug(context, "[T1] No ctl/atl/tsb columns found in wellness data")
     else:
-        debug(context,"[DEBUG-T1] no valid wellness DataFrame to merge.")
+        debug(context, "[T1] No valid wellness DataFrame — skipping load metric extraction")
 
-    debug(context,"[DEBUG-T1] sanity check before Step 6b — rows in df_activities:", len(df_activities))
+
+    # --- Step 6b: Build HR / Power / Pace zone distributions ---
+
+    debug(context,"[DEBUG-T1] sanity check before Step 6b — rows in df_master:", len(df_master))
     debug(context,"[DEBUG-T1] athleteProfile present:", "athleteProfile" in context)
     if "athleteProfile" in context:
         debug(context,"[DEBUG-T1] athleteProfile keys:", list(context["athleteProfile"].keys()))
 
-    # --- Step 6b: Build HR / Power / Pace zone distributions ---
     try:
         debug(context,"[DEBUG-T1] Starting zone distribution extraction...")
-        debug(context,"[DEBUG-T1] Activity columns sample:", df_activities.columns.tolist()[:40])
+        debug(context,"[DEBUG-T1] Activity columns sample:", df_master.columns.tolist()[:40])
 
-        context = collect_zone_distributions(df_activities, context.get("athleteProfile", {}), context)
+        context = collect_zone_distributions(df_master, context.get("athleteProfile", {}), context)
 
         debug(context,"[DEBUG-T1] Completed zone distribution extraction.")
         debug(context,"[DEBUG-T1] Zone distributions now in context:")
@@ -456,7 +540,7 @@ def run_tier1_controller(df_activities, wellness, context):
 
     # --- Step 6c: Outlier Detection ---
     try:
-        df = df_activities.copy()
+        df = df_master.copy()
         debug(context, f"[DEBUG-OUTLIER] Starting detection on {len(df)} rows")
         if "icu_training_load" in df.columns:
             mean_tss = df["icu_training_load"].mean()
@@ -530,4 +614,11 @@ def run_tier1_controller(df_activities, wellness, context):
     except Exception as e:
         debug(context, f"[TRACE] Failed to ensure df_light_slice for Tier-2: {e}")
 
-    return df_activities, wellness, context
+    # --- Final column sanitization before Tier-2 ---
+    if isinstance(df_master, pd.DataFrame):
+        df_master = df_master.loc[:, ~df_master.columns.duplicated()].copy()
+        df_master.columns = df_master.columns.astype(str)
+        df_master.columns = df_master.columns.str.replace(r'\.1$', '', regex=True)
+        debug(context, "[T1] Deduplicated df_master columns before Tier-2 handoff.")
+
+    return df_master, wellness, context

@@ -228,14 +228,11 @@ def compute_derived_metrics(df_events, context):
     report_type = str(context.get("report_type", "")).lower()
     is_season = report_type == "season"
 
-    # --- Define windowing parameters ---
-    if is_season:
-        acute_days = 14      # double horizon
-        chronic_days = 56    # double horizon
-        debug(context, "[Tier-2] Using extended windows for season context (14d/56d EWMA).")
-    else:
-        acute_days = 7
-        chronic_days = 28
+    # --- 🧭 Adaptive window configuration (unifies weekly/season logic) ---
+    window_days = 7 if not is_season else 42
+    acute_days = max(7, int(window_days / 2))
+    chronic_days = max(28, int(window_days * 1.33))
+    debug(context, f"[Tier-2] Adaptive load window → {window_days}d (acute={acute_days}, chronic={chronic_days})")
 
     # --- EWMA calculation for ACWR ---
     if len(load_series) > 0:

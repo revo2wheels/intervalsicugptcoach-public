@@ -91,67 +91,48 @@ def render_report(data):
     if "derived_metrics" in ctx:
         ctx["tier2_derived_metrics"] = ctx["derived_metrics"]
 
-    # --- Determine renderer source ---
-    # Fix 1
-    if report_type == "season" and "df_events" in ctx and ctx["df_events"] is not None and not ctx["df_events"].empty:
-        debug(ctx, "[VERIFY] Renderer override: using Tier-2 df_events (full dataset) for season summary.")
-        print("🧩 Renderer override: using Tier-2 df_events (full dataset) for season summary.")
-        totals_source = "tier2_enforced_totals" if "tier2_enforced_totals" in ctx else "eventTotals"
-    elif "tier1_visibleTotals" in ctx:
-        debug(ctx, "[VERIFY] Renderer using Tier-1 visibleTotals for totals and metrics.")
-        print("✅ Renderer source: Tier-1 visibleTotals (lightweight 7-day dataset)")
-        totals_source = "tier1_visibleTotals"
-    elif "tier2_enforced_totals" in ctx:
-        debug(ctx, "[VERIFY] Renderer using Tier-2 enforced totals (canonical dataset).")
-        print("✅ Renderer source: Tier-2 enforced totals (canonical full dataset)")
+    # --- 🧩 Determine renderer totals source (priority-based) ---
+    totals_source = None
+
+    # 1️⃣ Prefer Tier-2 enforced totals (canonical)
+    if "tier2_enforced_totals" in ctx:
         totals_source = "tier2_enforced_totals"
+        et = ctx["tier2_enforced_totals"]
+        ctx["eventTotals"] = et
+        ctx["totalHours"] = et.get("time_h") or et.get("hours", 0)
+        ctx["totalTss"] = et.get("tss", 0)
+        ctx["totalDistance"] = et.get("distance_km") or et.get("distance", 0)
+        debug(ctx, "[SYNC] Renderer using Tier-2 enforced totals (canonical).")
+        print("✅ Renderer source: Tier-2 enforced totals (canonical dataset)")
+
+    # 2️⃣ Otherwise fall back to Tier-1 visibleTotals
+    elif "tier1_visibleTotals" in ctx:
+        totals_source = "tier1_visibleTotals"
+        et = ctx["tier1_visibleTotals"]
+        ctx["eventTotals"] = et
+        ctx["totalHours"] = et.get("hours", 0)
+        ctx["totalTss"] = et.get("tss", 0)
+        ctx["totalDistance"] = et.get("distance", 0)
+        debug(ctx, "[SYNC] Renderer using Tier-1 visibleTotals (fallback).")
+        print("✅ Renderer source: Tier-1 visibleTotals (fallback)")
+
+    # 3️⃣ Fallback: legacy eventTotals
     elif "eventTotals" in ctx:
-        debug(ctx, "[VERIFY] Renderer using legacy eventTotals (fallback).")
-        print("✅ Renderer source: eventTotals (legacy fallback)")
         totals_source = "eventTotals"
-    else:
-        debug(ctx, "[VERIFY] Renderer could not determine totals source — defaulting to context keys.")
-        print("⚠️ Renderer source: undetermined (default context values)")
-        totals_source = None
-
-    # --- Canonical totals unification ---
-    if report_type == "season" and "tier2_enforced_totals" in ctx:
-        et = ctx["tier2_enforced_totals"]
-        ctx["eventTotals"] = et
-        ctx["totalHours"] = et.get("time_h", 0)
-        ctx["totalTss"] = et.get("tss", 0)
-        ctx["totalDistance"] = et.get("distance_km", 0)
-        debug(ctx, "[SYNC] Canonical totals restored from Tier-2 enforced totals (season override)")
-
-    # --- Prefer Tier-2 metrics if available before falling back to Tier-1 ---
-    elif totals_source == "tier1_visibleTotals":
-        if "tier2_derived_metrics" in ctx or "derived_metrics" in ctx:
-            debug(ctx, "[SYNC] Skipping Tier-1 visibleTotals override — Tier-2 derived metrics present.")
-        else:
-            et = ctx["tier1_visibleTotals"]
-            ctx["eventTotals"] = et
-            ctx["totalHours"] = et.get("hours", 0)
-            ctx["totalTss"] = et.get("tss", 0)
-            ctx["totalDistance"] = et.get("distance", 0)
-            debug(ctx, "[SYNC] Unified totals from Tier-1 visibleTotals (fallback only)")
-
-    elif totals_source == "tier2_enforced_totals":
-        et = ctx["tier2_enforced_totals"]
-        ctx["eventTotals"] = et
-        ctx["totalHours"] = et.get("time_h", 0)
-        ctx["totalTss"] = et.get("tss", 0)
-        ctx["totalDistance"] = et.get("distance_km", 0)
-        debug(ctx, "[SYNC] Canonical totals restored from Tier-2 enforced totals")
-
-    elif totals_source == "eventTotals":
         et = ctx["eventTotals"]
         ctx["totalHours"] = et.get("hours", 0)
         ctx["totalTss"] = et.get("tss", 0)
         ctx["totalDistance"] = et.get("distance", 0)
-        debug(ctx, "[SYNC] Legacy totals restored from eventTotals")
+        debug(ctx, "[SYNC] Renderer using legacy eventTotals (fallback).")
+        print("✅ Renderer source: eventTotals (legacy fallback)")
 
-    else:
-        debug(ctx, "[WARN] No Tier-2 totals found — using serialized fallback values")
+    # 4️⃣ Use locked canonical values if available
+    ctx["totalHours"] = ctx.get("locked_totalHours") or ctx.get("totalHours")
+    ctx["totalTss"] = ctx.get("locked_totalTss") or ctx.get("totalTss")
+    ctx["totalDistance"] = ctx.get("locked_totalDistance") or ctx.get("totalDistance")
+
+    debug(ctx, f"[RENDER] Totals unified from {totals_source} → "
+            f"{ctx['totalHours']} h | {ctx['totalDistance']} km | {ctx['totalTss']} TSS")
 
 
     # --- Ensure downstream load metrics consistency
@@ -717,29 +698,28 @@ def render_report(data):
     try:
         print("[FINALIZER] Enforcing markdown-only return (season-safe mode)")
 
-        # --- Ensure report has a real Markdown string ---
+        # --- Step 1: Ensure report has a valid Markdown string ---
+        md_text = None
         if isinstance(report, dict):
             md_text = report.get("markdown")
-            # Handle cases where the 'markdown' key is actually a dict or context blob
-            if not isinstance(md_text, str) or len(md_text.strip()) < 50:
-                possible_md = ctx.get("markdown") or ctx.get("md_text")
-                if isinstance(possible_md, str) and len(possible_md.strip()) > 50:
-                    report["markdown"] = possible_md
-                    md_text = possible_md
-                else:
-                    print("[SANITY] report['markdown'] invalid — substituting summary block")
-                    report["markdown"] = (
-                        "### Season Summary (Auto-generated)\n\n"
-                        f"- Total Hours: {ctx.get('totalHours', 'n/a')}\n"
-                        f"- Total TSS: {ctx.get('totalTss', 'n/a')}\n"
-                        f"- Event Count: {ctx.get('event_count', 'n/a')}\n"
-                        f"- Period: {ctx.get('window_start', 'n/a')} → {ctx.get('window_end', 'n/a')}\n"
-                    )
-                    md_text = report["markdown"]
+            # If markdown is missing or invalid, try to recover or synthesize
+            if not isinstance(md_text, str) or md_text.strip().startswith("{") or "DataFrame" in str(md_text):
+                print("[SANITY] Invalid markdown payload — substituting canonical summary")
+                md_text = (
+                    "## Season Summary\n\n"
+                    f"- **Period:** {ctx.get('window_start', 'n/a')} → {ctx.get('window_end', 'n/a')}\n"
+                    f"- **Hours:** {ctx.get('totalHours', 'n/a')}\n"
+                    f"- **TSS:** {ctx.get('totalTss', 'n/a')}\n"
+                    f"- **Distance:** {ctx.get('totalDistance', 'n/a')} km\n"
+                    f"- **Events:** {ctx.get('event_count', 'n/a')}\n"
+                )
+                report["markdown"] = md_text
         else:
-            md_text = str(report or "_⚠ Renderer produced no valid Markdown output._")
+            md_text = str(report).strip()
+            if not md_text or md_text.startswith("{") or "DataFrame" in md_text:
+                md_text = "_⚠ Renderer produced no valid Markdown output._"
 
-        # --- Comprehensive context sanitization ---
+        # --- Step 2: Strip heavy context payloads ---
         blacklist_patterns = [
             "df_", "trace", "debug", "snapshot", "json", "event_log",
             "activities", "dailymerged", "raw_analysis", "wellness"
@@ -752,19 +732,18 @@ def render_report(data):
                     continue
                 minimal_ctx[k] = v
 
-        # --- Construct final output ---
+        # --- Step 3: Construct final compact return ---
         final_output = {
             "markdown": md_text.strip(),
             "context": minimal_ctx,
-            "header": report.get("header", {}),
-            "summary": report.get("summary", {}),
-            "actions": report.get("actions", {}),
-            "metrics": report.get("metrics", {}),
-            "phases": report.get("phases", []),
+            "header": report.get("header", {}) if isinstance(report, dict) else {},
+            "summary": report.get("summary", {}) if isinstance(report, dict) else {},
+            "actions": report.get("actions", {}) if isinstance(report, dict) else {},
+            "metrics": report.get("metrics", {}) if isinstance(report, dict) else {},
+            "phases": report.get("phases", []) if isinstance(report, dict) else [],
         }
 
         print(f"[FINALIZER] Markdown-only return OK — len={len(md_text)}, ctx_keys={len(minimal_ctx)}")
-        # single explicit return only here
         return final_output
 
     except Exception as e:
@@ -775,6 +754,7 @@ def render_report(data):
             "markdown": f"_⚠ Render failed: {e}_\n```\n{tb}\n```",
             "context": {}
         }
+
 
 
 

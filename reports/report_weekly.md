@@ -3,12 +3,12 @@
 ## Execution Logs
 
 ```
-✅ Renderer source: Tier-1 visibleTotals (lightweight 7-day dataset)
+✅ Renderer source: Tier-1 visibleTotals (fallback)
 [FINALIZER] Enforcing markdown-only return (season-safe mode)
-[FINALIZER] Markdown-only return OK — len=3942, ctx_keys=66
-✅ Renderer source: Tier-1 visibleTotals (lightweight 7-day dataset)
+[FINALIZER] Markdown-only return OK — len=3941, ctx_keys=71
+✅ Renderer source: Tier-1 visibleTotals (fallback)
 [FINALIZER] Enforcing markdown-only return (season-safe mode)
-[FINALIZER] Markdown-only return OK — len=3942, ctx_keys=66
+[FINALIZER] Markdown-only return OK — len=3941, ctx_keys=71
 ```
 
 ## Rendered Markdown Report
@@ -17,7 +17,7 @@
 **Athlete:** Clive King
 **Period:** 2025-11-11 → 2025-11-17
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-17T09:11:38.688908
+**Generated:** 2025-11-17T13:49:19.189399
 
 ---
 
@@ -102,7 +102,7 @@ _No pace zone data available._
 - Fatigue: 1.5/5
 - Stress: 1.5/5
 - Readiness: nan/5
-- ATL: 90.71 · CTL: 91.09 · TSB: 0.38
+- ATL: 83.73 · CTL: 89.76 · TSB: 6.03
 
 
 ## 🧠 Performance & Coaching Actions
@@ -131,9 +131,9 @@ _No pace zone data available._
 | 2025-11-11 | Zwift - Tick Tock in Watopia | 6 | 00:10:13 | 6.4 |
 | 2025-11-11 | zAlp low cadence | 88 | 01:23:00 | 35.9 |
 
-**Totals:** 10.01 h · 242.5 km · 471 TSS · 7 sessions**
-**Cycling Metrics — Mean IF:** 0.73 · **Mean HR:** 117 bpm · **VO₂ max:** 65.8
+**Totals:** 6.25 h · 188.1 km · 310 TSS · 7 sessions**
+**Cycling Metrics — Mean IF:** 0.69 · **Mean HR:** 117 bpm · **VO₂ max:** 64.7
 
 ---
-✅ **Audit Completed:** 2025-11-17T09:11:38.691636
+✅ **Audit Completed:** 2025-11-17T13:49:19.193510
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: —
