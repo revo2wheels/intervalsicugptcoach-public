@@ -109,7 +109,7 @@ def evaluate_actions(context):
     events = context.get("events", [])
     context = detect_phases(context, events)
 
-    # --- Integrate Derived + Extended Metrics (URF v5.2+)
+    # --- Integrate Derived + Extended Metrics (URF v5.1)
     derived = context.get("derived_metrics", {})
     extended = context.get("extended_metrics", {})
 
@@ -199,7 +199,7 @@ def evaluate_actions(context):
     else:
         context["ui_flag"] = "🟢 Normal"
 
-    # --- New Heuristics (URF v5.2 enhancement) ---
+    # --- New Heuristics (URF v5.1 enhancement) ---
     dur = metric_value(context, "Durability", 1.0)
     lir = metric_value(context, "LoadIntensityRatio", 0.0)
     er = metric_value(context, "EnduranceReserve", 1.0)

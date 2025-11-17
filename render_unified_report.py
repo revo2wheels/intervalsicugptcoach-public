@@ -84,7 +84,7 @@ def render_report(data):
     debug(ctx, "[RENDER] Early cleanup — removed trace/debug artifacts before markdown assembly")
 
 
-    # --- 🧩 Diagnostic & Totals Source Resolution (URF v5.2+ adaptive) ---
+    # --- 🧩 Diagnostic & Totals Source Resolution (URF v5.1) ---
     report_type = ctx.get("report_type", data.get("type", "weekly")).lower()
 
     # --- Ensure Tier-2 derived metrics persist through render ---
