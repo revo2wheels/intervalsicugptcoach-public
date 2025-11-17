@@ -20,7 +20,7 @@ from audit_core.tier2_extended_metrics import compute_extended_metrics
 
 def run_report(
     reportType: str = "weekly",
-    auditFinal: bool = False,
+    auditFinal: bool = True,
     auditPartial: bool = False,
     force_analysis: bool = False,
     preRenderAudit: bool = False,
@@ -234,11 +234,25 @@ def run_report(
                 debug(context, "[T2-FIX] Injecting fallback zero totals to pass validator.")
                 context["totalHours"] = 0
                 context["totalTss"] = 0
-
+                
     # --- Final render ---
-    report, compliance = finalize_and_validate_render(context, reportType=reportType)
+    final_output, compliance = finalize_and_validate_render(context, reportType=reportType)
+
+    # Defensive guard: extract only markdown text if final_output is complex
+    if isinstance(final_output, dict) and "markdown" in final_output:
+        final_output = {
+            "markdown": final_output["markdown"],
+            "context": final_output.get("context", {}),
+            "summary": final_output.get("summary", {}),
+            "header": final_output.get("header", {})
+        }
+    elif not isinstance(final_output, dict):
+        final_output = {"markdown": str(final_output), "context": {}}
+
     debug(context, f"✅ Render + validation completed for {reportType}")
-    return report, compliance
+    return final_output, compliance
+
 
 if __name__ == "__main__":
     run_report("weekly")
+

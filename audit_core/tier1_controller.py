@@ -123,8 +123,9 @@ def run_tier1_controller(df_activities, wellness, context):
     if df_activities["id"].duplicated().any():
         raise ValueError("❌ Duplicate activity IDs detected")
 
-        # --- Step 2: Unified totals initialisation (linked to Tier-0 lightweight snapshot) ---
+    # --- Step 2: Unified totals initialisation (linked to Tier-0 lightweight snapshot) ---
     import pandas as pd, json
+    from io import StringIO
 
     # Validate Tier-0 context
     if "tier0_snapshotTotals_7d" not in context:
@@ -137,40 +138,42 @@ def run_tier1_controller(df_activities, wellness, context):
     if "snapshot_7d_json" not in context or not context["snapshot_7d_json"]:
         raise AuditHalt("❌ Tier-1: missing snapshot_7d_json for visible subset mean metrics")
 
-    from io import StringIO
-    visible_events = pd.read_json(StringIO(context["snapshot_7d_json"]))
+    # --- Safely rehydrate snapshot_7d_json ---
+    snapshot = context["snapshot_7d_json"]
+    if isinstance(snapshot, (list, dict)):
+        visible_events = pd.DataFrame(snapshot)
+    elif isinstance(snapshot, str):
+        try:
+            visible_events = pd.read_json(StringIO(snapshot))
+        except ValueError as e:
+            raise AuditHalt(f"❌ Tier-1: invalid JSON in snapshot_7d_json → {e}")
+    else:
+        raise AuditHalt(f"❌ Tier-1: unsupported type for snapshot_7d_json → {type(snapshot)}")
+
+    # Validate schema before continuing
+    if not isinstance(visible_events, pd.DataFrame) or "type" not in visible_events.columns:
+        raise AuditHalt(
+            f"❌ Tier-1: snapshot_7d_json missing required 'type' column "
+            f"(columns={visible_events.columns.tolist() if hasattr(visible_events, 'columns') else 'N/A'})"
+        )
 
     # Ensure numeric for mean computations
     for col in ["IF", "average_heartrate", "VO2MaxGarmin"]:
         if col in visible_events.columns:
             visible_events[col] = pd.to_numeric(visible_events[col], errors="coerce").fillna(0)
 
-   # Placeholder before cycling refinement
+    # Placeholder before cycling refinement
     t0["avg_if"] = None
     t0["avg_hr"] = None
     t0["vo2max"] = None
-
     context["tier1_visibleTotals"] = t0
 
     debug(
         context,
-        f"[Tier-1] Visible subset unified: {t0.get('hours', 0):.2f} h | {t0.get('distance', 0):.1f} km | "
-        f"{t0.get('tss', 0)} TSS | IF={t0.get('avg_if')} HR={t0.get('avg_hr')} VO₂={t0.get('vo2max')}"
+        f"[Tier-1] Visible subset unified: {t0.get('hours', 0):.2f} h | "
+        f"{t0.get('distance', 0):.1f} km | {t0.get('tss', 0)} TSS | "
+        f"IF={t0.get('avg_if')} HR={t0.get('avg_hr')} VO₂={t0.get('vo2max')}"
     )
-
-    # If snapshot JSON exists, rebuild visible events
-    if context.get("snapshot_7d_json"):
-        visible_events = pd.read_json(context["snapshot_7d_json"])
-    else:
-        visible_events = df_activities.copy()
-
-    # Ensure numeric consistency
-    for col in ["moving_time", "icu_training_load", "distance", "IF",
-                "average_heartrate", "VO2MaxGarmin"]:
-        if col in visible_events.columns:
-            visible_events[col] = pd.to_numeric(
-                visible_events[col], errors="coerce"
-            ).fillna(0)
 
     # --- Cycling-only refinement for mean metrics ---
     cycling_subset = visible_events[visible_events["type"].isin(["Ride", "VirtualRide", "Workout"])].copy()
@@ -181,7 +184,7 @@ def run_tier1_controller(df_activities, wellness, context):
             "avg_hr": int(cycling_subset["average_heartrate"].mean())
             if "average_heartrate" in cycling_subset.columns else None,
             "vo2max": round(
-            cycling_subset.loc[cycling_subset["VO2MaxGarmin"] > 30, "VO2MaxGarmin"].mean(), 1
+                cycling_subset.loc[cycling_subset["VO2MaxGarmin"] > 30, "VO2MaxGarmin"].mean(), 1
             )
             if "VO2MaxGarmin" in cycling_subset.columns else None,
         })
@@ -234,66 +237,137 @@ def run_tier1_controller(df_activities, wellness, context):
     else:
         validate_wellness_alignment(df_activities, wellness)
 
-    # --- Step 6: Daily summary build ---
+        # --- Step 6: Daily wellness normalization & summary build ---
     df_activities["date"] = pd.to_datetime(df_activities["start_date_local"]).dt.date
     daily_summary = pd.DataFrame()
 
     if isinstance(wellness, (list, pd.DataFrame)) and len(wellness) > 0:
-        df_well = pd.DataFrame(wellness)
+        df_well = pd.DataFrame(wellness).copy()
+        df_well.columns = [c.lower() for c in df_well.columns]
 
-        keep_cols = [
-            "id", "date", "ctl", "atl", "tsb", "sleepSecs", "sleepScore", "hrv", "restingHR",
-            "fatigue", "stress", "mood", "motivation",
-            "hydration", "soreness", "injury", "readiness"
-        ]
-        df_well = df_well[[c for c in keep_cols if c in df_well.columns]]
+        # --- Normalize field names for consistency ---
+        rename_map = {
+            "restinghr": "rest_hr",
+            "fatigue_score": "fatigue",
+            "stress_score": "stress",
+            "readiness_score": "readiness",
+            "atl_load": "atl",
+            "ctl_load": "ctl",
+        }
+        df_well.rename(columns={k: v for k, v in rename_map.items() if k in df_well.columns}, inplace=True)
 
-        # --- Guarantee a date column ---
+        # --- Guarantee a valid date column ---
         if "date" not in df_well.columns:
             if "id" in df_well.columns:
                 df_well.rename(columns={"id": "date"}, inplace=True)
                 debug(context, "[T1] Wellness 'id' renamed to 'date'.")
             else:
-                debug(context, "[T1] Wellness missing both 'id' and 'date' — inserting placeholder.")
+                debug(context, "[T1] Wellness missing date/id — inserting placeholder.")
                 df_well["date"] = pd.NaT
+        df_well["date"] = pd.to_datetime(df_well["date"], errors="coerce")
 
-        df_well["date"] = pd.to_datetime(df_well["date"], errors="coerce").dt.date
+        # --- Convert key wellness fields to numeric ---
+        for col in ["fatigue", "stress", "readiness", "atl", "ctl", "rest_hr", "hrv"]:
+            if col in df_well.columns:
+                df_well[col] = pd.to_numeric(df_well[col], errors="coerce")
 
-        if "sleepSecs" in df_well.columns:
-            df_well["sleep_h"] = (df_well["sleepSecs"] / 3600).round(2)
-            df_well.drop(columns=["sleepSecs"], inplace=True)
+        # --- Derived wellness metrics ---
+        rest_hr = round(df_well["rest_hr"].tail(7).mean(skipna=True), 1) if "rest_hr" in df_well.columns else np.nan
+        hrv_trend = np.nan
+        if "hrv" in df_well.columns and df_well["hrv"].count() >= 2:
+            last_two = df_well["hrv"].dropna().tail(2).tolist()
+            if len(last_two) == 2:
+                hrv_trend = round(last_two[-1] - last_two[-2], 1)
 
-        daily_summary = df_well.copy()
+        fatigue_avg = round(df_well["fatigue"].mean(skipna=True), 1) if "fatigue" in df_well.columns else np.nan
+        stress_avg = round(df_well["stress"].mean(skipna=True), 1) if "stress" in df_well.columns else np.nan
+        readiness_avg = round(df_well["readiness"].mean(skipna=True), 1) if "readiness" in df_well.columns else np.nan
 
-        # --- NEW wellness summary metrics ---
-        import numpy as np
+        # --- Objective + subjective rest-day logic ---
+        today = pd.Timestamp.now().normalize()
+        mask_past = df_well["date"] < today
 
-        rest_hr = (
-            df_well["restingHR"].mean(skipna=True).round(1)
-            if "restingHR" in df_well.columns else np.nan
+        load_col = None
+        for candidate in ["load", "icu_training_load", "atl", "ctl"]:
+            if candidate in df_well.columns:
+                load_col = candidate
+                break
+
+       # --- Determine rest days based on *no training load* days before today ---
+        debug(context, "[T1-REST] Starting rest day calculation from df_activities.")
+
+        # Normalize all timestamps to naive local midnight (no tz offset)
+        df_activities["date"] = (
+            pd.to_datetime(df_activities["start_date_local"], errors="coerce")
+            .dt.tz_localize(None)
+            .dt.normalize()
         )
-        hrv_trend = (
-        df_well["hrv"].pct_change(fill_method=None).mean(skipna=True).round(3)
-        if "hrv" in df_well.columns else np.nan
-        )
 
-        fatigue_threshold = 2  # adjust if you prefer another cutoff
-        rest_days = (
-            (df_well["fatigue"] <= fatigue_threshold).sum()
-            if "fatigue" in df_well.columns else 0
-        )
+        min_date = df_activities["date"].min()
+        today = pd.Timestamp.now().normalize()
 
+        debug(context, f"[T1-REST] Normalized date range base → {min_date} to {today}")
+
+        window_start = pd.to_datetime(context.get("window_start", df_activities["date"].min())).normalize()
+        today = pd.Timestamp.now().normalize()
+        date_range = pd.date_range(window_start, today, freq="D")
+
+        # --- Aggregate daily load correctly ---
+        if "icu_training_load" in df_activities.columns:
+            debug(context, "[T1-REST] Using icu_training_load as primary load source.")
+            daily_load = (
+                df_activities.groupby("date")["icu_training_load"]
+                .sum(min_count=1)
+                .reindex(date_range, fill_value=0)
+            )
+        elif "tss" in df_activities.columns:
+            debug(context, "[T1-REST] Fallback: using TSS as load source.")
+            daily_load = (
+                df_activities.groupby("date")["tss"]
+                .sum(min_count=1)
+                .reindex(date_range, fill_value=0)
+            )
+        else:
+            debug(context, "[T1-REST] ❌ No valid load column found (icu_training_load/TSS).")
+            daily_load = pd.Series(dtype=float, index=date_range)
+
+        debug(context, f"[T1-REST] Daily load sample (last 7 days): {daily_load.tail(7).to_dict()}")
+
+        mask_past = daily_load.index < today
+        rest_days = int((daily_load.loc[mask_past] < 1).sum())
+        rest_dates = [d.strftime("%Y-%m-%d") for d, v in daily_load.loc[mask_past].items() if v < 1]
+
+        debug(context, f"[T1-REST] Counted rest days: {rest_days} → Dates: {rest_dates}")
+
+
+        # --- Debug readiness data completeness ---
+        debug(context, f"[T1-READINESS] readiness column summary: "
+                    f"exists={'readiness' in df_well.columns}, "
+                    f"non-null count={df_well['readiness'].notna().sum() if 'readiness' in df_well.columns else 0}, "
+                    f"values={df_well['readiness'].dropna().tolist() if 'readiness' in df_well.columns else 'n/a'}")
+
+
+        # --- Build wellness summary block ---
         context["wellness_metrics"] = {
             "rest_hr": rest_hr,
             "hrv_trend": hrv_trend,
             "rest_days": rest_days,
+            "fatigue": fatigue_avg,
+            "stress": stress_avg,
+            "readiness": readiness_avg,
         }
+        context["wellness_summary"] = context["wellness_metrics"]
+        context["wellness"] = context["wellness_metrics"]
 
-        debug(
-            context,
-            f"[T1] Wellness summary → rest_days={rest_days}, "
-            f"rest_hr={rest_hr}, hrv_trend={hrv_trend}"
-        )
+        debug(context, f"[T1] Wellness summary → rest_days={rest_days}, rest_hr={rest_hr}, hrv_trend={hrv_trend}")
+
+        daily_summary = df_well.copy()
+    else:
+        context["wellness_metrics"] = {
+            "rest_hr": np.nan, "hrv_trend": np.nan,
+            "rest_days": 0, "fatigue": np.nan, "stress": np.nan, "readiness": np.nan,
+        }
+        context["wellness_summary"] = context["wellness_metrics"]
 
     context["dailyMerged"] = daily_summary
 
@@ -326,14 +400,24 @@ def run_tier1_controller(df_activities, wellness, context):
                     debug(context,"[DEBUG-T1] TSB already present.")
             else:
                 debug(context,"[DEBUG-T1] cannot derive TSB — ctl/atl missing.")
+
             # --- Step 6a.2: promote CTL/ATL/TSB to context for Tier-2 ---
             if all(c in df_activities.columns for c in ["ctl", "atl", "tsb"]):
-                context["ctl"] = float(df_activities["ctl"].mean(skipna=True).round(2))
-                context["atl"] = float(df_activities["atl"].mean(skipna=True).round(2))
-                context["tsb"] = float(df_activities["tsb"].mean(skipna=True).round(2))
-                debug(context,f"[DEBUG-T1] promoted CTL={context['ctl']} ATL={context['atl']} TSB={context['tsb']} to context.")
+                ctl_mean = df_activities["ctl"].mean(skipna=True)
+                atl_mean = df_activities["atl"].mean(skipna=True)
+                tsb_mean = df_activities["tsb"].mean(skipna=True)
+
+                context["ctl"] = round(float(ctl_mean), 2) if pd.notna(ctl_mean) else np.nan
+                context["atl"] = round(float(atl_mean), 2) if pd.notna(atl_mean) else np.nan
+                context["tsb"] = round(float(tsb_mean), 2) if pd.notna(tsb_mean) else np.nan
+
+                debug(
+                    context,
+                    f"[DEBUG-T1] promoted CTL={context['ctl']} ATL={context['atl']} TSB={context['tsb']} to context."
+                )
             else:
-                debug(context,"[DEBUG-T1] cannot promote CTL/ATL/TSB — missing column(s).")
+                debug(context, "[DEBUG-T1] cannot promote CTL/ATL/TSB — missing column(s).")
+
             # --- Step 6a.3: inject nested load_metrics dict for Tier-2/Renderer ---
             context["load_metrics"] = {
                 "CTL": {"value": round(context.get("ctl", 0), 2), "status": "ok"},
@@ -428,5 +512,22 @@ def run_tier1_controller(df_activities, wellness, context):
     # --- Step 8: Finalize ---
     context["auditPartial"] = True
     context["auditFinal"] = False
+
+    # --- Inject 90-day lightweight dataset forward for Tier-2 derived metrics ---
+    try:
+        if "df_light_slice" not in context:
+            if "activities_light" in context and isinstance(context["activities_light"], pd.DataFrame):
+                context["df_light_slice"] = context["activities_light"]
+                debug(context, f"[TRACE] Injected df_light_slice from activities_light → {len(context['df_light_slice'])} rows.")
+            elif "snapshot_90d_json" in context:
+                from io import StringIO
+                import pandas as pd
+                df90 = pd.read_json(StringIO(context["snapshot_90d_json"]))
+                context["df_light_slice"] = df90
+                debug(context, f"[TRACE] Rehydrated df_light_slice from snapshot_90d_json → {len(df90)} rows.")
+        else:
+            debug(context, f"[TRACE] df_light_slice already present → {len(context['df_light_slice'])} rows.")
+    except Exception as e:
+        debug(context, f"[TRACE] Failed to ensure df_light_slice for Tier-2: {e}")
 
     return df_activities, wellness, context

@@ -2,7 +2,9 @@
 
 import pandas as pd
 from audit_core.errors import AuditHalt
-
+import sys
+import datetime
+import os
 
 # global context placeholder (avoids NameError if context undefined)
 try:
@@ -10,17 +12,16 @@ try:
 except NameError:
     context = {}
 
+RUN_TIMESTAMP = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+GLOBAL_LOGFILE = None
 
 def debug(*args):
-    """
-    Safe universal debug logger.
-    Works with or without context (first arg may or may not be a dict).
-    Stores trace in context['debug_trace'] when possible and always prints.
-    """
+    """Unified flush-safe logger that writes both to stderr and a per-run log file."""
+    global GLOBAL_LOGFILE
     try:
         if not args:
             return
-        # detect if first arg is a context dict
+
         if isinstance(args[0], dict):
             context = args[0]
             msgs = args[1:]
@@ -28,16 +29,38 @@ def debug(*args):
             context = None
             msgs = args
 
+        # Get report type (environment override from report.py)
+        report_type = os.getenv("REPORT_TYPE", "unknown").lower()
+
+        # Initialize logfile once
+        if GLOBAL_LOGFILE is None:
+            reports_dir = os.path.join(os.getcwd(), "reports")
+            os.makedirs(reports_dir, exist_ok=True)
+            GLOBAL_LOGFILE = os.path.join(
+                reports_dir, f"debug_{report_type}_{RUN_TIMESTAMP}.log"
+            )
+
+        # Format message
+        ts = datetime.datetime.now().strftime("%H:%M:%S")
         msg = " ".join(str(m) for m in msgs)
+        msg_out = f"[{ts}] {msg}"
 
-        # store in context if available
+        # Store trace in context if possible
         if context is not None:
-            context.setdefault("debug_trace", []).append(msg)
+            context.setdefault("debug_trace", []).append(msg_out)
 
-        # always print for local visibility
-        print(msg)
+        # Print live
+        sys.stderr.write(msg_out + "\n")
+        sys.stderr.flush()
+
+        # Write to log file
+        with open(GLOBAL_LOGFILE, "a", encoding="utf-8") as f:
+            f.write(msg_out + "\n")
+
     except Exception as e:
-        print(f"[debug-failure] {e}")
+        sys.stderr.write(f"[debug-failure] {e}\n")
+        sys.stderr.flush()
+
 
 
 def validate_dataset_integrity(df: pd.DataFrame) -> bool:

@@ -63,9 +63,26 @@ def safe_metric_entry(k, v):
     else:
         return [k, v, "✅"]
 
-
 def render_report(data):
+    """
+    Unified rendering entry point for weekly / season / diagnostic reports.
+    Applies early cleanup to remove trace/debug payloads before building markdown.
+    """
     ctx = data.get("context", {})
+    report_type = ctx.get("report_type", data.get("type", "weekly")).lower()
+    debug(ctx, f"[RENDER] Starting unified render for {report_type}")
+
+    # --- 🧹 UNIVERSAL CLEANUP: strip trace/debug payloads early ---
+    trace_keys = [
+        "debug_trace", "trace", "auditPartial", "auditFinal",
+        "snapshot_7d_json", "snapshot_90d_json", "df_light_slice",
+        "raw_analysis_block", "event_log_text"
+    ]
+    for k in list(ctx.keys()):
+        if any(tk in k.lower() for tk in trace_keys):
+            ctx.pop(k, None)
+    debug(ctx, "[RENDER] Early cleanup — removed trace/debug artifacts before markdown assembly")
+
 
     # --- 🧩 Diagnostic & Totals Source Resolution (URF v5.2+ adaptive) ---
     report_type = ctx.get("report_type", data.get("type", "weekly")).lower()
@@ -75,7 +92,8 @@ def render_report(data):
         ctx["tier2_derived_metrics"] = ctx["derived_metrics"]
 
     # --- Determine renderer source ---
-    if report_type == "season" and "df_events" in ctx:
+    # Fix 1
+    if report_type == "season" and "df_events" in ctx and ctx["df_events"] is not None and not ctx["df_events"].empty:
         debug(ctx, "[VERIFY] Renderer override: using Tier-2 df_events (full dataset) for season summary.")
         print("🧩 Renderer override: using Tier-2 df_events (full dataset) for season summary.")
         totals_source = "tier2_enforced_totals" if "tier2_enforced_totals" in ctx else "eventTotals"
@@ -319,26 +337,49 @@ def render_report(data):
             md.append("_Load metrics unavailable._")
 
     # === 9️⃣ Efficiency & Adaptation ===
-    md.append(section("🔬 Efficiency & Adaptation"))
-    from coaching_cheat_sheet import CHEAT_SHEET
+    if report_type.lower() in ("season", "diagnostic"):
+        md.append(section("🔬 Efficiency & Adaptation"))
+        from coaching_cheat_sheet import CHEAT_SHEET
 
-    adapt = ctx.get("adaptation_metrics", {})
-    if adapt:
-        rows = []
-        for k, v in adapt.items():
-            if isinstance(v, dict):
-                value = v.get("value", "—")
-                icon = v.get("icon", "")
-                status = v.get("status", "")
-                context_note = CHEAT_SHEET.get("coaching_links", {}).get(k, "")
-                rows.append([k, value, f"{icon} {status}", context_note])
+        # --- Compute adaptation metrics dynamically if missing ---
+        if "adaptation_metrics" not in ctx:
+            df_source = None
+            if "df_events" in ctx and isinstance(ctx["df_events"], pd.DataFrame) and not ctx["df_events"].empty:
+                df_source = ctx["df_events"]
+            elif "activities_light" in ctx and isinstance(ctx["activities_light"], pd.DataFrame) and not ctx["activities_light"].empty:
+                df_source = ctx["activities_light"]
+            if df_source is not None and not getattr(df_source, "empty", True):
+                try:
+                    from tier2_extended_metrics import compute_adaptation_metrics
+                    debug(ctx, "[Tier-2] Computing adaptation metrics for long-term report.")
+                    ctx["adaptation_metrics"] = compute_adaptation_metrics(df_source, ctx)
+                    debug(ctx, f"[Tier-2] Adaptation metrics computed: {list(ctx['adaptation_metrics'].keys())}")
+                except Exception as e:
+                    debug(ctx, f"[Tier-2] Adaptation metric computation failed → {e}")
             else:
-                context_note = CHEAT_SHEET.get("coaching_links", {}).get(k, "")
-                rows.append([k, v, "✅", context_note])
-        debug(ctx, f"[DEBUG] Adaptation metric keys: {list(adapt.keys())}")
-        md.append(table(["Metric", "Value", "Status", "Context"], rows))
+                debug(ctx, "[Tier-2] No dataset available for adaptation metric computation.")
+
+        adapt = ctx.get("adaptation_metrics", {})
+        if adapt:
+            rows = []
+            for k, v in adapt.items():
+                if isinstance(v, dict):
+                    value = v.get("value", "—")
+                    icon = v.get("icon", "")
+                    status = v.get("status", "")
+                    context_note = CHEAT_SHEET.get("coaching_links", {}).get(k, "")
+                    rows.append([k, value, f"{icon} {status}", context_note])
+                else:
+                    context_note = CHEAT_SHEET.get("coaching_links", {}).get(k, "")
+                    rows.append([k, v, "✅", context_note])
+            debug(ctx, f"[DEBUG] Adaptation metric keys: {list(adapt.keys())}")
+            md.append(table(["Metric", "Value", "Status", "Context"], rows))
+        else:
+            md.append("_No adaptation data available._")
+
     else:
-        md.append("_No adaptation data._")
+        # Skip entirely for weekly (short-term) reports
+        debug(ctx, "[Tier-2] Skipping Efficiency & Adaptation section for weekly mode.")
 
 
     # === 🔟 Performance & Coaching Actions ===
@@ -357,57 +398,109 @@ def render_report(data):
         md.append("_No coaching actions recorded._")
 
     # === 🪜 Events or Phases Summary (Tier-2 Safe) ===
+    debug(ctx, f"[RENDER-PHASE] Entering phase summary logic — report_type={report_type!r}")
     if report_type.lower() == "season":
-        # --- Phase-based aggregation for season mode ---
-        df_events = ctx.get("df_events")
-        if hasattr(df_events, "empty") and not df_events.empty:
-            df_events["start_date_local"] = pd.to_datetime(df_events["start_date_local"], errors="coerce")
-            df_events["week"] = df_events["start_date_local"].dt.isocalendar().week
+        debug(ctx, "[RENDER-PHASE] Season mode — aggregating weekly summaries from 90-day dataset.")
 
-            df_phase = (
-                df_events.groupby("week")
+        # --- Disable raw event dump for season mode ---
+        for k in ["event_log_text", "weeklyEventLogBlock"]:
+            if k in ctx:
+                debug(ctx, f"[Tier-2] Removing {k} for season mode (suppress full event table)")
+            ctx.pop(k, None)
+
+        # --- Identify the source dataset explicitly ---
+        df_src = None
+        for candidate_name in ["df_light_slice", "activities_light", "df_events"]:
+            candidate = ctx.get(candidate_name)
+            if candidate is not None:
+                debug(ctx, f"[Tier-2] Checking candidate dataset '{candidate_name}' (type={type(candidate)})")
+                if hasattr(candidate, "empty"):
+                    debug(ctx, f"[Tier-2] Candidate '{candidate_name}' → empty={candidate.empty}, rows={len(candidate) if not candidate.empty else 0}")
+                    if not candidate.empty:
+                        df_src = candidate
+                        debug(ctx, f"[Tier-2] ✅ Using dataset '{candidate_name}' as season data source")
+                        break
+                else:
+                    debug(ctx, f"[Tier-2 WARN] Candidate '{candidate_name}' is not a DataFrame-like object")
+            else:
+                debug(ctx, f"[Tier-2] Candidate '{candidate_name}' is None")
+
+        # --- Fallback if nothing usable ---
+        if df_src is None:
+            md.append(section("🪜 Seasonal Phases Summary"))
+            md.append("_No activity data available for season analysis._")
+            debug(ctx, "[Tier-2 WARN] No usable dataset found for season summary — aborting aggregation.")
+        else:
+            debug(ctx, f"[Tier-2] Season source dataset confirmed → rows={len(df_src)}, cols={list(df_src.columns)}")
+
+            df_src = df_src.copy()
+            df_src["start_date_local"] = pd.to_datetime(df_src["start_date_local"], errors="coerce")
+            df_src = df_src.dropna(subset=["start_date_local"])
+            debug(ctx, f"[Tier-2] After timestamp normalization → {len(df_src)} valid rows")
+
+            # --- Ensure numeric fields ---
+            for col in ["icu_training_load", "moving_time", "distance"]:
+                if col in df_src.columns:
+                    df_src[col] = pd.to_numeric(df_src[col], errors="coerce").fillna(0)
+
+            # --- Aggregate by ISO week ---
+            df_src["week"] = df_src["start_date_local"].dt.isocalendar().week
+            df_week = (
+                df_src.groupby("week", as_index=False)
                 .agg({
-                    "icu_training_load": "sum",
+                    "distance": "sum",
                     "moving_time": "sum",
-                    "distance": "sum"
+                    "icu_training_load": "sum"
                 })
-                .reset_index()
                 .sort_values("week")
             )
 
-            # --- Convert meters → kilometers ---
-            df_phase["distance_km"] = df_phase["distance"] / 1000
+            debug(ctx, f"[Tier-2] Aggregated {len(df_week)} weekly summaries from {len(df_src)} activities")
 
+            # --- Convert units ---
+            df_week["distance_km"] = df_week["distance"] / 1000
+            df_week["hours"] = df_week["moving_time"] / 3600
+
+            # --- Build markdown table ---
             md.append(section("🪜 Seasonal Phases Summary"))
-            rows = []
-            for _, r in df_phase.iterrows():
-                rows.append([
-                    f"Week {int(r['week'])}",
-                    f"{r['distance_km']:.1f}",
-                    f"{r['moving_time']/3600:.1f}",
-                    f"{r['icu_training_load']:.0f}"
-                ])
-            md.append(table(["Phase", "Distance (km)", "Hours", "TSS"], rows))
+            headers = ["Week", "Distance (km)", "Hours", "TSS"]
+            rows = [
+                [int(r["week"]), f"{r['distance_km']:.1f}", f"{r['hours']:.1f}", f"{r['icu_training_load']:.0f}"]
+                for _, r in df_week.iterrows()
+            ]
+            md.append(table(headers, rows))
 
             # --- Season totals ---
-            total_hours = df_phase["moving_time"].sum() / 3600
-            total_km = df_phase["distance_km"].sum()
-            total_tss = df_phase["icu_training_load"].sum()
-            total_sessions = len(df_events)
+            total_km = df_week["distance_km"].sum()
+            total_hours = df_week["hours"].sum()
+            total_tss = df_week["icu_training_load"].sum()
+            total_sessions = len(df_src)
 
             md.append("")
             md.append(
-                f"**Season Totals:** {total_hours:.1f} h · {total_km:.1f} km · {total_tss:.0f} TSS · {total_sessions} sessions**"
+                f"**Season Totals:** {total_hours:.1f} h · {total_km:.1f} km · "
+                f"{total_tss:.0f} TSS · {total_sessions} sessions**"
             )
 
-            debug(ctx, f"[Tier-2] Rendered Seasonal Phase Summary ({len(rows)} weeks, totals OK)")
-        else:
-            md.append(section("🪜 Seasonal Phases Summary"))
-            md.append("_No event data available for phase summary._")
+            debug(ctx, f"[Tier-2] ✅ Season Totals: {total_hours:.1f}h · {total_km:.1f}km · {total_tss:.0f}TSS · {total_sessions} sessions")
+
+            # --- Inject structured phase metadata for validator ---
+            ctx["phases"] = [
+                {
+                    "phase": f"Week {int(r['week'])}",
+                    "distance_km": float(r["distance_km"]),
+                    "hours": float(r["hours"]),
+                    "tss": float(r["icu_training_load"])
+                }
+                for _, r in df_week.iterrows()
+            ]
+            debug(ctx, f"[Tier-2] Injected {len(ctx['phases'])} weekly phases into context for validator.")
+
 
     elif report_type.lower() == "weekly":
         # --- Retain standard event preview logic for weekly ---
-        if "df_event_only" in ctx and ctx.get("df_event_only", {}).get("preview"):
+        # Fix 2
+        if "df_event_only" in ctx and isinstance(ctx.get("df_event_only"), dict) and ctx["df_event_only"].get("preview"):
             preview = ctx["df_event_only"]["preview"]
             debug(ctx, "[Tier-2] Using enforced df_event_only preview (no rebuild).")
         else:
@@ -531,7 +624,19 @@ def render_report(data):
     md.append(f"**Framework:** URF v5.1 · Core: v16.14 · Enforcement: {ctx.get('enforcement_layer', '—')}")
     md.append("\n")
 
-    md_text = "\n".join(md)
+    try:
+        md_text = "\n".join(md)
+        debug(ctx, f"[RENDER-SECTIONS] md_text len={len(str(md_text)) if md_text else 0}")
+    except Exception as e:
+        debug(ctx, f"[RENDER-SECTIONS] FAILED → {e}")
+        md_text = "_⚠ Renderer failed to build markdown sections._"
+
+    debug(ctx, f"[TRACE-MD] Markdown length = {len(md_text)}")
+    if "Efficiency & Adaptation" in md_text:
+        debug(ctx, "[TRACE-MD] ✅ Adaptation section present before normalization.")
+    else:
+        debug(ctx, "[TRACE-MD] ❌ Adaptation section missing before normalization.")
+
 
     # --- Construct the Report object ---
     report = Report({
@@ -550,18 +655,6 @@ def render_report(data):
         "tables": [],
         "lines": ["✅ Report rendered successfully"],
     })
-
-    # --- Add or repair summary for validator compliance ---
-    if "summary" not in report:
-        report["summary"] = {
-            "totalHours": ctx.get("totalHours", 0),
-            "totalTss": ctx.get("totalTss", 0),
-            "totalDistance": ctx.get("totalDistance", 0),
-            "eventCount": ctx.get("event_count", 0),
-            "period": f"{ctx.get('window_start')} → {ctx.get('window_end')}",
-            "athlete": ctx.get("athlete", {}).get("name", "Unknown Athlete"),
-            "framework": "Unified_Reporting_Framework_v5.1"
-        }
 
     # --- SAFETY PATCHES: ensure validator compatibility ---
     ctx["header"] = report["header"]
@@ -620,7 +713,70 @@ def render_report(data):
 
     report["footer"] = {"framework": "URF v5.1", "version": "v16.14"}
 
-    return report
+    # --- ✅ FINAL SAFETY NORMALIZATION (Markdown-only return) ---
+    try:
+        print("[FINALIZER] Enforcing markdown-only return (season-safe mode)")
+
+        # --- Ensure report has a real Markdown string ---
+        if isinstance(report, dict):
+            md_text = report.get("markdown")
+            # Handle cases where the 'markdown' key is actually a dict or context blob
+            if not isinstance(md_text, str) or len(md_text.strip()) < 50:
+                possible_md = ctx.get("markdown") or ctx.get("md_text")
+                if isinstance(possible_md, str) and len(possible_md.strip()) > 50:
+                    report["markdown"] = possible_md
+                    md_text = possible_md
+                else:
+                    print("[SANITY] report['markdown'] invalid — substituting summary block")
+                    report["markdown"] = (
+                        "### Season Summary (Auto-generated)\n\n"
+                        f"- Total Hours: {ctx.get('totalHours', 'n/a')}\n"
+                        f"- Total TSS: {ctx.get('totalTss', 'n/a')}\n"
+                        f"- Event Count: {ctx.get('event_count', 'n/a')}\n"
+                        f"- Period: {ctx.get('window_start', 'n/a')} → {ctx.get('window_end', 'n/a')}\n"
+                    )
+                    md_text = report["markdown"]
+        else:
+            md_text = str(report or "_⚠ Renderer produced no valid Markdown output._")
+
+        # --- Comprehensive context sanitization ---
+        blacklist_patterns = [
+            "df_", "trace", "debug", "snapshot", "json", "event_log",
+            "activities", "dailymerged", "raw_analysis", "wellness"
+        ]
+        minimal_ctx = {}
+        for k, v in ctx.items():
+            if not any(p in k.lower() for p in blacklist_patterns):
+                # skip anything with large dataframes/lists
+                if isinstance(v, (list, dict)) and len(v) > 20:
+                    continue
+                minimal_ctx[k] = v
+
+        # --- Construct final output ---
+        final_output = {
+            "markdown": md_text.strip(),
+            "context": minimal_ctx,
+            "header": report.get("header", {}),
+            "summary": report.get("summary", {}),
+            "actions": report.get("actions", {}),
+            "metrics": report.get("metrics", {}),
+            "phases": report.get("phases", []),
+        }
+
+        print(f"[FINALIZER] Markdown-only return OK — len={len(md_text)}, ctx_keys={len(minimal_ctx)}")
+        # single explicit return only here
+        return final_output
+
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        print(f"[FINALIZER] ⚠ Exception during markdown-only return: {e}\n{tb}")
+        return {
+            "markdown": f"_⚠ Render failed: {e}_\n```\n{tb}\n```",
+            "context": {}
+        }
+
+
 
 
 def main():

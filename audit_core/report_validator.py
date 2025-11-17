@@ -15,6 +15,13 @@ def validate_report_output(context, report, framework_version="Unified_Reporting
     Perform structural and logical validation of a rendered report.
     """
 
+    # --- Normalize nested context to top-level before validation ---
+    if "context" in report:
+        for key in ("summary", "metrics", "phases", "actions", "footer", "trends", "correlation"):
+            if key not in report and key in report["context"]:
+                report[key] = report["context"][key]
+                debug(report["context"], f"[VALIDATOR] Promoted {key} from context → top-level pre-check")
+
     # --- Framework verification ---
     if framework_version != "Unified_Reporting_Framework_v5.1":
         raise ValueError(f"❌ Invalid framework version: {framework_version}")
@@ -46,10 +53,16 @@ def validate_report_output(context, report, framework_version="Unified_Reporting
         raise TypeError("❌ actions must be a list")
 
     # --- Report structural validation ---
-    required_sections = ["header","summary","metrics","actions","footer","phases","trends","correlation"]
+    required_sections = ["header", "summary", "metrics", "actions", "footer", "phases", "trends", "correlation"]
     for section in required_sections:
         if section not in report:
-            raise ValueError(f"❌ Missing report section: {section}")
+            # Try to promote from context if available
+            if "context" in report and section in report["context"]:
+                report[section] = report["context"][section]
+                debug(report.get("context", {}), f"[VALIDATOR] Promoted {section} from context → report")
+            else:
+                debug(report.get("context", {}), f"[VALIDATOR] ❌ Missing section even after fallback: {section}")
+                raise ValueError(f"❌ Missing report section: {section}")
 
     # --- Step 3: Icon Pack Injection (safe fallback, cards only) ---
     try:

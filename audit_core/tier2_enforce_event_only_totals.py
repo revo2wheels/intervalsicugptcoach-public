@@ -10,7 +10,9 @@ from audit_core.errors import AuditHalt
 
 
 def enforce_event_only_totals(df_events, context):
-    debug(context,"📁 Tier-2 module loaded from:", os.path.abspath(__file__))
+    debug(context, "📁 Tier-2 module loaded from:", os.path.abspath(__file__))  
+    import pandas as pd
+
     # --- Step 1: Acquire source dataset -------------------------------------
     if df_events is not None and not df_events.empty:
         df_source = df_events.copy()
@@ -21,20 +23,20 @@ def enforce_event_only_totals(df_events, context):
         if df_source is None or df_source.empty:
             raise AuditHalt("❌ enforce_event_only_totals: no dataset available from Tier-2 or Tier-0")
 
-    debug(context,f"🔍 Tier-2 enforcement source: {source_label} ({df_source.shape[0]} rows)")
+    debug(context, f"🔍 Tier-2 enforcement source: {source_label} ({df_source.shape[0]} rows)")
 
     # --- Step 2: Diagnostics -------------------------------------------------
     if "origin" in df_source.columns:
-        debug(context,"origin counts:\n", df_source["origin"].value_counts(dropna=False))
+        debug(context, "origin counts:\n", df_source["origin"].value_counts(dropna=False))
     else:
-        debug(context,"⚠️  'origin' column missing in dataset")
+        debug(context, "⚠️  'origin' column missing in dataset")
 
     if "moving_time" in df_source.columns:
-        debug(context,"moving_time stats:\n", df_source["moving_time"].describe())
+        debug(context, "moving_time stats:\n", df_source["moving_time"].describe())
     else:
-        debug(context,"⚠️  'moving_time' column missing")
+        debug(context, "⚠️  'moving_time' column missing")
 
-    # --- Step 3: Adaptive event-only enforcement ---------------------------
+    # --- Step 3: Adaptive event-only enforcement ----------------------------
     report_type = context.get("report_type", "").lower() if isinstance(context, dict) else ""
 
     if report_type == "season":
@@ -49,7 +51,6 @@ def enforce_event_only_totals(df_events, context):
             .copy()
         )
     else:
-        # --- Default weekly enforcement (7-day canonical window) ---
         df_event_only = (
             df_source.loc[
                 (df_source.get("origin", "event") == "event")
@@ -63,17 +64,11 @@ def enforce_event_only_totals(df_events, context):
             df_event_only = df_event_only.sort_values("start_date_local", ascending=False).head(7)
         debug(context, "🧩 Tier-2 enforcing canonical 7-day event window.")
 
-    # --- Step 4: Canonical recomputation (true Σ(event.moving_time)) -------
+    # --- Step 4: Canonical recomputation ------------------------------------
     if "moving_time" not in df_event_only.columns:
         raise AuditHalt("❌ enforce_event_only_totals: missing moving_time column")
 
-    # Normalize and enforce numeric seconds
-    df_event_only["moving_time"] = pd.to_timedelta(
-        df_event_only["moving_time"], unit="s"
-    ).dt.total_seconds()
-
-    # --- Adaptive canonical total recomputation ---
-    report_type = context.get("report_type", "").lower() if isinstance(context, dict) else ""
+    df_event_only["moving_time"] = pd.to_timedelta(df_event_only["moving_time"], unit="s").dt.total_seconds()
 
     if report_type == "season":
         debug(context, "🧩 Tier-2 override: recomputing canonical totals for season report (full dataset).")
@@ -84,18 +79,15 @@ def enforce_event_only_totals(df_events, context):
             df_event_only["distance"].sum() / 1000 if "distance" in df_event_only else 0
         )
         debug(context, f"🧮 Tier-2 (season): Σ(moving_time)={raw_sum:.0f}s → {event_hours:.2f}h, "
-                    f"Σ(TSS)={event_tss:.1f}, Σ(Distance)={event_distance:.1f} km")
+              f"Σ(TSS)={event_tss:.1f}, Σ(Distance)={event_distance:.1f} km")
     else:
         raw_sum = df_event_only["moving_time"].sum()
         event_hours = round(raw_sum / 3600, 2)
-        debug(context, f"🧮 Tier-2: Σ(moving_time)={raw_sum:.0f}s → {event_hours:.2f}h (Intervals seconds source)")
-
-        # Recompute canonical totals
         event_tss = df_event_only["icu_training_load"].sum()
         event_distance = (
             df_event_only["distance"].sum() / 1000 if "distance" in df_event_only else 0
         )
-
+        debug(context, f"🧮 Tier-2: Σ(moving_time)={raw_sum:.0f}s → {event_hours:.2f}h (Intervals seconds source)")
 
     # --- Step 5: Compare vs Tier-1 snapshot ---------------------------------
     tier1_totals = context.get("tier1_eventTotals", {})
@@ -116,61 +108,28 @@ def enforce_event_only_totals(df_events, context):
     context["totalHours"] = round(event_hours, 2)
     context["totalTss"] = int(round(event_tss))
     context["totalDistance"] = round(event_distance, 1)
-
     context["eventTotals"] = {
         "hours": context["totalHours"],
         "tss": context["totalTss"],
         "distance": context["totalDistance"],
         "source": source_label,
     }
-    # --- Preserve full DataFrame for internal audit ---
     context["df_event_only"] = df_event_only
 
-    # --- Ensure JSON-safe preview for renderer ---
+    # --- JSON-safe preview for renderer -------------------------------------
     try:
-        sort_col = (
-            "start_date_local"
-            if "start_date_local" in df_event_only.columns
-            else ("date" if "date" in df_event_only.columns else None)
-        )
-
-        cols = [
-            c for c in [
-                "date",
-                "start_date_local",
-                "name",
-                "icu_training_load",
-                "moving_time",
-                "distance",
-                "total_elevation_gain",
-                "total_elev_gain",
-            ]
-            if c in df_event_only.columns
-        ]
-
-        # Build lightweight preview but retain full dataset
-        if sort_col:
-            df_preview = df_event_only[cols].sort_values(sort_col, ascending=False).head(10)
-        else:
-            df_preview = df_event_only[cols].head(10)
-
-        # Keep both full dataset and preview
+        sort_col = "start_date_local" if "start_date_local" in df_event_only.columns else "date"
+        cols = [c for c in ["date", "start_date_local", "name", "icu_training_load",
+                            "moving_time", "distance", "total_elevation_gain", "total_elev_gain"]
+                if c in df_event_only.columns]
+        df_preview = df_event_only[cols].sort_values(sort_col, ascending=False).head(10)
         context["df_event_only_preview"] = df_preview.to_dict("records")
-        context["df_event_only_full"] = df_event_only  # preserve complete 90-day dataset
-
-        debug(
-            context,
-            f"[DEBUG-T2] injected preview ({len(df_preview)} rows) and preserved full df_event_only ({len(df_event_only)} rows)"
-        )
-
+        context["df_event_only_full"] = df_event_only
+        debug(context, f"[DEBUG-T2] injected preview ({len(df_preview)} rows) and preserved full df_event_only ({len(df_event_only)} rows)")
     except Exception as e:
         debug(context, f"[DEBUG-T2] could not build df_event_only preview: {e}")
         context["df_event_only_preview"] = []
         context["df_event_only_full"] = df_event_only
-
-    # --- Mark enforcement layer for downstream traceability ---
-    context["enforcement_layer"] = "tier2_enforce_event_only_totals"
-
 
     # --- Step 7: Hard-lock canonical totals ---------------------------------
     context["_locked_totals"] = True
@@ -185,7 +144,31 @@ def enforce_event_only_totals(df_events, context):
         f"(Δh={diff_hours:.2f}, ΔTSS={diff_tss:.1f}, events={len(df_event_only)})"
     )
 
-    # --- Final load_metrics sync -------------------------------------------
+        # --- Step 9: Recompute derived metrics using proper 90d frame (FIX) -----
+    try:
+        from audit_core.tier2_derived_metrics import compute_derived_metrics
+
+        if report_type == "season":
+            df_for_metrics = None
+            if "snapshot_90d_json" in context:
+                from io import StringIO
+                df_for_metrics = pd.read_json(StringIO(context["snapshot_90d_json"]))
+                debug(context, "[T2] Season mode → derived metrics using 90d snapshot JSON.")
+            elif "df_light_slice" in context:
+                df_for_metrics = context["df_light_slice"]
+                debug(context, "[T2] Season mode → derived metrics using df_light_slice fallback.")
+            else:
+                df_for_metrics = df_event_only
+                debug(context, "[T2 WARN] Season mode fallback to df_event_only (no 90d source found).")
+
+            derived_metrics = compute_derived_metrics(df_for_metrics, context)
+            context["derived_metrics"] = derived_metrics
+            debug(context, f"[T2] Recomputed derived metrics for season: {list(derived_metrics.keys())}")
+
+    except Exception as e:
+        debug(context, f"[T2 WARN] Failed to recompute derived metrics: {e}")
+
+    # --- Step 10: Final load_metrics sync -----------------------------------
     if all(k in context for k in ["ctl", "atl", "tsb"]):
         context["load_metrics"] = {
             "CTL": {"value": round(context.get("ctl", 0), 2), "status": "ok"},
@@ -194,8 +177,9 @@ def enforce_event_only_totals(df_events, context):
         }
         debug(context, "[DEBUG-T2] enforced load_metrics sync in context:", context["load_metrics"])
 
-    # --- Propagate enriched derived metrics (semantic icons + labels) for renderer ---
+    # --- Step 11: Propagate enriched derived metrics to renderer ------------
     if "derived_metrics" in context:
+        context.setdefault("load_metrics", {})
         for metric, meta in context["derived_metrics"].items():
             if isinstance(meta, dict):
                 context["load_metrics"][metric] = {
@@ -205,5 +189,5 @@ def enforce_event_only_totals(df_events, context):
                 }
 
     debug(context, "[T2] Enriched load_metrics propagated to renderer")
-    
+
     return context

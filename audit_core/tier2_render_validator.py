@@ -9,6 +9,7 @@ Adds markdown-compatible Event Log for UI output.
 import time
 import numpy as np
 import pandas as pd
+from datetime import datetime
 from audit_core.utils import debug
 from audit_core.errors import AuditHalt
 from audit_core.report_validator import validate_report_output
@@ -19,6 +20,7 @@ from audit_core.template_renderer import render_template
 def finalize_and_validate_render(context, reportType="weekly"):
     # --- Runtime trace for ChatGPT vs Local ---
     from audit_core.utils import debug
+    from datetime import datetime
     debug(context, "[TRACE-RUNTIME] entering finalize_and_validate_render()")
     debug(context, f"[TRACE-RUNTIME] context type = {type(context)}")
     debug(context, f"[TRACE-RUNTIME] df_events type = {type(context.get('df_events'))}")
@@ -102,6 +104,10 @@ def finalize_and_validate_render(context, reportType="weekly"):
 
     # --- Ensure report object initialized even when skipping validation (season mode) ---
     if report_type == "season":
+        # Ensure context has correct report_type for renderer detection
+        context["report_type"] = "season"
+        debug(context, "[T2] Season mode → enforcing 'season' report_type before render.")
+
         from render_unified_report import Report
         try:
             report = Report(context)
@@ -117,11 +123,6 @@ def finalize_and_validate_render(context, reportType="weekly"):
     # --- Enforcement provenance ---
     if context.get("enforcement_layer") != "tier2_enforce_event_only_totals":
         debug(context, "⚠️ Renderer: enforcement layer not set — proceeding with full Tier-2 render.")
-
-    # --- Skip season or empty ---
-    if report_type == "season" or df is None or getattr(df, "empty", True):
-        debug(context, "🧩 [T2] Season mode or empty df_events — skipping Δh/ΔTSS validation.")
-        return report, {"status": "ok", "note": "season-mode skip"}
 
     # --- Compute safe deltas ---
     if "moving_time" in df.columns and "icu_training_load" in df.columns:
@@ -424,7 +425,7 @@ def finalize_and_validate_render(context, reportType="weekly"):
     # --- Ensure core report structure exists before validation ---
     required_sections = [
         "header", "summary", "metrics", "actions",
-        "trends", "correlation", "footer"
+        "trends", "correlation", "footer", "phases"
     ]
     for section in required_sections:
         report.setdefault(section, {})
@@ -499,31 +500,34 @@ def finalize_and_validate_render(context, reportType="weekly"):
                 except Exception:
                     context[k] = np.nan
 
-    compliance = validate_report_output(context, report)
-
-    if report_type == "season":
-        return report, {"status": "ok", "note": "season-mode skip"}
-
-    return report, compliance
-
-    # --- Step 9: Final consistency check ---
-    diff_hours = abs(context["totalHours"] - context.get("eventTotals", {}).get("hours", 0))
-    diff_tss = abs(context["totalTss"] - context.get("eventTotals", {}).get("tss", 0))
-
-    report_type = str(context.get("report_type", reportType)).lower()
-
-    if report_type == "season":
-        threshold_h, threshold_tss = 10.0, 200.0
+    # Ensure validator sees the true report structure, not markdown-only output
+    if isinstance(report, str) and "context" in context:
+        report_for_validation = context
+    elif isinstance(report, dict):
+        report_for_validation = report
     else:
-        threshold_h, threshold_tss = 0.1, 2.0
+        report_for_validation = context
 
-    if diff_hours > threshold_h or diff_tss > threshold_tss:
-        raise AuditHalt(f"❌ Renderer mismatch Δh={diff_hours:.2f}, ΔTSS={diff_tss:.1f}")
-    else:
-        debug(context, f"✅ Final renderer consistency within tolerance Δh={diff_hours:.2f}, ΔTSS={diff_tss:.1f}")
+    compliance = validate_report_output(context, report_for_validation)
+       
+    # --- Season mode: force full markdown render ---
+    if report_type == "season":
+        debug(context, "[T2] Season mode active — forcing full Report render before return.")
+        from render_unified_report import Report
+        report_obj = Report(context)
 
+        # Ensure proper markdown serialization
+        if hasattr(report_obj, "to_markdown"):
+            report = report_obj.to_markdown()
+        elif isinstance(report_obj, dict) and "markdown" in report_obj:
+            report = report_obj["markdown"]
+        else:
+            report = str(report_obj)
 
-    # --- Step 10: Compliance Log Finalization ---
+        debug(context, "[T2] Season report fully rendered — returning markdown content.")
+        return report, {"status": "ok", "note": "season-mode markdown generated"}
+
+       # --- Step 10: Compliance Log Finalization ---
     compliance.update({
         "schema_validated": True,
         "framework": "Unified_Reporting_Framework_v5.1",
@@ -551,4 +555,59 @@ def finalize_and_validate_render(context, reportType="weekly"):
     if "summary_patch" in context:
         debug(context, "[TRACE-FINAL] summary_patch =", context["summary_patch"])
 
-    return report, compliance
+    # --- Finalization guard ---
+    # Avoid re-validating empty or duplicate structures
+    report_type = str(context.get("report_type", reportType)).lower()
+    if not isinstance(report, dict) or not report.get("header"):
+        debug(context, "[FINALIZER] Skipping redundant validation (report already validated).")
+    else:
+        debug(context, "[FINALIZER] Reusing validated report structure.")
+
+    # --- Ensure core structure for render ---
+   
+    report.setdefault("header", {
+        "title": f"{reportType.title()} Training Report",
+        "framework": "Unified_Reporting_Framework_v5.1",
+        "athlete": context.get("athlete", {}).get("name", "Unknown Athlete"),
+        "period": f"{context.get('window_start')} → {context.get('window_end')}",
+        "timestamp": context.get("timestamp", datetime.utcnow().isoformat()),
+        "discipline": context.get("discipline", "cycling"),
+    })
+
+    report.setdefault("summary", {
+        "totalHours": context.get("totalHours", 0),
+        "totalTss": context.get("totalTss", 0),
+        "eventCount": context.get("event_count", 0),
+        "period": f"{context.get('window_start')} → {context.get('window_end')}",
+        "athlete": context.get("athlete", {}).get("name", "Unknown Athlete"),
+    })
+
+    report.setdefault("footer", {
+        "framework": "URF v5.1",
+        "version": "v16.14",
+        "timestamp": context.get("timestamp", datetime.utcnow().isoformat()),
+    })
+
+    # --- Unified Markdown rendering ---
+    from render_unified_report import render_report
+
+    try:
+        rendered = render_report(report)
+
+        # Normalize output to a Markdown string
+        if isinstance(rendered, dict) and "markdown" in rendered:
+            md_output = rendered["markdown"]
+        elif hasattr(rendered, "to_markdown"):
+            md_output = rendered.to_markdown()
+        elif isinstance(rendered, str):
+            md_output = rendered
+        else:
+            md_output = str(rendered)
+
+        debug(context, f"[FINALIZER] Markdown render succeeded (len={len(md_output)})")
+        return md_output, {"status": "ok", "note": "markdown rendered"}
+
+    except Exception as e:
+        debug(context, f"[FINALIZER] Unified renderer failed → {e}")
+        return f"Render failed: {e}", {"status": "error", "note": "unified render failed"}
+

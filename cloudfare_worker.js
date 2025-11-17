@@ -30,8 +30,10 @@ export default {
     // --- Utility: date offset ---
     function getDate(daysAgo) {
       const d = new Date();
-      d.setDate(d.getDate() - daysAgo);
-      return d.toISOString().slice(0, 10);
+      d.setUTCDate(d.getUTCDate() - daysAgo);
+      // Force pure date string, no time component, no local conversion
+      const iso = d.toISOString(); // e.g., "2025-11-14T15:55:16.539Z"
+      return iso.split("T")[0];    // → "2025-11-14"
     }
 
     // --- Extract athlete ID (default 0) ---
@@ -94,8 +96,9 @@ export default {
 
         if (reportType === "season") {
           // --- Lightweight-only mode for season reports ---
-          console.log("[RUN_REPORT] Season mode → lightweight-only fetch.");
+          console.log("[RUN_REPORT] Season mode → lightweight-only fetch (90-day window).");
 
+          // 90-day lightweight chunked activities
           light = await fetchChunked(
             baseActUrl,
             range.lightDays,
@@ -103,11 +106,13 @@ export default {
             "&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin"
           );
 
-          wellness = await fetchChunked(baseWellUrl, range.fullDays, 7);
+          // 90-day wellness fetch (chunked for consistency)
+          wellness = await fetchChunked(baseWellUrl, range.lightDays, 7);
 
+          // Profile
           profile = await fetch(profileUrl, { headers: { Authorization: authHeader } }).then(r => r.json());
 
-          // Maintain schema consistency
+          // No full dataset for season reports
           full = [];
         } else {
           // --- Normal full-detail mode (weekly/block) ---
@@ -135,8 +140,8 @@ export default {
                 }).then(r => r.json()),
 
             range.chunk
-              ? fetchChunked(baseWellUrl, range.lightDays, 7)
-              : fetch(`${baseWellUrl}?oldest=${getDate(range.lightDays)}&newest=${getDate(0)}`, {
+              ? fetchChunked(baseWellUrl, range.fullDays, 7)
+              : fetch(`${baseWellUrl}?oldest=${getDate(range.fullDays)}&newest=${getDate(0)}`, {
                   headers: { Authorization: authHeader }
                 }).then(r => r.json()),
 
@@ -217,8 +222,18 @@ export default {
     // ROUTE 3: Wellness
     // ====================================================================
     if (pathname.startsWith(`/athlete/${athleteId}/wellness`)) {
-      const target = `${INTERVALS_API_BASE}${pathname}${url.search}`;
-      console.log(`[WELLNESS] Proxying wellness fetch → ${target}`);
+      // --- Normalize incoming oldest/newest params to YYYY-MM-DD ---
+      const params = url.searchParams;
+      const oldestRaw = params.get("oldest");
+      const newestRaw = params.get("newest");
+    
+      // Fallback: default to 7 days if missing
+      const oldest = oldestRaw ? oldestRaw.substring(0, 10) : getDate(7);
+      const newest = newestRaw ? newestRaw.substring(0, 10) : getDate(0);
+    
+      const target = `${INTERVALS_API_BASE}${pathname}?oldest=${encodeURIComponent(oldest)}&newest=${encodeURIComponent(newest)}`;
+      console.log(`[WELLNESS] Normalized wellness fetch → ${target}`);
+    
       const resp = await fetch(target, { headers: { Authorization: authHeader } });
       return new Response(await resp.text(), {
         status: resp.status,
@@ -228,6 +243,7 @@ export default {
         }
       });
     }
+    
 
     // ====================================================================
     // ROUTE 4: Athlete profile
@@ -248,13 +264,6 @@ export default {
     // ====================================================================
     // DEFAULT
     // ====================================================================
-    // --- Inject explicit context for downstream Tier-0 ---
-    const context = {
-      report_type: reportType,
-      range,
-    };
-    console.log(`[CTX] Injected report_type=${reportType}, lightDays=${range.lightDays}, fullDays=${range.fullDays}`);
- 
     return new Response(
       JSON.stringify({ status: 404, error: `No matching route for ${pathname}` }),
       { status: 404, headers: { "content-type": "application/json" } }

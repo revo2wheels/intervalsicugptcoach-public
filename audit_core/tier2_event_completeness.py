@@ -45,9 +45,19 @@ def validate_event_completeness(df_activities, df_wellness=None, context=None):
                 if overlap_fraction > 0.8:
                     overlap_found = True
                     # Retain higher-load (TSS) activity
-                    if e["icu_training_load"] > d["icu_training_load"]:
-                        valid_rows.remove(d)
-                        valid_rows.append(e)
+                    try:
+                        if float(e.get("icu_training_load", 0)) > float(d.get("icu_training_load", 0)):
+                            # Safely rebuild valid_rows without ambiguous Series removal
+                            valid_rows = [
+                                row for row in valid_rows
+                                if not (
+                                    isinstance(row, pd.Series)
+                                    and row.get("id", None) == d.get("id", None)
+                                )
+                            ]
+                            valid_rows.append(e)
+                    except Exception as ex:
+                        debug(context, f"[T2-DEDUP] Skipped ambiguous duplicate removal → {ex}")
                     break
 
         if not overlap_found:

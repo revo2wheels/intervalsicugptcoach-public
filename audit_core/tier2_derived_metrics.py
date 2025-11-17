@@ -191,12 +191,20 @@ def compute_derived_metrics(df_events, context):
 
     debug = context.get("debug", lambda *args, **kwargs: None)
 
-    # --- Prefer full Tier-0 dataset if available for EWMA ACWR computation ---
-    if "df_event_only_full" in context:
+    # --- Prefer full 90-day lightweight dataset for ACWR computation ---
+    if "df_light_slice" in context:
+        df90 = context["df_light_slice"]
+        if isinstance(df90, pd.DataFrame) and not df90.empty:
+            debug(context, f"[Tier-2] Overriding df_events with df_light_slice ({len(df90)} events, 90-day season scope)")
+            df_events = df90
+    elif "df_event_only_full" in context:
         full_df = context["df_event_only_full"]
         if isinstance(full_df, pd.DataFrame) and not full_df.empty:
-            debug(context, f"[Tier-2] Overriding df_events with full Tier-0 dataset ({len(full_df)} events)")
+            debug(context, f"[Tier-2] Using df_event_only_full as fallback ({len(full_df)} events)")
             df_events = full_df
+    else:
+        debug(context, "[Tier-2] No suitable dataset for derived metrics — using existing df_events.")
+
 
     # --- Ensure df_events is valid ---
     if df_events is None or getattr(df_events, "empty", True):
