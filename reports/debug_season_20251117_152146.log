@@ -1,0 +1,125 @@
+[15:21:46] 🧭 Generating Season Report
+[15:21:46] 🧭 Running Season Report (auditFinal=True, render_mode=full+metrics)
+[15:21:46] [T0] Config → light=90d full=42d chunk=True
+[15:21:46] [T0-LIGHT] Running lightweight prefetch → 2025-08-19 → 2025-11-17
+[15:21:46] [Tier-0] Using API endpoint: https://intervalsicugptcoach.clive-a5a.workers.dev
+[15:21:46] [T0-LIGHT] Forcing re-fetch for season mode (ignoring prefetch_done flag).
+[15:21:46] [T0-LIGHT] Fetching lightweight dataset → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/activities_t0light?oldest=2025-08-19&newest=2025-11-17&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin
+[15:21:46] [T0-LIGHT] Retrieved 110 activities with 10 fields
+[15:21:46] [T0-LIGHT-DIAG] ✅ df_light populated. First 3 rows:
+        id    start_date_local        type  icu_training_load                                        name  distance  moving_time  average_heartrate       IF  VO2MaxGarmin
+i107048066 2025-11-15T13:04:52        Hike                 28                                   Otto walk   6860.01         5189              101.0      NaN      0.000000
+i107028184 2025-11-15T09:58:20        Ride                178                                       Perry  67534.03         8644              131.0     0.86     65.791893
+i106764996 2025-11-13T16:59:36 VirtualRide                 88 Zwift - Group Ride: DBR Base Endurance Ride  58343.66         5507              119.0  0.75817      0.000000
+[15:21:46] [T0-LIGHT-DIAG] Columns: ['id', 'start_date_local', 'type', 'icu_training_load', 'name', 'distance', 'moving_time', 'average_heartrate', 'IF', 'VO2MaxGarmin']
+[15:21:46] [T0-INIT] Created df_light_slice from df_light → 110 rows.
+[15:21:46] [T0-DIAG] Pre-slice df_light rows=110; min=2025-08-19T14:02:36, max=2025-11-15T13:04:52
+[15:21:46] 🧩 Tier-0 override: using 90-day slice for season report.
+[15:21:46] [T0-SLICE] Season mode: using full 110-row dataset (no date filter).
+[15:21:46] [T0-DEDUP] Dropped 0 duplicates → 110 unique events
+[15:21:46] 🧭 Tier-0: 90-day subset (lightweight) = 176.61 h | 3804.4 km | 7756 TSS (110 events)
+[15:21:46] [T0] Preserved full 90-day df_light for Tier-1/Tier-2 (110 rows)
+[15:21:46] [T0] Fetching athlete profile via OAuth2: https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/profile
+[15:21:46] [T0] Athlete profile fetched successfully — id=1914741 name=Clive King
+[15:21:46] 🧩 Tier-0: defining 90-day window context for season mode (no data reslice).
+[15:21:46] [T0-FETCH] Adaptive method for report_type=season
+[15:21:46] [T0-LIGHT] Season mode → using 90-day lightweight dataset only (no full fetch).
+[15:21:46] [T0-SUMMARY] summarize_season_blocks() unavailable — using raw 90-day dataset.
+[15:21:46] [T0-FIX] source_df undefined — using df_light as fallback (season mode).
+[15:21:46] [T0-FIX] snapshot_7d_json serialized from fallback source (110 rows).
+[15:21:49] [T0-WELLNESS] Final wellness shape=(91, 43), columns=['date', 'ctl', 'atl', 'rampRate', 'ctlLoad', 'atlLoad', 'sportInfo', 'updated', 'weight', 'restingHR', 'hrv', 'hrvSDNN', 'menstrualPhase', 'menstrualPhasePredicted', 'kcalConsumed', 'sleepSecs', 'sleepScore', 'sleepQuality', 'avgSleepingHR', 'soreness', 'fatigue', 'stress', 'mood', 'motivation', 'injury', 'spO2', 'systolic', 'diastolic', 'hydration', 'hydrationVolume', 'readiness', 'baevskySI', 'bloodGlucose', 'lactate', 'bodyFat', 'abdomen', 'vo2max', 'comments', 'steps', 'respiration', 'locked', 'tempWeight', 'tempRestingHR']
+[15:21:49] [T0] Stored wellness in context (91 rows)
+[15:21:49] [DEBUG] wellness raw: <class 'pandas.core.frame.DataFrame'> 91
+[15:21:49] [DEBUG] wellness columns: ['date', 'ctl', 'atl', 'rampRate', 'ctlLoad', 'atlLoad', 'sportInfo', 'updated', 'weight', 'restingHR', 'hrv', 'hrvSDNN', 'menstrualPhase', 'menstrualPhasePredicted', 'kcalConsumed', 'sleepSecs', 'sleepScore', 'sleepQuality', 'avgSleepingHR', 'soreness', 'fatigue', 'stress', 'mood', 'motivation', 'injury', 'spO2', 'systolic', 'diastolic', 'hydration', 'hydrationVolume', 'readiness', 'baevskySI', 'bloodGlucose', 'lactate', 'bodyFat', 'abdomen', 'vo2max', 'comments', 'steps', 'respiration', 'locked', 'tempWeight', 'tempRestingHR']
+[15:21:49] [DEBUG] wellness head:
+          date        ctl        atl  ...  locked  tempWeight  tempRestingHR
+0  2025-08-19  110.12505  98.845770  ...    None        True          False
+1  2025-08-20  107.53400  85.687220  ...    None       False          False
+2  2025-08-21  105.23919  75.611580  ...    None        True          False
+3  2025-08-22  106.24528  85.248080  ...    None        True          False
+4  2025-08-23  106.02775  86.812515  ...    None        True          False
+
+[5 rows x 43 columns]
+[15:21:49] [T0] Diagnostic only: 110 rows fetched, moving_time present=True
+[15:21:49] [T0] Pre-audit complete: activities=110, wellness_rows=91
+[15:21:49] [T0] Stored wellness for Tier-1 (91 rows)
+[15:21:49] [T0] Created 42d snapshot for season (42 rows)
+[15:21:49] [T0-SEASON] Exported snapshot_42d_json + tier0_snapshotTotals_42d for season mode.
+[15:21:49] [T0-FULL] Skipping full audit for season mode (lightweight only).
+[15:21:49] [T0-FULL] Prefetch contained full window — skipping redundant re-fetch.
+[15:21:49] [T0-FULL] Reusing prefetch df_master with 110 rows.
+[15:21:49] [T0-FULL] Rehydrated wellness DataFrame from context.
+[15:21:49] [T0-FULL] Preserved wellness in context (91 rows)
+[15:21:49] [T0] Completed range alignment → chunk_mode=True
+[15:21:49] ⚙️ Normalization: seconds detected, no conversion (max=21383)
+[15:21:49] [T1] Running Tier-1 controller (season mode)
+[15:21:49] [T1] Running Tier-1 controller (weekly mode)
+[15:21:49] [T1] Columns at entry: ['id', 'start_date_local', 'type', 'icu_training_load', 'name', 'distance', 'moving_time', 'average_heartrate', 'IF', 'VO2MaxGarmin']
+[15:21:49] [T1] Built seasonal weekly roll-up (13 weeks)
+[15:21:49] [Tier-1] Visible subset unified: 176.61 h | 3804.4 km | 7756 TSS | IF=None HR=None VO₂=None
+[15:21:49] ✅ Tier-1 finalization: 110 events | 176.60833333333332 h | 7756 TSS
+[15:21:49] 🧩 Tier-1 variance check passed (Δh=0.00, ΔTSS=0.0)
+[15:21:49] [T1] Normalizing and merging wellness with activity dataset before alignment check.
+[15:21:49] [T1] Wellness merged successfully — shape=(110, 54)
+[15:21:49] [T1] Wellness alignment window (tz-aware): 2025-08-19 14:02:36 → 2025-11-15 13:04:52
+[15:21:49] [T1] Wellness date range: 2025-08-19 → 2025-11-17
+[15:21:49] ✅ Wellness alignment check passed.
+[15:21:49] [T1-WELLNESS] numeric coercion failed for atl: arg must be a list, tuple, 1-d array, or Series
+[15:21:49] [T1-WELLNESS] numeric coercion failed for ctl: arg must be a list, tuple, 1-d array, or Series
+[15:21:49] [T1-REST] Starting rest day calculation from df_master.
+[15:21:49] [T1-REST] Normalized date range base → 2025-08-19 00:00:00 to 2025-11-17 00:00:00
+[15:21:49] [T1-REST] Using icu_training_load as primary load source.
+[15:21:49] [T1-REST] Daily load sample (last 7 days): {Timestamp('2025-11-11 00:00:00'): 114, Timestamp('2025-11-12 00:00:00'): 63, Timestamp('2025-11-13 00:00:00'): 88, Timestamp('2025-11-14 00:00:00'): 0, Timestamp('2025-11-15 00:00:00'): 206, Timestamp('2025-11-16 00:00:00'): 0, Timestamp('2025-11-17 00:00:00'): 0}
+[15:21:49] [T1-REST] Counted rest days: 20 → Dates: ['2025-08-20', '2025-08-29', '2025-08-30', '2025-09-04', '2025-09-08', '2025-09-09', '2025-09-12', '2025-09-16', '2025-09-26', '2025-09-29', '2025-10-08', '2025-10-09', '2025-10-14', '2025-10-15', '2025-10-24', '2025-11-02', '2025-11-05', '2025-11-10', '2025-11-14', '2025-11-16']
+[15:21:49] [T1-READINESS] readiness column summary: exists=True, non-null count=0, values=[]
+[15:21:49] [T1] Wellness summary → rest_days=20, rest_hr=42.7, hrv_trend=-10.0
+[15:21:49] [T1] Using wellness-derived load metrics: ['ctl', 'atl']
+[15:21:49] [T1] Derived TSB column added from CTL–ATL
+[15:21:49] [T1] Promoted CTL=96.23 ATL=87.61 TSB=8.62 to context
+[15:21:49] [DEBUG-T1] sanity check before Step 6b — rows in df_master: 110
+[15:21:49] [DEBUG-T1] athleteProfile present: True
+[15:21:49] [DEBUG-T1] athleteProfile keys: ['athlete_id', 'name', 'discipline', 'ftp', 'weight', 'hr_rest', 'hr_max', 'ftp_wkg', 'hr_reserve', 'zone_model', 'training_age_years', 'preferred_units', 'environment', 'timezone', 'updated']
+[15:21:49] [DEBUG-T1] Starting zone distribution extraction...
+[15:21:49] [DEBUG-T1] Activity columns sample: ['id', 'start_date_local', 'type', 'icu_training_load', 'name', 'distance', 'moving_time', 'average_heartrate', 'IF', 'VO2MaxGarmin', 'merge_date', 'date', 'ctl', 'atl', 'rampRate', 'ctlLoad', 'atlLoad', 'sportInfo', 'updated', 'weight', 'restingHR', 'hrv', 'hrvSDNN', 'menstrualPhase', 'menstrualPhasePredicted', 'kcalConsumed', 'sleepSecs', 'sleepScore', 'sleepQuality', 'avgSleepingHR', 'soreness', 'fatigue', 'stress', 'mood', 'motivation', 'injury', 'spO2', 'systolic', 'diastolic', 'hydration']
+[15:21:49] [DEBUG-ZONE] Available columns: ['id', 'start_date_local', 'type', 'icu_training_load', 'name', 'distance', 'moving_time', 'average_heartrate', 'IF', 'VO2MaxGarmin', 'merge_date', 'date', 'ctl', 'atl', 'rampRate', 'ctlLoad', 'atlLoad', 'sportInfo', 'updated', 'weight', 'restingHR', 'hrv', 'hrvSDNN', 'menstrualPhase', 'menstrualPhasePredicted', 'kcalConsumed', 'sleepSecs', 'sleepScore', 'sleepQuality', 'avgSleepingHR', 'soreness', 'fatigue', 'stress', 'mood', 'motivation', 'injury', 'spO2', 'systolic', 'diastolic', 'hydration', 'hydrationVolume', 'readiness', 'baevskySI', 'bloodGlucose', 'lactate', 'bodyFat', 'abdomen', 'vo2max', 'comments', 'steps', 'respiration', 'locked', 'tempWeight', 'tempRestingHR']
+[15:21:49] [DEBUG-ZONE] Detected Power zone columns: []
+[15:21:49] [DEBUG-ZONE] Detected HR zone columns: []
+[15:21:49] [DEBUG-ZONE] Detected Pace zone columns: []
+[15:21:49] [DEBUG-ZONES] No power columns found — skipping.
+[15:21:49] [DEBUG-ZONES] No hr columns found — skipping.
+[15:21:49] [DEBUG-ZONES] No pace columns found — skipping.
+[15:21:49] [DEBUG-T1] Completed zone distribution extraction.
+[15:21:49] [DEBUG-T1] Zone distributions now in context:
+[15:21:49]   zone_dist_power: {}
+[15:21:49]   zone_dist_hr: {}
+[15:21:49]   zone_dist_pace: {}
+[15:21:49] [DEBUG-OUTLIER] Starting detection on 110 rows
+[15:21:49] [DEBUG-T1] Outlier events detected: 10
+[15:21:49] [DEBUG-OUTLIER] mean TSS=70.5, std=60.0, threshold=90.0
+[15:21:49] [DEBUG-OUTLIER] min/max TSS: 1 / 277
+[15:21:50] [TRACE] df_light_slice already present → 110 rows.
+[15:21:50] [T1] Deduplicated df_master columns before Tier-2 handoff.
+[15:21:50] None [T2] Daily completeness summary built — 70 rows
+[15:21:50] [WARN] Could not parse snapshot_7d_json for enforcement: initial_value must be str or None, not list
+[15:21:50] 📁 Tier-2 module loaded from: C:\Users\user\onedrive\documents\git\revo2wheels\intervalsicugptcoach\audit_core\tier2_enforce_event_only_totals.py
+[15:21:50] 🔍 Tier-2 enforcement source: Tier-2 validated events (110 rows)
+[15:21:50] origin counts:
+ origin
+event    110
+Name: count, dtype: int64
+[15:21:50] moving_time stats:
+ count      110.000000
+mean      5779.909091
+std       3517.473633
+min        251.000000
+25%       3771.000000
+50%       4805.000000
+75%       7469.250000
+max      21383.000000
+Name: moving_time, dtype: float64
+[15:21:50] 🧩 Tier-2 override: retaining full df_source for season summary (no 7-day enforcement).
+[15:21:50] 🧩 Tier-2 override: recomputing canonical totals for season report (full dataset).
+[15:21:50] 🧮 Tier-2 (season): Σ(moving_time)=635790s → 176.61h, Σ(TSS)=7756.0, Σ(Distance)=3804.4 km
+[15:21:50] [T2] Tier-1 totals validated (Δh=0.00, ΔTSS=0.0, Δd=0.0)
+[15:21:50] [T2] Retaining Tier-1 totals as validated canonical snapshot.
+[15:21:50] [DEBUG-T2] injected lightweight df_event_only preview (10 rows); full dataset retained only in memory (not serialized)

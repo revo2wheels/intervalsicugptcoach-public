@@ -90,52 +90,88 @@ def enforce_event_only_totals(df_events, context):
         debug(context, f"🧮 Tier-2: Σ(moving_time)={raw_sum:.0f}s → {event_hours:.2f}h (Intervals seconds source)")
 
     # --- Step 5: Compare vs Tier-1 snapshot ---------------------------------
-    tier1_totals = context.get("tier1_eventTotals", {})
-    diff_hours = diff_tss = 0
+    tier1_totals = context.get("tier1_visibleTotals", context.get("tier1_eventTotals", {}))
+    validated = False
     if tier1_totals:
         diff_hours = abs(event_hours - tier1_totals.get("hours", 0))
-        diff_tss = abs(event_tss - tier1_totals.get("tss", 0))
-        if diff_hours > 0.1 or diff_tss > 2:
+        diff_tss   = abs(event_tss - tier1_totals.get("tss", 0))
+        diff_dist  = abs(event_distance - tier1_totals.get("distance", 0))
+        if diff_hours < 0.05 and diff_tss < 10 and diff_dist < 2:
+            validated = True
+            debug(context, f"[T2] Tier-1 totals validated (Δh={diff_hours:.2f}, ΔTSS={diff_tss:.1f}, Δd={diff_dist:.1f})")
+        else:
             context.setdefault("audit_flags", []).append(
-                f"⚠️ Tier-2 correction applied: Δh={diff_hours:.2f}, "
-                f"ΔTSS={diff_tss:.1f} (Tier-1 replaced with event totals)"
+                f"⚠️ Tier-2 correction applied: Δh={diff_hours:.2f}, ΔTSS={diff_tss:.1f}"
             )
 
-    # --- Step 6: Canonical injection ----------------------------------------
-    for key in ["dailyTotals", "totalHours", "totalTss"]:
-        context.pop(key, None)
+    # --- Step 6: Conditional canonical injection -----------------------------
+    if validated:
+        # ✅ Keep Tier-1 as canonical
+        context["tier2_enforced_totals"] = tier1_totals
+        context["tier1_visibleTotals"]["validated"] = True
+        context["eventTotals"] = tier1_totals
+        debug(context, "[T2] Retaining Tier-1 totals as validated canonical snapshot.")
+    else:
+        # ⚠️ Replace with Tier-2 recomputed values
+        context["totalHours"] = round(event_hours, 2)
+        context["totalTss"] = int(round(event_tss))
+        context["totalDistance"] = round(event_distance, 1)
+        context["tier2_enforced_totals"] = {
+            "hours": context["totalHours"],
+            "tss": context["totalTss"],
+            "distance": context["totalDistance"],
+            "source": source_label,
+            "validated": False,
+        }
+        context["tier1_visibleTotals"] = context["tier2_enforced_totals"]
+        context["eventTotals"] = context["tier2_enforced_totals"]
+        debug(context, "[T2] Overrode Tier-1 totals with Tier-2 enforced canonical values.")
 
-    context["totalHours"] = round(event_hours, 2)
-    context["totalTss"] = int(round(event_tss))
-    context["totalDistance"] = round(event_distance, 1)
-    context["eventTotals"] = {
-        "hours": context["totalHours"],
-        "tss": context["totalTss"],
-        "distance": context["totalDistance"],
-        "source": source_label,
-    }
-    context["df_event_only"] = df_event_only
-
-    # --- JSON-safe preview for renderer -------------------------------------
+    # --- JSON-safe event preview for renderer (lightweight only) ----------------
     try:
         sort_col = "start_date_local" if "start_date_local" in df_event_only.columns else "date"
-        cols = [c for c in ["date", "start_date_local", "name", "icu_training_load",
-                            "moving_time", "distance", "total_elevation_gain", "total_elev_gain"]
-                if c in df_event_only.columns]
-        df_preview = df_event_only[cols].sort_values(sort_col, ascending=False).head(10)
+        cols = [
+            c for c in [
+                "date", "start_date_local", "name",
+                "icu_training_load", "moving_time", "distance",
+                "total_elevation_gain", "total_elev_gain"
+            ]
+            if c in df_event_only.columns
+        ]
+
+        df_preview = (
+            df_event_only[cols]
+            .sort_values(sort_col, ascending=False)
+            .head(10)
+            .reset_index(drop=True)
+        )
+
+        # ✅ Inject lightweight JSON-safe preview for downstream renderers
         context["df_event_only_preview"] = df_preview.to_dict("records")
-        context["df_event_only_full"] = df_event_only
-        debug(context, f"[DEBUG-T2] injected preview ({len(df_preview)} rows) and preserved full df_event_only ({len(df_event_only)} rows)")
+
+        # ❌ Do NOT store full DataFrame in context (causes markdown dump bloat)
+        debug(
+            context,
+            f"[DEBUG-T2] injected lightweight df_event_only preview ({len(df_preview)} rows); "
+            f"full dataset retained only in memory (not serialized)"
+        )
+
     except Exception as e:
         debug(context, f"[DEBUG-T2] could not build df_event_only preview: {e}")
         context["df_event_only_preview"] = []
-        context["df_event_only_full"] = df_event_only
 
-    # --- Step 7: Hard-lock canonical totals ---------------------------------
-    context["_locked_totals"] = True
-    context["locked_totalHours"] = context["totalHours"]
-    context["locked_totalTss"] = context["totalTss"]
-    context["locked_totalDistance"] = context["totalDistance"]
+
+    # --- Step 7: Lock canonical totals (safe) ---
+    canonical_totals = context.get("tier2_enforced_totals") or context.get("eventTotals") or {}
+    context["locked_totalHours"] = context.get("totalHours", canonical_totals.get("time_h", 0))
+    context["locked_totalTss"] = context.get("totalTss", canonical_totals.get("tss", 0))
+    context["locked_totalDistance"] = context.get("totalDistance", canonical_totals.get("distance_km", 0))
+
+    debug(
+        context,
+        f"[T2] Locked canonical totals — Hours={context['locked_totalHours']}, "
+        f"TSS={context['locked_totalTss']}, Dist={context['locked_totalDistance']} km"
+    )
 
     # --- Step 8: Trace annotation -------------------------------------------
     context["event_count"] = len(df_event_only)
@@ -144,11 +180,11 @@ def enforce_event_only_totals(df_events, context):
         f"(Δh={diff_hours:.2f}, ΔTSS={diff_tss:.1f}, events={len(df_event_only)})"
     )
 
-        # --- Step 9: Recompute derived metrics using proper 90d frame (FIX) -----
+    # --- Step 9: Recompute derived metrics using proper 90d frame (FIX) -----
     try:
         from audit_core.tier2_derived_metrics import compute_derived_metrics
 
-        if report_type == "season":
+        if report_type == "season" and "dervied_metrics" not in context:
             df_for_metrics = None
             if "snapshot_90d_json" in context:
                 from io import StringIO
