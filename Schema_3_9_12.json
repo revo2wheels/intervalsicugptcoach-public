@@ -275,6 +275,18 @@
         "full weekly report"
       ],
       "action": "run_report_orchestrated_render"
+    },
+    {
+      "trigger": [
+        "season report",
+        "run season report",
+        "generate season report",
+        "run 90 day report",
+        "training block report",
+        "90 day report",
+        "block report"
+      ],
+      "action": "run_report_orchestrated_render"
     }
   ],
   "x-actions": {
