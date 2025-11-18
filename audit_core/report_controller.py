@@ -45,6 +45,9 @@ def run_report(
     })
     context["debug_mode"] = kwargs.get("debug_mode", False)
 
+    # --- NEW: Bind reportMode for schema-based orchestration ---
+    context["reportMode"] = reportType.lower() if isinstance(reportType, str) else "weekly"
+
     debug(context, f"🧭 Running {reportType.title()} Report (auditFinal={auditFinal}, render_mode={render_mode})")
 
     # --- Load validation and rule base ---
