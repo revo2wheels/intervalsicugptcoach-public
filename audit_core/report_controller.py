@@ -57,9 +57,14 @@ def run_report(
     today = datetime.now().date()
 
     if reportType.lower() == "season":
-        context["range"] = {"lightDays": 90, "fullDays": 7, "chunk": True}
+        context["range"] = {"lightDays": 90, "fullDays": 42, "chunk": True}
     else:  # weekly / wellness / summary
         context["range"] = {"lightDays": 28, "fullDays": 7, "chunk": False}
+
+    # Local variable bindings for convenience
+    light_days = context["range"]["lightDays"]
+    full_days = context["range"]["fullDays"]
+    chunk = context["range"]["chunk"]
 
     debug(context, f"[T0] Config → light={light_days}d full={full_days}d chunk={chunk}")
 

@@ -358,6 +358,12 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     headers = {"Authorization": f"Bearer {ICU_TOKEN}"}
     report_type = context.get("report_type", "").lower() if isinstance(context, dict) else "weekly"
 
+    # after setting report_type
+    context["range"] = {
+        "lightDays": 90 if report_type == "season" else 28,
+        "fullDays": 42 if report_type == "season" else 7,
+        "chunk": True if report_type == "season" else False,
+    }
     # Ensure df_light always exists
     df_light = pd.DataFrame()
     df_acts = pd.DataFrame()

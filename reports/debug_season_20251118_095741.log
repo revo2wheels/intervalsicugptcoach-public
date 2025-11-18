@@ -1,0 +1,8 @@
+[09:57:41] 🧭 Generating Season Report
+[09:57:41] 🧭 Running Season Report (auditFinal=False, render_mode=full+metrics)
+[09:57:41] [T0] Config → light=90d full=42d chunk=True
+[09:57:41] [T0-LIGHT] Prefetch failed (non-fatal): name 'light_days' is not defined
+[09:57:41] [T0-FULL] Full audit failed: name 'full_days' is not defined
+[09:57:41] [T0-FULL] No df_master returned — using pre-audit lightweight dataset as fallback.
+[09:57:41] [T0-FULL] WARNING: no valid fallback dataset — initializing empty DataFrame.
+[09:57:41] [T0-FULL] Context synced for Tier-1 — df_master=0 rows, snapshot_7d_json=ok
