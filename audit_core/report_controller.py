@@ -20,10 +20,10 @@ from audit_core.tier2_extended_metrics import compute_extended_metrics
 
 def run_report(
     reportType: str = "weekly",
-    auditFinal: bool = True,
+    auditFinal: bool = False,
     auditPartial: bool = False,
     force_analysis: bool = False,
-    preRenderAudit: bool = False,
+    preRenderAudit: bool = True,
     tier2_enforce_event_only_totals: bool = False,
     render_mode: str = "full+metrics",
     autoCommit: bool = True,
@@ -32,6 +32,7 @@ def run_report(
     merge_events: bool = False,
     render_summary: bool = False,
     include_coaching_metrics: bool = True,
+    allowSyntheticRender: bool = False,
     **kwargs,
 ):
     # --- Initialize context ---
@@ -51,14 +52,11 @@ def run_report(
 
     # --- Tier-0 Range Configuration (aligned with worker) ---
     today = datetime.now().date()
+
     if reportType.lower() == "season":
-        light_days = 90
-        full_days = 42
-        chunk = True
+        context["range"] = {"lightDays": 90, "fullDays": 7, "chunk": True}
     else:  # weekly / wellness / summary
-        light_days = 28
-        full_days = 7
-        chunk = False
+        context["range"] = {"lightDays": 28, "fullDays": 7, "chunk": False}
 
     debug(context, f"[T0] Config → light={light_days}d full={full_days}d chunk={chunk}")
 

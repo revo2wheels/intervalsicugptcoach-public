@@ -282,11 +282,11 @@
       "type": "chain",
       "steps": ["runReportOrchestrated", "renderFullWeeklyReport"]
     },
-    "runReportOrchestrated": {
-      "type": "operation",
-      "operationId": "runReportOrchestrated",
-      "args": { "reportType": "weekly" }
-    },
+  "runReportOrchestrated": {
+    "type": "operation",
+    "operationId": "runReportOrchestrated",
+    "args": { "reportType": "${context.reportMode || 'weekly'}" }
+  },
     "renderFullWeeklyReport": {
       "type": "render",
       "mode": "report"
