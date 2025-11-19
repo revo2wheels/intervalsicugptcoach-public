@@ -18,6 +18,27 @@ from audit_core.tier2_enforce_event_only_totals import enforce_event_only_totals
 from audit_core.template_renderer import render_template
 
 def finalize_and_validate_render(context, reportType="weekly"):
+    from audit_core.utils import debug
+    # --- STRICT AUDIT-MODE RENDER GATE ---
+    if context.get("audit_mode", False):
+        if not context.get("auditFinal", False):
+            raise RuntimeError(
+                "[RenderGate] Audit not final — rendering blocked under strict audit_mode."
+            )
+
+        if context.get("enforce_render_source", "").lower() != "audit_tier2":
+            raise RuntimeError(
+                "[RenderGate] Invalid render source — expected 'audit_tier2' under strict audit_mode."
+            )
+
+        if "tier2_enforced_totals" not in context:
+            raise RuntimeError(
+                "[RenderGate] No verified Tier-2 enforced totals found — render aborted (strict audit_mode)."
+            )
+
+        debug(context,"[LOCK] Audit-mode active — renderer restricted to verified Tier-2 data only."
+        )
+
     # --- Runtime trace for ChatGPT vs Local ---
     from audit_core.utils import debug
     from datetime import datetime

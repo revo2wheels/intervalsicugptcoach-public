@@ -90,6 +90,10 @@ def run_report(
     if preRenderAudit and not auditFinal:
         raise RuntimeError("Render blocked: preRenderAudit=True but auditFinal=False (strict mode active)")
     context["enforce_render_source"] = "audit_tier2"
+    # --- NEW: Strict audit-mode enforcement for render layer ---
+    # When True, the renderer (chat/narrative layer) is forbidden from inferring or fabricating totals.
+    context["audit_mode"] = True
+    debug(context, "[LOCK] Audit mode enabled → renderer restricted to verified Tier-2 data only.")
 
     # --- Tier-0 Range Configuration (aligned with worker) ---
     today = datetime.now().date()

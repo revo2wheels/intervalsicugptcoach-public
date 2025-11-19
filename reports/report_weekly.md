@@ -5,10 +5,10 @@
 ```
 ✅ Renderer source: Tier-2 enforced totals (canonical dataset)
 [FINALIZER] Enforcing markdown-only return (season-safe mode)
-[FINALIZER] Markdown-only return OK — len=3734, ctx_keys=75
+[FINALIZER] Markdown-only return OK — len=3702, ctx_keys=77
 ✅ Renderer source: Tier-2 enforced totals (canonical dataset)
 [FINALIZER] Enforcing markdown-only return (season-safe mode)
-[FINALIZER] Markdown-only return OK — len=3734, ctx_keys=75
+[FINALIZER] Markdown-only return OK — len=3702, ctx_keys=77
 ```
 
 ## Rendered Markdown Report
@@ -17,7 +17,7 @@
 **Athlete:** Clive King
 **Period:** 2025-11-13 → 2025-11-19
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-19T10:31:04.148240
+**Generated:** 2025-11-19T13:07:14.757437
 
 ---
 
@@ -43,9 +43,9 @@
 
 | Metric | Value | Status | Context |
 |:-- |:-- |:-- |:--|
-| ACWR | 0.94 |  ok | EWMA Acute:Chronic Load Ratio — compares 7-day vs 28-day weighted loads. 0.8–1.3 = productive training, <0.8 = recovery or detraining, >1.5 = overload/injury risk. |
-| Monotony | 1.72 |  ok | 1–2 shows healthy variation; >2.5 means repetitive stress pattern. |
-| Strain | 192.6 |  ok | Product of load × monotony; >3500 signals potential overreach. |
+| ACWR | 1.0 |  ok | EWMA Acute:Chronic Load Ratio — compares 7-day vs 28-day weighted loads. 0.8–1.3 = productive training, <0.8 = recovery or detraining, >1.5 = overload/injury risk. |
+| Monotony | 0.0 |  ok | 1–2 shows healthy variation; >2.5 means repetitive stress pattern. |
+| Strain | 0.0 |  ok | Product of load × monotony; >3500 signals potential overreach. |
 | FatigueTrend | nan |  ok | 0±0.2 indicates balance; positive trend means accumulating fatigue. |
 | ZQI | 7970.0 |  ok | Zone Quality Index (%) 5-15 high-intensity time is normal <3% too easy, >20% too intense or erratic pacing. |
 | FatOxEfficiency | 0.717 |  ok | 0.4–0.8 means balanced fat oxidation; lower = carb dependence. |
@@ -54,9 +54,9 @@
 | CUR | 28.3 |  ok | Carbohydrate Utilisation Ratio; 30-80 balanced metabolic use. |
 | GR | 1.91 |  ok | Glucose Ratio; >2 indicates excess glycolytic bias. |
 | MES | 22.5 |  ok | Metabolic Efficiency Score; >20 is good endurance economy. |
-| RecoveryIndex | 0.656 |  ok | 0.6–1.0 means recovered; <0.5 = heavy fatigue. |
+| RecoveryIndex | 1.0 |  ok | 0.6–1.0 means recovered; <0.5 = heavy fatigue. |
 | ACWR_Risk | nan |  ok | Used internally for stability check. |
-| StressTolerance | 1.12 |  ok | 2–8 indicates sustainable training strain capacity. |
+| StressTolerance | 0.0 |  ok | 2–8 indicates sustainable training strain capacity. |
 
 
 ### Power Zones
@@ -116,7 +116,7 @@ _No pace zone data available._
 5. ✅ Endurance reserve strong (1.00).
 6. ✅ Efficiency drift stable (0.00%).
 7. ✅ Polarisation optimal (90%).
-8. 🟠 Recovery Index moderate (0.66) — monitor fatigue trend.
+8. ✅ Recovery Index healthy (1.00).
 
 
 ## 🚴 Weekly Events Summary
@@ -125,12 +125,12 @@ _No pace zone data available._
 |:-- |:-- |:-- |:-- |:--|
 | 2025-11-18 | Zwift - base | 56 | 01:05:39 | 44.7 |
 | 2025-11-17 | Holo intervals | 98 | 01:20:04 | 46.9 |
-| 2025-11-15 | Perry | 178 | 02:24:04 | 67.5 |
 | 2025-11-15 | Otto walk | 28 | 01:26:29 | 6.9 |
+| 2025-11-15 | Perry | 178 | 02:24:04 | 67.5 |
 | 2025-11-13 | Zwift - Group Ride: DBR Base Endurance Ride | 88 | 01:31:47 | 58.3 |
 
 **Totals:** 7.80 h · 224.3 km · 448 TSS · 0 sessions**
 
 ---
-✅ **Audit Completed:** 2025-11-19T10:31:04.150872
+✅ **Audit Completed:** 2025-11-19T13:07:14.760558
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: —
