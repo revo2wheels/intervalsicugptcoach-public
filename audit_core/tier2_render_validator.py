@@ -38,6 +38,8 @@ def finalize_and_validate_render(context, reportType="weekly"):
 
         debug(context,"[LOCK] Audit-mode active — renderer restricted to verified Tier-2 data only."
         )
+    # Prevent ChatGPT/narrative layer from self-rendering summaries
+    context["allowSyntheticRender"] = False
 
     # --- Runtime trace for ChatGPT vs Local ---
     from audit_core.utils import debug
