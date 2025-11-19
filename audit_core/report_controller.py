@@ -64,7 +64,7 @@ def run_report(
         matched = next(
             (i for i in intents if reportType.lower() in [t.lower() for t in i.get("trigger", [])]), None
         )
-
+1
         if matched and "x-intent" in matched:
             xi = matched["x-intent"]
 

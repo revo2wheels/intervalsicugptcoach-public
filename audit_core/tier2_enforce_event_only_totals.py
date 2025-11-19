@@ -104,28 +104,50 @@ def enforce_event_only_totals(df_events, context):
                 f"⚠️ Tier-2 correction applied: Δh={diff_hours:.2f}, ΔTSS={diff_tss:.1f}"
             )
 
-    # --- Step 6: Conditional canonical injection -----------------------------
-    if validated:
-        # ✅ Keep Tier-1 as canonical
-        context["tier2_enforced_totals"] = tier1_totals
-        context["tier1_visibleTotals"]["validated"] = True
-        context["eventTotals"] = tier1_totals
-        debug(context, "[T2] Retaining Tier-1 totals as validated canonical snapshot.")
-    else:
-        # ⚠️ Replace with Tier-2 recomputed values
+    # --- Step 6: Canonical injection (fixed for season scope) ---------------
+    if report_type == "season":
+        # ✅ Always override Tier-1 snapshot with full 90-day recompute
         context["totalHours"] = round(event_hours, 2)
         context["totalTss"] = int(round(event_tss))
         context["totalDistance"] = round(event_distance, 1)
+
         context["tier2_enforced_totals"] = {
             "hours": context["totalHours"],
             "tss": context["totalTss"],
             "distance": context["totalDistance"],
-            "source": source_label,
-            "validated": False,
+            "source": f"{source_label} • 90-day canonical",
+            "validated": True,
         }
         context["tier1_visibleTotals"] = context["tier2_enforced_totals"]
         context["eventTotals"] = context["tier2_enforced_totals"]
-        debug(context, "[T2] Overrode Tier-1 totals with Tier-2 enforced canonical values.")
+
+        debug(context, "[T2] Season mode → forced 90-day canonical totals override.")
+        context.setdefault("trace", []).append(
+            f"[T2] season override → using 90-day canonical totals "
+            f"(h={context['totalHours']}, TSS={context['totalTss']}, km={context['totalDistance']})"
+        )
+
+    else:
+        # keep existing weekly/calendar validation logic
+        if validated:
+            context["tier2_enforced_totals"] = tier1_totals
+            context["tier1_visibleTotals"]["validated"] = True
+            context["eventTotals"] = tier1_totals
+            debug(context, "[T2] Retaining Tier-1 totals as validated canonical snapshot.")
+        else:
+            context["totalHours"] = round(event_hours, 2)
+            context["totalTss"] = int(round(event_tss))
+            context["totalDistance"] = round(event_distance, 1)
+            context["tier2_enforced_totals"] = {
+                "hours": context["totalHours"],
+                "tss": context["totalTss"],
+                "distance": context["totalDistance"],
+                "source": source_label,
+                "validated": False,
+            }
+            context["tier1_visibleTotals"] = context["tier2_enforced_totals"]
+            context["eventTotals"] = context["tier2_enforced_totals"]
+            debug(context, "[T2] Overrode Tier-1 totals with Tier-2 enforced canonical values.")
 
     # --- JSON-safe event preview for renderer (lightweight only) ----------------
     try:
