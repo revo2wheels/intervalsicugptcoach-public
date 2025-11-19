@@ -136,11 +136,44 @@ def run_report(
         elif reportType.lower() == "weekly":
             debug(context, f"[T0-FULL] Running 7-day detailed audit for weekly mode → {full_start} → {full_end}")
 
-            # If prefetch already captured the window, avoid refetch
+            # If prefetch already captured the window, reuse but enforce 7-day clip for render totals
             if context.get("prefetch_done") and context.get("snapshot_7d_json"):
-                debug(context, "[T0-FULL] Prefetch contained full window — skipping redundant re-fetch.")
-                df_master, wellness, auditPartial, auditFinal = None, None, None, None
+                import pandas as pd
+                from io import StringIO
+                try:
+                    # Decode prefetch snapshot (may contain 28 days for ACWR/Strain)
+                    df_snapshot = pd.read_json(StringIO(context["snapshot_7d_json"]))
+
+                    # Preserve full prefetch for ACWR, Monotony, Strain computations
+                    context["activities_light"] = df_snapshot.to_dict("records")
+
+                    # Apply canonical 7-day slice for event-only totals and render
+                    cutoff_start = pd.Timestamp.today().normalize() - pd.Timedelta(days=7)
+                    df_master = df_snapshot[df_snapshot["start_date_local"] >= cutoff_start].copy()
+
+                    # Sanity assertion for window integrity
+                    assert df_master["start_date_local"].min() >= pd.Timestamp.today() - pd.Timedelta(days=7), (
+                        "[T0-FULL] Render guard: events older than 7 days detected in df_master!"
+                    )
+
+                    debug(
+                        context,
+                        f"[T0-FULL] Prefetch detected → enforced 7-day df_master ({len(df_master)} rows) "
+                        f"while preserving 28-day ACWR context ({len(df_snapshot)} rows)."
+                    )
+
+                    wellness, auditPartial, auditFinal = None, True, False
+
+                except Exception as e:
+                    debug(context, f"[T0-FULL] Prefetch reslice failed → fallback to re-fetch: {e}")
+                    df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
+                        str(full_start),
+                        str(full_end),
+                        context,
+                    )
+
             else:
+                # Normal Tier-0 full 7-day detailed audit
                 df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
                     str(full_start),
                     str(full_end),
@@ -154,6 +187,11 @@ def run_report(
                 str(full_end),
                 context,
             )
+
+    except Exception as e:
+        debug(context, f"[T0-FULL] Full audit failed: {e}")
+        df_master, wellness, auditPartial, auditFinal = None, None, None, None
+
 
     except Exception as e:
         debug(context, f"[T0-FULL] Full audit failed: {e}")
