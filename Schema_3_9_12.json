@@ -254,7 +254,13 @@
         "fetch 28-day summary",
         "tier0 start"
       ],
-      "action": "run_lightweight_audit_pipeline"
+      "action": "run_lightweight_audit_pipeline",
+      "x-intent": {
+        "x-intent": "tier0",
+        "enforce_gate": true,
+        "allow_partial": false,
+        "description": "Locks Tier-0 mode for pre-audit fetches (no render until Tier-1 validation)."
+      }
     },
     {
       "trigger": [
@@ -265,7 +271,13 @@
         "run 7-day report",
         "fetch full dataset"
       ],
-      "action": "run_full_audit_pipeline"
+      "action": "run_full_audit_pipeline",
+      "x-intent": {
+        "x-intent": "tier1",
+        "enforce_gate": true,
+        "allow_partial": false,
+        "description": "Locks Tier-1 mode; prevents any lightweight data being rendered directly."
+      }
     },
     {
       "trigger": [
@@ -274,7 +286,13 @@
         "generate weekly report",
         "full weekly report"
       ],
-      "action": "run_report_orchestrated_render"
+      "action": "run_report_orchestrated_render",
+      "x-intent": {
+        "x-intent": "weekly",
+        "enforce_gate": true,
+        "allow_partial": false,
+        "description": "Forces weekly report to use validated Tier-0+Tier-2 pipeline before render."
+      }
     },
     {
       "trigger": [
@@ -286,7 +304,13 @@
         "90 day report",
         "block report"
       ],
-      "action": "run_report_orchestrated_render"
+      "action": "run_report_orchestrated_render",
+      "x-intent": {
+        "x-intent": "season",
+        "enforce_gate": true,
+        "allow_partial": false,
+        "description": "Hard-locks 90-day/season report intent and forbids any preRender placeholders or subset previews."
+      }
     }
   ],
   "x-actions": {
@@ -294,11 +318,11 @@
       "type": "chain",
       "steps": ["runReportOrchestrated", "renderFullWeeklyReport"]
     },
-  "runReportOrchestrated": {
-    "type": "operation",
-    "operationId": "runReportOrchestrated",
-    "args": { "reportType": "${context.reportMode || 'weekly'}" }
-  },
+    "runReportOrchestrated": {
+      "type": "operation",
+      "operationId": "runReportOrchestrated",
+      "args": { "reportType": "${context.reportMode || 'weekly'}" }
+    },
     "renderFullWeeklyReport": {
       "type": "render",
       "mode": "report"

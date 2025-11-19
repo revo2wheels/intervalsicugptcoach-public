@@ -31,9 +31,8 @@ export default {
     function getDate(daysAgo) {
       const d = new Date();
       d.setUTCDate(d.getUTCDate() - daysAgo);
-      // Force pure date string, no time component, no local conversion
-      const iso = d.toISOString(); // e.g., "2025-11-14T15:55:16.539Z"
-      return iso.split("T")[0];    // → "2025-11-14"
+      const iso = d.toISOString();
+      return iso.split("T")[0];
     }
 
     // --- Extract athlete ID (default 0) ---
@@ -92,13 +91,11 @@ export default {
       }
 
       try {
-        let light, full = [], wellness, profile;
+        let light = [], full = [], wellness = [], profile = {};
 
         if (reportType === "season") {
-          // --- Lightweight-only mode for season reports ---
           console.log("[RUN_REPORT] Season mode → lightweight-only fetch (90-day window).");
 
-          // 90-day lightweight chunked activities
           light = await fetchChunked(
             baseActUrl,
             range.lightDays,
@@ -106,74 +103,95 @@ export default {
             "&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin"
           );
 
-          // 90-day wellness fetch (chunked for consistency)
           wellness = await fetchChunked(baseWellUrl, range.lightDays, 7);
 
-          // Profile
           profile = await fetch(profileUrl, { headers: { Authorization: authHeader } }).then(r => r.json());
 
-          // No full dataset for season reports
-          full = [];
-        } else {
-          // --- Normal full-detail mode (weekly/block) ---
-          console.log("[RUN_REPORT] Weekly/Block mode → fetching full dataset.");
-
-          [light, full, wellness, profile] = await Promise.all([
-            range.chunk
-              ? fetchChunked(
-                  baseActUrl,
-                  range.lightDays,
-                  14,
-                  "&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin"
-                )
-              : fetch(
-                  `${baseActUrl}?oldest=${getDate(range.lightDays)}&newest=${getDate(
-                    0
-                  )}&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin`,
-                  { headers: { Authorization: authHeader } }
-                ).then(r => r.json()),
-
-            range.chunk
-              ? fetchChunked(baseActUrl, range.fullDays, 7)
-              : fetch(`${baseActUrl}?oldest=${getDate(range.fullDays)}&newest=${getDate(0)}`, {
-                  headers: { Authorization: authHeader }
-                }).then(r => r.json()),
-
-            range.chunk
-              ? fetchChunked(baseWellUrl, range.fullDays, 7)
-              : fetch(`${baseWellUrl}?oldest=${getDate(range.fullDays)}&newest=${getDate(0)}`, {
-                  headers: { Authorization: authHeader }
-                }).then(r => r.json()),
-
-            fetch(profileUrl, { headers: { Authorization: authHeader } }).then(r => r.json())
-          ]);
-        }
-
-        console.log(
-          `[RUN_REPORT] Completed unified fetch (light=${light?.length || 0}, full=${full?.length || 0}, wellness=${wellness?.length || 0})`
-        );
-
-        return new Response(
-          JSON.stringify({
+          const summary = {
             status: "ok",
-            message: `Unified report (${reportType}) data fetched successfully.`,
+            message: `[RUN_REPORT] Completed lightweight season fetch (${light.length} activities, ${wellness.length} wellness records)`,
             reportType,
             athlete_id: athleteId,
             chunked: range.chunk,
-            render_hint: "data",
-            athlete_profile: profile?.athlete || {},
-            activities_light: light,
-            activities_full: full,
-            wellness
-          }),
-          {
+            range,
+            summary: {
+              light_count: light.length,
+              wellness_count: wellness.length,
+              start_date: getDate(range.lightDays),
+              end_date: getDate(0),
+            },
+            athlete_profile: profile?.athlete || {}
+          };
+
+          const payload = JSON.stringify(summary);
+          console.log(`[SIZE] /run_report (season) payload = ${(payload.length / 1024).toFixed(2)} KB`);
+
+          return new Response(payload, {
             status: 200,
             headers: {
               "content-type": "application/json",
               "access-control-allow-origin": "*"
             }
-          }
+          });
+        }
+
+        // --- Normal full-detail mode (weekly/block) ---
+        console.log("[RUN_REPORT] Weekly/Block mode → fetching full dataset.");
+
+        [light, full, wellness, profile] = await Promise.all([
+          range.chunk
+            ? fetchChunked(
+                baseActUrl,
+                range.lightDays,
+                14,
+                "&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin"
+              )
+            : fetch(
+                `${baseActUrl}?oldest=${getDate(range.lightDays)}&newest=${getDate(0)}&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin`,
+                { headers: { Authorization: authHeader } }
+              ).then(r => r.json()),
+
+          range.chunk
+            ? fetchChunked(baseActUrl, range.fullDays, 7)
+            : fetch(`${baseActUrl}?oldest=${getDate(range.fullDays)}&newest=${getDate(0)}`, {
+                headers: { Authorization: authHeader }
+              }).then(r => r.json()),
+
+          range.chunk
+            ? fetchChunked(baseWellUrl, range.fullDays, 7)
+            : fetch(`${baseWellUrl}?oldest=${getDate(range.fullDays)}&newest=${getDate(0)}`, {
+                headers: { Authorization: authHeader }
+              }).then(r => r.json()),
+
+          fetch(profileUrl, { headers: { Authorization: authHeader } }).then(r => r.json())
+        ]);
+
+        console.log(
+          `[RUN_REPORT] Completed unified fetch (light=${light?.length || 0}, full=${full?.length || 0}, wellness=${wellness?.length || 0})`
         );
+
+        const payload = JSON.stringify({
+          status: "ok",
+          message: `Unified report (${reportType}) data fetched successfully.`,
+          reportType,
+          athlete_id: athleteId,
+          chunked: range.chunk,
+          render_hint: "data",
+          athlete_profile: profile?.athlete || {},
+          activities_light: light,
+          activities_full: full,
+          wellness
+        });
+
+        console.log(`[SIZE] /run_report (weekly) payload = ${(payload.length / 1024).toFixed(2)} KB`);
+
+        return new Response(payload, {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            "access-control-allow-origin": "*"
+          }
+        });
       } catch (e) {
         console.error(`[RUN_REPORT] ERROR: ${e.message}`);
         return new Response(
@@ -193,7 +211,9 @@ export default {
       const target = `${INTERVALS_API_BASE}/athlete/${athleteId}/activities${url.search}`;
       console.log(`[T0-LIGHT] Proxying lightweight fetch → ${target}`);
       const resp = await fetch(target, { headers: { Authorization: authHeader } });
-      return new Response(await resp.text(), {
+      const text = await resp.text();
+      console.log(`[SIZE] /activities_t0light payload = ${(text.length / 1024).toFixed(2)} KB`);
+      return new Response(text, {
         status: resp.status,
         headers: {
           "content-type": "application/json",
@@ -209,7 +229,9 @@ export default {
       const target = `${INTERVALS_API_BASE}${pathname}${url.search}`;
       console.log(`[T1-FULL] Proxying full fetch → ${target}`);
       const resp = await fetch(target, { headers: { Authorization: authHeader } });
-      return new Response(await resp.text(), {
+      const text = await resp.text();
+      console.log(`[SIZE] /activities payload = ${(text.length / 1024).toFixed(2)} KB`);
+      return new Response(text, {
         status: resp.status,
         headers: {
           "content-type": "application/json",
@@ -222,20 +244,20 @@ export default {
     // ROUTE 3: Wellness
     // ====================================================================
     if (pathname.startsWith(`/athlete/${athleteId}/wellness`)) {
-      // --- Normalize incoming oldest/newest params to YYYY-MM-DD ---
       const params = url.searchParams;
       const oldestRaw = params.get("oldest");
       const newestRaw = params.get("newest");
-    
-      // Fallback: default to 7 days if missing
+
       const oldest = oldestRaw ? oldestRaw.substring(0, 10) : getDate(7);
       const newest = newestRaw ? newestRaw.substring(0, 10) : getDate(0);
-    
+
       const target = `${INTERVALS_API_BASE}${pathname}?oldest=${encodeURIComponent(oldest)}&newest=${encodeURIComponent(newest)}`;
       console.log(`[WELLNESS] Normalized wellness fetch → ${target}`);
-    
+
       const resp = await fetch(target, { headers: { Authorization: authHeader } });
-      return new Response(await resp.text(), {
+      const text = await resp.text();
+      console.log(`[SIZE] /wellness payload = ${(text.length / 1024).toFixed(2)} KB`);
+      return new Response(text, {
         status: resp.status,
         headers: {
           "content-type": "application/json",
@@ -243,7 +265,6 @@ export default {
         }
       });
     }
-    
 
     // ====================================================================
     // ROUTE 4: Athlete profile
@@ -252,7 +273,9 @@ export default {
       const target = `${INTERVALS_API_BASE}${pathname}${url.search}`;
       console.log(`[PROFILE] Proxying profile fetch → ${target}`);
       const resp = await fetch(target, { headers: { Authorization: authHeader } });
-      return new Response(await resp.text(), {
+      const text = await resp.text();
+      console.log(`[SIZE] /profile payload = ${(text.length / 1024).toFixed(2)} KB`);
+      return new Response(text, {
         status: resp.status,
         headers: {
           "content-type": "application/json",

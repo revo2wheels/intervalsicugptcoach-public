@@ -4,6 +4,7 @@
 **ruleset_version:** `v16.16G`  
 **rules_endpoint:** https://api.github.com/repos/revo2wheels/intervalsicugptcoach-public/contents/all-modules.md  
 **use_schema:** `true`
+intervals_icu__jit_plugin schema synchronized with schema_3_9_12.json (fields enabled)
 
 ---
 
@@ -16,29 +17,6 @@
 - NEVER MERGE event data into a single row
 
 ---
-
-## Intent Routing Layer (v1.2)
-**Purpose:** Normalize user phrases into `audit_core` controller calls.  
-**Scope:** All chat, console, and API inputs.  
-**Default route:**  
-
-run_report(
-    reportType: str = "weekly",
-    auditFinal: bool = False,
-    auditPartial: bool = False,
-    force_analysis: bool = False,
-    preRenderAudit: bool = False,
-    tier2_enforce_event_only_totals: bool = False,
-    render_mode: str = "full+metrics",
-    autoCommit: bool = True,
-    suppressPrompts: bool = True,
-    postRenderAudit: bool = True,
-    merge_events: bool = False,
-    render_summary: bool = False,
-    include_coaching_metrics: bool = True,
-    **kwargs
-)
-
 
 **Routing Summary**
 
@@ -72,12 +50,10 @@ run_report(
 ---
 
 ## Data Integrity Enforcement
-- All totals, durations, and loads derive directly from **event-level fields** at runtime.  
-- Unit detection, normalization, and variance validation are handled by `audit_core` modules.  
-- Framework-level rules no longer define formulas for duration or load.  
-- Derived metrics (ACWR, Strain, Polarisation, Recovery Index) compute through Tier-2 modules only.  
-- Framework prohibits interpolation, estimation, or cached-field reuse.  
-- Chunked fetching applies automatically for analysis windows > 42 days.  
+See `audit_core.enforce_event_only_totals()` and Tier-2 module definitions.
+- Canonical totals derive from verified event-level fields only.
+- No interpolation, estimation, or cached reuse permitted.
+- Chunked fetch (>42d) auto-applies.
 
 ---
 
