@@ -149,7 +149,8 @@ def enforce_event_only_totals(df_events, context):
             context["eventTotals"] = context["tier2_enforced_totals"]
             debug(context, "[T2] Overrode Tier-1 totals with Tier-2 enforced canonical values.")
 
-    # --- JSON-safe event preview for renderer (lightweight only) ----------------
+
+    # --- JSON-safe event preview for renderer (lightweight only) -----------------
     try:
         sort_col = "start_date_local" if "start_date_local" in df_event_only.columns else "date"
         cols = [
