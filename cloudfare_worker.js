@@ -94,33 +94,42 @@ export default {
         let light = [], full = [], wellness = [], profile = {};
 
         if (reportType === "season") {
-          console.log("[RUN_REPORT] Season mode → lightweight-only fetch (90-day window).");
+          console.log("[RUN_REPORT] Season mode → using Tier-0 lightweight snapshot route (no chunking)");
 
-          light = await fetchChunked(
-            baseActUrl,
-            range.lightDays,
-            14,
-            "&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin"
-          );
+          // --- Build and call the Tier-0 lightweight proxy --------------------
+          const oldest = getDate(range.lightDays);
+          const newest = getDate(0);
+          const t0Url = `${baseActUrl}_t0light?oldest=${oldest}&newest=${newest}` +
+            "&fields=id,name,type,start_date_local,distance,moving_time," +
+            "icu_training_load,IF,average_heartrate,VO2MaxGarmin";
 
-          wellness = await fetchChunked(baseWellUrl, range.lightDays, 7);
+          const actResp = await fetch(t0Url, { headers: { Authorization: authHeader } });
+          if (!actResp.ok) throw new Error(`T0-light fetch failed: ${actResp.status}`);
+          const light = await actResp.json();
+          console.log(`[RUN_REPORT] Retrieved ${light.length} activities via /activities_t0light`);
 
-          profile = await fetch(profileUrl, { headers: { Authorization: authHeader } }).then(r => r.json());
+          // --- Wellness (still chunked) ---------------------------------------
+          const wellness = await fetchChunked(baseWellUrl, range.lightDays, 7);
+          console.log(`[RUN_REPORT] Retrieved ${wellness.length} wellness records`);
 
+          // --- Profile ---------------------------------------------------------
+          const profile = await fetch(profileUrl, { headers: { Authorization: authHeader } }).then(r => r.json());
+
+          // --- Build response summary -----------------------------------------
           const summary = {
             status: "ok",
-            message: `[RUN_REPORT] Completed lightweight season fetch (${light.length} activities, ${wellness.length} wellness records)`,
+            message: `[RUN_REPORT] Completed season fetch via /activities_t0light (${light.length} activities, ${wellness.length} wellness records)`,
             reportType,
             athlete_id: athleteId,
-            chunked: range.chunk,
+            chunked: false,
             range,
             summary: {
               light_count: light.length,
               wellness_count: wellness.length,
-              start_date: getDate(range.lightDays),
-              end_date: getDate(0),
+              start_date: oldest,
+              end_date: newest,
             },
-            athlete_profile: profile?.athlete || {}
+            athlete_profile: profile?.athlete || {},
           };
 
           const payload = JSON.stringify(summary);
@@ -130,10 +139,11 @@ export default {
             status: 200,
             headers: {
               "content-type": "application/json",
-              "access-control-allow-origin": "*"
-            }
+              "access-control-allow-origin": "*",
+            },
           });
         }
+
 
         // --- Normal full-detail mode (weekly/block) ---
         console.log("[RUN_REPORT] Weekly/Block mode → fetching full dataset.");
