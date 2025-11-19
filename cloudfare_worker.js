@@ -94,31 +94,51 @@ export default {
         let light = [], full = [], wellness = [], profile = {};
 
         if (reportType === "season") {
-          console.log("[RUN_REPORT] Season mode → using Tier-0 lightweight snapshot route (no chunking)");
+          console.log("[RUN_REPORT] Season mode → single-call lightweight fetch (no chunking for 90 days).");
 
-          // --- Build and call the Tier-0 lightweight proxy --------------------
           const oldest = getDate(range.lightDays);
           const newest = getDate(0);
-          const t0Url = `${baseActUrl}_t0light?oldest=${oldest}&newest=${newest}` +
+
+          // --- Single-call lightweight fetches (no chunking) --------------------------
+
+          // --- Activities (single 90-day call) ---------------------------------------
+          const actOldest = getDate(range.lightDays);
+          const actNewest = getDate(0);
+          const actUrl =
+            `${baseActUrl}?oldest=${actOldest}&newest=${actNewest}` +
             "&fields=id,name,type,start_date_local,distance,moving_time," +
             "icu_training_load,IF,average_heartrate,VO2MaxGarmin";
 
-          const actResp = await fetch(t0Url, { headers: { Authorization: authHeader } });
-          if (!actResp.ok) throw new Error(`T0-light fetch failed: ${actResp.status}`);
-          const light = await actResp.json();
-          console.log(`[RUN_REPORT] Retrieved ${light.length} activities via /activities_t0light`);
+          console.log(`[RUN_REPORT] Fetching lightweight 90-day dataset → ${actUrl}`);
 
-          // --- Wellness (still chunked) ---------------------------------------
-          const wellness = await fetchChunked(baseWellUrl, range.lightDays, 7);
+          const actResp = await fetch(actUrl, { headers: { Authorization: authHeader } });
+          if (!actResp.ok)
+            throw new Error(`Season lightweight fetch failed: ${actResp.status}`);
+          const light = await actResp.json();
+
+          console.log(`[RUN_REPORT] Retrieved ${light.length} activities (un-chunked)`);
+
+          // --- Wellness (single 42-day call, not chunked) -----------------------------
+          const wellOldest = getDate(range.fullDays);
+          const wellNewest = getDate(0);
+          const wellnessUrl = `${baseWellUrl}?oldest=${wellOldest}&newest=${wellNewest}`;
+          console.log(`[RUN_REPORT] Fetching wellness (single call, 42 days) → ${wellnessUrl}`);
+
+          const wellnessResp = await fetch(wellnessUrl, { headers: { Authorization: authHeader } });
+          if (!wellnessResp.ok)
+            throw new Error(`Wellness fetch failed: ${wellnessResp.status}`);
+          const wellness = await wellnessResp.json();
+
           console.log(`[RUN_REPORT] Retrieved ${wellness.length} wellness records`);
 
-          // --- Profile ---------------------------------------------------------
+
+          // --- Profile fetch (unchanged) -------------------------------------------
           const profile = await fetch(profileUrl, { headers: { Authorization: authHeader } }).then(r => r.json());
 
-          // --- Build response summary -----------------------------------------
+          // --- Build unified payload summary ---------------------------------------
           const summary = {
             status: "ok",
-            message: `[RUN_REPORT] Completed season fetch via /activities_t0light (${light.length} activities, ${wellness.length} wellness records)`,
+            message: `[RUN_REPORT] Completed single-call lightweight season fetch (${light.length} activities, ${wellness.length} wellness records)`,
             reportType,
             athlete_id: athleteId,
             chunked: false,
@@ -139,8 +159,8 @@ export default {
             status: 200,
             headers: {
               "content-type": "application/json",
-              "access-control-allow-origin": "*",
-            },
+              "access-control-allow-origin": "*"
+            }
           });
         }
 

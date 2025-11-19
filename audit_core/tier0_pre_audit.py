@@ -593,6 +593,37 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     if wellness is None or wellness.empty:
         raise AuditHalt("❌ No wellness data returned after chunked fetch")
 
+    # --- Step 4b: Enforce correct dataset range alignment ---------------------
+    try:
+        if isinstance(df_activities, pd.DataFrame) and not df_activities.empty \
+           and isinstance(wellness, pd.DataFrame) and not wellness.empty:
+
+            start_acts = df_activities["start_date_local"].min()
+            end_acts = df_activities["start_date_local"].max()
+            start_well = wellness["date"].min()
+            end_well = wellness["date"].max()
+
+            debug(context, f"[T0] Activities range: {start_acts.date()} → {end_acts.date()}")
+            debug(context, f"[T0] Wellness range: {start_well} → {end_well}")
+
+            # Clip wellness to last 42 days relative to the activity window
+            from datetime import timedelta
+            cutoff_date = pd.to_datetime(end_acts.date()) - timedelta(days=42)
+            wellness = wellness[wellness["date"] >= cutoff_date.strftime("%Y-%m-%d")]
+
+            debug(
+                context,
+                f"[T0] Clipped wellness to last 42 days relative to activities end date ({cutoff_date.date()} onward) → {len(wellness)} rows."
+            )
+
+            context["wellness"] = wellness.reset_index(drop=True)
+
+        else:
+            debug(context, "[T0 WARN] Skipped range alignment — missing activity or wellness data.")
+    except Exception as e:
+        debug(context, f"[T0 WARN] Failed to align wellness range: {e}")
+
+
     # --- Debug inspection ---
     debug(context,"[DEBUG] wellness raw:", type(wellness), len(wellness))
     if isinstance(wellness, pd.DataFrame):
