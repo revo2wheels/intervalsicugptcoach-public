@@ -96,7 +96,23 @@ def run_report(
     debug(context, "[LOCK] Audit mode enabled → renderer restricted to verified Tier-2 data only.")
 
     # --- Tier-0 Range Configuration (aligned with worker) ---
-    today = datetime.now().date()
+    # --- Unified timezone-safe "today" (pre-athleteProfile) ---
+    from datetime import datetime
+    from pytz import timezone, UnknownTimeZoneError
+
+    # Try context first — Tier-0 prefetch usually sets this
+    try:
+        tz_name = context.get("timezone")
+        debug(context, f"[T0] timezone {tz_name})")
+        if not tz_name:
+            tz_name = "Europe/Zurich"  # fallback
+        tz = timezone(tz_name)
+    except UnknownTimeZoneError:
+        tz = timezone("Europe/Zurich")
+
+    today = datetime.now(tz).date()
+    debug(context, f"[T0] Localized today after set={today} (tz={tz.zone})")
+
 
     if reportType.lower() == "season":
         context["range"] = {"lightDays": 90, "fullDays": 42, "chunk": True}
@@ -152,11 +168,11 @@ def run_report(
                     context["activities_light"] = df_snapshot.to_dict("records")
 
                     # Apply canonical 7-day slice for event-only totals and render
-                    cutoff_start = pd.Timestamp.today().normalize() - pd.Timedelta(days=7)
+                    cutoff_start = pd.Timestamp.now(tz).normalize() - pd.Timedelta(days=7)
                     df_master = df_snapshot[df_snapshot["start_date_local"] >= cutoff_start].copy()
 
                     # Sanity assertion for window integrity
-                    assert df_master["start_date_local"].min() >= pd.Timestamp.today() - pd.Timedelta(days=7), (
+                    assert df_master["start_date_local"].min() >= pd.Timestamp.now(tz) - pd.Timedelta(days=7), (
                         "[T0-FULL] Render guard: events older than 7 days detected in df_master!"
                     )
 

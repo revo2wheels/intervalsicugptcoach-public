@@ -1,0 +1,4 @@
+[14:45:40] 🧭 Generating Weekly Report
+[14:45:40] 🧭 Running Weekly Report (auditFinal=False, render_mode=full+metrics)
+[14:45:40] [INTENT] Validation warning: Expecting value: line 1 column 1 (char 0)
+[14:45:40] [LOCK] Audit mode enabled → renderer restricted to verified Tier-2 data only.

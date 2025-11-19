@@ -5,10 +5,10 @@
 ```
 ✅ Renderer source: Tier-2 enforced totals (canonical dataset)
 [FINALIZER] Enforcing markdown-only return (season-safe mode)
-[FINALIZER] Markdown-only return OK — len=3702, ctx_keys=77
+[FINALIZER] Markdown-only return OK — len=3702, ctx_keys=78
 ✅ Renderer source: Tier-2 enforced totals (canonical dataset)
 [FINALIZER] Enforcing markdown-only return (season-safe mode)
-[FINALIZER] Markdown-only return OK — len=3702, ctx_keys=77
+[FINALIZER] Markdown-only return OK — len=3702, ctx_keys=78
 ```
 
 ## Rendered Markdown Report
@@ -17,7 +17,7 @@
 **Athlete:** Clive King
 **Period:** 2025-11-13 → 2025-11-19
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-19T13:07:14.757437
+**Generated:** 2025-11-19T13:46:25.024290
 
 ---
 
@@ -132,5 +132,5 @@ _No pace zone data available._
 **Totals:** 7.80 h · 224.3 km · 448 TSS · 0 sessions**
 
 ---
-✅ **Audit Completed:** 2025-11-19T13:07:14.760558
+✅ **Audit Completed:** 2025-11-19T13:46:25.028058
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: —
