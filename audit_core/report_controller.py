@@ -51,7 +51,42 @@ def run_report(
     debug(context, f"🧭 Running {reportType.title()} Report (auditFinal={auditFinal}, render_mode={render_mode})")
 
     # --- Load validation and rule base ---
-    loadAllRules()
+    ruleset = loadAllRules()
+
+    # --- NEW: Enforce schema x-intent lock if available ---
+    try:
+        import json, base64
+        # Decode content payload returned by loadAllRules()
+        content = json.loads(base64.b64decode(ruleset["content"]).decode("utf-8"))
+
+        # Locate the intent block matching current report type
+        intents = content.get("x-intents", [])
+        matched = next(
+            (i for i in intents if reportType.lower() in [t.lower() for t in i.get("trigger", [])]), None
+        )
+
+        if matched and "x-intent" in matched:
+            xi = matched["x-intent"]
+
+            # Validate intent lock
+            if xi.get("enforce_gate", True) and not auditFinal and preRenderAudit:
+                raise RuntimeError(
+                    f"RenderGateViolation: preRenderAudit blocked under x-intent lock ({xi['x-intent']})"
+                )
+
+            if xi.get("x-intent") != reportType.lower():
+                raise RuntimeError(
+                    f"IntentMismatchError: schema locked for {xi['x-intent']} but got {reportType.lower()}"
+                )
+
+            debug(context, f"[INTENT] Schema lock verified → {xi['x-intent']} (gate={xi['enforce_gate']})")
+        else:
+            debug(context, "[INTENT] No schema-level lock matched — proceeding with default routing.")
+
+    except Exception as e:
+        debug(context, f"[INTENT] Validation warning: {e}")
+
+
 
     # --- Tier-0 Range Configuration (aligned with worker) ---
     today = datetime.now().date()
