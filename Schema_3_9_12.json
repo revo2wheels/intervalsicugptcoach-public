@@ -10,6 +10,13 @@
       "url": "https://intervalsicugptcoach.clive-a5a.workers.dev"
     }
   ],
+
+    "x-render-source": {
+    "required": "audit_tier2",
+    "allow_fallback": false,
+    "description": "Renderer must consume validated Tier-2 audit payload only."
+  },
+
   "paths": {
     "/run_report": {
       "get": {
@@ -34,6 +41,7 @@
               "mode": "full+metrics",
               "chunk": "auto",
               "auto": true,
+              "source": "audit_tier2",
               "title": "Unified Training Report"
             },
             "content": {

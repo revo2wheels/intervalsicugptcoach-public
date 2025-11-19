@@ -27,6 +27,11 @@ Applies to:
 
 Refer to the **Report Triggers Clarification** section for operational definitions.  
 
+**Render Binding:**  
+- Renderer must confirm `context["render_source"] == "audit_tier2"`.  
+- If absent or mismatched → ❌ Halt render.  
+- No fallback narrative generation permitted.
+
 ---
 
 ## 🧱 Structure Overview  

@@ -46,6 +46,9 @@ intervals_icu__jit_plugin schema synchronized with schema_3_9_12.json (fields en
 - Confirm variance between event totals and rendered totals ≤ 1%.  
 - Renderer executes only when `auditFinal=True`.  
 - Ignore graphical or chart assets unless explicitly requested.  
+- Add `allow_intent_inference: false` to runtime configuration.  
+- Add `enforce_render_source: audit_only`.  
+- Renderer must receive a validated `render_payload` from Tier-2; otherwise return `"⚠️ Render blocked: auditFinal payload missing."`
 
 ---
 

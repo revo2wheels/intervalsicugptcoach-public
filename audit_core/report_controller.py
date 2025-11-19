@@ -23,7 +23,7 @@ def run_report(
     auditFinal: bool = False,
     auditPartial: bool = False,
     force_analysis: bool = False,
-    preRenderAudit: bool = True,
+    preRenderAudit: bool = False,
     tier2_enforce_event_only_totals: bool = False,
     render_mode: str = "full+metrics",
     autoCommit: bool = True,
@@ -86,7 +86,10 @@ def run_report(
     except Exception as e:
         debug(context, f"[INTENT] Validation warning: {e}")
 
-
+    # --- Enforce render-source gating ---
+    if preRenderAudit and not auditFinal:
+        raise RuntimeError("Render blocked: preRenderAudit=True but auditFinal=False (strict mode active)")
+    context["enforce_render_source"] = "audit_tier2"
 
     # --- Tier-0 Range Configuration (aligned with worker) ---
     today = datetime.now().date()
