@@ -14,7 +14,7 @@ CHEAT_SHEET["thresholds"] = {
     "Strain": {"green": (0, 3000), "amber": (3000, 4000)},
     "RecoveryIndex": {"green": (0.6, 1.0), "amber": (0.4, 0.6)},
     "Polarisation": {"green": (0.75, 0.90), "amber": (0.65, 0.95)},
-    "FatigueTrend": {"green": (-0.2, 0.2), "amber": (-0.4, 0.4)},
+    "FatigueTrend": {"green": (-10, 10), "amber": (-20, 20)},  # Updated to percentage scale
     "StressTolerance": {"green": (2.0, 8.0), "amber": (1.0, 10.0)},
     "FatOxEfficiency": {"green": (0.4, 0.8), "amber": (0.3, 0.9)},
     "FOxI": {"green": (30, 80), "amber": (20, 90)},          # FatOx Index %
@@ -25,6 +25,7 @@ CHEAT_SHEET["thresholds"] = {
     "ZQI": {"green": (5, 15), "amber": (3, 20)},               #% now
 }
 
+# === Context ===
 CHEAT_SHEET["context"] = {
     "ACWR": (
     "EWMA Acute:Chronic Load Ratio — compares 7-day vs 28-day weighted loads. "
@@ -32,7 +33,7 @@ CHEAT_SHEET["context"] = {
 ),
     "Monotony": "1–2 shows healthy variation; >2.5 means repetitive stress pattern.",
     "Strain": "Product of load × monotony; >3500 signals potential overreach.",
-    "FatigueTrend": "0±0.2 indicates balance; positive trend means accumulating fatigue.",
+    "FatigueTrend": "FatigueTrend is calculated as the percentage change between the 7-day and 28-day moving averages. A 0% change indicates balance, while a positive percentage change indicates accumulating fatigue, and a negative percentage change indicates recovery.",
     "ZQI": "Zone Quality Index (%) 5-15 high-intensity time is normal <3% too easy, >20% too intense or erratic pacing.",
     "FatOxEfficiency": "0.4–0.8 means balanced fat oxidation; lower = carb dependence.",
     "Polarisation": "0.75–0.9 matches Seiler 80/20 distribution; <0.7 = too intense.",
@@ -47,33 +48,28 @@ CHEAT_SHEET["context"] = {
 
 CHEAT_SHEET["coaching_links"] = {
     # --- Derived Metric Coaching Links ---
-    "ACWR": "Guides short-term vs. chronic load balance adjustments.",
-    "Monotony": "Used to determine need for rest or deload variation.",
-    "Strain": "Informs total stress tolerance and recovery planning.",
-    "RecoveryIndex": "Influences rest day scheduling and microcycle tapering.",
-    "FatigueTrend": "Signals need for load stabilization or downshift.",
-    "Polarisation": "Determines intensity mix correction (Seiler balance).",
-    "FatOxEfficiency": "Drives aerobic base and metabolic conditioning feedback.",
-    "FOxI": "Helps assess Zone 2 progression and fat adaptation.",
-    "CUR": "Advises on fueling strategy and carbohydrate dependency.",
-    "MES": "Summarizes efficiency adaptation response.",
-
-    # --- Efficiency & Adaptation Coaching Links ---
-    "Efficiency Factor": "Ratio of power to heart rate — higher indicates improved aerobic efficiency.",
-    "Fatigue Resistance": "Ability to maintain power over time; >0.9 shows strong endurance resilience.",
-    "Endurance Decay": "Rate of endurance loss; <0.05 indicates sustainable aerobic base.",
-    "Z2 Stability": "Consistency in Zone 2 heart rate vs. power; <0.05 suggests steady aerobic control.",
-    "Aerobic Decay": "Long-term aerobic deterioration rate; <0.03 means stable base conditioning.",
-    "StressTolerance": "Reflects sustainable strain capacity; 2–8 indicates robust adaptation to training load.",
-    "ZQI": "Represents proportion of high-intensity time; 5–15 % indicates balanced intensity distribution.",
-    "GR": "Glucose Ratio; gauges glycolytic bias — higher values indicate heavy carbohydrate reliance.",
+    "ACWR": "If ACWR > 1.5, reduce intensity and focus on recovery to avoid overload. If ACWR < 0.8, gradually increase training load with controlled progression to build endurance.",
+    "Monotony": "If Monotony > 2.5, introduce more variation in training or implement a deload week to reduce repetitive stress.",
+    "Strain": "If Strain > 3000, monitor for signs of overreach and consider more rest or deloading. If Strain > 3500, consider reducing volume or intensity temporarily.",
+    "RecoveryIndex": "If RecoveryIndex is low (<0.7), ensure adequate rest and recovery, and avoid heavy training loads.",
+    "FatigueTrend": "If FatigueTrend is negative (e.g., below -0.2), this indicates a recovering state. Continue with controlled training load and focus on recovery to ensure sustained progress. Avoid aggressive increases in load.",
+    "FatOxEfficiency": "If FatOxEfficiency is low (<0.6), focus on improving aerobic base with longer, low-intensity efforts.",
+    "Polarisation": "If Polarisation < 0.7, adjust training to increase low-intensity (Z1/Z2) work and reduce high-intensity work (Z5/Z6).",
+    "ZQI": "If ZQI > 20%, review pacing strategy; excessive high-intensity time could indicate erratic pacing or overtraining. Aim for 5-15% ZQI for balanced training.",
+    "FOxI": "If FOxI is increasing, continue to prioritize low-intensity work to enhance fat metabolism. If it decreases, consider increasing your Zone 2 training duration.",
+    "CUR": "If CUR is outside the green zone (30-70), adjust carbohydrate intake and fueling strategy to ensure balanced metabolic use during long sessions.",
+    "GR": "If GR exceeds 2.0, focus on reducing glycolytic intensity and increase aerobic work. Ensure sufficient recovery to avoid over-reliance on carbs.",
+    "MES": "If MES is below 20, work on improving metabolic efficiency by increasing endurance training with a focus on aerobic base and fat metabolism.",
+    "StressTolerance": "If StressTolerance is high (>8), reduce overall load and increase recovery time. If it's low (<2), ensure proper training load progression.",
 }
+
+
 
 # === Labels ===
 CHEAT_SHEET["labels"] = {
     "acwr_risk": "EWMA Acute:Chronic Load Ratio",
     "strain": "Load × Monotony",
-    "fatigue_trend": "EMA(Load, decay=0.2)",
+    "fatigue_trend": "EMA(Load, decay=0.2) (Percentage change)",
 }
 
 # === Cheat Sheet Accessor ===

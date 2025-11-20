@@ -1,0 +1,9 @@
+[11:03:36] 🧭 Generating Season Report
+[11:03:36] 🧭 Running Season Report (auditFinal=False, render_mode=full+metrics)
+[11:03:36] [T0-LIGHT] Forcing Tier-0 lightweight prefetch before full audit
+[11:03:37] None [T0] Expanded icu_zone_times safely → 8 cols, max depth=8
+[11:03:37] None [T0] Expanded icu_hr_zone_times safely → 7 cols, max depth=7
+[11:03:41] [T1] Wellness alignment window (tz-aware): 2025-08-18 10:00:24 → 2025-11-15 13:04:52
+[11:03:41] [T1] Wellness date range: 2025-08-18 → 2025-11-16
+[11:03:41] ✅ Wellness alignment check passed.
+[11:03:41] None [T2] Daily completeness summary built — 71 rows

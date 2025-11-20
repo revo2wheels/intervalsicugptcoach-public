@@ -1,6 +1,8 @@
+#!/usr/bin/env python3
 """
-coaching_profile.py — Unified Coaching Profile (v16.1)
+coaching_profile.py — Unified Coaching Profile (v16.1-Sync)
 Structured reference of frameworks, formulas, and methodology anchors.
+Machine-synced with coach_profile.md (2025-11-03).
 """
 
 def get_profile_metrics(context):
@@ -48,47 +50,141 @@ COACH_PROFILE = {
     },
 
     "markers": {
+        "ACWR": {
+            "framework": "Banister Load Ratio",
+            "formula": "EWMA(Acute) / EWMA(Chronic)",
+            "criteria": {
+                "productive": "0.8–1.3",
+                "recovery": "<0.8",
+                "overload": ">1.5"
+            },
+        },
+        "Monotony": {
+            "framework": "Foster 2001",
+            "formula": "Mean_7d / SD_7d",
+            "criteria": {
+                "optimal": "0–2",
+                "moderate": "2.1–2.5",
+                "high": ">2.5"
+            },
+        },
+        "Strain": {
+            "framework": "Foster 2001",
+            "formula": "Monotony × ΣLoad_7d",
+            "criteria": {
+                "optimal": "<600",
+                "moderate": "600–800",
+                "high": ">800"
+            },
+        },
+        "FatigueTrend": {
+            "framework": "Banister EWMA Delta",
+            "formula": "Mean(7d) – Mean(28d)",
+            "criteria": {
+                "balanced": "-0.2–+0.2",
+                "accumulating": ">+0.2",
+                "recovering": "<-0.2"
+            },
+        },
+        "StressTolerance": {
+            "framework": "Adaptive Load Tolerance",
+            "formula": "(strain / monotony) / 100",
+            "criteria": {
+                "optimal": "2–8",
+                "low": "<2",
+                "high": ">8"
+            },
+        },
+        "RecoveryIndex": {
+            "framework": "Noakes Central Governor",
+            "formula": "HRV / RestHR × readiness",
+            "criteria": {
+                "optimal": "0.8–1.0",
+                "moderate": "0.7–0.79",
+                "low": "<0.7"
+            },
+        },
         "FatOxidationIndex": {
             "framework": "San Millán Zone 2 Model",
             "formula": "(1 - |IF - 0.7| / 0.1) × (1 - Decoupling / 10)",
-            "criteria": {"optimal": ">=0.80", "moderate": "0.60–0.79", "low": "<0.60"},
+            "criteria": {
+                "optimal": ">=0.80",
+                "moderate": "0.60–0.79",
+                "low": "<0.60"
+            },
             "placement": "Training Quality section",
         },
-        "BenchmarkIndex": {
-            "framework": "Friel Functional Benchmarking",
-            "formula": "(FTP_current / FTP_prior) - 1",
-            "criteria": { "productive": "+2–5%", "stagnant": "0%", "regression": ">−3%" },
+        "FatOxEfficiency": {
+            "framework": "San Millán 2020",
+            "formula": "Derived from IF × 0.9",
+            "criteria": {
+                "optimal": "0.6–0.8",
+                "low": "<0.5"
+            },
         },
-        "SpecificityIndex": {
-            "framework": "Friel Specificity Ratio",
-            "formula": "race_specific_hours / total_hours",
-            "criteria": {"peak": "0.70–0.90", "build": "0.50–0.69", "base": "<0.50"},
+                "FOxI": {
+            "framework": "Internal Derived Metric",
+            "formula": "FatOxEfficiency × 100",
+            "criteria": {
+                "optimal": ">=70",
+                "moderate": "50–69",
+                "low": "<50"
+            },
+            "placement": "Training Quality section"
         },
-        "ConsistencyIndex": {
-            "framework": "Friel Consistency Metric",
-            "formula": "completed_sessions / planned_sessions",
-            "criteria": {"consistent": ">=0.90", "variable": "0.75–0.89", "inconsistent": "<0.75"},
+        "CUR": {
+            "framework": "Internal Derived Metric",
+            "formula": "100 - FOxI",
+            "criteria": {
+                "optimal": "20–60",
+                "high": ">80",
+                "low": "<20"
+            },
+            "placement": "Training Quality section"
         },
-        "AgeFactor": {
-            "framework": "Friel Aging Adaptation",
-            "formula": "ATL_adj = ATL × (1 - 0.005 × (Age - 40))",
+        "GR": {
+            "framework": "Internal Derived Metric",
+            "formula": "IF × 2.4",
+            "criteria": {
+                "optimal": "1.5–2.1",
+                "moderate": "1.2–1.49",
+                "high": ">2.1",
+                "low": "<1.2"
+            },
+            "placement": "Metabolic section"
         },
-        "PolarisationIndex": {
-            "framework": "Seiler 80/20 Model",
-            "formula": "((Z1% + Z3%) - Z2%) / 100",
-            "criteria": {"polarised": ">0.50", "mixed": "0.30–0.49", "threshold": "<0.30"},
+        "MES": {
+            "framework": "Internal Derived Metric",
+            "formula": "(FatOxEfficiency × 60) / GR",
+            "criteria": {
+                "optimal": ">=20",
+                "moderate": "10–19",
+                "low": "<10"
+            },
+            "placement": "Metabolic section"
         },
-        "Monotony": {
-            "framework": "Foster Monotony",
-            "formula": "Mean_7d / SD_7d",
-        },
-        "Strain": {
-            "framework": "Foster Strain",
-            "formula": "Monotony × ΣLoad_7d",
+        "ZQI": {
+            "framework": "Seiler Intensity Distribution",
+            "formula": "100 × (Z5 + Z6 + Z7) / (Z1–Z7 total)",
+            "criteria": {
+                "optimal": "5–15",
+                "moderate": "3–20",
+                "low": "<3 or >20"
+            },
+            "placement": "Training Quality section",
         },
         "DurabilityIndex": {
             "framework": "Sandbakk Durability",
             "formula": "1 - (PowerDrop% / 100)",
+        },
+        "PolarisationIndex": {
+            "framework": "Seiler 80/20 Model",
+            "formula": "((Z1% + Z3%) - Z2%) / 100",
+            "criteria": {
+                "polarised": ">0.5",
+                "mixed": "0.3–0.49",
+                "threshold": "<0.3"
+            },
         },
         "TRIMP": {
             "framework": "Banister Load Model",
@@ -97,7 +193,39 @@ COACH_PROFILE = {
         "Readiness": {
             "framework": "Noakes Central Governor",
             "formula": "0.3×Mood + 0.3×Sleep + 0.2×Stress + 0.2×Fatigue",
-        }
+        },
+        "BenchmarkIndex": {
+            "framework": "Friel Functional Benchmarking",
+            "formula": "(FTP_current / FTP_prior) - 1",
+            "criteria": {
+                "productive": "+2–5%",
+                "stagnant": "0%",
+                "regression": ">−3%"
+            },
+        },
+        "SpecificityIndex": {
+            "framework": "Friel Specificity Ratio",
+            "formula": "race_specific_hours / total_hours",
+            "criteria": {
+                "peak": "0.70–0.90",
+                "build": "0.50–0.69",
+                "base": "<0.50"
+            },
+        },
+        "ConsistencyIndex": {
+            "framework": "Friel Consistency Metric",
+            "formula": "completed_sessions / planned_sessions",
+            "criteria": {
+                "consistent": ">=0.90",
+                "variable": "0.75–0.89",
+                "inconsistent": "<0.75"
+            },
+        },
+        "AgeFactor": {
+            "framework": "Friel Aging Adaptation",
+            "formula": "ATL_adj = ATL × (1 - 0.005 × (Age - 40))",
+        },
+
     },
 
     "metadata": {

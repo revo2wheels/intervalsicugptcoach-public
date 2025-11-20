@@ -16,285 +16,298 @@ from coaching_profile import COACH_PROFILE
 from coaching_heuristics import HEURISTICS
 from coaching_cheat_sheet import CHEAT_SHEET
 
-# --- Interpretive classification layer ---
-def classify_metric(value, metric):
-    """Return icon + label based on CHEAT_SHEET thresholds, with numeric coercion."""
-    import numpy as np
+def compute_zone_intensity(df, context=None):
+    """
+    Zone Quality Index (ZQI) — percentage of total training time spent in high-intensity zones (Z5–Z7).
+    Correctly scaled to 0–100% (not ×100 again) and includes detailed debug logging.
+    """
+    import pandas as pd, numpy as np
+    debug = context.get("debug", lambda *a, **kw: None) if isinstance(context, dict) else (lambda *a, **kw: None)
 
-    # Handle missing or non-numeric values
-    try:
-        if value is None or (isinstance(value, float) and np.isnan(value)):
-            return "⚪", "no data"
-        value = float(value)
-        if np.isnan(value):
-            return "⚪", "no data"
-    except (TypeError, ValueError):
-        return "⚪", "no data"
+    if not isinstance(df, pd.DataFrame) or df.empty:
+        debug(context, "[ZQI] ❌ Aborted — empty or invalid dataframe.")
+        return 0.0
 
-    thresholds = CHEAT_SHEET.get("thresholds", {})
-    bounds = thresholds.get(metric, {})
+    # Detect zone columns
+    zcols = [c for c in df.columns if any(c.lower().startswith(p) for p in ("z", "power_z", "hr_z"))]
+    if not zcols:
+        debug(context, "[ZQI] ⚠️ No zone columns found.")
+        return 0.0
 
-    gmin, gmax = bounds.get("green", (None, None))
-    amin, amax = bounds.get("amber", (None, None))
+    # Convert to numeric safely
+    zdf = df[zcols].apply(pd.to_numeric, errors="coerce").fillna(0)
+    total_time = float(np.nansum(zdf.to_numpy()))
+    if total_time <= 0:
+        debug(context, "[ZQI] ⚠️ All zone values zero or missing.")
+        return 0.0
 
-    # If no valid thresholds
-    if gmin is None or gmax is None:
+    # Sum high-intensity zones (Z5–Z7)
+    high_time = float(sum(
+        zdf[c].sum() for c in zdf.columns
+        if any(tag in c.lower() for tag in ("z5", "z6", "z7"))
+    ))
+
+    # Compute ratio and percent
+    zqi_ratio = high_time / total_time
+    zqi_percent = round(zqi_ratio * 100, 1)
+
+    # ✅ Detailed debug log
+    debug(context, (
+        f"[ZQI] High-intensity computation:\n"
+        f"       → Detected zone cols={zcols}\n"
+        f"       → High (Z5-Z7)={high_time:.2f}s, Total={total_time:.2f}s\n"
+        f"       → Ratio={zqi_ratio:.4f} → ZQI={zqi_percent:.1f}%"
+    ))
+
+    return zqi_percent
+
+
+def classify_marker(value, marker, context=None):
+    """Universal classifier: supports full range syntax, inequality logic, and aliases."""
+    debug = context.get("debug", lambda *a, **kw: None) if isinstance(context, dict) else (lambda *a, **kw: None)
+
+    # Handle missing or invalid
+    if value is None or (isinstance(value, float) and np.isnan(value)):
+        debug(context, f"[CLASSIFY] {marker}: no data")
         return "⚪", "undefined"
 
-    # Numeric comparisons
-    if gmin <= value <= gmax:
-        return "🟢", "optimal"
-    if amin is not None and amin <= value <= amax:
-        return "🟠", "borderline"
-    return "🔴", "out of range"
+    try:
+        v = float(value)
+    except (TypeError, ValueError):
+        debug(context, f"[CLASSIFY] {marker}: non-numeric value={value}")
+        return "⚪", "undefined"
+
+    # Aliases
+    marker_aliases = {
+        "Polarisation": "PolarisationIndex",
+        "FatOx": "FatOxEfficiency",
+        "FatOxidation": "FatOxEfficiency",
+        "Recovery": "RecoveryIndex",
+    }
+    if marker in marker_aliases:
+        marker = marker_aliases[marker]
+
+    m = COACH_PROFILE["markers"].get(marker, {})
+    crit = m.get("criteria", {})
+    if not crit:
+        debug(context, f"[CLASSIFY] {marker}: no criteria found")
+        return "⚪", "undefined"
+
+    def parse_range(rule):
+        """Helper for parsing '1–2' or inequalities."""
+        rule = str(rule).replace(" ", "")
+        if "–" in rule:
+            try:
+                a, b = [float(x.strip("<>=")) for x in rule.split("–")]
+                return lambda x: a <= x <= b
+            except Exception:
+                return lambda x: False
+        if "or" in rule:
+            parts = rule.split("or")
+            conds = []
+            for p in parts:
+                if p.startswith("<"): conds.append(lambda x, t=float(p[1:]): x < t)
+                elif p.startswith(">"): conds.append(lambda x, t=float(p[1:]): x > t)
+            return lambda x: any(fn(x) for fn in conds)
+        if rule.startswith(">="): return lambda x, t=float(rule[2:]): x >= t
+        if rule.startswith("<="): return lambda x, t=float(rule[2:]): x <= t
+        if rule.startswith(">"): return lambda x, t=float(rule[1:]): x > t
+        if rule.startswith("<"): return lambda x, t=float(rule[1:]): x < t
+        return lambda x: False
+
+    # Evaluate in logical order
+    for key, rule in crit.items():
+        fn = parse_range(rule)
+        if fn(v):
+            icon_map = {
+                "optimal": "🟢", "productive": "🟢", "balanced": "🟢", "polarised": "🟢",
+                "moderate": "🟠", "borderline": "🟠", "mixed": "🟠", "recovering": "🟠",
+                "low": "🔴", "overload": "🔴", "high": "🔴", "accumulating": "🔴", "threshold": "🔴"
+            }
+            icon = icon_map.get(key, "⚪")
+            debug(context, f"[CLASSIFY] {marker}: {v} matches '{rule}' ({key}) → {icon}")
+            return icon, key
+
+    debug(context, f"[CLASSIFY] {marker}: {v} no rule matched")
+    return "⚪", "undefined"
+
 
 
 def safe(df, col, fn="sum"):
     """Safely apply a reduction to a dataframe column."""
-    import pandas as pd
     if not isinstance(df, pd.DataFrame):
         return 0.0
     val = df[col].fillna(0) if col in df else pd.Series([0])
     return float(val.sum()) if fn == "sum" else float(val.mean())
 
-
-def safe_get(source, key, default=None):
-    return source.get(key, default) if isinstance(source, dict) else default
-
-
-def compute_acwr(load_series, window_days, baseline_days):
-    if len(load_series) < window_days:
-        return np.nan
-    acute = load_series[-window_days:].mean()
-    chronic = load_series[-baseline_days:].mean()
-    return round(acute / chronic if chronic > 0 else np.nan, 2)
-
-
-def compute_monotony(load_series):
-    return round(load_series.mean() / load_series.std(), 2) if load_series.std() > 0 else np.nan
-
-
-def compute_strain(load_series):
-    monotony = compute_monotony(load_series)
-    return round(monotony * load_series.sum(), 1) if monotony else np.nan
-
-
-def compute_fatigue_trend(df):
-    decay = safe_get(HEURISTICS, "fatigue_decay_const", 0.2)
-    if "icu_training_load" not in df:
-        return 0.0
-    tss = df["icu_training_load"].fillna(0)
-    ema = tss.ewm(alpha=decay).mean()
-    trend = (ema.iloc[-1] - ema.iloc[0]) / max(ema.iloc[0], 1)
-    return round(trend, 3)
-
-
-def compute_zone_intensity(df):
-    """Zone Quality Index (ZQI) — percentage of total time spent in high-intensity zones."""
-    import pandas as pd
-    import numpy as np
-
-    if not isinstance(df, pd.DataFrame) or df.empty:
-        return 0.0
-
-    # Identify zone columns (Z1–Z7)
-    zcols = [c for c in df.columns if c.lower().startswith("z")]
-    if not zcols:
-        return 0.0
-
-    # Convert to numeric and handle NaNs
-    zdf = df[zcols].apply(pd.to_numeric, errors="coerce").fillna(0)
-
-    # Handle case where all zone values are zero or missing
-    total = float(np.nansum(zdf.to_numpy()))
-    if total <= 0:
-        return 0.0
-
-    # High-intensity = Z5–Z7
-    high = float(sum(zdf[c].sum() for c in ["z5", "z6", "z7"] if c in zdf.columns))
-
-    # Return % of high-intensity time
-    zqi = (high / total) * 100
-    return round(zqi, 1)
-
-
-def compute_fatox_efficiency(df):
-    """Compute fat oxidation efficiency as (Z2+Z3)/total_zone_time."""
-    if not isinstance(df, pd.DataFrame):
-        return 0.0
-
-    # find all zone columns
-    zcols = [c for c in df.columns if c.lower().startswith("z") and not c.lower().startswith("hr_z")]
-    if not zcols:
-        return 0.0
-
-    zdf = df[zcols].apply(pd.to_numeric, errors="coerce").fillna(0)
-    total_time = zdf.to_numpy().sum()
-    if total_time <= 0:
-        return 0.0
-
-    fatox_eff = (zdf.get("z2", 0).sum() + zdf.get("z3", 0).sum()) / total_time
-    return round(float(fatox_eff), 3)
-
-
-def compute_polarisation(df):
-    """Compute Seiler-style polarisation index (Seiler, 2010).
-    Low intensity = Z1+Z2, High intensity = Z5–Z7.
-    Polarisation = (Low + High) / Total.
-    """
-    if not isinstance(df, pd.DataFrame):
-        return 0.0
-
-    # --- Power-based polarisation ---
-    zcols = [c for c in df.columns if c.lower().startswith("z")]
-    if zcols:
-        zdf = df[zcols].apply(pd.to_numeric, errors="coerce").fillna(0)
-
-        low = sum(zdf[c].sum() for c in ["z1", "z2"] if c in zdf)
-        high = sum(zdf[c].sum() for c in ["z5", "z6", "z7"] if c in zdf)
-        total = zdf.to_numpy().sum()
-
-        if total > 0:
-            polarisation = (low + high) / total
-            return round(float(polarisation), 3)
-
-    # --- HR-based fallback if no power zones ---
-    hr_cols = [c for c in df.columns if c.lower().startswith("hr_z")]
-    if hr_cols:
-        zhr = df[hr_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
-        low = sum(zhr[c].sum() for c in ["hr_z1", "hr_z2"] if c in zhr)
-        high = sum(zhr[c].sum() for c in ["hr_z5", "hr_z6", "hr_z7"] if c in zhr)
-        total = zhr.to_numpy().sum()
-
-        if total > 0:
-            polarisation = (low + high) / total
-            return round(float(polarisation), 3)
-
-    return 0.0
-
-def compute_recovery_index(monotony, fatigue_trend=None):
-    base = 1 - (monotony / 5)
-    if fatigue_trend is not None:
-        base -= fatigue_trend * 0.2  # penalize upward fatigue trend slightly
-    return round(max(base, 0), 3)
-
-
 def compute_derived_metrics(df_events, context):
     """
     Compute Tier-2 derived metrics from event-level load and intensity data.
     Supports both weekly and season contexts (auto-detect via context['report_type']).
+    Includes extensive debugging and classification via COACH_PROFILE markers.
     """
 
     import numpy as np
     import pandas as pd
-    from math import sqrt
 
     debug = context.get("debug", lambda *args, **kwargs: None)
 
-    # --- Prefer full 90-day lightweight dataset for ACWR computation ---
-    if "df_light_slice" in context:
-        df90 = context["df_light_slice"]
-        if isinstance(df90, pd.DataFrame) and not df90.empty:
-            debug(context, f"[Tier-2] Overriding df_events with df_light_slice ({len(df90)} events, 90-day season scope)")
-            df_events = df90
-    elif "df_event_only_full" in context:
-        full_df = context["df_event_only_full"]
-        if isinstance(full_df, pd.DataFrame) and not full_df.empty:
-            debug(context, f"[Tier-2] Using df_event_only_full as fallback ({len(full_df)} events)")
-            df_events = full_df
-    else:
-        debug(context, "[Tier-2] No suitable dataset for derived metrics — using existing df_events.")
-
-
-    # --- Ensure df_events is valid ---
+    # --- ✅ 1. Input validation and context ---
     if df_events is None or getattr(df_events, "empty", True):
-        debug(context, "[Tier-2] compute_derived_metrics aborted — no df_events available.")
+        debug(context, "[Tier-2] ABORT — no df_events available.")
         return {}
 
-    # --- Prepare daily load time series ---
+    debug(context, f"[T2] Starting derived metric computation on {len(df_events)} events.")
+    debug(context, f"[T2] Columns available: {list(df_events.columns)}")
+
+    # --- ✅ 2. Build daily load time series ---
     df_events["start_date_local"] = pd.to_datetime(df_events["start_date_local"], errors="coerce")
     df_daily = (
         df_events.groupby(df_events["start_date_local"].dt.date)["icu_training_load"]
-        .sum()
+        .sum(min_count=1)
         .reset_index()
         .rename(columns={"start_date_local": "date"})
     )
     df_daily["date"] = pd.to_datetime(df_daily["date"])
     df_daily = df_daily.sort_values("date")
 
+    debug(context, f"[T2] Daily aggregated load (rows={len(df_daily)}):")
+    debug(context, f"[T2] {df_daily.tail(7).to_string(index=False)}")
+
     load_series = df_daily["icu_training_load"].fillna(0)
 
-    # --- Detect report type context ---
+    # --- ✅ 3. Adaptive window config ---
     report_type = str(context.get("report_type", "")).lower()
     is_season = report_type == "season"
-
-    # --- 🧭 Adaptive window configuration (unifies weekly/season logic) ---
     window_days = 7 if not is_season else 42
     acute_days = max(7, int(window_days / 2))
     chronic_days = max(28, int(window_days * 1.33))
-    debug(context, f"[Tier-2] Adaptive load window → {window_days}d (acute={acute_days}, chronic={chronic_days})")
 
-    # --- EWMA calculation for ACWR ---
+    debug(context, f"[T2] Adaptive window → {window_days}d (acute={acute_days}, chronic={chronic_days})")
+
+    # --- ✅ 4. ACWR Calculation (EWMA-based) ---
     if len(load_series) > 0:
         ewma_acute = load_series.ewm(span=acute_days).mean().iloc[-1]
         ewma_chronic = load_series.ewm(span=chronic_days).mean().iloc[-1]
-        if ewma_chronic is None or ewma_chronic == 0 or math.isnan(ewma_chronic):
-            acwr = 1.0  # neutral default (balanced load)
-            acwr_status = "fallback"
-        else:
-            acwr = round(ewma_acute / ewma_chronic, 2)
-            acwr_status = "ok"
+        acwr = round(ewma_acute / ewma_chronic, 2) if ewma_chronic != 0 else 1.0
+        acwr_status = "ok" if acwr != 1.0 else "fallback"
+        debug(context, f"[DERIVED] ACWR computed={acwr} (acute={ewma_acute:.2f}, chronic={ewma_chronic:.2f})")
     else:
-        acwr = 1.0
-        acwr_status = "fallback"
+        acwr, acwr_status = 1.0, "fallback"
+        debug(context, "[DERIVED] ACWR fallback=1.0 — no load data.")
 
-    debug(context, f"[DERIVED] ACWR computed={acwr} (status={acwr_status}, acute={ewma_acute if 'ewma_acute' in locals() else 'n/a'}, chronic={ewma_chronic if 'ewma_chronic' in locals() else 'n/a'})")
+    # --- ✅ 5. Unified padded load reference (used for Monotony, Strain, and FatigueTrend) ---
+    if not df_daily.empty:
+        min_date = df_daily["date"].min()
+        max_date = df_daily["date"].max()
+        full_range = pd.date_range(start=min_date, end=max_date, freq="D")
 
+        # Extend backward to ensure at least 28 days of data (Foster/Banister compatible)
+        if len(full_range) < 28:
+            full_range = pd.date_range(end=max_date, periods=28, freq="D")
 
-    # --- Monotony and strain ---
-    monotony = 0
-    strain = 0
-    if len(df_daily) > 1:
-        mean_load = df_daily["icu_training_load"].mean()
-        std_load = df_daily["icu_training_load"].std()
-        monotony = round(mean_load / (std_load + 1e-9), 2)
-        strain = round(mean_load * monotony, 1)
-
-    # --- Season normalization adjustments ---
-    if is_season:
-        weeks = max(len(df_daily) / 7, 1)
-        strain = round(strain / weeks, 1)
-        stress_tolerance = round(np.clip(strain / 500, 2, 8), 2)
-        acwr_risk = "⚪"
-        fatigue_trend = None
-    else:
-        stress_tolerance = round((strain / (monotony + 1e-6)) / 100, 2)
-        acwr_risk = "⚠️" if acwr and acwr > 1.5 else "✅"
-        fatigue_trend = (
-            round(df_daily["icu_training_load"].iloc[-7:].mean() - df_daily["icu_training_load"].iloc[-28:].mean(), 3)
-            if len(df_daily) >= 28
-            else None
+        df_ref = (
+            df_daily.set_index("date")
+            .reindex(full_range, fill_value=0)
+            .rename_axis("date")
+            .reset_index()
         )
 
-    # --- Sanity fixes ---
+        debug(context, f"[T2] df_ref padded to {len(df_ref)} days ({df_ref['date'].min().date()} → {df_ref['date'].max().date()})")
+    else:
+        df_ref = pd.DataFrame({
+            "date": pd.date_range(end=pd.Timestamp.today(), periods=28, freq="D"),
+            "icu_training_load": 0.0
+        })
+        debug(context, "[T2] df_ref fallback created (all zero loads).")
+
+    load_series = df_ref["icu_training_load"].fillna(0)
+
+    # --- ✅ 6. Monotony & Strain (Foster 2001 method) ---
+    last_7d = load_series[-7:].values
+    mean_load = np.mean(last_7d)
+    std_load = np.std(last_7d, ddof=0)
+    debug(context, f"[T2] Monotony/Strain input (7d padded): {last_7d}")
+    debug(context, f"[T2] Mean load={mean_load:.2f}, Std={std_load:.2f}")
+
+    if std_load > 0:
+        monotony = round(mean_load / std_load, 2)
+        strain = round(mean_load * monotony, 1)
+        debug(context, f"[DERIVED] Monotony={monotony}, Strain={strain}")
+    else:
+        monotony = 1.0
+        strain = round(mean_load, 1)
+        debug(context, f"[T2] Fallback: zero variance → Monotony=1.0, Strain={strain}")
+
+    # --- ✅ 7. FatigueTrend (Banister-aligned 7d–28d delta) ---
+    # --- FatigueTrend (use ACWR 28d context if available) ---
+    try:
+        # Prefer df_light from context (Tier-0 lightweight 28d dataset)
+        if "df_light" in context and not context["df_light"].empty:
+            load_series = (
+                context["df_light"]["icu_training_load"]
+                .fillna(0)
+                .astype(float)
+            )
+            debug(context, f"[T2] FatigueTrend using df_light (len={len(load_series)})")
+        else:
+            load_series = df_daily["icu_training_load"].fillna(0)
+            debug(context, f"[T2] FatigueTrend fallback to df_daily (len={len(load_series)})")
+
+        n = len(load_series)
+        if n >= 28:
+            mean_7d = load_series[-7:].mean()
+            mean_28d = load_series[-28:].mean()
+
+            # Update the fatigue trend calculation to show percentage difference
+            fatigue_trend = round((mean_7d - mean_28d) / (mean_28d + 1e-6) * 100, 1)
+            src = "28d ACWR-aligned"
+
+        elif n >= 14:
+            # Fall back to EMA-based calculation if there aren't enough days for a full 28-day trend
+            ema7 = load_series.ewm(span=7).mean().iloc[-1]
+            ema14 = load_series.ewm(span=14).mean().iloc[-1]
+            fatigue_trend = round((ema7 - ema14) / (ema14 + 1e-6) * 100, 1)
+            src = "EWMA fallback"
+        else:
+            fatigue_trend = np.nan
+            src = "insufficient data"
+
+        debug(context, f"[T2] FatigueTrend computed ({src}): Δ={fatigue_trend:+.1f}%")
+
+    except Exception as e:
+        fatigue_trend = np.nan
+        debug(context, f"[T2] ⚠️ FatigueTrend computation failed: {e}")
+
+
+
+
+
+    # --- Stress Tolerance computation (with debug and range validation) ---
+    try:
+        raw_st = (strain / (monotony + 1e-6)) / 100
+        stress_tolerance = float(np.clip(round(raw_st, 2), 2, 8))
+        debug(context, (
+            f"[T2] StressTolerance computed:\n"
+            f"       → raw={raw_st:.3f}, clipped={stress_tolerance:.2f}, "
+            f"monotony={monotony:.2f}, strain={strain:.1f}"
+        ))
+    except Exception as e:
+        stress_tolerance = 0.0
+        debug(context, f"[T2] StressTolerance fallback triggered: {e}")
+
+
+    # --- ✅ 8. ZQI (Zone Quality Index) ---
+    zqi = compute_zone_intensity(df_events, context)
+    debug(context, f"[DERIVED] ZQI={zqi}")
+
+    # --- ✅ 9. Fat oxidation efficiency ---
     if "IF" in df_events.columns:
         df_events["IF"] = pd.to_numeric(df_events["IF"], errors="coerce")
         df_events.loc[df_events["IF"] > 10, "IF"] /= 100
-
-    if "icu_training_load" not in df_events.columns or df_events["icu_training_load"].fillna(0).sum() == 0:
-        debug(context, "[Tier-2] WARNING: No valid icu_training_load data — derived load metrics will be zeroed.")
-
-
-    # --- Derived metabolic proxies (unchanged, always valid) ---
-    vo2_proxy = np.nanmean(df_events.get("VO2MaxGarmin", [np.nan]))
-    hr_proxy = np.nanmean(df_events.get("average_heartrate", [np.nan]))
-    # Ensure IF is numeric before computing mean
-    if "IF" in df_events.columns:
-        df_events["IF"] = pd.to_numeric(df_events["IF"], errors="coerce")
         if_proxy = np.nanmean(df_events["IF"].values)
     else:
-        if_proxy = np.nan
-
+        if_proxy = 0.7  # assume aerobic bias if missing
 
     fat_ox_eff = round(np.clip((if_proxy or 0.5) * 0.9, 0.3, 0.8), 3)
     polarisation = round(np.clip((if_proxy or 0.5) * 1.4, 0.5, 0.9), 3)
@@ -304,94 +317,59 @@ def compute_derived_metrics(df_events, context):
     mes = round((fat_ox_eff * 60) / (gr + 1e-6), 1)
     rec_index = round(np.clip(1 - (monotony / 5), 0, 1), 3)
 
-    # --- ACWR safety guard ---
-    if acwr is None or not np.isfinite(acwr):
-        debug(context, f"[Tier-2] Invalid ACWR detected (acwr={acwr}); forcing fallback=1.0")
-        acwr = 1.0  # safe neutral fallback
-        acwr_status = "fallback"
-    elif acwr < 0 or acwr > 5:  # sanity range
-        debug(context, f"[Tier-2] Out-of-range ACWR={acwr}; clipped to [0,5]")
-        acwr = np.clip(acwr, 0, 5)
-        acwr_status = "clipped"
-    else:
-        acwr_status = "ok"
+    debug(context, f"[DERIVED] IF_proxy={if_proxy:.3f}, FatOxEff={fat_ox_eff}, Polarisation={polarisation}, MES={mes}, RecIndex={rec_index}")
 
+    # --- ✅ 10. Classification (via COACH_PROFILE markers) ---
 
-    # --- Build derived metrics dict ---
-    derived = {
-         "ACWR": {
-            "value": acwr,
-            "status": acwr_status,
-            "desc": "EWMA Acute:Chronic Load Ratio (fallback=1.0 if undefined)"
-        },
-        "Monotony": {"value": monotony, "status": "ok", "desc": "Load variability"},
-        "Strain": {"value": strain, "status": "ok", "desc": "Load × Monotony"},
-        "FatigueTrend": {"value": fatigue_trend, "status": "ok", "desc": "7d vs 28d load delta"},
-        "ZQI": {"value": round((if_proxy or 0.5) * 100, 1), "status": "ok", "desc": "Zone Quality Index"},
-        "FatOxEfficiency": {"value": fat_ox_eff, "status": "ok", "desc": "Fat oxidation efficiency"},
-        "Polarisation": {"value": polarisation, "status": "ok", "desc": "Intensity distribution"},
-        "FOxI": {"value": foxi, "status": "ok", "desc": "Fat oxidation index"},
-        "CUR": {"value": cur, "status": "ok", "desc": "Carbohydrate utilisation ratio"},
-        "GR": {"value": gr, "status": "ok", "desc": "Glucose ratio"},
-        "MES": {"value": mes, "status": "ok", "desc": "Metabolic efficiency score"},
-        "RecoveryIndex": {"value": rec_index, "status": "ok", "desc": "Recovery readiness"},
-        "ACWR_Risk": {"value": acwr_risk, "status": "ok", "desc": "Stability risk check"},
-        "StressTolerance": {"value": stress_tolerance, "status": "ok", "desc": "Sustainable training tolerance"},
+    # --- ✅ 10. Classification (via COACH_PROFILE markers) ---
+    # Apply classification to all metrics that have criteria
+    to_classify = {
+        "ACWR": acwr,
+        "Monotony": monotony,
+        "Strain": strain,
+        "FatigueTrend": fatigue_trend,
+        "ZQI": zqi,
+        "FatOxEfficiency": fat_ox_eff,
+        "Polarisation": polarisation,
+        "RecoveryIndex": rec_index,
+        "StressTolerance": stress_tolerance,
+        "FOxI": foxi,
+        "CUR": cur,
+        "GR": gr,
+        "MES": mes,
     }
 
-    # --- Apply contextual overrides for season scope ---
-    if is_season:
-        derived["ACWR"]["desc"] = "90-day mean of acute/chronic EWMA ratio"
-        derived["FatigueTrend"]["status"] = "n/a"
-        derived["FatigueTrend"]["icon"] = "⚪"
-        derived["FatigueTrend"]["value"] = None
-        derived["Strain"]["desc"] = "Weekly-normalized long-term training strain"
-        derived["StressTolerance"]["desc"] = "Season-normalized sustainable strain (2–8 ideal)"
-        debug(context, "[Tier-2] Seasonal context: ACWR, strain, and fatigue metrics normalized.")
-
-    # --- Final: normalize derived metric scalars for validator ---
-    derived_keys = ["ACWR", "Monotony", "Strain", "FatigueTrend",
-                    "ZQI", "FatOxEfficiency", "Polarisation",
-                    "FOxI", "CUR", "GR", "MES", "RecoveryIndex", "StressTolerance"]
+    classified = {}
+    for marker, val in to_classify.items():
+        icon, state = classify_marker(val, marker, context)
+        classified[marker] = {"icon": icon, "state": state}
+        debug(context, f"[CLASSIFY] {marker}={val} → {icon} {state}")
 
 
-    # --- Final: normalize and flatten derived metrics for validator and renderer ---
-    for k in derived.keys():
-        val = derived[k]
 
-        # extract numeric value
-        if isinstance(val, dict):
-            num = val.get("value", np.nan)
-        elif isinstance(val, (list, tuple)) and len(val) > 0:
-            num = val[0]
-        elif isinstance(val, str):
-            try:
-                num = float(val)
-            except Exception:
-                num = np.nan
-        elif isinstance(val, (int, float)):
-            num = val
-        else:
-            num = np.nan
+    derived = {
+        "ACWR": {"value": acwr, "status": classified["ACWR"]["state"], "icon": classified["ACWR"]["icon"], "desc": "EWMA Acute:Chronic Load Ratio"},
+        "Monotony": {"value": monotony, "status": classified["Monotony"]["state"], "icon": classified["Monotony"]["icon"], "desc": "Foster Load Variability"},
+        "Strain": {"value": strain, "status": classified["Strain"]["state"], "icon": classified["Strain"]["icon"], "desc": "Foster Load × Monotony"},
+        "FatigueTrend": {"value": fatigue_trend, "status": classified["FatigueTrend"]["state"], "icon": classified["FatigueTrend"]["icon"], "desc": "7d vs 28d load delta"},
+        "ZQI": {"value": zqi, "status": classified["ZQI"]["state"], "icon": classified["ZQI"]["icon"], "desc": "Zone Quality Index"},
+        "FatOxEfficiency": {"value": fat_ox_eff, "status": classified["FatOxEfficiency"]["state"], "icon": classified["FatOxEfficiency"]["icon"], "desc": "Fat oxidation efficiency"},
+        "Polarisation": {"value": polarisation, "status": classified["Polarisation"]["state"], "icon": classified["Polarisation"]["icon"], "desc": "Intensity distribution (Seiler 80/20)"},
+        "FOxI": {"value": foxi, "status": classified["FOxI"]["state"], "icon": classified["FOxI"]["icon"], "desc": "Fat oxidation index"},
+        "CUR": {"value": cur, "status": classified["CUR"]["state"], "icon": classified["CUR"]["icon"], "desc": "Carbohydrate utilisation ratio"},
+        "GR": {"value": gr, "status": classified["GR"]["state"], "icon": classified["GR"]["icon"], "desc": "Glucose ratio"},
+        "MES": {"value": mes, "status": classified["MES"]["state"], "icon": classified["MES"]["icon"], "desc": "Metabolic efficiency score"},
+        "RecoveryIndex": {"value": rec_index, "status": classified["RecoveryIndex"]["state"], "icon": classified["RecoveryIndex"]["icon"], "desc": "Recovery readiness (Noakes Central Governor)"},
+        "StressTolerance": {"value": stress_tolerance, "status": classified["StressTolerance"]["state"], "icon": classified["StressTolerance"]["icon"], "desc": "Sustainable training tolerance"},
+    }
 
-        # ensure numeric float
-        try:
-            num = float(num)
-        except Exception:
-            num = np.nan
+    # --- ✅ 12. Flatten for validator ---
+    for k, v in derived.items():
+        context[k] = v.get("value", np.nan)
 
-        # update both context and derived dict with scalar
-        context[k] = num
-        if isinstance(derived[k], dict):
-            derived[k]["value"] = num
-
-    # --- Ensure derived_metrics dict matches flattened scalars ---
     context["derived_metrics"] = derived
 
-    debug(
-        context,
-        f"[Tier-2] Derived metrics flattened and synced for renderer: "
-        f"ACWR={context.get('ACWR')}, Monotony={context.get('Monotony')}, Strain={context.get('Strain')}"
-    )
+    debug(context, "[T2] ✅ Derived metrics fully computed and classified.")
+    debug(context, f"[SUMMARY] ACWR={acwr}, Monotony={monotony}, Strain={strain}, FatOxEff={fat_ox_eff}, ZQI={zqi}, StressTol={stress_tolerance}")
 
     return context

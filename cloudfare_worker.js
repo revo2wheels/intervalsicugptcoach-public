@@ -51,7 +51,7 @@ export default {
       const range =
         reportType === "season"
           ? { lightDays: 90, fullDays: 42, chunk: true }
-          : { lightDays: 28, fullDays: 7, chunk: false };
+          : { lightDays: 90, fullDays: 7, chunk: false };
 
       const baseActUrl = `${INTERVALS_API_BASE}/athlete/${athleteId}/activities`;
       const baseWellUrl = `${INTERVALS_API_BASE}/athlete/${athleteId}/wellness`;
@@ -164,41 +164,40 @@ export default {
           });
         }
 
+      // --- Normal full-detail mode (weekly/block) ---
+      console.log("[RUN_REPORT] Weekly/Block mode → fetching full dataset.");
 
-        // --- Normal full-detail mode (weekly/block) ---
-        console.log("[RUN_REPORT] Weekly/Block mode → fetching full dataset.");
+      [light, full, wellness, profile] = await Promise.all([
+        range.chunk
+          ? fetchChunked(
+              baseActUrl,
+              range.lightDays,
+              14,
+              "&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin"
+            )
+          : fetch(
+              `${baseActUrl}?oldest=${getDate(range.lightDays)}&newest=${getDate(0)}&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin`,
+              { headers: { Authorization: authHeader } }
+            ).then(r => r.json()),
 
-        [light, full, wellness, profile] = await Promise.all([
-          range.chunk
-            ? fetchChunked(
-                baseActUrl,
-                range.lightDays,
-                14,
-                "&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin"
-              )
-            : fetch(
-                `${baseActUrl}?oldest=${getDate(range.lightDays)}&newest=${getDate(0)}&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin`,
-                { headers: { Authorization: authHeader } }
-              ).then(r => r.json()),
+        range.chunk
+          ? fetchChunked(baseActUrl, range.fullDays, 7)
+          : fetch(`${baseActUrl}?oldest=${getDate(range.fullDays)}&newest=${getDate(0)}`, {
+              headers: { Authorization: authHeader }
+            }).then(r => r.json()),
 
-          range.chunk
-            ? fetchChunked(baseActUrl, range.fullDays, 7)
-            : fetch(`${baseActUrl}?oldest=${getDate(range.fullDays)}&newest=${getDate(0)}`, {
-                headers: { Authorization: authHeader }
-              }).then(r => r.json()),
+        // --- Wellness: always 42-day single call (no chunking) ---
+        fetch(`${baseWellUrl}?oldest=${getDate(42)}&newest=${getDate(0)}`, {
+          headers: { Authorization: authHeader }
+        }).then(r => r.json()),
 
-          range.chunk
-            ? fetchChunked(baseWellUrl, range.fullDays, 7)
-            : fetch(`${baseWellUrl}?oldest=${getDate(range.fullDays)}&newest=${getDate(0)}`, {
-                headers: { Authorization: authHeader }
-              }).then(r => r.json()),
+        fetch(profileUrl, { headers: { Authorization: authHeader } }).then(r => r.json())
+      ]);
 
-          fetch(profileUrl, { headers: { Authorization: authHeader } }).then(r => r.json())
-        ]);
+      console.log(
+        `[RUN_REPORT] Completed unified fetch (light=${light?.length || 0}, full=${full?.length || 0}, wellness=${wellness?.length || 0})`
+      );
 
-        console.log(
-          `[RUN_REPORT] Completed unified fetch (light=${light?.length || 0}, full=${full?.length || 0}, wellness=${wellness?.length || 0})`
-        );
 
         const payload = JSON.stringify({
           status: "ok",

@@ -203,20 +203,11 @@ def render_report(data):
         for k, v in derived.items():
             if isinstance(v, dict):
                 value = v.get("value", "—")
-
-                # --- Cosmetic: show ZQI as percentage ---
-                if k == "ZQI" and isinstance(value, (int, float)):
-                    value = round(float(value) * 100, 1)
-
                 icon = v.get("icon", "")
                 status = v.get("status", "")
                 context_note = CHEAT_SHEET.get("context", {}).get(k, "")
                 rows.append([k, value, f"{icon} {status}", context_note])
             else:
-                # --- Cosmetic: show ZQI as percentage ---
-                if k == "ZQI" and isinstance(v, (int, float)):
-                    v = round(float(v) * 100, 1)
-
                 context_note = CHEAT_SHEET.get("context", {}).get(k, "")
                 rows.append([k, v, "✅", context_note])
 

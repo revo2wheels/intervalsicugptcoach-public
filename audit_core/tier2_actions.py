@@ -109,7 +109,7 @@ def evaluate_actions(context):
     events = context.get("events", [])
     context = detect_phases(context, events)
 
-    # --- Integrate Derived + Extended Metrics (URF v5.1)
+    # --- Integrate Derived + Extended Metrics (URF v5.1) ---
     derived = context.get("derived_metrics", {})
     extended = context.get("extended_metrics", {})
 
@@ -181,6 +181,13 @@ def evaluate_actions(context):
             actions.append("⚠ Apply 30–40 % deload (Friel microcycle logic).")
         else:
             actions.append("⚠ Apply 10–15 % deload (Friel microcycle logic).")
+
+    # --- FatigueTrend (Action based on recovery status) ---
+    fatigue_trend = metric_value(context, "FatigueTrend", 0.0)
+    if fatigue_trend < -0.2:
+        actions.append(f"⚠ FatigueTrend ({fatigue_trend}%) — Recovery phase detected. Maintain steady training load and prioritize recovery.")
+    elif fatigue_trend >= 0.2:
+        actions.append(f"✅ FatigueTrend ({fatigue_trend}%) — Increasing fatigue trend. Consider adjusting intensity or recovery.")
 
     # --- Benchmark Maintenance ---
     if context.get("weeks_since_last_FTP", 0) >= 6:
@@ -300,30 +307,3 @@ def evaluate_actions(context):
     # --- Finalize ---
     context["actions"] = actions
     return context
-
-def generate_coaching_actions(context):
-    """
-    Unified Tier-2 coaching action generator.
-    Bridges phase detection, fatigue, load summaries, and adaptive hints.
-    Safe to call from report_controller for all report types.
-    """
-    try:
-        # Phase detection (seasonal only)
-        if context.get("report_type", "").lower() == "season":
-            if "df_events" in context and not context["df_events"].empty:
-                from audit_core.tier2_actions import detect_phases
-                context["phase_analysis"] = detect_phases(context["df_events"])
-                debug(context, f"[ACTIONS] Phase analysis complete ({len(context['phase_analysis'])} phases)")
-            else:
-                debug(context, "[ACTIONS] Skipped phase detection — df_events missing or empty.")
-
-        # Load summary
-        from coaching_cheat_sheet import summarize_load_block
-        context["load_summary"] = summarize_load_block(context)
-
-        debug(context, "[ACTIONS] Coaching actions synthesized successfully.")
-        return context
-
-    except Exception as e:
-        debug(context, f"[ACTIONS ERROR] Failed to build coaching actions → {e}")
-        return context
