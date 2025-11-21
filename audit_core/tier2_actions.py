@@ -208,45 +208,57 @@ def evaluate_actions(context):
 
     # --- New Heuristics (URF v5.1 enhancement) ---
     dur = metric_value(context, "Durability", 1.0)
+    if "LoadIntensityRatio" not in context:
+        context["LoadIntensityRatio"] = context.get("StressTolerance", 0.0)
+
     lir = metric_value(context, "LoadIntensityRatio", 0.0)
     er = metric_value(context, "EnduranceReserve", 1.0)
     drift = metric_value(context, "IFDrift", 0.0)
     pol = metric_value(context, "Polarisation", 0.0)
     ri = metric_value(context, "RecoveryIndex", 1.0)
 
-    if dur < 0.8:
-        actions.append(f"⚠ Durability low ({dur:.2f}) — extend steady-state endurance or increase time-in-zone.")
-    elif dur >= 1.0:
-        actions.append(f"✅ Durability improving ({dur:.2f}) — maintain current long-ride structure.")
+    from coaching_cheat_sheet import CHEAT_SHEET
 
-    if lir > 1.2:
-        actions.append(f"⚠ Load intensity too high (LIR={lir:.2f}) — reduce threshold/VO₂ blocks.")
-    elif lir < 0.8:
-        actions.append(f"⚠ Load intensity low (LIR={lir:.2f}) — add tempo or sweet-spot intervals.")
+    # --- Durability ---
+    if dur < CHEAT_SHEET["thresholds"]["Durability"]["amber"][0]:
+        actions.append(CHEAT_SHEET["advice"]["Durability"]["low"].format(dur))
+    elif dur >= CHEAT_SHEET["thresholds"]["Durability"]["green"][0]:
+        actions.append(CHEAT_SHEET["advice"]["Durability"]["improving"].format(dur))
+
+    # --- Load Intensity Ratio (LIR) ---
+    if lir > CHEAT_SHEET["thresholds"]["LIR"]["amber"][0]:
+        actions.append(CHEAT_SHEET["advice"]["LIR"]["high"].format(lir))
+    elif lir < CHEAT_SHEET["thresholds"]["LIR"]["green"][0]:
+        actions.append(CHEAT_SHEET["advice"]["LIR"]["low"].format(lir))
     else:
-        actions.append(f"✅ Load intensity balanced (LIR={lir:.2f}).")
+        actions.append(CHEAT_SHEET["advice"]["LIR"]["balanced"].format(lir))
 
-    if er < 0.8:
-        actions.append(f"⚠ Endurance reserve depleted ({er:.2f}) — add recovery or split long sessions.")
-    elif er >= 1.0:
-        actions.append(f"✅ Endurance reserve strong ({er:.2f}).")
+    # --- Endurance Reserve ---
+    if er < CHEAT_SHEET["thresholds"]["EnduranceReserve"]["amber"][0]:
+        actions.append(CHEAT_SHEET["advice"]["EnduranceReserve"]["depleted"].format(er))
+    elif er >= CHEAT_SHEET["thresholds"]["EnduranceReserve"]["green"][0]:
+        actions.append(CHEAT_SHEET["advice"]["EnduranceReserve"]["strong"].format(er))
 
-    if drift > 0.06:
-        actions.append(f"⚠ Efficiency drift high ({drift:.2%}) — improve aerobic durability or reduce fatigue load.")
+    # --- Efficiency Drift ---
+    if drift > CHEAT_SHEET["thresholds"]["IFDrift"]["amber"][0]:
+        actions.append(CHEAT_SHEET["advice"]["EfficiencyDrift"]["high"].format(drift))
     else:
-        actions.append(f"✅ Efficiency drift stable ({drift:.2%}).")
+        actions.append(CHEAT_SHEET["advice"]["EfficiencyDrift"]["stable"].format(drift))
 
-    if pol < 0.7:
-        actions.append(f"⚠ Polarisation low ({pol:.0%}) — increase Z1–Z2 share toward ≥70 %.") 
+    # --- Polarisation ---
+    if pol < CHEAT_SHEET["thresholds"]["Polarisation"]["amber"][0]:
+        actions.append(CHEAT_SHEET["advice"]["Polarisation"]["low"].format(pol))
     else:
-        actions.append(f"✅ Polarisation optimal ({pol:.0%}).")
+        actions.append(CHEAT_SHEET["advice"]["Polarisation"]["optimal"].format(pol))
 
-    if ri < 0.6:
-        actions.append(f"⚠ Recovery Index poor ({ri:.2f}) — insert deload or reduce intensity.")
-    elif ri < 0.8:
-        actions.append(f"🟠 Recovery Index moderate ({ri:.2f}) — monitor fatigue trend.")
+    # --- Recovery Index ---
+    if ri < CHEAT_SHEET["thresholds"]["RecoveryIndex"]["amber"][0]:
+        actions.append(CHEAT_SHEET["advice"]["RecoveryIndex"]["poor"].format(ri))
+    elif ri < CHEAT_SHEET["thresholds"]["RecoveryIndex"]["green"][0]:
+        actions.append(CHEAT_SHEET["advice"]["RecoveryIndex"]["moderate"].format(ri))
     else:
-        actions.append(f"✅ Recovery Index healthy ({ri:.2f}).")
+        actions.append(CHEAT_SHEET["advice"]["RecoveryIndex"]["healthy"].format(ri))
+
 
     # ===================================================================
     # 🪜 SEASONAL PHASE ANALYSIS (Aligned with Coaching Cheat Sheet)

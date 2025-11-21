@@ -51,7 +51,7 @@ export default {
       const range =
         reportType === "season"
           ? { lightDays: 90, fullDays: 42, chunk: true }
-          : { lightDays: 90, fullDays: 7, chunk: false };
+          : { lightDays: 28, fullDays: 7, chunk: false };
 
       const baseActUrl = `${INTERVALS_API_BASE}/athlete/${athleteId}/activities`;
       const baseWellUrl = `${INTERVALS_API_BASE}/athlete/${athleteId}/wellness`;
@@ -164,9 +164,11 @@ export default {
           });
         }
 
-      // --- Normal full-detail mode (weekly/block) ---
-      console.log("[RUN_REPORT] Weekly/Block mode → fetching full dataset.");
+      console.log(`[RUN_REPORT] Fetching light dataset → oldest=${getDate(range.lightDays)}, newest=${getDate(0)}`);
+      console.log(`[RUN_REPORT] Fetching full dataset → oldest=${getDate(range.fullDays)}, newest=${getDate(0)}`);
+      console.log(`[RUN_REPORT] Fetching wellness dataset → oldest=${getDate(42)}, newest=${getDate(0)}`);
 
+      // --- Normal full-detail mode (weekly/block) ---
       [light, full, wellness, profile] = await Promise.all([
         range.chunk
           ? fetchChunked(
@@ -195,21 +197,19 @@ export default {
       ]);
 
       console.log(
-        `[RUN_REPORT] Completed unified fetch (light=${light?.length || 0}, full=${full?.length || 0}, wellness=${wellness?.length || 0})`
+        `[RUN_REPORT] Completed unified fetch (light=${light?.length || 0} rows, full=${full?.length || 0} rows, wellness=${wellness?.length || 0} rows)`
       );
-
-
         const payload = JSON.stringify({
           status: "ok",
-          message: `Unified report (${reportType}) data fetched successfully.`,
+          message: "Unified fetch complete. Retrieve datasets via proxy routes.",
           reportType,
           athlete_id: athleteId,
-          chunked: range.chunk,
-          render_hint: "data",
-          athlete_profile: profile?.athlete || {},
-          activities_light: light,
-          activities_full: full,
-          wellness
+          endpoints: {
+            light: `/athlete/${athleteId}/activities_t0light?oldest=${getDate(range.lightDays)}&newest=${getDate(0)}`,
+            full: `/athlete/${athleteId}/activities?oldest=${getDate(range.fullDays)}&newest=${getDate(0)}`,
+            wellness: `/athlete/${athleteId}/wellness?oldest=${getDate(42)}&newest=${getDate(0)}`
+          },
+          athlete_profile: profile?.athlete || {}
         });
 
         console.log(`[SIZE] /run_report (weekly) payload = ${(payload.length / 1024).toFixed(2)} KB`);

@@ -303,6 +303,11 @@ def run_report(
     if "activities_light" in context and isinstance(context["activities_light"], list):
         context["df_event_only_full"] = context["activities_light"]
 
+    # After confirming successful fetch
+    context["auditFinal"] = True
+    context["auditPartial"] = False
+    context["fetch_status"] = "complete"
+
     # --- Tier-2 core metrics ---
     context = compute_derived_metrics(df_scope, context)
     context = evaluate_actions(context)

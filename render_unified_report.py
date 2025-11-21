@@ -72,6 +72,15 @@ def render_report(data):
     report_type = ctx.get("report_type", data.get("type", "weekly")).lower()
     debug(ctx, f"[RENDER] Starting unified render for {report_type}")
 
+    # 🛑 Prevent placeholder rendering if audit not finalized
+    if not ctx.get("auditFinal", False):
+        debug(ctx, "[RENDER] Skipping render — audit not finalized (placeholder suppressed).")
+        return {
+            "status": "skipped",
+            "reason": "Audit not finalized; renderer aborted to prevent placeholder output.",
+            "report_type": report_type,
+        }
+
     # --- 🧹 UNIVERSAL CLEANUP: strip trace/debug payloads early ---
     trace_keys = [
         "debug_trace", "trace", "auditPartial", "auditFinal",

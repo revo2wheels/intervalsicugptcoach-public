@@ -5,10 +5,10 @@
 ```
 ✅ Renderer source: Tier-2 enforced totals (canonical dataset)
 [FINALIZER] Enforcing markdown-only return (season-safe mode)
-[FINALIZER] Markdown-only return OK — len=5674, ctx_keys=74
+[FINALIZER] Markdown-only return OK — len=5673, ctx_keys=75
 ✅ Renderer source: Tier-2 enforced totals (canonical dataset)
 [FINALIZER] Enforcing markdown-only return (season-safe mode)
-[FINALIZER] Markdown-only return OK — len=5674, ctx_keys=74
+[FINALIZER] Markdown-only return OK — len=5673, ctx_keys=75
 ```
 
 ## Rendered Markdown Report
@@ -17,7 +17,7 @@
 **Athlete:** Clive King
 **Period:** 2025-11-14 → 2025-11-20
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-20T14:36:20.504175
+**Generated:** 2025-11-20T15:00:46.515053
 
 ---
 
@@ -112,7 +112,7 @@ _No pace zone data available._
 2. ⚠ Improve Zone 2 efficiency: extend duration or adjust IF.
 3. ⚠ FatigueTrend (-13.8%) — Recovery phase detected. Maintain steady training load and prioritize recovery.
 4. ✅ Durability improving (1.00) — maintain current long-ride structure.
-5. ⚠ Load intensity low (LIR=0.00) — add tempo or sweet-spot intervals.
+5. ⚠ Load intensity too high (LIR=2.00) — reduce threshold/VO₂ blocks.
 6. ✅ Endurance reserve strong (1.00).
 7. ✅ Efficiency drift stable (0.00%).
 8. ✅ Polarisation optimal (90%).
@@ -145,5 +145,5 @@ _No pace zone data available._
 **Totals:** 9.12 h · 207.7 km · 476 TSS · 0 sessions**
 
 ---
-✅ **Audit Completed:** 2025-11-20T14:36:20.508942
+✅ **Audit Completed:** 2025-11-20T15:00:46.517949
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: —

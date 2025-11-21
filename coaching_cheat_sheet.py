@@ -63,6 +63,62 @@ CHEAT_SHEET["coaching_links"] = {
     "StressTolerance": "If StressTolerance is high (>8), reduce overall load and increase recovery time. If it's low (<2), ensure proper training load progression.",
 }
 
+CHEAT_SHEET["advice"] = {
+    # --- Durability ---
+    "Durability": {
+        "low": "⚠ Durability low ({:.2f}) — extend steady-state endurance or increase time-in-zone.",
+        "improving": "✅ Durability improving ({:.2f}) — maintain current long-ride structure."
+    },
+
+    # --- Load Intensity Ratio (LIR) ---
+    "LIR": {
+        "high": "⚠ Load intensity too high (LIR={:.2f}) — reduce intensity or monitor recovery.",
+        "low": "⚠ Load intensity low (LIR={:.2f}) — add tempo or sweet-spot intervals.",
+        "balanced": "✅ Load intensity balanced (LIR={:.2f})."
+    },
+
+    # --- Endurance Reserve ---
+    "EnduranceReserve": {
+        "depleted": "⚠ Endurance reserve depleted ({:.2f}) — add recovery or split long sessions.",
+        "strong": "✅ Endurance reserve strong ({:.2f})."
+    },
+
+    # --- Efficiency Drift ---
+    "EfficiencyDrift": {
+        "high": "⚠ Efficiency drift high ({:.2%}) — improve aerobic durability or reduce fatigue load.",
+        "stable": "✅ Efficiency drift stable ({:.2%})."
+    },
+
+    # --- Polarisation ---
+    "Polarisation": {
+        "low": "⚠ Polarisation low ({:.0%}) — increase Z1–Z2 share toward ≥70 %. ",
+        "optimal": "✅ Polarisation optimal ({:.0%})."
+    },
+
+    # --- Recovery Index ---
+    "RecoveryIndex": {
+        "poor": "⚠ Recovery Index poor ({:.2f}) — insert deload or reduce intensity.",
+        "moderate": "🟠 Recovery Index moderate ({:.2f}) — monitor fatigue trend.",
+        "healthy": "✅ Recovery Index healthy ({:.2f})."
+    },
+
+    # --- FatigueTrend ---
+    "FatigueTrend": {
+        "recovery": "⚠ FatigueTrend ({:.2f}%) — Recovery phase detected. Maintain steady training load and prioritize recovery.",
+        "increasing": "✅ FatigueTrend ({:.2f}%) — Increasing fatigue trend. Consider adjusting intensity or recovery."
+    },
+
+    # --- Phase Detection --- (Seasonal Phase Advice)
+    "PhaseAdvice": {
+        "Base": "🧱 **Base phase detected** — focus on aerobic volume (Z1–Z2 ≥ 70%), maintain ACWR ≤ 1.0.",
+        "Build": "📈 **Build phase detected** — progressive overload active; maintain ACWR ≤ 1.3.",
+        "Peak": "🏁 **Peak phase detected** — high-intensity emphasis; monitor fatigue (RI ≥ 0.6).",
+        "Taper": "📉 **Taper phase detected** — reduce ATL by 30–50%, maintain intensity; expected RI ↑.",
+        "Recovery": "💤 **Recovery phase detected** — active regeneration; target RI ≥ 0.8 and low monotony.",
+        "Deload": "🧘 **Deload phase detected** — reduced load, maintain frequency; transition readiness improving.",
+        "Continuous Load": "🔁 **Continuous Load** — steady training; insert variation if fatigue rises."
+    }
+}
 
 
 # === Labels ===
