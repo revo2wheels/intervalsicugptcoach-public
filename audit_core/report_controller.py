@@ -20,21 +20,22 @@ from audit_core.tier2_extended_metrics import compute_extended_metrics
 
 def run_report(
     reportType: str = "weekly",
-    auditFinal: bool = False,
+    auditFinal: bool = True,                    # changed
     auditPartial: bool = False,
-    force_analysis: bool = False,
-    preRenderAudit: bool = True,
-    tier2_enforce_event_only_totals: bool = False,
+    force_analysis: bool = True,                # ensures Tier-2
+    preRenderAudit: bool = False,               # changed
+    tier2_enforce_event_only_totals: bool = True, # changed
     render_mode: str = "full+metrics",
     autoCommit: bool = True,
     suppressPrompts: bool = True,
-    postRenderAudit: bool = False,
+    postRenderAudit: bool = True,               # optional validation
     merge_events: bool = False,
     render_summary: bool = False,
     include_coaching_metrics: bool = True,
     allowSyntheticRender: bool = False,
     **kwargs,
-):
+)
+
     # --- Initialize context ---
     context = {}
     context.update(kwargs)

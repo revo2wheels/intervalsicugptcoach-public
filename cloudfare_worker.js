@@ -5,25 +5,92 @@ export default {
     const INTERVALS_API_BASE = "https://intervals.icu/api/v1";
     const authHeader = request.headers.get("Authorization");
 
+    // --- OAuth authorize redirect ---
+    if (pathname.startsWith("/oauth/authorize")) {
+      const target = new URL(request.url.replace(
+        /^https:\/\/intervalsicugptcoach\.clive-a5a\.workers\.dev/,
+        "https://intervals.icu"
+      ));
+
+      // ✅ Redirect via Worker callback proxy
+      target.searchParams.set(
+        "redirect_uri",
+        "https://chat.openai.com/aip/g-3b0244cf708774fb9151458671c462eb5460f41e/oauth/callback"
+      );
+
+      console.log(`[OAUTH] Redirecting viewer to → ${target}`);
+
+      const html = `
+        <!DOCTYPE html><html><head><meta charset="utf-8" />
+        <title>Redirecting…</title></head>
+        <body>
+          <p>Opening Intervals.icu authorization page…</p>
+          <script>window.location.replace("${target.toString()}");</script>
+        </body></html>`;
+      return new Response(html, {
+        status: 200,
+        headers: {
+          "content-type": "text/html",
+          "access-control-allow-origin": "*"
+        },
+      });
+    }
+
+    // --- OAuth callback proxy (NEW) ---
+    if (pathname.startsWith("/oauth/callback")) {
+      const redirectTarget = `https://chat.openai.com/aip/g-3b0244cf708774fb9151458671c462eb5460f41e/oauth/callback${url.search}`;
+      console.log(`[OAUTH] Proxying callback → ${redirectTarget}`);
+      return Response.redirect(redirectTarget, 302);
+    }
+
+    // --- OAuth token passthrough ---
+    if (pathname.startsWith("/api/oauth/token")) {
+      const target = "https://intervals.icu/api/oauth/token"; // ✅ CORRECT ENDPOINT
+      console.log(`[OAUTH] Forwarding token exchange → ${target}`);
+
+      const body = await request.text();
+      const resp = await fetch(target, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body,
+      });
+
+      console.log(`[OAUTH] Token response → ${resp.status}`);
+
+      const text = await resp.text();
+      const headers = new Headers(resp.headers);
+      headers.set("access-control-allow-origin", "*");
+      headers.set("access-control-allow-headers", "Authorization, Content-Type");
+      headers.set("access-control-allow-methods", "GET, POST, OPTIONS");
+
+      return new Response(text, { status: resp.status, headers });
+    }
+
     // --- CORS preflight ---
     if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: {
           "access-control-allow-origin": "*",
           "access-control-allow-headers": "Authorization, Content-Type",
-          "access-control-allow-methods": "GET, OPTIONS"
-        }
+          "access-control-allow-methods": "GET, POST, OPTIONS",
+        },
       });
     }
 
-    // --- 401 if no auth ---
+    // --- Fallback 401 if no Authorization ---
     if (!authHeader) {
       return new Response(
         JSON.stringify({
           status: 401,
-          error: "Missing Authorization header. Ensure OAuth flow completed."
+          error: "Missing Authorization header. Ensure OAuth flow completed.",
         }),
-        { status: 401, headers: { "content-type": "application/json" } }
+        {
+          status: 401,
+          headers: {
+            "content-type": "application/json",
+            "access-control-allow-origin": "*"
+          }
+        }
       );
     }
 
@@ -48,10 +115,32 @@ export default {
 
       console.log(`[RUN_REPORT] Starting unified report: ${reportType}`);
 
+     // --- Determine report range automatically ---
+      let fullDays = 7; // default weekly range
+      const oldestParam = params.get("oldest")?.trim();
+      const newestParam = params.get("newest")?.trim();
+
+      if (oldestParam && newestParam) {
+        const diff = Math.max(
+          1,
+          Math.ceil((new Date(newestParam) - new Date(oldestParam)) / (1000 * 60 * 60 * 24))
+        );
+        fullDays = diff;
+        console.log(`[RUN_REPORT] Using explicit date range → ${oldestParam} → ${newestParam} (${diff} days)`);
+      } else {
+        console.log("[RUN_REPORT] No explicit date range detected — defaulting to last 7 days");
+      }
+
+      // --- Finalize range & chunking ---
       const range =
         reportType === "season"
           ? { lightDays: 90, fullDays: 42, chunk: true }
-          : { lightDays: 28, fullDays: 7, chunk: false };
+          : { lightDays: 28, fullDays, chunk: fullDays > 7 };
+
+      console.log(
+        `[RUN_REPORT] Final range → lightDays=${range.lightDays}, fullDays=${range.fullDays}, chunk=${range.chunk}`
+      );
+
 
       const baseActUrl = `${INTERVALS_API_BASE}/athlete/${athleteId}/activities`;
       const baseWellUrl = `${INTERVALS_API_BASE}/athlete/${athleteId}/wellness`;
@@ -165,7 +254,7 @@ export default {
         }
 
       console.log(`[RUN_REPORT] Fetching light dataset → oldest=${getDate(range.lightDays)}, newest=${getDate(0)}`);
-      console.log(`[RUN_REPORT] Fetching full dataset → oldest=${getDate(range.fullDays)}, newest=${getDate(0)}`);
+      console.log(`[RUN_REPORT] Fetching full dataset → oldest=${getDate(range.fullDays)}, newest=${getDate(0)}, chunk=${range.chunk}`);
       console.log(`[RUN_REPORT] Fetching wellness dataset → oldest=${getDate(42)}, newest=${getDate(0)}`);
 
       // --- Normal full-detail mode (weekly/block) ---
