@@ -34,7 +34,7 @@ def run_report(
     include_coaching_metrics: bool = True,
     allowSyntheticRender: bool = False,
     **kwargs,
-)
+):
 
     # --- Initialize context ---
     context = {}

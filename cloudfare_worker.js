@@ -288,17 +288,48 @@ export default {
       console.log(
         `[RUN_REPORT] Completed unified fetch (light=${light?.length || 0} rows, full=${full?.length || 0} rows, wellness=${wellness?.length || 0} rows)`
       );
+        // --- Log individual dataset sizes before building unified payload ---
+        const size_full_kb     = (JSON.stringify(full).length     / 1024).toFixed(2);
+        const size_light_kb    = (JSON.stringify(light).length    / 1024).toFixed(2);
+        const size_wellness_kb = (JSON.stringify(wellness).length / 1024).toFixed(2);
+        const size_profile_kb  = (JSON.stringify(profile).length  / 1024).toFixed(2);
+
+        console.log(`[RUN_REPORT] Data sizes breakdown:`);
+        console.log(`  ├─ 7-day FULL activities  : ${size_full_kb} KB (${full.length} records)`);
+        console.log(`  ├─ 28-day LIGHT activities : ${size_light_kb} KB (${light.length} records)`);
+        console.log(`  ├─ 42-day WELLNESS data   : ${size_wellness_kb} KB (${wellness.length} records)`);
+        console.log(`  └─ Athlete PROFILE object : ${size_profile_kb} KB`);
+
+        const totalKB = (
+          parseFloat(size_full_kb) +
+          parseFloat(size_light_kb) +
+          parseFloat(size_wellness_kb) +
+          parseFloat(size_profile_kb)
+        ).toFixed(2);
+
+        console.log(`[RUN_REPORT] ≈ Combined component size = ${totalKB} KB`);
+
+        // --- Build unified payload with real data instead of proxy-only routes ---
         const payload = JSON.stringify({
           status: "ok",
-          message: "Unified fetch complete. Retrieve datasets via proxy routes.",
+          message: `[RUN_REPORT] Completed unified fetch (${full.length} full, ${light.length} light, ${wellness.length} wellness)`,
           reportType,
           athlete_id: athleteId,
+          chunked: range.chunk,
+          range, // optional: include computed range summary
+
+          // --- include the real data arrays inline ---
+          activities_light: light,
+          activities_full: full,
+          wellness,
+          athlete_profile: profile?.athlete || {},
+
+          // --- keep endpoint references (useful for debugging / replay) ---
           endpoints: {
             light: `/athlete/${athleteId}/activities_t0light?oldest=${getDate(range.lightDays)}&newest=${getDate(0)}`,
             full: `/athlete/${athleteId}/activities?oldest=${getDate(range.fullDays)}&newest=${getDate(0)}`,
             wellness: `/athlete/${athleteId}/wellness?oldest=${getDate(42)}&newest=${getDate(0)}`
-          },
-          athlete_profile: profile?.athlete || {}
+          }
         });
 
         console.log(`[SIZE] /run_report (weekly) payload = ${(payload.length / 1024).toFixed(2)} KB`);
