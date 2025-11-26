@@ -20,8 +20,8 @@
   "paths": {
     "/run_report": {
       "get": {
-        "summary": "Stub endpoint retained for backward compatibility. Use sequential endpoints instead.",
-        "operationId": "runReportStub",
+        "summary": "Run full unified audit (calls lightweight + full fetch internally)",
+        "operationId": "runReportOrchestrated",
         "parameters": [
           {
             "name": "reportType",
@@ -324,52 +324,21 @@
   "x-actions": {
     "run_report_orchestrated_render": {
       "type": "chain",
-      "steps": [
-        "getAthleteProfile",
-        "listActivitiesLight_90d",
-        "listWellness_42d",
-        "listActivitiesFull_7d",
-        "renderFullWeeklyReport"
-      ]
+      "steps": ["runReportOrchestrated", "renderFullWeeklyReport"]
     },
-
-    "listActivitiesLight_90d": {
+    "runReportOrchestrated": {
       "type": "operation",
-      "operationId": "listActivitiesLight",
-      "args": {
-        "oldest": "${today.minusDays(90)}",
-        "newest": "${today}"
-      }
+      "operationId": "runReportOrchestrated",
+      "args": { "reportType": "${context.reportMode || 'weekly'}" }
     },
-
-    "listWellness_42d": {
-      "type": "operation",
-      "operationId": "listWellness",
-      "args": {
-        "oldest": "${today.minusDays(42)}",
-        "newest": "${today}"
-      }
-    },
-
-    "listActivitiesFull_7d": {
-      "type": "operation",
-      "operationId": "listActivitiesFull",
-      "args": {
-        "oldest": "${today.minusDays(7)}",
-        "newest": "${today}"
-      }
-    },
-
     "renderFullWeeklyReport": {
       "type": "render",
       "mode": "report"
     },
-
     "run_full_audit_pipeline": {
       "type": "chain",
       "steps": ["getAthleteProfile", "listActivitiesFull", "listWellness"]
     },
-
     "run_lightweight_audit_pipeline": {
       "type": "chain",
       "steps": ["getAthleteProfile", "listActivitiesLight", "listWellness"]
