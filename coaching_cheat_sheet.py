@@ -16,6 +16,8 @@ CHEAT_SHEET["thresholds"] = {
     "Polarisation": {"green": (0.75, 0.90), "amber": (0.65, 0.95)},
     "FatigueTrend": {"green": (-10, 10), "amber": (-20, 20)},  # Updated to percentage scale
     "StressTolerance": {"green": (2.0, 8.0), "amber": (1.0, 10.0)},
+    "LIR": {"green": (0.8, 1.2), "amber": (0.6, 1.4), "red": (0.0, 0.6)},
+    "EnduranceReserve": {"green": (1.2, 2.0), "amber": (0.8, 1.2), "red": (0.0, 0.8)},
     "FatOxEfficiency": {"green": (0.4, 0.8), "amber": (0.3, 0.9)},
     "FOxI": {"green": (30, 80), "amber": (20, 90)},          # FatOx Index %
     "CUR": {"green": (30, 70), "amber": (20, 80)},        # Carbohydrate Utilisation Ratio
@@ -23,6 +25,8 @@ CHEAT_SHEET["thresholds"] = {
     "MES": {"green": (20, 100), "amber": (10, 120)},          # Metabolic Efficiency Score
     "ACWR_Risk": {"green": (0, 1), "amber": (1, 1)},          # Placeholder to silence undefined
     "ZQI": {"green": (5, 15), "amber": (3, 20)},               #% now
+    "Durability": {"green": (0.9, 1.2),"amber": (0.7, 0.9),"red": (0.0, 0.7)},
+    "IFDrift": {"green": (0.0, 0.05), "amber": (0.05, 0.10), "red": (0.10, 1.0)},
 }
 
 # === Context ===
@@ -44,6 +48,10 @@ CHEAT_SHEET["context"] = {
     "RecoveryIndex": "0.6–1.0 means recovered; <0.5 = heavy fatigue.",
     "ACWR_Risk": "Used internally for stability check.",
     "StressTolerance": "2–8 indicates sustainable training strain capacity.",
+    "Durability": "Durability index — ratio of power/HR stability under fatigue; >0.9 indicates good endurance robustness.",
+    "LIR": "Load Intensity Ratio — ratio of total intensity to total duration; 0.8–1.2 indicates balanced training intensity distribution.",
+    "EnduranceReserve": "Endurance Reserve — ratio of aerobic durability to fatigue index; >1.2 indicates strong endurance foundation.",
+    "IFDrift": "IF Drift — change in Intensity Factor (power vs HR) over time; <5% stable, >10% indicates endurance fatigue or overheating.",
 }
 
 CHEAT_SHEET["coaching_links"] = {

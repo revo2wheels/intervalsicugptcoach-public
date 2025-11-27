@@ -56,34 +56,59 @@ def estimate_payload_size(days: int, dataset: str):
     else:
         return days * 12000  # activities lighter
 
-#WELLNESS FETCH CHUNKED
+# WELLNESS FETCH CHUNKED (optimized to single 42-day window)
 def fetch_wellness_chunked(athlete_id, oldest, newest, headers, context=None, max_retries=2):
-    """Adaptive and retryable chunked fetch for wellness data with guaranteed 'date' column."""
+    """
+    Adaptive and retryable fetch for wellness data.
+    Normally just one call for 42 days, but retains chunk loop structure
+    for consistency and safety.
+    """
     import pandas as pd
     from datetime import timedelta
 
     wellness = []
     df_well = pd.DataFrame()
 
+    total_days = (newest - oldest).days + 1
+
+    # 🧩 Determine effective wellness window length
+    default_wellness_days = context.get("range", {}).get("wellnessDays", 42)
+
+    if total_days > default_wellness_days:
+        debug(context, f"[T0-WELLNESS] Requested range {total_days}d exceeds default {default_wellness_days}d — using full requested span.")
+    else:
+        debug(context, f"[T0-WELLNESS] Using wellness window {total_days}d (default={default_wellness_days}d)")
+
+    # Keep single fetch structure, but adjust dynamically
+    well_chunk_days = total_days if total_days <= default_wellness_days else default_wellness_days
+    debug(context, f"[T0-WELLNESS] Fetching wellness for {total_days}d range, chunk size={well_chunk_days}d")
+
+    well_chunk_days = 42  # single chunk, safe payload size
+    debug(context, f"[T0-WELLNESS] Fetching wellness for {total_days}d range, chunk size={well_chunk_days}d")
+
     for meta_attempt in range(max_retries + 1):
         try:
-            est_payload_well = estimate_payload_size((newest - oldest).days + 1, "wellness")
-            well_chunk_days = 7  # keep safe chunk size
-
-            for offset in range(0, (newest - oldest).days + 1, well_chunk_days):
+            for offset in range(0, total_days, well_chunk_days):
                 chunk_start = oldest + timedelta(days=offset)
                 chunk_end = min(newest, chunk_start + timedelta(days=well_chunk_days - 1))
-                url = f"{INTERVALS_API}/athlete/{athlete_id}/wellness?oldest={chunk_start}&newest={chunk_end}"
-                resp = fetch_with_retry(url, headers)
 
-                if resp.status_code == 200 and resp.json():
-                    payload = resp.json()
-                    if isinstance(payload, list):
-                        wellness.extend(payload)
+                url = (
+                    f"{INTERVALS_API}/athlete/{athlete_id}/wellness?"
+                    f"oldest={chunk_start.strftime('%Y-%m-%d')}&newest={chunk_end.strftime('%Y-%m-%d')}"
+                )
+                debug(context, f"[T0-WELLNESS] Fetching chunk → {url}")
+
+                resp = fetch_with_retry(url, headers)
+                if resp.status_code != 200:
+                    raise AuditHalt(f"❌ Wellness fetch failed ({resp.status_code}) → {resp.text[:200]}")
+
+                payload = resp.json()
+                if isinstance(payload, list) and payload:
+                    wellness.extend(payload)
 
             if wellness:
                 df_well = pd.DataFrame(wellness)
-                break  # success, exit meta-retry loop
+                break  # success → exit retry loop
 
         except Exception as e:
             debug(context, f"[T0-WELLNESS] Meta-attempt {meta_attempt+1} failed: {e}")
@@ -91,35 +116,32 @@ def fetch_wellness_chunked(athlete_id, oldest, newest, headers, context=None, ma
                 raise AuditHalt(f"❌ Wellness fetch failed after {max_retries + 1} meta-retries: {e}")
             continue
 
-    # --- GUARANTEED COLUMN NORMALIZATION ---
+    # --- Normalize columns --------------------------------------------------
     if df_well.empty:
-        debug(context, "[T0-WELLNESS] No data returned — using empty frame.")
-        df_well = pd.DataFrame(columns=["date", "ctl", "atl", "tsb"])
+        debug(context, "[T0-WELLNESS] No data returned — creating empty frame.")
+        df_well = pd.DataFrame(columns=["date", "ctl", "atl", "form", "fatigue"])
     else:
-        # normalize column names and ensure 'date' exists
-        cols = {c.lower(): c for c in df_well.columns}
-        if "id" in cols and "date" not in df_well.columns:
-            df_well.rename(columns={cols["id"]: "date"}, inplace=True)
         if "date" not in df_well.columns:
-            debug(context, "[T0-WELLNESS] Inserting fallback date column.")
-            df_well["date"] = pd.NaT
+            debug(context, "[T0-WELLNESS] Missing 'date' column — coercing.")
+            if "id" in df_well.columns:
+                df_well.rename(columns={"id": "date"}, inplace=True)
+            else:
+                df_well["date"] = pd.NaT
 
     debug(context, f"[T0-WELLNESS] Final wellness shape={df_well.shape}, columns={df_well.columns.tolist()}")
     return df_well
 
 
-# ACTIVITIES FETCH CHUNKED (with lightweight non-chunking mode + full zone expansion)
 def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, max_retries=2):
     """
     Adaptive and retryable chunked fetch for activities.
-    Handles zone expansion, deduplication, canonical timezone/date normalization,
-    and diagnostic summaries exactly as in the original Tier-0 pipeline.
-    For 'lightweight' season fetches (Tier-0 context), disables chunking entirely.
+    - Season mode (light_mode=True): single 90-day lightweight call via /activities_t0light
+    - Weekly/full mode: chunked 7d (or smaller) fetches via /activities
     """
     import numpy as np, json
     from datetime import timedelta
 
-    # --- SEASON MODE GUARD ---------------------------------------------------
+    # --- Determine mode ------------------------------------------------------
     light_mode = False
     if context and isinstance(context, dict):
         report_type = context.get("report_type", "").lower()
@@ -130,53 +152,51 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
         else:
             context["fetch_mode"] = "full"
 
-    activities = []
     total_days = (newest - oldest).days + 1
     est_payload_acts = estimate_payload_size(total_days, "activities")
 
-    # --- CHUNK STRATEGY ------------------------------------------------------
+    # --- Chunking strategy ---------------------------------------------------
     if light_mode:
-        act_chunk_days = total_days  # fetch all 90 days in one call
+        act_chunk_days = total_days  # single call for 90d
         debug(context, f"[T0] Lightweight fetch: single API call for {total_days} days (no chunking).")
     else:
         act_chunk_days = 7 if est_payload_acts < 200000 else 3
         debug(context, f"[T0] Full fetch: chunking {total_days} days into {int(np.ceil(total_days/act_chunk_days))} parts.")
 
-    # --- FETCH LOOP ----------------------------------------------------------
+    df_activities_list = []
+
+    # --- Fetch loop ----------------------------------------------------------
     for meta_attempt in range(max_retries + 1):
         try:
-            df_activities_list = []
-
             for offset in range(0, total_days, act_chunk_days):
                 chunk_start = oldest + timedelta(days=offset)
                 chunk_end = min(newest, chunk_start + timedelta(days=act_chunk_days)) - timedelta(seconds=1)
-                debug(context, f"[Tier-0 fetch] chunk_start={chunk_start}  chunk_end={chunk_end}")
 
-                acts_url = (
-                    f"{INTERVALS_API}/athlete/{athlete_id}/activities?"
-                    f"oldest={chunk_start.strftime('%Y-%m-%d')}&newest={chunk_end.strftime('%Y-%m-%d')}"
-                )
-
-                # Reduce fields if lightweight
+                # --- Choose correct route for mode ---
                 if light_mode:
-                    acts_url += (
-                        "&fields=id,name,type,start_date_local,distance,"
-                        "moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin"
+                    acts_url = (
+                        f"{INTERVALS_API}/athlete/{athlete_id}/activities_t0light?"
+                        f"oldest={chunk_start.strftime('%Y-%m-%d')}&newest={chunk_end.strftime('%Y-%m-%d')}"
+                        "&fields=id,name,type,start_date_local,distance,moving_time,"
+                        "icu_training_load,IF,average_heartrate,VO2MaxGarmin"
                     )
+                else:
+                    acts_url = (
+                        f"{INTERVALS_API}/athlete/{athlete_id}/activities?"
+                        f"oldest={chunk_start.strftime('%Y-%m-%d')}&newest={chunk_end.strftime('%Y-%m-%d')}"
+                    )
+
+                debug(context, f"[Tier-0 fetch] → {acts_url}")
 
                 acts_resp = fetch_with_retry(acts_url, headers)
                 if acts_resp.status_code != 200:
                     raise AuditHalt(f"❌ Failed to fetch activities ({acts_resp.status_code}) → {acts_resp.text[:200]}")
 
                 payload = acts_resp.json()
+                if not isinstance(payload, list) or not payload:
+                    continue
 
-                # --- Normalize alternate field names BEFORE DataFrame creation ---
-                if (
-                    isinstance(payload, list)
-                    and payload
-                    and "icu_training_load_data" in payload[0]
-                    and "icu_training_load" not in payload[0]
-                ):
+                if "icu_training_load_data" in payload[0] and "icu_training_load" not in payload[0]:
                     for r in payload:
                         r["icu_training_load"] = r.pop("icu_training_load_data")
 
@@ -184,118 +204,93 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                 if not df_chunk.empty:
                     df_activities_list.append(df_chunk)
 
-                # Stop early if lightweight mode (only one call needed)
                 if light_mode:
-                    break
+                    break  # single call for season
 
-            # --- POST-FETCH PROCESSING ----------------------------------------
-            if not df_activities_list:
-                debug(context, "⚠ No activity chunks returned from API (all payloads empty).")
-                return pd.DataFrame()
-
-            df_activities = pd.concat(df_activities_list, ignore_index=True)
-
-            # Deduplication
-            if "id" in df_activities.columns:
-                before = len(df_activities)
-                df_activities.drop_duplicates(subset=["id"], keep="first", inplace=True)
-                debug(context, f"🧩 Tier-0 deduplication: {before - len(df_activities)} duplicates removed.")
-
-            # Unit normalization
-            if "moving_time" in df_activities.columns:
-                max_val = df_activities["moving_time"].max()
-                if max_val < 1000:  # likely hours, not seconds
-                    debug(context, f"⚙️ Tier-0 normalization: converting moving_time from hours → seconds (max={max_val})")
-                    df_activities["moving_time"] *= 3600
-
-            # Time zone normalization
-            tz = context.get("timezone", "Europe/Zurich")
-            if "start_date" in df_activities.columns:
-                df_activities["start_date_local"] = pd.to_datetime(
-                    df_activities["start_date"], utc=True, errors="coerce"
-                ).dt.tz_convert(tz)
-
-            # Canonical slice
-            start_date = pd.to_datetime(oldest).date()
-            end_date = pd.to_datetime(newest).date()
-            df_activities = df_activities[
-                (df_activities["start_date_local"].dt.date >= start_date)
-                & (df_activities["start_date_local"].dt.date <= end_date)
-            ]
-
-            df_activities["date"] = df_activities["start_date_local"].dt.date
-            df_activities["origin"] = "event"
-
-            # --- Zone Expansion (retained from canonical Tier-0) ---
-            def expand_zones(df, field, prefix):
-                """
-                Expands and flattens zone arrays safely into numeric columns.
-                Handles malformed JSON, nested lists, or dict-style entries.
-                Guarantees numeric output and prevents sandbox fallback.
-                """
-                if field not in df.columns:
-                    return df
-
-                def safe_parse(x):
-                    if x in [None, "null", "None", np.nan]:
-                        return []
-                    if isinstance(x, str):
-                        try:
-                            x = json.loads(x)
-                        except Exception:
-                            return []
-                    while isinstance(x, list) and len(x) == 1 and isinstance(x[0], list):
-                        x = x[0]
-                    if isinstance(x, list):
-                        flat = []
-                        for z in x:
-                            if isinstance(z, dict):
-                                flat.append(z.get("secs", 0))
-                            elif isinstance(z, (int, float)):
-                                flat.append(z)
-                        return flat
-                    return []
-
-                try:
-                    parsed = df[field].apply(safe_parse)
-                    max_len = parsed.map(len).max() if not parsed.empty else 0
-                    if max_len == 0:
-                        return df
-                    z = pd.DataFrame(parsed.tolist(), index=df.index)
-                    z = z.reindex(columns=range(max_len)).fillna(0).astype(float)
-                    z.columns = [f"{prefix}_z{i+1}" for i in range(max_len)]
-                    df = pd.concat([df.drop(columns=[field]), z], axis=1)
-                    debug(context, f"[T0] Expanded {field} → {len(z.columns)} cols, max depth={max_len}")
-                except Exception as e:
-                    debug(context, f"[T0] Zone expansion failed for {field}: {e}")
-                    df.drop(columns=[field], inplace=True, errors="ignore")
-                return df
-
-            df_activities = expand_zones(df_activities, "icu_zone_times", "power")
-            df_activities = expand_zones(df_activities, "icu_hr_zone_times", "hr")
-            df_activities = expand_zones(df_activities, "pace_zone_times", "pace")
-
-            # --- Diagnostic summary -------------------------------------------
-            if "moving_time" in df_activities.columns:
-                raw_sum = df_activities["moving_time"].sum()
-                total_hours = raw_sum / 3600
-                debug(context, f"[T0] Diagnostic: Σ(moving_time)={raw_sum:.0f}s → {total_hours:.2f}h")
-            else:
-                total_hours = 0
-                debug(context, "[T0] Diagnostic: no moving_time column found")
-
-            total_tss = df_activities["icu_training_load"].sum() if "icu_training_load" in df_activities else 0
-            debug(context, f"[T0] Canonical totals → Σ(TSS)={total_tss:.1f}")
-            debug(context, f"[T0] Completed {'lightweight' if light_mode else 'full'} fetch: {len(df_activities)} records.")
-            return df_activities
-
+            break  # success
         except Exception as e:
+            debug(context, f"[T0-FETCH-RETRY] Attempt {meta_attempt+1} failed: {e}")
             if meta_attempt == max_retries:
                 raise AuditHalt(f"❌ Activities fetch failed after {max_retries + 1} attempts: {e}")
             continue
 
-    debug(context, "⚠ No activities data available after chunked fetch.")
-    return pd.DataFrame()
+    if not df_activities_list:
+        debug(context, "⚠ No activity chunks returned from API (all payloads empty).")
+        return pd.DataFrame()
+
+    # --- Merge and normalize -------------------------------------------------
+    df_activities = pd.concat(df_activities_list, ignore_index=True)
+
+    if "id" in df_activities.columns:
+        before = len(df_activities)
+        df_activities.drop_duplicates(subset=["id"], inplace=True)
+        debug(context, f"[T0] Deduplicated {before - len(df_activities)} duplicate activities.")
+
+    # --- Normalize time units ---
+    if "moving_time" in df_activities.columns:
+        max_val = df_activities["moving_time"].max()
+        if max_val < 1000:
+            df_activities["moving_time"] *= 3600
+            debug(context, f"[T0] Converted moving_time hours→seconds (max={max_val})")
+
+    # --- Normalize timezone and dates ---
+    tz = context.get("timezone", "Europe/Zurich")
+    if "start_date" in df_activities.columns:
+        df_activities["start_date_local"] = pd.to_datetime(
+            df_activities["start_date"], utc=True, errors="coerce"
+        ).dt.tz_convert(tz)
+    elif "start_date_local" in df_activities.columns:
+        df_activities["start_date_local"] = pd.to_datetime(df_activities["start_date_local"], errors="coerce")
+
+    df_activities["date"] = df_activities["start_date_local"].dt.date
+    df_activities["origin"] = "event"
+
+    # --- Optional: Expand zones in full mode only ---
+    if not light_mode:
+        def expand_zones(df, field, prefix):
+            def safe_parse(x):
+                if x in [None, "null", "None", np.nan]:
+                    return []
+                if isinstance(x, str):
+                    try:
+                        x = json.loads(x)
+                    except Exception:
+                        return []
+                if isinstance(x, list):
+                    flat = []
+                    for z in x:
+                        if isinstance(z, dict):
+                            flat.append(z.get("secs", 0))
+                        elif isinstance(z, (int, float)):
+                            flat.append(z)
+                    return flat
+                return []
+            try:
+                parsed = df[field].apply(safe_parse)
+                max_len = parsed.map(len).max() if not parsed.empty else 0
+                if max_len == 0:
+                    return df
+                z = pd.DataFrame(parsed.tolist(), index=df.index)
+                z = z.reindex(columns=range(max_len)).fillna(0).astype(float)
+                z.columns = [f"{prefix}_z{i+1}" for i in range(max_len)]
+                df = pd.concat([df.drop(columns=[field]), z], axis=1)
+                debug(context, f"[T0] Expanded {field} → {len(z.columns)} cols")
+            except Exception as e:
+                debug(context, f"[T0] Zone expansion failed for {field}: {e}")
+            return df
+
+        df_activities = expand_zones(df_activities, "icu_zone_times", "power")
+        df_activities = expand_zones(df_activities, "icu_hr_zone_times", "hr")
+        df_activities = expand_zones(df_activities, "pace_zone_times", "pace")
+
+    # --- Diagnostics ---
+    total_tss = df_activities["icu_training_load"].sum() if "icu_training_load" in df_activities else 0
+    total_time = df_activities["moving_time"].sum() / 3600 if "moving_time" in df_activities else 0
+    debug(context, f"[T0] Diagnostics → Σ(TSS)={total_tss:.1f}, Σ(Time)={total_time:.2f}h")
+
+    debug(context, f"[T0] Completed {'lightweight' if light_mode else 'full'} fetch → {len(df_activities)} records.")
+    return df_activities
+
 
 
 
@@ -364,16 +359,17 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     headers = {"Authorization": f"Bearer {ICU_TOKEN}"}
     report_type = context.get("report_type", "").lower() if isinstance(context, dict) else "weekly"
 
-    # after setting report_type
-    context["range"] = {
-        "lightDays": 90 if report_type == "season" else 28,
-        "fullDays": 42 if report_type == "season" else 7,
-        "chunk": True if report_type == "season" else False,
-    }
+    # Preserve controller-defined range; only fill defaults if missing
+    context.setdefault("range", {})
+    context["range"].setdefault("lightDays", 90 if report_type == "season" else 90)
+    context["range"].setdefault("fullDays", 42 if report_type == "season" else 7)
+    context["range"].setdefault("chunk", True if report_type == "season" else False)
+
     # Ensure df_light always exists
     df_light = pd.DataFrame()
     df_acts = pd.DataFrame()
     df_light_slice = pd.DataFrame()
+
 
     # --- Allow refetch for season mode ---
     if context.get("report_type", "").lower() == "season":
@@ -391,8 +387,11 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
             "id,name,type,start_date_local,distance,moving_time,"
             "icu_training_load,IF,average_heartrate,VO2MaxGarmin"
         )
-        oldest = (pd.Timestamp.now() - pd.Timedelta(days=90 if report_type == "season" else 28)).strftime("%Y-%m-%d")
-        newest = pd.Timestamp.now().strftime("%Y-%m-%d")
+        # 🧭 use actual arguments instead of hardcoded offset
+        oldest = pd.to_datetime(start).strftime("%Y-%m-%d")
+        newest = pd.to_datetime(end).strftime("%Y-%m-%d")
+
+        debug(context, f"[T0-LIGHT] Using controller-supplied range oldest={oldest} newest={newest}")
 
         light_url = (
             f"{INTERVALS_API}/athlete/0/activities_t0light?"
@@ -586,11 +585,19 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         context["snapshot_7d_json"] = "[]"
 
     # --- Step 4: Fetch wellness with adaptive chunking + meta-retry ---
-    wellness = fetch_wellness_chunked(athlete["id"], oldest, newest, headers, context)
+    wellness_days = context.get("range", {}).get("wellnessDays", 42)
+    today = pd.Timestamp.now().normalize()
+    wellness_newest = today
+    wellness_oldest = wellness_newest - pd.Timedelta(days=wellness_days)
+
+    debug(context, f"[T0] Fetching wellness for {wellness_days} days → {wellness_oldest} → {wellness_newest}")
+
+    wellness = fetch_wellness_chunked(athlete["id"], wellness_oldest, wellness_newest, headers, context)
+
     if isinstance(wellness, pd.DataFrame) and not wellness.empty:
         context["wellness"] = wellness
         debug(context, f"[T0] Stored wellness in context ({len(wellness)} rows)")
-    if wellness is None or wellness.empty:
+    else:
         raise AuditHalt("❌ No wellness data returned after chunked fetch")
 
     # --- Step 4b: Enforce correct dataset range alignment ---------------------

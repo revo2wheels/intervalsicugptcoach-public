@@ -152,29 +152,69 @@ export default {
     // ====================================================================
     if (pathname.startsWith(`/athlete/${athleteId}/activities_t0light`)) {
       const { oldest, newest } = normaliseDateParams(url.searchParams, 90);
-      const target = `${INTERVALS_API_BASE}/athlete/${athleteId}/activities?oldest=${oldest}&newest=${newest}`;
+
+      // Preserve or inject lightweight field set
+      const fields =
+        url.searchParams.get("fields") ||
+        "id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin";
+
+      // Build target URL with all required query params
+      const target =
+        `${INTERVALS_API_BASE}/athlete/${athleteId}/activities?` +
+        `oldest=${oldest}&newest=${newest}&fields=${encodeURIComponent(fields)}`;
+
       console.log(`[T0-LIGHT] Normalized fetch → ${target}`);
 
-      const resp = await fetch(target, { headers: { Authorization: authHeader } });
-      const text = await resp.text();
-      console.log(`[SIZE] /activities_t0light payload = ${(text.length / 1024).toFixed(2)} KB`);
-      return new Response(text, {
-        status: resp.status,
-        headers: {
-          "content-type": "application/json",
-          "access-control-allow-origin": "*"
-        }
-      });
+      try {
+        const resp = await fetch(target, { headers: { Authorization: authHeader } });
+        const text = await resp.text();
+        console.log(`[SIZE] /activities_t0light payload = ${(text.length / 1024).toFixed(2)} KB`);
+        return new Response(text, {
+          status: resp.status,
+          headers: {
+            "content-type": "application/json",
+            "access-control-allow-origin": "*",
+            "x-proxy-endpoint": "activities_t0light"
+          }
+        });
+      } catch (err) {
+        console.error(`[T0-LIGHT] Upstream fetch error → ${err.message}`);
+        return new Response(
+          JSON.stringify({ error: "Upstream fetch failed", details: err.message }),
+          { status: 500, headers: { "content-type": "application/json" } }
+        );
+      }
     }
 
+
     // ====================================================================
-    // ROUTE 2: Full activity fetch (default 7 days)
+    // ROUTE 2: Full activity fetch (default 7 days, supports chunked calls)
     // ====================================================================
     if (
       pathname.startsWith(`/athlete/${athleteId}/activities`) &&
       !pathname.includes("t0light")
     ) {
-      const { oldest, newest } = normaliseDateParams(url.searchParams, 7);
+      // Read incoming params
+      let oldest = url.searchParams.get("oldest");
+      let newest = url.searchParams.get("newest");
+
+      // Allow timestamped inputs from Python like "2025-11-20 08:25:48.123456"
+      function cleanDate(d) {
+        if (!d) return null;
+        const m = d.match(/^(\d{4}-\d{2}-\d{2})/);
+        return m ? m[1] : null;
+      }
+
+      oldest = cleanDate(oldest);
+      newest = cleanDate(newest);
+
+      // Fallback only if both missing or invalid
+      if (!oldest || !newest) {
+        const norm = normaliseDateParams(url.searchParams, 7);
+        oldest = norm.oldest;
+        newest = norm.newest;
+      }
+
       const target = `${INTERVALS_API_BASE}/athlete/${athleteId}/activities?oldest=${oldest}&newest=${newest}`;
       console.log(`[T1-FULL] Normalized fetch → ${target}`);
 
@@ -185,16 +225,38 @@ export default {
         status: resp.status,
         headers: {
           "content-type": "application/json",
-          "access-control-allow-origin": "*"
+          "access-control-allow-origin": "*",
+          "x-proxy-endpoint": "activities_full"
         }
       });
     }
 
+
     // ====================================================================
-    // ROUTE 3: Wellness (default 42 days)
+    // ROUTE 3: Wellness (default 42 days, supports chunked calls)
     // ====================================================================
     if (pathname.startsWith(`/athlete/${athleteId}/wellness`)) {
-      const { oldest, newest } = normaliseDateParams(url.searchParams, 42);
+      // Read incoming params as-is
+      let oldest = url.searchParams.get("oldest");
+      let newest = url.searchParams.get("newest");
+
+      // Try to normalize timestamped params like "2025-10-10 08:53:48.795267"
+      function cleanDate(d) {
+        if (!d) return null;
+        const m = d.match(/^(\d{4}-\d{2}-\d{2})/);
+        return m ? m[1] : null;
+      }
+
+      oldest = cleanDate(oldest);
+      newest = cleanDate(newest);
+
+      // Fallback only if both missing or invalid
+      if (!oldest || !newest) {
+        const norm = normaliseDateParams(url.searchParams, 42);
+        oldest = norm.oldest;
+        newest = norm.newest;
+      }
+
       const target = `${INTERVALS_API_BASE}/athlete/${athleteId}/wellness?oldest=${oldest}&newest=${newest}`;
       console.log(`[WELLNESS] Normalized fetch → ${target}`);
 
@@ -205,10 +267,12 @@ export default {
         status: resp.status,
         headers: {
           "content-type": "application/json",
-          "access-control-allow-origin": "*"
+          "access-control-allow-origin": "*",
+          "x-proxy-endpoint": "wellness"
         }
       });
     }
+
 
     // ====================================================================
     // ROUTE 4: Athlete profile

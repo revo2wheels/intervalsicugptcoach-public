@@ -543,10 +543,27 @@ def render_report(data):
 
     # --- Totals and metrics block ---
     if report_type.lower() == "weekly":
-        # Only include weekly totals and metrics for weekly reports
-        if "tier1_visibleTotals" in ctx:
+        md.append("")
+
+        # --- PRIORITY 1: Dual totals from controller (Cycling + All) ---
+        dual_cyc = ctx.get("summary_cycling")
+        dual_all = ctx.get("summary_all")
+
+        if dual_cyc and dual_all:
+            md.append(
+                f"**Cycling Totals:** {dual_cyc['hours']:.2f} h · "
+                f"{dual_cyc['distance']:.1f} km · {dual_cyc['tss']} TSS · {dual_cyc['sessions']} sessions**"
+            )
+            md.append(
+                f"**All Activities:** {dual_all['hours']:.2f} h · "
+                f"{dual_all['distance']:.1f} km · {dual_all['tss']} TSS · {dual_all['sessions']} sessions**"
+            )
+            md.append("_Note: CTL/ATL/TSB values include **all activities**._")
+            debug(ctx, "[RENDER] Dual totals rendered (Cycling + All)")
+
+        # --- PRIORITY 2: Canonical fallbacks ---
+        elif "tier1_visibleTotals" in ctx:
             vt = ctx["tier1_visibleTotals"]
-            md.append("")
             md.append(
                 f"**Totals:** "
                 f"{vt.get('hours', 0):.2f} h · "
@@ -558,7 +575,6 @@ def render_report(data):
             mean_if = vt.get("avg_if")
             mean_hr = vt.get("avg_hr")
             mean_vo2 = vt.get("vo2max")
-
             summary_parts = []
             if mean_if is not None:
                 summary_parts.append(f"**Cycling Metrics — Mean IF:** {mean_if:.2f}")
@@ -566,14 +582,12 @@ def render_report(data):
                 summary_parts.append(f"**Mean HR:** {mean_hr} bpm")
             if mean_vo2 is not None:
                 summary_parts.append(f"**VO₂ max:** {mean_vo2:.1f}")
-
             if summary_parts:
                 md.append(" · ".join(summary_parts))
                 debug(ctx, "[Tier-2] Weekly totals + mean metrics rendered (Tier-1 subset)")
 
         elif "tier0_snapshotTotals_7d" in ctx:
             st = ctx["tier0_snapshotTotals_7d"]
-            md.append("")
             md.append(
                 f"**Weekly totals:** "
                 f"{st.get('hours', 0):.2f} h · "
@@ -585,7 +599,6 @@ def render_report(data):
 
         elif "tier2_enforced_totals" in ctx:
             et = ctx["tier2_enforced_totals"]
-            md.append("")
             md.append(
                 f"**Weekly totals:** "
                 f"{et.get('time_h', 0):.2f} h · "
@@ -731,6 +744,7 @@ def render_report(data):
                 if isinstance(v, (list, dict)) and len(v) > 20:
                     continue
                 minimal_ctx[k] = v
+
 
         # --- Step 3: Construct final compact return ---
         final_output = {

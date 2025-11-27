@@ -1,0 +1,44 @@
+[09:23:03] 🧭 Generating Weekly Report
+[09:23:03] 🧭 Running Weekly Report (auditFinal=True, render_mode=full+metrics)
+[09:23:03] [INTENT] Validation warning: Expecting value: line 1 column 1 (char 0)
+[09:23:03] [T0] Config → light=90d full=7d chunk=False
+[09:23:03] [T0-LIGHT] Running lightweight prefetch → 2025-08-29 → 2025-11-27
+[09:23:03] [Tier-0] Using API endpoint: https://intervalsicugptcoach.clive-a5a.workers.dev
+[09:23:03] [T0-LIGHT] Using controller-supplied range oldest=2025-08-29 newest=2025-11-27
+[09:23:03] [T0-LIGHT] Fetching lightweight dataset → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/activities_t0light?oldest=2025-08-29&newest=2025-11-27&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin
+[09:23:04] [T0-LIGHT] Retrieved 113 activities with 10 fields
+[09:23:04] [T0-LIGHT-DIAG] ✅ df_light populated. First 3 rows:
+        id    start_date_local        type  icu_training_load                                                                                          name  distance  moving_time  average_heartrate        IF  VO2MaxGarmin
+i108837453 2025-11-26T17:59:56 VirtualRide                 79                      Zwift - Group Ride: Off The MAAP 2025: Stage 1 on Keith Hill After Party  42600.84         3979              132.0  0.843137           0.0
+i108683330 2025-11-25T18:10:04 VirtualRide                 79 Zwift - Race: Stage 1: NYC Showdown: Times Square Circuit on Times Square Circuit in New York  39208.43         3727              135.0  0.872549           0.0
+i108671982 2025-11-25T17:52:29 VirtualRide                  9                                            Zwift - 1hr Base on Prospect Park Loop in New York   8208.79          877              114.0  0.591503           0.0
+[09:23:04] [T0-LIGHT-DIAG] Columns: ['id', 'start_date_local', 'type', 'icu_training_load', 'name', 'distance', 'moving_time', 'average_heartrate', 'IF', 'VO2MaxGarmin']
+[09:23:04] [T0-INIT] Created df_light_slice from df_light → 113 rows.
+[09:23:04] [T0-DIAG] Pre-slice df_light rows=113; min=2025-08-31T07:49:44, max=2025-11-26T17:59:56
+[09:23:04] [T0-SLICE] 7-day window: 2025-11-21 → 2025-11-28 (9 activities selected)
+[09:23:04] [T0-DEDUP] Dropped 0 duplicates → 9 unique events
+[09:23:04] 🧭 Tier-0: 7-day subset (lightweight) = 9.89 h | 302.0 km | 479 TSS (9 events)
+[09:23:04] [T0] Fetching athlete profile via OAuth2: https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/profile
+[09:23:04] [T0] Athlete profile fetched successfully — id=1914741 name=Clive King
+[09:23:04] [T0-FETCH] Adaptive method for report_type=weekly
+[09:23:04] [T0-FETCH] Weekly mode → combining lightweight (for totals) + 7-day full fetch (for detail).
+[09:23:04] [T0] Full fetch: chunking 7 days into 1 parts.
+[09:23:04] [Tier-0 fetch] → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/1914741/activities?oldest=2025-11-21&newest=2025-11-27
+[09:23:05] [T0] Deduplicated 0 duplicate activities.
+[09:23:05] [T0] Expanded icu_zone_times → 8 cols
+[09:23:05] [T0] Expanded icu_hr_zone_times → 7 cols
+[09:23:05] [T0] Diagnostics → Σ(TSS)=479.0, Σ(Time)=9.89h
+[09:23:05] [T0] Completed full fetch → 9 records.
+[09:23:05] [T0-FETCH] Full 7-day fetch complete: 9 activities.
+[09:23:05] [T0] Weekly mode → using FULL 7-day dataset for snapshot_7d_json (9 rows)
+[09:23:05] [T0-FIX] snapshot_7d_json serialized from fallback source (9 rows).
+[09:23:05] [T0-LIGHT] Prefetch failed (non-fatal): cannot access local variable 'timedelta' where it is not associated with a value
+[09:23:05] [T0-FULL] Running 7-day detailed audit for weekly mode → 2025-11-20 → 2025-11-27
+[09:23:05] [T0-FULL] Prefetch contained full window — skipping redundant re-fetch.
+[09:23:05] [T0-FULL] Prefetch contained full window — skipping redundant re-fetch.
+[09:23:05] [T0-FULL] No df_master returned — using pre-audit lightweight dataset as fallback.
+[09:23:05] [T0-FULL] WARNING: no valid fallback dataset — initializing empty DataFrame.
+[09:23:05] [T0-FULL] Context synced for Tier-1 — df_master=0 rows, snapshot_7d_json=ok
+[09:23:05] [T0] Completed range alignment → chunk_mode=False
+[09:23:05] [T1] Running Tier-1 controller (weekly mode)
+[09:23:05] [T1] Running Tier-1 controller (weekly mode)

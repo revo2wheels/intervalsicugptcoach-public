@@ -93,9 +93,9 @@ def run_report(
     today = datetime.now().date()
 
     if reportType.lower() == "season":
-        context["range"] = {"lightDays": 90, "fullDays": 42, "chunk": True}
+        context["range"] = {"lightDays": 90, "fullDays": 42, "wellnessDays": 90, "chunk": True}
     else:  # weekly / wellness / summary
-        context["range"] = {"lightDays": 90, "fullDays": 7, "chunk": False}
+        context["range"] = {"lightDays": 90, "fullDays": 7, "wellnessDays": 42, "chunk": False}
 
     # Local variable bindings for convenience
     light_days = context["range"]["lightDays"]
@@ -418,6 +418,54 @@ def run_report(
     context["FINALIZER_LOCKED_GLOBAL"] = True
     debug(context, "[FINALIZER] First and only render pass permitted.")
 
+    # --- Inject dual totals for renderer if available ---
+    try:
+        df_all = context.get("df_events")
+        if not isinstance(df_all, pd.DataFrame) or df_all.empty:
+            df_all = context.get("df_master")
+
+        if isinstance(df_all, pd.DataFrame) and not df_all.empty:
+            # 🧮 All activities
+            total_all = {
+                "hours": df_all["moving_time"].sum() / 3600 if "moving_time" in df_all else 0,
+                "distance": df_all["distance"].sum() / 1000 if "distance" in df_all else 0,
+                "tss": df_all["icu_training_load"].sum() if "icu_training_load" in df_all else 0,
+                "sessions": len(df_all),
+            }
+
+            # 🚴 Cycling-only (match VirtualRide, Ride, or Cycling)
+            if "type" in df_all.columns:
+                df_cyc = df_all[
+                    df_all["type"]
+                    .astype(str)
+                    .str.lower()
+                    .str.contains("ride|cycling", regex=True, na=False)
+                ]
+            else:
+                df_cyc = df_all
+
+            total_cyc = {
+                "hours": df_cyc["moving_time"].sum() / 3600 if "moving_time" in df_cyc else 0,
+                "distance": df_cyc["distance"].sum() / 1000 if "distance" in df_cyc else 0,
+                "tss": df_cyc["icu_training_load"].sum() if "icu_training_load" in df_cyc else 0,
+                "sessions": len(df_cyc),
+            }
+
+            context["summary_all"] = total_all
+            context["summary_cycling"] = total_cyc
+
+            debug(
+                context,
+                f"[T2] Injected dual totals → "
+                f"cycling={total_cyc}, all={total_all}"
+            )
+        else:
+            debug(context, "[T2 WARN] No valid df_all found for dual totals injection")
+
+    except Exception as e:
+        debug(context, f"[T2 WARN] Dual totals injection failed: {e}")
+
+
     # --- Final render ---
     final_output, compliance = finalize_and_validate_render(context, reportType=reportType)
 
@@ -434,8 +482,6 @@ def run_report(
 
     debug(context, f"✅ Render + validation completed for {reportType}")
     return final_output, compliance
-
-
 
 if __name__ == "__main__":
     run_report("weekly")
