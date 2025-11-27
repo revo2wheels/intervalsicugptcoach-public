@@ -10,8 +10,7 @@
       "url": "https://intervalsicugptcoach.clive-a5a.workers.dev"
     }
   ],
-
-    "x-render-source": {
+  "x-render-source": {
     "required": "audit_tier2",
     "allow_fallback": false,
     "description": "Renderer must consume validated Tier-2 audit payload only."
@@ -95,6 +94,7 @@
         }
       }
     },
+
     "/athlete/0/activities_t0light": {
       "get": {
         "summary": "List activities (Tier-0 lightweight, 28-day reduced fieldset)",
@@ -121,6 +121,7 @@
         }
       }
     },
+
     "/athlete/0/activities": {
       "get": {
         "summary": "List activities (Tier-0/Tier-1 full, 7-day detailed fields)",
@@ -145,9 +146,10 @@
         }
       }
     },
+
     "/athlete/0/wellness": {
       "get": {
-        "summary": "List wellness data (≤7 days, JSON)",
+        "summary": "List wellness data (≤42 days, JSON)",
         "operationId": "listWellness",
         "parameters": [
           { "name": "oldest", "in": "query", "schema": { "type": "string", "format": "date" } },
@@ -155,7 +157,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Wellness dataset",
+            "description": "Wellness dataset (up to 42 days)",
             "content": {
               "application/json": {
                 "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Wellness" } }
@@ -165,6 +167,7 @@
         }
       }
     },
+
     "/athlete/0/profile": {
       "get": {
         "summary": "Fetch athlete profile",
@@ -198,6 +201,7 @@
       }
     }
   },
+
   "components": {
     "schemas": {
       "Activity": {
@@ -248,9 +252,11 @@
       }
     }
   },
+
   "security": [
     { "OAuth2": ["ACTIVITY:READ", "WELLNESS:READ", "SETTINGS:READ"] }
   ],
+
   "x-intents": [
     {
       "trigger": [
@@ -276,7 +282,6 @@
         "fetch activities",
         "run full fetch",
         "tier1 analysis",
-        "run 7-day report",
         "fetch full dataset"
       ],
       "action": "run_full_audit_pipeline",
@@ -292,7 +297,8 @@
         "weekly report",
         "run weekly report",
         "generate weekly report",
-        "full weekly report"
+        "full weekly report",
+        "run 7-day report"
       ],
       "action": "run_report_orchestrated_render",
       "x-intent": {
@@ -321,18 +327,18 @@
       }
     }
   ],
+
   "x-actions": {
     "run_report_orchestrated_render": {
       "type": "chain",
       "steps": [
         "getAthleteProfile",
         "listActivitiesLight_90d",
-        "listWellness_42d",
-        "listActivitiesFull_7d",
+        { "action": "listWellness_42d" },
+        { "action": "listActivitiesFull_7d" },
         "renderFullWeeklyReport"
       ]
     },
-
     "listActivitiesLight_90d": {
       "type": "operation",
       "operationId": "listActivitiesLight",
@@ -341,7 +347,6 @@
         "newest": "${today}"
       }
     },
-
     "listWellness_42d": {
       "type": "operation",
       "operationId": "listWellness",
@@ -350,7 +355,6 @@
         "newest": "${today}"
       }
     },
-
     "listActivitiesFull_7d": {
       "type": "operation",
       "operationId": "listActivitiesFull",
@@ -359,20 +363,9 @@
         "newest": "${today}"
       }
     },
-
     "renderFullWeeklyReport": {
       "type": "render",
       "mode": "report"
-    },
-
-    "run_full_audit_pipeline": {
-      "type": "chain",
-      "steps": ["getAthleteProfile", "listActivitiesFull", "listWellness"]
-    },
-
-    "run_lightweight_audit_pipeline": {
-      "type": "chain",
-      "steps": ["getAthleteProfile", "listActivitiesLight", "listWellness"]
     }
   }
 }
