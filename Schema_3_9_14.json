@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Intervals.icu API + Unified Reporting Framework (Hybrid Dual-Mode Schema)",
-    "version": "3.9.13-dual-mode",
-    "description": "Splits lightweight (Tier-0) and full (Tier-1) fetches into separate operations to prevent connector deduplication."
+    "version": "3.9.15-dual-mode",
+    "description": "Updated to ensure 7-day full dataset chaining for weekly reports."
   },
   "servers": [
     {
@@ -97,7 +97,7 @@
 
     "/athlete/0/activities_t0light": {
       "get": {
-        "summary": "List activities (Tier-0 lightweight, 28-day reduced fieldset)",
+        "summary": "List activities (Tier-0 lightweight, 90-day reduced fieldset)",
         "operationId": "listActivitiesLight",
         "parameters": [
           { "name": "oldest", "in": "query", "schema": { "type": "string", "format": "date" } },
@@ -333,13 +333,13 @@
       "type": "chain",
       "steps": [
         "getAthleteProfile",
-        "listActivitiesLight_90d",
-        { "action": "listWellness_42d" },
-        { "action": "listActivitiesFull_7d" },
+        "listActivitiesLight",
+        "listWellness",
+        "listActivitiesFull",
         "renderFullWeeklyReport"
       ]
     },
-    "listActivitiesLight_90d": {
+    "listActivitiesLight": {
       "type": "operation",
       "operationId": "listActivitiesLight",
       "args": {
@@ -347,7 +347,7 @@
         "newest": "${today}"
       }
     },
-    "listWellness_42d": {
+    "listWellness": {
       "type": "operation",
       "operationId": "listWellness",
       "args": {
@@ -355,12 +355,13 @@
         "newest": "${today}"
       }
     },
-    "listActivitiesFull_7d": {
+    "listActivitiesFull": {
       "type": "operation",
       "operationId": "listActivitiesFull",
       "args": {
         "oldest": "${today.minusDays(7)}",
-        "newest": "${today}"
+        "newest": "${today}",
+        "auto": false
       }
     },
     "renderFullWeeklyReport": {

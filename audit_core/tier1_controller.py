@@ -112,6 +112,24 @@ def run_tier1_controller(df_master, wellness, context):
     df_well=None
     debug(context, "[T1] Running Tier-1 controller (weekly mode)")
 
+    # --- 🧩 Canonical Light+Full filter (use merged Tier-0 dataset if available)
+    if "df_raw_activities" in context:
+        df_raw = context["df_raw_activities"]
+        if isinstance(df_raw, pd.DataFrame) and not df_raw.empty:
+            debug(context, f"[T1] Using merged df_raw_activities ({len(df_raw)} rows) as base dataset.")
+            df_master = df_raw.copy()
+
+            # Apply event-only filter
+            if "origin" in df_master.columns:
+                before = len(df_master)
+                df_master = df_master[df_master["origin"] == "event"].reset_index(drop=True)
+                after = len(df_master)
+                debug(context, f"[T1] Filtered origin=='event' → {after}/{before} rows retained.")
+        else:
+            debug(context, "[T1] df_raw_activities found but empty — continuing with Tier-0 df_master.")
+    else:
+        debug(context, "[T1] No df_raw_activities in context — using direct df_master from Tier-0.")
+
     # --- Early rehydration of wellness from context if dropped ---
     if (wellness is None or not isinstance(wellness, pd.DataFrame) or wellness.empty):
         if isinstance(context.get("wellness"), pd.DataFrame):
@@ -614,11 +632,11 @@ def run_tier1_controller(df_master, wellness, context):
     except Exception as e:
         debug(context, f"[TRACE] Failed to ensure df_light_slice for Tier-2: {e}")
 
-    # --- Final column sanitization before Tier-2 ---
-    if isinstance(df_master, pd.DataFrame):
-        df_master = df_master.loc[:, ~df_master.columns.duplicated()].copy()
-        df_master.columns = df_master.columns.astype(str)
-        df_master.columns = df_master.columns.str.replace(r'\.1$', '', regex=True)
-        debug(context, "[T1] Deduplicated df_master columns before Tier-2 handoff.")
+    # --- 🧩 Final Tier-1 event summary
+    if isinstance(df_master, pd.DataFrame) and not df_master.empty:
+        total_h = df_master["moving_time"].sum() / 3600 if "moving_time" in df_master else 0
+        total_tss = df_master["icu_training_load"].sum() if "icu_training_load" in df_master else 0
+        total_km = df_master["distance"].sum() / 1000 if "distance" in df_master else 0
+        debug(context, f"[T1] Summary → {len(df_master)} events | {total_h:.2f} h | {total_tss:.0f} TSS | {total_km:.1f} km")
 
     return df_master, wellness, context

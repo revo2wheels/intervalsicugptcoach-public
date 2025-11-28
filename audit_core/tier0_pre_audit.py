@@ -545,6 +545,35 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         df_activities = fetch_activities_chunked(athlete["id"], oldest, newest, headers, context)
         debug(context, f"[T0-FETCH] Full 7-day fetch complete: {len(df_activities)} activities.")
 
+        # --- 🧩 Merge Light + Full safely (pre-Tier1 canonicalization)
+        try:
+            df_light = context.get("df_light_slice", pd.DataFrame())
+            df_full = df_activities.copy()
+
+            if not df_light.empty and not df_full.empty:
+                df_light["origin"] = "light"
+                df_full["origin"] = "event"
+
+                df_merged = pd.concat([df_light, df_full], ignore_index=True)
+                before_dedup = len(df_merged)
+                df_merged = df_merged.drop_duplicates(subset=["id"], keep="last").reset_index(drop=True)
+                dropped = before_dedup - len(df_merged)
+
+                # --- Store canonical frames in context
+                context["df_raw_activities"] = df_merged
+                context["df_light_slice"] = df_light
+                context["df_full_slice"] = df_full
+                context["activities_light"] = df_light
+                context["activities_full"] = df_full
+
+                debug(context, f"[T0-MERGE] Light+Full merged: {len(df_merged)} rows (dropped {dropped})")
+                debug(context, f"[T0-MERGE] Σh={df_merged['moving_time'].sum()/3600:.2f} ΣTSS={df_merged['icu_training_load'].sum():.0f}")
+
+            else:
+                debug(context, "[T0-MERGE] ⚠ Missing light or full dataset — merge skipped.")
+        except Exception as e:
+            debug(context, f"[T0-MERGE] ❌ Failed during Light+Full merge: {e}")
+
         # --- Determine which dataset should feed Tier-1 snapshot ---
         report_type = str(context.get("report_type", "")).lower().strip()
 
