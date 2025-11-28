@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 
 # --- Load schema ---
-SCHEMA_PATH = "Schema_3_9_12.json"
+SCHEMA_PATH = "Schema_3_9_17.json"
 if not os.path.exists(SCHEMA_PATH):
     raise FileNotFoundError(f"Schema file not found: {SCHEMA_PATH}")
 
@@ -13,7 +13,7 @@ with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
 # --- Core helpers ---
 def get_schema_version():
     """Return current schema version."""
-    return SCHEMA.get("info", {}).get("version", "3.9.12")
+    return SCHEMA.get("info", {}).get("version", "3.9.17")
 
 def _now():
     return datetime.utcnow().isoformat() + "Z"

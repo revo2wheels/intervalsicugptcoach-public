@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Intervals.icu API + Unified Reporting Framework (Hybrid Dual-Mode Schema)",
-    "version": "3.9.15-dual-mode",
+    "version": "3.9.17-dual-mode",
     "description": "Updated to ensure 7-day full dataset chaining for weekly reports."
   },
   "servers": [
@@ -367,6 +367,9 @@
     "renderFullWeeklyReport": {
       "type": "render",
       "mode": "report"
+    },
+    "runReportStub": {
+      "$ref": "#/x-actions/run_report_orchestrated_render"
     }
   }
 }

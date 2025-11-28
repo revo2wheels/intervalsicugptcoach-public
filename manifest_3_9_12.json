@@ -7,7 +7,7 @@
     "renderMode": "full",
     "tierEnforce": true,
     "intentRouter": "v1.1",
-    "xValidationRef": "./Schema_3_9_12.json#/x-validation-rules"
+    "xValidationRef": "./Schema_3_9_17.json#/x-validation-rules"
   },
   "audit": {
     "tier0": { "enabled": true, "ruleset": "pre_audit_integrity" },
