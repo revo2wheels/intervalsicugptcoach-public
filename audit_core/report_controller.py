@@ -81,6 +81,19 @@ def orchestrate_fetch_context(report_type: str = "weekly", today: date | None = 
             oldest=str(today - timedelta(days=wellness_days)), newest=str(today)
         )
 
+    # --- Safety guard: ensure weekly full fetch is always available ---
+    if rtype == "weekly" and "activities_full" not in ctx:
+        debug(ctx, "[CHAIN] Auto-forcing 7-day full fetch (safety path)")
+        try:
+            ctx["activities_full"] = listActivitiesFull(
+                oldest=str(today - timedelta(days=7)),
+                newest=str(today),
+                auto=True,
+            )
+            debug(ctx, "[CHAIN] Forced 7-day full fetch succeeded")
+        except Exception as e:
+            debug(ctx, f"[CHAIN] Forced 7-day full fetch failed: {e}")
+
     # --- Range metadata ---
     ctx["range"] = {
         "lightDays": light_days,
