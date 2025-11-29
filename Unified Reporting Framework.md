@@ -234,6 +234,79 @@ Rules:
 
 ---
 
+## ⚙️ Orchestration Enforcement — `orchestrate_fetch_context()`
+
+**Purpose:** Guarantee that all required endpoints are fetched in the correct order for both ChatGPT (Worker-based) and local runs **before Tier-1 validation begins**.
+
+### Enforcement Rules
+
+1. **Execution Order (hard-coded):**
+- /athlete/0/profile
+- /athlete/0/activities_t0light ← 90-day lightweight
+- /athlete/0/wellness ← 42-day wellness
+- /athlete/0/activities ← 7-day full
+
+These four endpoints **must** be executed sequentially by the ChatGPT→Worker pipeline  
+(or locally via `run_tier0_pre_audit`) before Tier-1 starts.
+
+2. **Coverage Thresholds**
+
+- Each dataset must return ≥ 85 % of expected event coverage by date range.  
+- If coverage < 85 %, the controller must retry that endpoint once.  
+- If still incomplete, halt execution with `AuditHalt: Tier-0 coverage failure`.
+
+3. **Report-Type Invariance**
+
+- Overrides by `reportType` are **not permitted**.  
+- Even `season` or `wellness` reports must include all four datasets so Tier-1 and Tier-2  
+  can correlate correctly.
+
+4. **Worker Binding**
+
+- When invoked from ChatGPT, `loadAllRules()` exposes this orchestration map as  
+  `rules['enforcement']['orchestrate_fetch_context']`.
+- The ChatGPT app uses that list to call each Worker endpoint in order  
+  (`profile → activities_t0light → wellness → activities`).
+
+5. **Tier-1 Entry Gate**
+
+- Tier-1 (`run_tier1_controller`) only executes when  
+  `orchestrate_fetch_context()` returns `status: complete`.
+
+6. **Local Runtime Mirror**
+
+- Local Python mode (`report.py`) mirrors the same sequence using the same ruleset,  
+  ensuring dual-mode parity (manifest_mode = dual).
+
+7. **Retry & Logging**
+
+- All retries logged under `Tier-0 Retry Sequence` in compliance logs.  
+- Failures escalate to `AuditCoreHalt` and prevent renderer activation.
+
+---
+
+### Example `loadAllRules()` Output Snippet
+
+```json
+{
+"ruleset_version": "v16.17-AUDITCORE-SYNC",
+"enforcement": {
+ "orchestrate_fetch_context": {
+   "sequence": [
+     "/athlete/0/profile",
+     "/athlete/0/activities_t0light",
+     "/athlete/0/wellness",
+     "/athlete/0/activities"
+   ],
+   "coverage_threshold": 0.85,
+   "retries": 1,
+   "reportType_locked": true
+ }
+}
+}
+```
+---
+
 ### Version and Compliance  
 Unified Reporting Framework **v5.1 (current active schema)** — ruleset `v16.13-EOD-003`.  
 All icons 🧭 📊 📅 🧩 🔬 🔋 💓 ⚖️ 🧠 🪜 must render.  

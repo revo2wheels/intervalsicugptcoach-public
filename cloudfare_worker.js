@@ -127,98 +127,69 @@ export default {
     const athleteId = athleteMatch ? athleteMatch[1] : "0";
 
     // ====================================================================
-    // ROUTE 0: Chained run_report orchestrator (OAuth-safe version)
+    // ROUTE 0: Dynamic orchestration stub — /run_report
     // ====================================================================
     if (pathname.startsWith("/run_report")) {
       const reportType = url.searchParams.get("reportType") || "weekly";
-      const stage = url.searchParams.get("stage") || "profile";
+      const stage = url.searchParams.get("stage") || "start";
+
+      console.log(`[RUN_REPORT] Stage → ${stage}`);
+
+      // Define stage flow (matches orchestrate_fetch_context)
+      const sequence = ["start", "profile", "light", "wellness", "full"];
+      const nextStage = sequence[sequence.indexOf(stage) + 1];
       const athleteId = "0";
 
-      // Preserve incoming Authorization header exactly
-      const authHeader = request.headers.get("Authorization");
-      if (!authHeader) {
-        return new Response(
-          JSON.stringify({
-            status: 401,
-            error: "Missing Authorization header. Complete OAuth flow first."
-          }),
-          {
-            status: 401,
-            headers: {
-              "content-type": "application/json",
-              "access-control-allow-origin": "*"
-            }
-          }
-        );
+      // Construct response skeleton
+      const resp = {
+        status: "ok",
+        reportType,
+        stage,
+        message: "",
+        next: null,
+      };
+
+      switch (stage) {
+        case "start":
+          resp.message = "Begin report orchestration → fetching athlete profile.";
+          resp.next = `${url.origin}/athlete/${athleteId}/profile`;
+          break;
+
+        case "profile":
+          resp.message = "Proceed to Tier-0 lightweight (90-day) activities.";
+          resp.next = `${url.origin}/athlete/${athleteId}/activities_t0light`;
+          break;
+
+        case "light":
+          resp.message = "Proceed to Tier-1 wellness (42-day).";
+          resp.next = `${url.origin}/athlete/${athleteId}/wellness`;
+          break;
+
+        case "wellness":
+          resp.message = "Proceed to Tier-2 7-day full activities.";
+          resp.next = `${url.origin}/athlete/${athleteId}/activities`;
+          break;
+
+        case "full":
+          resp.message = "✅ All data stages complete — ready for Tier-1 validation.";
+          resp.next = null;
+          break;
+
+        default:
+          resp.status = "error";
+          resp.message = `Invalid stage: ${stage}`;
       }
 
-      const headers = { Authorization: authHeader };
-      const base = `https://${env.WORKER_HOST || "intervalsicugptcoach.clive-a5a.workers.dev"}/athlete/${athleteId}`;
+      console.log(`[RUN_REPORT] ${stage} → ${resp.next || "complete"}`);
 
-      async function getJSON(path) {
-        const resp = await fetch(path, { headers });
-        const txt = await resp.text();
-        try {
-          return JSON.parse(txt);
-        } catch (err) {
-          console.error(`[RUN_REPORT] Invalid JSON from ${path}: ${err.message}`);
-          return { error: "Invalid JSON" };
-        }
-      }
-
-      try {
-        let data, nextStage;
-
-        if (stage === "profile") {
-          data = await getJSON(`${base}/profile`);
-          nextStage = "light";
-        } else if (stage === "light") {
-          data = await getJSON(`${base}/activities_t0light`);
-          nextStage = "wellness";
-        } else if (stage === "wellness") {
-          data = await getJSON(`${base}/wellness`);
-          nextStage = "full";
-        } else if (stage === "full") {
-          data = await getJSON(`${base}/activities`);
-          nextStage = null;
-        } else {
-          return new Response(
-            JSON.stringify({ error: `Invalid stage '${stage}'` }),
-            { status: 400, headers: { "content-type": "application/json" } }
-          );
-        }
-
-        const nextUrl = nextStage
-          ? `${url.origin}/run_report?reportType=${reportType}&stage=${nextStage}`
-          : null;
-
-        const payload = {
-          status: "ok",
-          reportType,
-          stage,
-          data,
-          next: nextUrl
-        };
-
-        return new Response(JSON.stringify(payload, null, 2), {
-          status: 200,
-          headers: {
-            "content-type": "application/json",
-            "access-control-allow-origin": "*",
-            "access-control-allow-headers": "Authorization, Content-Type",
-            "access-control-allow-methods": "GET, POST, OPTIONS"
-          }
-        });
-
-      } catch (err) {
-        console.error(`[RUN_REPORT] Stage ${stage} failed → ${err.message}`);
-        return new Response(
-          JSON.stringify({ error: err.message, stage }),
-          { status: 500, headers: { "content-type": "application/json" } }
-        );
-      }
+      return new Response(JSON.stringify(resp), {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+          "access-control-allow-origin": "*",
+        },
+      });
     }
-
 
     // ====================================================================
     // ROUTE 1: Tier-0 lightweight snapshot (default 90 days)
