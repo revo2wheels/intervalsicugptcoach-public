@@ -67,39 +67,46 @@ Audit: {auditStatus} | Integrity: {integrityFlag}
 
 ---
 
-### 🧩 Context Additions — Runtime Alignment
+### 🧩 Context Additions — Runtime Alignment  
+*(Runtime variables injected into the unified report context after each tier executes.)*
 
 | Key | Tier | Type | Description |
 |:--|:--|:--|:--|
-| `tier1_eventTotals` | Tier-1 | dict | Canonical event totals (`hours`, `tss`) sourced directly from Intervals.icu. |
-| `load_metrics` | Tier-1 | dict | CTL / ATL / TSB values merged from wellness data for renderer use. |
-| `outliers` | Tier-1 | list[dict] | Detected TSS outliers ± 1.5 σ (`{date, event, issue, obs}`). |
-| `zone_dist_power`, `zone_dist_hr`, `zone_dist_pace` | Tier-1 | dict | Percent zone distributions expanded from arrays. |
-| `recovery_flag` | Tier-2 | str | Adaptive recovery classification from HRV↔Load correlation (`adaptive`, `neutral`, `poor`). |
+| **`tier1_eventTotals`** | Tier-1 | `dict` | Canonical event totals (`hours`, `tss`, `distance`) validated after Tier-1 dataset integrity check. Used for variance comparison. |
+| **`tier2_eventTotals`** | Tier-2 | `dict` | ✅ Final enforced event totals (Σ of event-level metrics from validated dataset). Primary source for URF Key Stats section. |
+| **`load_metrics`** | Tier-1 | `dict` | CTL / ATL / TSB / Form values merged from wellness feed for renderer and adaptive logic. |
+| **`outliers`** | Tier-1 | `list[dict]` | Detected TSS / IF outliers ± 1.5 σ (`{date, event, metric, observed, expected}`). |
+| **`zone_dist_power`**, **`zone_dist_hr`**, **`zone_dist_pace`** | Tier-2 | `dict` | Percent zone distributions expanded from normalized training zone arrays. |
+| **`recovery_flag`** | Tier-2 | `str` | Adaptive recovery classification from HRV ↔ Load correlation (`adaptive`, `neutral`, `poor`). |
+
+#### Renderer Context Binding (URF Runtime Contract)
+All variables listed above are guaranteed available to the URF renderer once `auditFinal=True`.  
+Tier-2 variables take precedence where overlap exists.
 
 ---
 
-## 2. 📊 Key Stats  
+## 2. 📊 Key Stats
 | Metric | Value | Δ | Status |
 |:--|--:|:--:|:--:|
-| Volume (h) | {{ (context["tier1_visibleTotals"]["hours"] if "tier1_visibleTotals" in context else 0) | round(2) }} | {{ ΔHours | round(1) }} | — |
-| Load (TSS) | {{ (context["tier1_visibleTotals"]["tss"] if "tier1_visibleTotals" in context else 0) | round(0) }} | {{ ΔTss | round(0) }} | — |
-| Distance (km) | {{ (context["tier1_visibleTotals"]["distance"] if "tier1_visibleTotals" in context else 0) | round(1) }} | — | — |
-| Avg IF | {{ (context["tier1_visibleTotals"]["avg_if"] if "tier1_visibleTotals" in context else 0) | round(2) }} | — | — |
-| Avg HR | {{ (context["tier1_visibleTotals"]["avg_hr"] if "tier1_visibleTotals" in context else 0) | round(0) }} | — | — |
-| VO₂max | {{ (context["tier1_visibleTotals"]["vo2max"] if "tier1_visibleTotals" in context else 0) | round(1) }} | — | — |
-| ACWR | {acwr:.2f} | — | {acwrFlag} |
-| Monotony | {monotony:.2f} | — | {monotonyFlag} |
-| Strain | {strain:.0f} | — | — |
-| Recovery Index | {recoveryIndex:.2f} | — | {recoveryStatus} |
-| Fat Ox Index | {fatOxidationIndexRaw:.2f} | — | {fatOxidationIndexEval} |
-| Polarisation Index | {polarisationIndex:.2f} | — | {polarisationFlag} |
-| Durability Index | {durabilityIndex:.2f} | — | {durabilityFlag} |
-| Benchmark Index | {benchmarkIndex:.2f} | {ΔBenchmark:.2f} | {benchmarkFlag} |
-| Specificity Index | {specificityIndex:.2f} | — | {specificityFlag} |
-| Consistency Index | {consistencyIndex:.2f} | — | {consistencyFlag} |
-| Normalised Power (NP) | {np:.0f} | — | — |
-| Intensity Factor (IF) | {if:.2f} | — | — |
+| Volume (h) | {{ (context.get("tier2_eventTotals", {}).get("hours", 0)) | round(2) }} | {{ ΔHours | round(1) }} | — |
+| Load (TSS) | {{ (context.get("tier2_eventTotals", {}).get("tss", 0)) | round(0) }} | {{ ΔTss | round(0) }} | — |
+| Distance (km) | {{ (context.get("tier2_eventTotals", {}).get("distance", 0)) | round(1) }} | — | — |
+| Avg IF | {{ (context.get("tier2_eventTotals", {}).get("avg_if", 0)) | round(2) }} | — | — |
+| Avg HR | {{ (context.get("tier2_eventTotals", {}).get("avg_hr", 0)) | round(0) }} | — | — |
+| VO₂max | {{ (context.get("tier2_eventTotals", {}).get("vo2max", 0)) | round(1) }} | — | — |
+| ACWR | {{ acwr | round(2) }} | — | {{ acwrFlag }} |
+| Monotony | {{ monotony | round(2) }} | — | {{ monotonyFlag }} |
+| Strain | {{ strain | round(0) }} | — | — |
+| Recovery Index | {{ recoveryIndex | round(2) }} | — | {{ recoveryStatus }} |
+| Fat Ox Index | {{ fatOxidationIndexRaw | round(2) }} | — | {{ fatOxidationIndexEval }} |
+| Polarisation Index | {{ polarisationIndex | round(2) }} | — | {{ polarisationFlag }} |
+| Durability Index | {{ durabilityIndex | round(2) }} | — | {{ durabilityFlag }} |
+| Benchmark Index | {{ benchmarkIndex | round(2) }} | {{ ΔBenchmark | round(2) }} | {{ benchmarkFlag }} |
+| Specificity Index | {{ specificityIndex | round(2) }} | — | {{ specificityFlag }} |
+| Consistency Index | {{ consistencyIndex | round(2) }} | — | {{ consistencyFlag }} |
+| Normalised Power (NP) | {{ np | round(0) }} | — | — |
+| Intensity Factor (IF) | {{ if | round(2) }} | — | — |
+
 
 > **Reference:** Coggan Power Metrics — NP, IF, and TSS definitions integrated from Dr. Andrew Coggan’s framework.  
 
@@ -305,6 +312,9 @@ These four endpoints **must** be executed sequentially by the ChatGPT→Worker p
 }
 }
 ```
+audit_chain_source: intervalsicugptcoach.clive-a5a.workers.dev
+orchestration_mode: chained_auto
+
 ---
 
 ### Version and Compliance  
@@ -312,3 +322,5 @@ Unified Reporting Framework **v5.1 (current active schema)** — ruleset `v16.13
 All icons 🧭 📊 📅 🧩 🔬 🔋 💓 ⚖️ 🧠 🪜 must render.  
 Audit variance limit ≤ 1 %.  
 All twelve coaching frameworks covered.
+Tier-2 verification token: {{ context.get("auditFinal", False) }}
+

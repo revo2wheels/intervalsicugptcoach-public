@@ -19,7 +19,7 @@
   "paths": {
     "/run_report": {
       "get": {
-        "summary": "Stub endpoint retained for backward compatibility. Use sequential endpoints instead.",
+        "summary": "Orchestrated multi-stage report fetch (start → profile → light → wellness → full)",
         "operationId": "runReportStub",
         "x-orchestrated": true,
         "x-chain-source": "#/x-actions/run_report_orchestrated_render",
@@ -33,17 +33,27 @@
               "default": "weekly"
             },
             "description": "Specifies which report to run: weekly (7-day), tier0 (diagnostic), or season (90-day lightweight)."
+          },
+          {
+            "name": "stage",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["start", "profile", "light", "wellness", "full"],
+              "default": "start"
+            },
+            "description": "Sequential stage of the report orchestration chain."
           }
         ],
         "responses": {
           "200": {
-            "description": "Unified report output",
+            "description": "Stage-based orchestration response. Each stage returns `next` URL to follow.",
             "x-render": {
-              "mode": "full+metrics",
+              "mode": "sequential",
               "chunk": "auto",
               "auto": true,
               "source": "audit_tier2",
-              "title": "Unified Training Report"
+              "title": "Unified Training Report (Staged)"
             },
             "content": {
               "application/json": {
@@ -51,39 +61,31 @@
                   "type": "object",
                   "properties": {
                     "status": { "type": "string", "example": "ok" },
-                    "message": { "type": "string", "example": "Unified report (season) data fetched successfully." },
-                    "reportType": { "type": "string", "example": "season" },
-                    "athlete_id": { "type": "string", "example": "0" },
-                    "chunked": { "type": "boolean", "example": true },
-                    "render_hint": { "type": "string", "example": "data" },
-                    "athlete_profile": { "type": "object" },
-                    "activities_light": {
-                      "type": "array",
-                      "items": { "$ref": "#/components/schemas/Activity" }
+                    "reportType": { "type": "string", "example": "weekly" },
+                    "stage": { "type": "string", "example": "profile" },
+                    "message": {
+                      "type": "string",
+                      "example": "Proceed to Tier-0 lightweight (90-day) activities."
                     },
-                    "activities_full": {
-                      "type": "array",
-                      "items": { "$ref": "#/components/schemas/Activity" }
+                    "next": {
+                      "type": ["string", "null"],
+                      "example": "https://intervalsicugptcoach.clive-a5a.workers.dev/run_report?reportType=weekly&stage=light",
+                      "description": "Next stage in the chain. Null when orchestration is complete."
                     },
-                    "wellness": {
-                      "type": "array",
-                      "items": { "$ref": "#/components/schemas/Wellness" }
+                    "data": {
+                      "type": ["object", "null"],
+                      "description": "Optional stage payload (e.g., profile, light, wellness, full)."
                     },
                     "context": {
                       "type": "object",
-                      "description": "Downstream execution context for Tier-0 and Tier-1 audits.",
                       "properties": {
-                        "report_type": {
-                          "type": "string",
-                          "example": "season",
-                          "description": "Indicates the report type for Tier-0 pre-audit logic."
-                        },
+                        "report_type": { "type": "string", "example": "weekly" },
                         "range": {
                           "type": "object",
                           "properties": {
                             "lightDays": { "type": "integer", "example": 90 },
-                            "fullDays": { "type": "integer", "example": 42 },
-                            "chunk": { "type": "boolean", "example": true }
+                            "wellnessDays": { "type": "integer", "example": 42 },
+                            "fullDays": { "type": "integer", "example": 7 }
                           }
                         }
                       }
@@ -96,7 +98,6 @@
         }
       }
     },
-
     "/athlete/0/activities_t0light": {
       "get": {
         "summary": "List activities (Tier-0 lightweight, 90-day reduced fieldset)",
