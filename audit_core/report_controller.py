@@ -45,7 +45,30 @@ def orchestrate_fetch_context(report_type: str = "weekly", today: date | None = 
     Unified fetch orchestrator for URF v5.x.
     Fetches all datasets (profile, light, full, wellness)
     and sets context flags for render and phase behavior.
+    Supports both local execution and ChatGPT tool-execution mode.
     """
+    from datetime import date, timedelta
+    from audit_core.utils import debug
+
+    # --- Tool fallback import ---
+    try:
+        from intervals_icu__jit_plugin import (
+            getAthleteProfile,
+            listActivitiesLight,
+            listActivitiesFull,
+            listWellness,
+        )
+        debug({}, "[CHAIN] Using local intervals_icu__jit_plugin bindings")
+    except ImportError:
+        # Fallback to ChatGPT plugin tool binding
+        import intervalsicugptcoach_clive_a5a_workers_dev__jit_plugin as tool
+        getAthleteProfile = tool.getAthleteProfile
+        listActivitiesLight = tool.listActivitiesLight
+        listWellness = tool.listWellness
+        listActivitiesFull = tool.listActivitiesFull
+        debug({}, "[CHAIN] Using ChatGPT tool bindings (intervalsicugptcoach_clive_a5a_workers_dev__jit_plugin)")
+
+    # --- Base context ---
     today = today or date.today()
     rtype = report_type.lower()
     ctx: dict[str, any] = {"report_type": rtype, "today": str(today)}
@@ -66,23 +89,48 @@ def orchestrate_fetch_context(report_type: str = "weekly", today: date | None = 
     # --- Chunk mode logic ---
     chunk_mode = full_days > 7 or light_days > 90 or wellness_days > 42
 
-    # --- Fetch chain ---
-    ctx["activities_light"] = listActivitiesLight(
-        oldest=str(today - timedelta(days=light_days)), newest=str(today)
-    )
-    if full_days > 0:
-        ctx["activities_full"] = listActivitiesFull(
-            oldest=str(today - timedelta(days=full_days)),
-            newest=str(today),
-            chunk=chunk_mode,
-        )
-    if wellness_days > 0:
-        ctx["wellness"] = listWellness(
-            oldest=str(today - timedelta(days=wellness_days)), newest=str(today)
-        )
+    debug(ctx, f"[CHAIN] Starting orchestrate_fetch_context for {rtype} | light={light_days} full={full_days} wellness={wellness_days}")
 
-    # --- Safety guard: ensure weekly full fetch is always available ---
-    if rtype == "weekly" and "activities_full" not in ctx:
+    # --- Fetch chain ---
+    try:
+        ctx["activities_light"] = listActivitiesLight(
+            oldest=str(today - timedelta(days=light_days)),
+            newest=str(today),
+            fields="id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,average_heartrate,IF,VO2MaxGarmin",
+        )
+        debug(ctx, "[CHAIN] 90-day light activities fetched")
+    except Exception as e:
+        debug(ctx, f"[CHAIN] Light activities fetch failed: {e}")
+        ctx["activities_light"] = []
+
+    # --- 7-day Full dataset (always required for weekly) ---
+    if full_days > 0:
+        try:
+            ctx["activities_full"] = listActivitiesFull(
+                oldest=str(today - timedelta(days=full_days)),
+                newest=str(today),
+                auto=True,
+                chunk=chunk_mode,
+            )
+            debug(ctx, "[CHAIN] 7-day full activities fetched successfully")
+        except Exception as e:
+            debug(ctx, f"[CHAIN] Full activities fetch failed: {e}")
+            ctx["activities_full"] = []
+
+    # --- Wellness fetch ---
+    if wellness_days > 0:
+        try:
+            ctx["wellness"] = listWellness(
+                oldest=str(today - timedelta(days=wellness_days)),
+                newest=str(today),
+            )
+            debug(ctx, "[CHAIN] 42-day wellness data fetched")
+        except Exception as e:
+            debug(ctx, f"[CHAIN] Wellness fetch failed: {e}")
+            ctx["wellness"] = []
+
+    # --- Safety fallback (especially for ChatGPT mode) ---
+    if rtype == "weekly" and (not ctx.get("activities_full") or len(ctx["activities_full"]) == 0):
         debug(ctx, "[CHAIN] Auto-forcing 7-day full fetch (safety path)")
         try:
             ctx["activities_full"] = listActivitiesFull(
@@ -93,6 +141,7 @@ def orchestrate_fetch_context(report_type: str = "weekly", today: date | None = 
             debug(ctx, "[CHAIN] Forced 7-day full fetch succeeded")
         except Exception as e:
             debug(ctx, f"[CHAIN] Forced 7-day full fetch failed: {e}")
+            ctx["activities_full"] = []
 
     # --- Range metadata ---
     ctx["range"] = {
@@ -105,19 +154,22 @@ def orchestrate_fetch_context(report_type: str = "weekly", today: date | None = 
 
     # --- Render + phase flagging ---
     if rtype == "weekly":
-        ctx["render_mode"] = "full+metrics"; ctx["phase_mode"] = False
+        ctx["render_mode"], ctx["phase_mode"] = "full+metrics", False
     elif rtype == "summary":
-        ctx["render_mode"] = "summary"; ctx["phase_mode"] = False
+        ctx["render_mode"], ctx["phase_mode"] = "summary", False
     elif rtype == "season":
-        ctx["render_mode"] = "block"; ctx["phase_mode"] = False
+        ctx["render_mode"], ctx["phase_mode"] = "block", False
     elif rtype == "season_phases":
-        ctx["render_mode"] = "block+phases"; ctx["phase_mode"] = True; ctx["phases"] = []
+        ctx["render_mode"], ctx["phase_mode"] = "block+phases", True
+        ctx["phases"] = []
     elif rtype == "season_summary":
-        ctx["render_mode"] = "block+summary"; ctx["phase_mode"] = False
+        ctx["render_mode"], ctx["phase_mode"] = "block+summary", False
     elif rtype == "wellness":
-        ctx["render_mode"] = "recovery"; ctx["phase_mode"] = False
+        ctx["render_mode"], ctx["phase_mode"] = "recovery", False
 
+    debug(ctx, f"[CHAIN] Context fetch complete for {rtype} | render_mode={ctx['render_mode']}")
     return ctx
+
 
 def run_report(
     reportType: str = "weekly",
