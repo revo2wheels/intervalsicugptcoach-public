@@ -226,6 +226,19 @@ def run_report(
         elif reportType.lower() == "weekly":
             debug(context, f"[T0-FULL] Running 7-day detailed audit for weekly mode → {full_start} → {full_end}")
 
+            # --- Prevent double counting between light and full datasets ---
+            if "activities_light" in context and "activities_full" in context:
+                light_df = pd.DataFrame(context["activities_light"])
+                full_df = pd.DataFrame(context["activities_full"])
+                
+                if "id" in light_df.columns and "id" in full_df.columns:
+                    # Remove any overlapping activity IDs from the light dataset
+                    light_df = light_df[~light_df["id"].isin(full_df["id"])]
+                    debug(context, f"[DEDUPE] Removed {len(context['activities_light']) - len(light_df)} duplicates from light dataset")
+                
+                # Replace cleaned dataset back
+                context["activities_light"] = light_df.to_dict(orient="records")
+
             # If prefetch already captured the window, avoid refetch
             if context.get("prefetch_done") and context.get("snapshot_7d_json"):
                 debug(context, "[T0-FULL] Prefetch contained full window — skipping redundant re-fetch.")
