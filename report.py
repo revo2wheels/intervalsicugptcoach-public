@@ -9,15 +9,17 @@ Usage:
     python report.py --range wellness
     python report.py --range summary
 """
-
-import io
+import io, os
 import sys
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+sys.path.append(os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 import argparse
-import os
 from contextlib import redirect_stdout
 from pathlib import Path
 from audit_core.report_controller import run_report
 from audit_core.utils import debug
+
+
 
 # Ensure proper UTF-8 handling for terminal and markdown
 sys.stdout.reconfigure(encoding="utf-8")

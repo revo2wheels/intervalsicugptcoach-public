@@ -127,98 +127,25 @@ export default {
     const athleteId = athleteMatch ? athleteMatch[1] : "0";
 
     // ====================================================================
-    // ROUTE 0: Chained run_report orchestrator (OAuth-safe version)
+    // ROUTE 0: Backwards compatibility stub
     // ====================================================================
     if (pathname.startsWith("/run_report")) {
-      const reportType = url.searchParams.get("reportType") || "weekly";
-      const stage = url.searchParams.get("stage") || "profile";
-      const athleteId = "0";
-
-      // Preserve incoming Authorization header exactly
-      const authHeader = request.headers.get("Authorization");
-      if (!authHeader) {
-        return new Response(
-          JSON.stringify({
-            status: 401,
-            error: "Missing Authorization header. Complete OAuth flow first."
-          }),
-          {
-            status: 401,
-            headers: {
-              "content-type": "application/json",
-              "access-control-allow-origin": "*"
-            }
-          }
-        );
-      }
-
-      const headers = { Authorization: authHeader };
-      const base = `https://${env.WORKER_HOST || "intervalsicugptcoach.clive-a5a.workers.dev"}/athlete/${athleteId}`;
-
-      async function getJSON(path) {
-        const resp = await fetch(path, { headers });
-        const txt = await resp.text();
-        try {
-          return JSON.parse(txt);
-        } catch (err) {
-          console.error(`[RUN_REPORT] Invalid JSON from ${path}: ${err.message}`);
-          return { error: "Invalid JSON" };
-        }
-      }
-
-      try {
-        let data, nextStage;
-
-        if (stage === "profile") {
-          data = await getJSON(`${base}/profile`);
-          nextStage = "light";
-        } else if (stage === "light") {
-          data = await getJSON(`${base}/activities_t0light`);
-          nextStage = "wellness";
-        } else if (stage === "wellness") {
-          data = await getJSON(`${base}/wellness`);
-          nextStage = "full";
-        } else if (stage === "full") {
-          data = await getJSON(`${base}/activities`);
-          nextStage = null;
-        } else {
-          return new Response(
-            JSON.stringify({ error: `Invalid stage '${stage}'` }),
-            { status: 400, headers: { "content-type": "application/json" } }
-          );
-        }
-
-        const nextUrl = nextStage
-          ? `${url.origin}/run_report?reportType=${reportType}&stage=${nextStage}`
-          : null;
-
-        const payload = {
-          status: "ok",
-          reportType,
-          stage,
-          data,
-          next: nextUrl
-        };
-
-        return new Response(JSON.stringify(payload, null, 2), {
+      console.log("[RUN_REPORT] Stub invoked – sequential endpoints required.");
+      return new Response(
+        JSON.stringify({
+          status: "stub",
+          message:
+            "Use sequential endpoint calls: profile → 90d light → 42d wellness → 7d full."
+        }),
+        {
           status: 200,
           headers: {
             "content-type": "application/json",
-            "access-control-allow-origin": "*",
-            "access-control-allow-headers": "Authorization, Content-Type",
-            "access-control-allow-methods": "GET, POST, OPTIONS"
+            "access-control-allow-origin": "*"
           }
-        });
-
-      } catch (err) {
-        console.error(`[RUN_REPORT] Stage ${stage} failed → ${err.message}`);
-        return new Response(
-          JSON.stringify({ error: err.message, stage }),
-          { status: 500, headers: { "content-type": "application/json" } }
-        );
-      }
+        }
+      );
     }
-
 
     // ====================================================================
     // ROUTE 1: Tier-0 lightweight snapshot (default 90 days)

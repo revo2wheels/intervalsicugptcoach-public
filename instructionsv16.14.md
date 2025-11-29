@@ -4,7 +4,8 @@
 **ruleset_version:** `v16.16G`  
 **rules_endpoint:** https://api.github.com/repos/revo2wheels/intervalsicugptcoach-public/contents/all-modules.md  
 **use_schema:** `true`
-intervals_icu__jit_plugin schema synchronized with schema_3_9_12.json (fields enabled)
+intervals_icu__jit_plugin schema synchronized with schema_3_9_17.json (fields enabled)
+#trigger schema refresh
 
 ---
 

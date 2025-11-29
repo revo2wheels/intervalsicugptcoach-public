@@ -16,6 +16,7 @@ def get_schema_version():
     return SCHEMA.get("info", {}).get("version", "3.9.17")
 
 def _now():
+    """Return UTC timestamp in ISO format."""
     return datetime.utcnow().isoformat() + "Z"
 
 # --- API mocks (schema-aligned) ---
@@ -81,3 +82,9 @@ def validate_against_schema():
     if missing:
         raise ValueError(f"Schema missing required sections: {missing}")
     return True
+
+
+# --- Backward-compatibility aliases (for URF v5.x controllers) ---
+# These maintain compatibility with orchestration calls expecting older function names.
+listActivitiesLight = listActivities
+listActivitiesFull = listActivities

@@ -21,6 +21,8 @@
       "get": {
         "summary": "Stub endpoint retained for backward compatibility. Use sequential endpoints instead.",
         "operationId": "runReportStub",
+        "x-orchestrated": true,
+        "x-chain-source": "#/x-actions/run_report_orchestrated_render",
         "parameters": [
           {
             "name": "reportType",

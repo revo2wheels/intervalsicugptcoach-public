@@ -5,19 +5,19 @@
 ```
 ✅ Renderer source: Tier-2 enforced totals (canonical dataset)
 [FINALIZER] Enforcing markdown-only return (season-safe mode)
-[FINALIZER] Markdown-only return OK — len=6045, ctx_keys=79
+[FINALIZER] Markdown-only return OK — len=6008, ctx_keys=80
 ✅ Renderer source: Tier-2 enforced totals (canonical dataset)
 [FINALIZER] Enforcing markdown-only return (season-safe mode)
-[FINALIZER] Markdown-only return OK — len=6045, ctx_keys=79
+[FINALIZER] Markdown-only return OK — len=6008, ctx_keys=80
 ```
 
 ## Rendered Markdown Report
 
 # 🧭 Weekly Training Report — URF v5.1
 **Athlete:** Clive King
-**Period:** 2025-11-22 → 2025-11-28
+**Period:** 2025-11-23 → 2025-11-29
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-28T08:35:40.652657
+**Generated:** 2025-11-29T09:42:25.653576
 
 ---
 
@@ -45,9 +45,9 @@
 |:-- |:-- |:-- |:--|
 | ACWR | 1.0 | 🟢 productive | EWMA Acute:Chronic Load Ratio — compares 7-day vs 28-day weighted loads. 0.8–1.3 = productive training, <0.8 = recovery or detraining, >1.5 = overload/injury risk. |
 | Monotony | 0.41 | 🟢 optimal | 1–2 shows healthy variation; >2.5 means repetitive stress pattern. |
-| Strain | 29.2 | 🟢 optimal | Product of load × monotony; >3500 signals potential overreach. |
+| Strain | 28.3 | 🟢 optimal | Product of load × monotony; >3500 signals potential overreach. |
 | FatigueTrend | nan | ⚪ undefined | FatigueTrend is calculated as the percentage change between the 7-day and 28-day moving averages. A 0% change indicates balance, while a positive percentage change indicates accumulating fatigue, and a negative percentage change indicates recovery. |
-| ZQI | 5.3 | 🟢 optimal | Zone Quality Index (%) 5-15 high-intensity time is normal <3% too easy, >20% too intense or erratic pacing. |
+| ZQI | 5.8 | 🟢 optimal | Zone Quality Index (%) 5-15 high-intensity time is normal <3% too easy, >20% too intense or erratic pacing. |
 | FatOxEfficiency | 0.644 | 🟢 optimal | 0.4–0.8 means balanced fat oxidation; lower = carb dependence. |
 | Polarisation | 0.9 | 🟢 polarised | 0.75–0.9 matches Seiler 80/20 distribution; <0.7 = too intense. |
 | FOxI | 64.4 | 🟠 moderate | FatOx index %; higher values mean more efficient aerobic base. |
@@ -74,13 +74,13 @@
 ### Heart Rate Zones
 | Zone | % Time |
 |:-- |:--|
-| hr_z1 | 64.9 |
-| hr_z2 | 20.7 |
-| hr_z3 | 4.9 |
-| hr_z4 | 4.3 |
-| hr_z5 | 2.3 |
-| hr_z6 | 1.9 |
-| hr_z7 | 1.0 |
+| hr_z1 | 59.2 |
+| hr_z2 | 24.0 |
+| hr_z3 | 5.7 |
+| hr_z4 | 5.0 |
+| hr_z5 | 2.7 |
+| hr_z6 | 2.3 |
+| hr_z7 | 1.1 |
 
 
 _No pace zone data available._
@@ -95,13 +95,13 @@ _No pace zone data available._
 
 ## 💓 Wellness & Recovery
 
-- Rest Days: 1
+- Rest Days: 2
 - Resting HR: 42.9 bpm
-- HRV: 47.0 ms (→ stable, prev 46.0 ms)
+- HRV: 44.0 ms (↓ declining (-3.0 ms), prev 47.0 ms)
 - Fatigue: 1.5/5
 - Stress: 1.8/5
 - Readiness: nan/5
-- ATL: 87.3 · CTL: 90.68 · TSB: 3.38
+- ATL: 86.72 · CTL: 90.5 · TSB: 3.78
 
 
 ## 🧠 Performance & Coaching Actions
@@ -118,8 +118,8 @@ _No pace zone data available._
 8. ---
 9. 📊 Metric-based Feedback:
 10. ✅ Monotony (0.41) — If Monotony > 2.5, introduce more variation in training or implement a deload week to reduce repetitive stress.
-11. ✅ Strain (29.2) — If Strain > 3000, monitor for signs of overreach and consider more rest or deloading. If Strain > 3500, consider reducing volume or intensity temporarily.
-12. ✅ ZQI (5.3) — If ZQI > 20%, review pacing strategy; excessive high-intensity time could indicate erratic pacing or overtraining. Aim for 5-15% ZQI for balanced training.
+11. ✅ Strain (28.3) — If Strain > 3000, monitor for signs of overreach and consider more rest or deloading. If Strain > 3500, consider reducing volume or intensity temporarily.
+12. ✅ ZQI (5.8) — If ZQI > 20%, review pacing strategy; excessive high-intensity time could indicate erratic pacing or overtraining. Aim for 5-15% ZQI for balanced training.
 13. ✅ FatOxEfficiency (0.644) — If FatOxEfficiency is low (<0.6), focus on improving aerobic base with longer, low-intensity efforts.
 14. ✅ CUR (35.6) — If CUR is outside the green zone (30-70), adjust carbohydrate intake and fueling strategy to ensure balanced metabolic use during long sessions.
 15. ✅ GR (1.72) — If GR exceeds 2.0, focus on reducing glycolytic intensity and increase aerobic work. Ensure sufficient recovery to avoid over-reliance on carbs.
@@ -141,12 +141,11 @@ _No pace zone data available._
 | 2025-11-23 | Zwift - Group Ride: DIRT The Merge ENDURANCE (C) on Triple Flat Loops | 158 | 03:08:45 | 130.5 |
 | 2025-11-23 | Zwift - Downtown Eruption in Watopia | 37 | 00:44:43 | 25.6 |
 | 2025-11-23 | Zwift - Volcano Flat in Watopia | 2 | 00:07:27 | 3.8 |
-| 2025-11-22 | Otto walk | 15 | 01:24:12 | 6.2 |
 
 **Cycling Totals:** 7.46 h · 292.2 km · 444 TSS · 8 sessions**
-**All Activities:** 9.90 h · 303.7 km · 498 TSS · 10 sessions**
+**All Activities:** 8.50 h · 297.5 km · 483 TSS · 9 sessions**
 _Note: CTL/ATL/TSB values include **all activities**._
 
 ---
-✅ **Audit Completed:** 2025-11-28T08:35:40.656116
+✅ **Audit Completed:** 2025-11-29T09:42:25.657629
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: —

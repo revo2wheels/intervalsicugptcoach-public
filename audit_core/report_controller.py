@@ -1,5 +1,20 @@
+import sys, os
+
+# --- Force project root into sys.path ---
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+ROOT_DIR = os.path.abspath(os.path.join(CURRENT_DIR, os.pardir))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+print(f"[DEBUG] Added ROOT_DIR to sys.path: {ROOT_DIR}")
+
+# --- Optional: show current working directory ---
+print(f"[DEBUG] CWD: {os.getcwd()}")
+
 import pandas as pd
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, date
+
+import pandas as pd
+from datetime import timedelta, datetime, date
 
 from audit_core.utils import debug
 from api_github_com__jit_plugin import loadAllRules
@@ -17,6 +32,79 @@ from audit_core.tier2_actions import evaluate_actions
 from audit_core.tier2_render_validator import finalize_and_validate_render
 from audit_core.tier2_extended_metrics import compute_extended_metrics
 
+# --- optional compatibility alias ---
+from intervals_icu__jit_plugin import (
+    getAthleteProfile,
+    listActivitiesLight,
+    listActivitiesFull,
+    listWellness,
+)
+
+def orchestrate_fetch_context(report_type: str = "weekly", today: date | None = None):
+    """
+    Unified fetch orchestrator for URF v5.x.
+    Fetches all datasets (profile, light, full, wellness)
+    and sets context flags for render and phase behavior.
+    """
+    today = today or date.today()
+    rtype = report_type.lower()
+    ctx: dict[str, any] = {"report_type": rtype, "today": str(today)}
+
+    # --- Profile always first ---
+    ctx["profile"] = getAthleteProfile()
+
+    # --- Date range config ---
+    if rtype in ("weekly", "summary"):
+        light_days, full_days, wellness_days = 90, 7, 42
+    elif rtype in ("season", "season_phases", "season_summary"):
+        light_days, full_days, wellness_days = 90, 42, 42
+    elif rtype == "wellness":
+        light_days, full_days, wellness_days = 42, 0, 42
+    else:
+        raise ValueError(f"Unknown report type '{report_type}'")
+
+    # --- Chunk mode logic ---
+    chunk_mode = full_days > 7 or light_days > 90 or wellness_days > 42
+
+    # --- Fetch chain ---
+    ctx["activities_light"] = listActivitiesLight(
+        oldest=str(today - timedelta(days=light_days)), newest=str(today)
+    )
+    if full_days > 0:
+        ctx["activities_full"] = listActivitiesFull(
+            oldest=str(today - timedelta(days=full_days)),
+            newest=str(today),
+            chunk=chunk_mode,
+        )
+    if wellness_days > 0:
+        ctx["wellness"] = listWellness(
+            oldest=str(today - timedelta(days=wellness_days)), newest=str(today)
+        )
+
+    # --- Range metadata ---
+    ctx["range"] = {
+        "lightDays": light_days,
+        "fullDays": full_days,
+        "wellnessDays": wellness_days,
+        "chunk": chunk_mode,
+    }
+    ctx["fetchComplete"] = True
+
+    # --- Render + phase flagging ---
+    if rtype == "weekly":
+        ctx["render_mode"] = "full+metrics"; ctx["phase_mode"] = False
+    elif rtype == "summary":
+        ctx["render_mode"] = "summary"; ctx["phase_mode"] = False
+    elif rtype == "season":
+        ctx["render_mode"] = "block"; ctx["phase_mode"] = False
+    elif rtype == "season_phases":
+        ctx["render_mode"] = "block+phases"; ctx["phase_mode"] = True; ctx["phases"] = []
+    elif rtype == "season_summary":
+        ctx["render_mode"] = "block+summary"; ctx["phase_mode"] = False
+    elif rtype == "wellness":
+        ctx["render_mode"] = "recovery"; ctx["phase_mode"] = False
+
+    return ctx
 
 def run_report(
     reportType: str = "weekly",
@@ -36,7 +124,7 @@ def run_report(
     **kwargs,
 ):
 
-    # --- Initialize context ---
+        # --- Initialize context ---
     context = {}
     context.update(kwargs)
     context.update({
@@ -45,6 +133,10 @@ def run_report(
         "postRenderAudit": postRenderAudit,
     })
     context["debug_mode"] = kwargs.get("debug_mode", False)
+
+    # --- Tier (-1): Orchestrate initial fetches and context ---
+    context = orchestrate_fetch_context(reportType)
+    debug(context, f"[ORCH] Context orchestrated for {reportType} → mode={context.get('render_mode')}")
 
     # --- NEW: Bind reportMode for schema-based orchestration ---
     context["reportMode"] = reportType.lower() if isinstance(reportType, str) else "weekly"
