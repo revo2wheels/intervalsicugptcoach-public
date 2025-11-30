@@ -636,6 +636,12 @@ def run_report(
         debug(context, f"[T2 WARN] Dual totals injection failed: {e}")
 
 
+    # --- Force full unified render ---
+    context["auditFinal"] = True
+    context["render_mode"] = "full+metrics"
+    context["enforce_render_source"] = "audit_only"
+    context["allow_intent_inference"] = False
+
     # --- Final render ---
     final_output, compliance = finalize_and_validate_render(context, reportType=reportType)
 

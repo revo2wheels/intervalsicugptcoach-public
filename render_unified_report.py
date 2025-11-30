@@ -201,6 +201,25 @@ def render_report(data):
             ctx["derived_metrics"].update(ctx["tier2_derived_metrics"])
         debug(ctx, "[SYNC] Derived metrics updated from Tier-2 context before render.")
 
+    # === 📊 Key Stats (Weekly Mode) ===
+    if report_type.lower() == "weekly":
+        md.append(section("📊 Key Stats"))
+        et = (
+            ctx.get("tier2_enforced_totals")
+            or ctx.get("tier1_visibleTotals")
+            or ctx.get("tier0_snapshotTotals_7d")
+            or ctx.get("eventTotals")
+            or {}
+        )
+        rows = [
+            ["Hours", f"{et.get('hours', et.get('time_h', 0)):.2f}"],
+            ["Distance (km)", f"{et.get('distance', et.get('distance_km', 0)):.1f}"],
+            ["TSS", f"{et.get('tss', 0)}"],
+            ["Sessions", f"{ctx.get('event_count', 0)}"],
+        ]
+        md.append(table(["Metric", "Value"], rows))
+        md.append("")
+        debug(ctx, "[Tier-2] Injected 📊 Key Stats section for weekly mode.")
 
     # === 4️⃣ Tier-2 Derived Metrics ===
     md.append(section("🧮 Derived Metric Audit (EWMA-based ACWR)"))
