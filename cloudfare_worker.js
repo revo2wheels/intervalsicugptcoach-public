@@ -127,68 +127,24 @@ export default {
     const athleteId = athleteMatch ? athleteMatch[1] : "0";
 
     // ====================================================================
-    // ROUTE 0: Dynamic orchestration stub — /run_report
+    // ROUTE 0: Backwards compatibility stub
     // ====================================================================
     if (pathname.startsWith("/run_report")) {
-      const reportType = url.searchParams.get("reportType") || "weekly";
-      const stage = url.searchParams.get("stage") || "start";
-
-      console.log(`[RUN_REPORT] Stage → ${stage}`);
-
-      // Define stage flow (matches orchestrate_fetch_context)
-      const sequence = ["start", "profile", "light", "wellness", "full"];
-      const nextStage = sequence[sequence.indexOf(stage) + 1];
-      const athleteId = "0";
-
-      // Construct response skeleton
-      const resp = {
-        status: "ok",
-        reportType,
-        stage,
-        message: "",
-        next: null,
-      };
-
-      switch (stage) {
-        case "start":
-          resp.message = "Begin report orchestration → fetching athlete profile.";
-          resp.next = `${url.origin}/athlete/${athleteId}/profile`;
-          break;
-
-        case "profile":
-          resp.message = "Proceed to Tier-0 lightweight (90-day) activities.";
-          resp.next = `${url.origin}/athlete/${athleteId}/activities_t0light`;
-          break;
-
-        case "light":
-          resp.message = "Proceed to Tier-1 wellness (42-day).";
-          resp.next = `${url.origin}/athlete/${athleteId}/wellness`;
-          break;
-
-        case "wellness":
-          resp.message = "Proceed to Tier-2 7-day full activities.";
-          resp.next = `${url.origin}/athlete/${athleteId}/activities`;
-          break;
-
-        case "full":
-          resp.message = "✅ All data stages complete — ready for Tier-1 validation.";
-          resp.next = null;
-          break;
-
-        default:
-          resp.status = "error";
-          resp.message = `Invalid stage: ${stage}`;
-      }
-
-      console.log(`[RUN_REPORT] ${stage} → ${resp.next || "complete"}`);
-
-      return new Response(JSON.stringify(resp), {
-        status: 200,
-        headers: {
-          "content-type": "application/json",
-          "access-control-allow-origin": "*",
-        },
-      });
+      console.log("[RUN_REPORT] Stub invoked – sequential endpoints required.");
+      return new Response(
+        JSON.stringify({
+          status: "stub",
+          message:
+            "Use sequential endpoint calls: profile → 90d light → 42d wellness → 7d full."
+        }),
+        {
+          status: 200,
+          headers: {
+            "content-type": "application/json",
+            "access-control-allow-origin": "*"
+          }
+        }
+      );
     }
 
     // ====================================================================
