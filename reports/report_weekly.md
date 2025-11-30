@@ -17,7 +17,7 @@
 **Athlete:** Clive King
 **Period:** 2025-11-24 → 2025-11-30
 **Timezone:** Europe/Zurich
-**Generated:** 2025-11-30T11:06:33.293232
+**Generated:** 2025-11-30T11:11:57.683432
 
 ---
 
@@ -157,5 +157,5 @@ _No pace zone data available._
 _Note: CTL/ATL/TSB values include **all activities**._
 
 ---
-✅ **Audit Completed:** 2025-11-30T11:06:33.297927
+✅ **Audit Completed:** 2025-11-30T11:11:57.687757
 **Framework:** URF v5.1 · Core: v16.14 · Enforcement: —

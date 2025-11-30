@@ -184,17 +184,7 @@ def enforce_event_only_totals(df_events, context):
         context["df_event_only_preview"] = []
 
 
-    # --- Step 7: Lock canonical totals (safe) ---
-    canonical_totals = context.get("tier2_enforced_totals") or context.get("eventTotals") or {}
-    context["locked_totalHours"] = context.get("totalHours", canonical_totals.get("time_h", 0))
-    context["locked_totalTss"] = context.get("totalTss", canonical_totals.get("tss", 0))
-    context["locked_totalDistance"] = context.get("totalDistance", canonical_totals.get("distance_km", 0))
-
-    debug(
-        context,
-        f"[T2] Locked canonical totals — Hours={context['locked_totalHours']}, "
-        f"TSS={context['locked_totalTss']}, Dist={context['locked_totalDistance']} km"
-    )
+    # --- Step 7 moved to end -----------
 
     # --- Step 8: Trace annotation -------------------------------------------
     context["event_count"] = len(df_event_only)
@@ -248,5 +238,17 @@ def enforce_event_only_totals(df_events, context):
                 }
 
     debug(context, "[T2] Enriched load_metrics propagated to renderer")
+
+    # --- Step 12: Lock canonical totals (safe) ---
+    canonical_totals = context.get("tier2_enforced_totals") or context.get("eventTotals") or {}
+    context["locked_totalHours"] = context.get("totalHours", canonical_totals.get("time_h", 0))
+    context["locked_totalTss"] = context.get("totalTss", canonical_totals.get("tss", 0))
+    context["locked_totalDistance"] = context.get("totalDistance", canonical_totals.get("distance_km", 0))
+
+    debug(
+        context,
+        f"[T2] Locked canonical totals — Hours={context['locked_totalHours']}, "
+        f"TSS={context['locked_totalTss']}, Dist={context['locked_totalDistance']} km"
+    )
 
     return context
