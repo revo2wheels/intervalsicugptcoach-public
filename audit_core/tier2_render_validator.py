@@ -8,7 +8,14 @@ Adds markdown-compatible Event Log for UI output.
 
 import time
 import numpy as np
-import pandas as pd
+# --- Safe pandas import (module-level) ---
+import types
+try:
+    import pandas as pd
+except Exception:
+    pd = types.SimpleNamespace()
+    pd.options = types.SimpleNamespace()
+    pd.options.display = types.SimpleNamespace(width=160)
 from datetime import datetime
 from audit_core.utils import debug
 from audit_core.errors import AuditHalt
@@ -614,23 +621,49 @@ def finalize_and_validate_render(context, reportType="weekly"):
     # --- Unified Markdown rendering ---
     from render_unified_report import render_report
 
-    try:
-        rendered = render_report(report)
+    # ✅ Ensure both context and top-level report carry auditFinal flag early
+    # This guarantees correct state even if finalize() is re-entered
+    if not context.get("auditFinal", False):
+        context["auditFinal"] = True
+    if not report.get("auditFinal", False):
+        report["auditFinal"] = True
 
-        # Normalize output to a Markdown string
+    # 🧩 Prevent duplicate render (reuse previous markdown if already finalized)
+    if context.get("rendered", False):
+        debug(context, "[FINALIZER] Skipping duplicate render (already finalized)")
+        return context.get("markdown", ""), {
+            "status": "ok",
+            "note": "reused existing markdown"
+        }
+
+    # 🧩 Define render context parameters
+    context["render_mode"] = context.get("render_mode", "full+metrics")
+    context["enforce_render_source"] = context.get("enforce_render_source", "tier2_enforced_totals")
+
+    try:
+        # 🔧 Important: call render_report(report), not context
+        rendered = render_report(report)
+        context["rendered"] = True
+        report["rendered"] = True
+
+        # Normalize output to Markdown
         if isinstance(rendered, dict) and "markdown" in rendered:
             md_output = rendered["markdown"]
-        elif hasattr(rendered, "to_markdown"):
-            md_output = rendered.to_markdown()
         elif isinstance(rendered, str):
             md_output = rendered
+        elif hasattr(rendered, "to_markdown"):
+            md_output = rendered.to_markdown()
         else:
             md_output = str(rendered)
 
         debug(context, f"[FINALIZER] Markdown render succeeded (len={len(md_output)})")
+        context["markdown"] = md_output
         return md_output, {"status": "ok", "note": "markdown rendered"}
 
     except Exception as e:
         debug(context, f"[FINALIZER] Unified renderer failed → {e}")
-        return f"Render failed: {e}", {"status": "error", "note": "unified render failed"}
+        return f"Render failed: {e}", {
+            "status": "error",
+            "note": "unified render failed"
+        }
 

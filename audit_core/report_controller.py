@@ -637,9 +637,9 @@ def run_report(
 
 
     # --- Force full unified render ---
-    context["auditFinal"] = True
+    context["auditFinal"] = True                    # ✅ tell renderer audit is finalized
     context["render_mode"] = "full+metrics"
-    context["enforce_render_source"] = "audit_only"
+    context["enforce_render_source"] = "tier2_enforced_totals"  # ✅ use canonical source
     context["allow_intent_inference"] = False
 
     # --- Final render ---

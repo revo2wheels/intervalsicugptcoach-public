@@ -9,7 +9,14 @@ import json
 import sys
 import os
 import time
-import pandas as pd
+# --- Safe pandas import (global scope) ---
+import types
+try:
+    import pandas as pd
+except Exception:
+    pd = types.SimpleNamespace()
+    pd.options = types.SimpleNamespace()
+    pd.options.display = types.SimpleNamespace(width=160)
 from pathlib import Path
 from datetime import datetime
 from UIcomponents.icon_pack import ICON_CARDS
@@ -147,7 +154,6 @@ def render_report(data):
     if report_type == "weekly" and "df_light_slice" in ctx:
         df_light_slice = ctx["df_light_slice"]
         try:
-            import pandas as pd
             if isinstance(df_light_slice, pd.DataFrame) and not df_light_slice.empty:
                 # --- Compute canonical 7-day slice totals
                 df_light_slice["moving_time"] = pd.to_numeric(df_light_slice.get("moving_time", 0), errors="coerce").fillna(0)
