@@ -306,44 +306,78 @@ def finalize_and_validate_render(context, reportType="weekly"):
 
     # Canonical Tier-2 totals override (true Σ from enforce_event_only_totals)
     if "eventTotals" in context:
-        canonical_hours = context["eventTotals"].get("hours", 0)
-        canonical_tss   = context["eventTotals"].get("tss", 0)
+        et = context["eventTotals"]
+        canonical_hours    = et.get("hours", 0)
+        canonical_tss      = et.get("tss", 0)
+        canonical_distance = et.get("distance", et.get("distance_km", 0))
 
-        context["totalHours"] = canonical_hours
-        context["totalTss"]   = canonical_tss
-        context["Duration_total"] = time.strftime("%H:%M:%S", time.gmtime(int(canonical_hours * 3600)))
+        # --- Canonical top-level totals ---
+        context["totalHours"]     = canonical_hours
+        context["totalTss"]       = canonical_tss
+        context["totalDistance"]  = canonical_distance
+        context["Duration_total"] = time.strftime(
+            "%H:%M:%S", time.gmtime(int(canonical_hours * 3600))
+        )
 
-        # --- 🔒 Sandbox state guard ---
+        # --- 🔒 Sandbox state guard (include distance) ---
         context["_locked_load_metrics"] = {
-            "totalHours": canonical_hours,
-            "totalTss": canonical_tss,
-            "source": "tier2_canonical"
+            "totalHours":    canonical_hours,
+            "totalTss":      canonical_tss,
+            "totalDistance": canonical_distance,
+            "source":        "tier2_canonical",
         }
         debug(context, "[STATE-GUARD] _locked_load_metrics set (prevents recomputation)")
 
+        # --- Keep load_metrics aligned with Tier-2 canonical totals ---
         context.setdefault("load_metrics", {})
-        context["load_metrics"]["totalHours"] = canonical_hours
-        context["load_metrics"]["totalTss"]   = canonical_tss
+        context["load_metrics"]["totalHours"]    = canonical_hours
+        context["load_metrics"]["totalTss"]      = canonical_tss
+        context["load_metrics"]["totalDistance"] = canonical_distance
+
+        # --- Force dual summaries (all/cycling) to Tier-2 event-only totals ---
+        # --- Canonical override ONLY for "all activities" totals ---
+        summary_all = context.setdefault("summary_all", {})
+        summary_all["hours"]    = canonical_hours
+        summary_all["tss"]      = canonical_tss
+        summary_all["distance"] = canonical_distance
+        summary_all["sessions"] = context.get("event_count", summary_all.get("sessions", 0))
+
+        debug(context, "[T2] summary_all canonical override applied")
+
+        # --- DO NOT override summary_cycling (true subset computed in Tier-1) ---
+        if "summary_cycling" in context:
+            debug(context, "[T2] Preserving summary_cycling (subset from report_controller)")
+        else:
+            debug(context, "[WARN] summary_cycling missing; no cycling subset available")
+
 
         context["summary_patch"] = {
             "totalHours": canonical_hours,
-            "totalTss": canonical_tss,
+            "totalTss":   canonical_tss,
+            "totalDist":  canonical_distance,
             "eventCount": context.get("event_count", 0),
-            "period": f"{context.get('window_start')} → {context.get('window_end')}",
+            "period":     f"{context.get('window_start')} → {context.get('window_end')}",
         }
 
-        debug(context, f"[CANONICAL PROPAGATION] hours={canonical_hours}, tss={canonical_tss}")
+        debug(
+            context,
+            f"[CANONICAL PROPAGATION] hours={canonical_hours}, "
+            f"tss={canonical_tss}, dist={canonical_distance}"
+        )
+
 
     # Reinforce canonical lock (ensures persistence through serialization)
     if "eventTotals" in context:
         et = context["eventTotals"]
         context["_locked_load_metrics"] = {
-            "totalHours": et.get("hours", context.get('totalHours')),
-            "totalTss": et.get("tss", context.get('totalTss')),
-            "source": "tier2_final_lock"
+            "totalHours":    et.get("hours",    context.get("totalHours")),
+            "totalTss":      et.get("tss",      context.get("totalTss")),
+            "totalDistance": et.get("distance", context.get("totalDistance")),
+            "source":        "tier2_final_lock",
         }
-        context["load_metrics"]["totalHours"] = context["_locked_load_metrics"]["totalHours"]
-        context["load_metrics"]["totalTss"]   = context["_locked_load_metrics"]["totalTss"]
+        context["load_metrics"]["totalHours"]    = context["_locked_load_metrics"]["totalHours"]
+        context["load_metrics"]["totalTss"]      = context["_locked_load_metrics"]["totalTss"]
+        context["load_metrics"]["totalDistance"] = context["_locked_load_metrics"]["totalDistance"]
         debug(context, "[LOCK] Tier-2 canonical totals re-locked before render")
 
     # --- TRACE: df_events and canonical totals before render ---
@@ -384,28 +418,39 @@ def finalize_and_validate_render(context, reportType="weekly"):
     debug(context, f"[TRACE-POST-RENDER-CHECK] summary={report.get('summary', {})}")
 
     # ✅ Post-render canonical override (sandbox consistency fix)
-    if "eventTotals" in context:
+    if "eventTotals" in context and isinstance(report, dict):
         et = context["eventTotals"]
-        # --- Safe summary access (season mode may not build full report["summary"]) ---
-        summary_section = report.get("summary", {})
-        canonical_hours = et.get("hours", summary_section.get("totalHours", 0))
-        canonical_tss = et.get("tss", summary_section.get("totalTss", 0))
 
-        # force-update both header + summary with canonical event-only totals
+        summary_section    = report.get("summary", {})
+        canonical_hours    = et.get("hours", summary_section.get("totalHours", 0))
+        canonical_tss      = et.get("tss",   summary_section.get("totalTss", 0))
+        canonical_distance = et.get("distance", summary_section.get("totalDistance", 0))
+
+        # --- Enforce canonical totals in summary block ---
         if "summary" in report:
             report["summary"].update({
-                "totalHours": canonical_hours,
-                "totalTss": canonical_tss,
-                "eventCount": context.get("event_count", report["summary"].get("eventCount", 0)),
+                "totalHours":    canonical_hours,
+                "totalTss":      canonical_tss,
+                "totalDistance": canonical_distance,
+                "eventCount":    context.get("event_count", report["summary"].get("eventCount", 0)),
+                "period":        f"{context.get('window_start')} → {context.get('window_end')}",
             })
 
-        if "header" in report:
-            report["header"].update({
-                "Total Hours": f"{canonical_hours:.2f} h",
-                "Total Load (TSS)": canonical_tss,
-            })
+        # --- If renderer exposed dual summaries, override them too ---
+        for key in ("summary_all", "summary_cycling"):
+            if key in report and isinstance(report[key], dict):
+                report[key].update({
+                    "hours":    canonical_hours,
+                    "tss":      canonical_tss,
+                    "distance": canonical_distance,
+                    "sessions": context.get("event_count", report[key].get("sessions", 0)),
+                })
 
-        debug(context, "[POST-RENDER] Canonical event-only totals enforced → header + summary synced")
+        # ❗ Deliberately DO NOT inject totals into header — you said “no totals in headers”
+        debug(
+            context,
+            "[POST-RENDER] Canonical event-only totals enforced → summary(+dual summaries) synced"
+        )
 
     # --- Step 6: Derived Metrics Injection (Section 5 extension) ---
     if context.get("auditFinal", False):

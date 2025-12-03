@@ -132,16 +132,18 @@ def enforce_event_only_totals(df_events, context):
         )
 
     else:
-        # keep existing weekly/calendar validation logic
+        # Weekly / Calendar logic
         if validated:
             context["tier2_enforced_totals"] = tier1_totals
             context["tier1_visibleTotals"]["validated"] = True
             context["eventTotals"] = tier1_totals
             debug(context, "[T2] Retaining Tier-1 totals as validated canonical snapshot.")
         else:
-            context["totalHours"] = round(event_hours, 2)
-            context["totalTss"] = int(round(event_tss))
-            context["totalDistance"] = round(event_distance, 1)
+            # Canonical Tier-2 totals
+            context["totalHours"]     = round(event_hours, 2)
+            context["totalTss"]       = int(round(event_tss))
+            context["totalDistance"]  = round(event_distance, 1)
+
             context["tier2_enforced_totals"] = {
                 "hours": context["totalHours"],
                 "tss": context["totalTss"],
@@ -150,10 +152,10 @@ def enforce_event_only_totals(df_events, context):
                 "validated": False,
             }
             context["tier1_visibleTotals"] = context["tier2_enforced_totals"]
-            context["eventTotals"] = context["tier2_enforced_totals"]
+            context["eventTotals"]         = context["tier2_enforced_totals"]
+
             debug(context, "[T2] Overrode Tier-1 totals with Tier-2 enforced canonical values.")
-
-
+        
     # --- JSON-safe event preview for renderer (lightweight only) -----------------
     try:
         sort_col = "start_date_local" if "start_date_local" in df_event_only.columns else "date"

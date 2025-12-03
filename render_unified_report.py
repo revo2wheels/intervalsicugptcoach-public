@@ -150,31 +150,7 @@ def render_report(data):
     debug(ctx, f"[RENDER] Totals unified from {totals_source} → "
             f"{ctx['totalHours']} h | {ctx['totalDistance']} km | {ctx['totalTss']} TSS")
 
-    # --- 🧩 Canonical Totals Override (light slice enforcement for weekly mode) ---
-    if report_type == "weekly" and "df_light_slice" in ctx:
-        df_light_slice = ctx["df_light_slice"]
-        try:
-            if isinstance(df_light_slice, pd.DataFrame) and not df_light_slice.empty:
-                # --- Compute canonical 7-day slice totals
-                df_light_slice["moving_time"] = pd.to_numeric(df_light_slice.get("moving_time", 0), errors="coerce").fillna(0)
-                df_light_slice["icu_training_load"] = pd.to_numeric(df_light_slice.get("icu_training_load", 0), errors="coerce").fillna(0)
-                df_light_slice["distance"] = pd.to_numeric(df_light_slice.get("distance", 0), errors="coerce").fillna(0)
 
-                canonical_hours = round(df_light_slice["moving_time"].sum() / 3600, 2)
-                canonical_tss = round(df_light_slice["icu_training_load"].sum())
-                canonical_distance = round(df_light_slice["distance"].sum() / 1000, 1)
-
-                ctx["totalHours"] = canonical_hours
-                ctx["totalTss"] = canonical_tss
-                ctx["totalDistance"] = canonical_distance
-                ctx["totals_source"] = "df_light_slice_canonical"
-                ctx["totals_verified"] = True
-
-                debug(ctx, f"[CANONICAL] Overrode totals from df_light_slice → "
-                           f"{canonical_hours} h | {canonical_distance} km | {canonical_tss} TSS")
-                print("✅ Canonical totals enforced from df_light_slice (7-day slice)")
-        except Exception as e:
-            debug(ctx, f"[CANONICAL] df_light_slice override failed → {e}")
 
 
     # --- Ensure downstream load metrics consistency
@@ -835,15 +811,28 @@ def main():
         print(f"❌ File not found: {path}")
         sys.exit(1)
 
+    # Load JSON report structure
     data = json.loads(path.read_text())
-    md = render_report(data)
 
+    # Run renderer
+    result = render_report(data)
+
+    # Normalise renderer output → md_text (always a string)
+    if isinstance(result, dict):
+        md_text = result.get("markdown", "")
+        if not isinstance(md_text, str):
+            md_text = str(md_text)
+    else:
+        md_text = str(result)
+
+    # Output to file if requested
     if len(sys.argv) > 3 and sys.argv[2] == "--out":
         out_path = Path(sys.argv[3])
-        out_path.write_text(md, encoding="utf-8")
+        out_path.write_text(md_text, encoding="utf-8")
         print(f"✅ Markdown report written to {out_path}")
     else:
-        print(md)
+        print(md_text)
+
 
 
 if __name__ == "__main__":
