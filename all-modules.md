@@ -16,23 +16,18 @@ manifest_note: "Dual-path manifest with explicit ChatGPT and Local modes; full G
 
 ---
 
-## 📦 Load Sequence
+## 📦 Load Sequence (Logical Pipeline)
 
-| **Priority** | **Module** | **Description** | **Layer** |
+| **Priority** | **Stage** | **Description** | **Layer** |
 |:--|:--|:--|:--|
-| 1 | `Schema_3_9_12.json` | Intervals.icu OpenAPI schema (activities, wellness, profile) | API Core |
-| 2 | `audit_core/tier0_pre_audit.py` | Data ingestion and lightweightupto 90-day snapshot (Tier-0 entry) | Tier-0 |
-| 3 | `audit_core/fetch_utils.py` *(or equivalent)* | Helper for authenticated HTTP fetches with retry logic | Tier-0 |
-| 4 | `audit_core/tier1_controller.py` | Dataset validation and canonical totals registration | Tier-1 |
-| 5 | `audit_core/tier2_enforcement.py` | Derived metrics and event-level integrity checks | Tier-2 |
-| 6 | `audit_core/render_unified_report.py` | Renderer for Unified Reporting Framework (URF v5.1) | Render |
-| 7 | `Unified Reporting Framework.md` | Canonical metric definitions and 10-section layout | Spec |
-| 8 | `coaching_cheat_sheet.py` | RPE, feel, and zone reference scales | Coaching |
-| 9 | `coaching_heuristics.py` | Fatigue, ACWR, durability, and recovery logic | Coaching |
-| 10 | `coaching_profile.py` | Narrative templates, tone, and persona | Coaching |
-| 11 | `Coaching Cheat Sheet.md` | Narrative templates, tone, and persona | Coaching cheat sheet |
-| 12 | `Coaching Profile.md` |  Narrative templates, tone, and persona | Coaching Profile |
-| 13 | `Glossary & Placeholders.md` | Audit state/context tokens (Tier-0 ↔ Tier-1 bridge) | Reference |
+| 1 | Schema (`Schema_3_9_18.json`) | Intervals.icu OpenAPI schema (activities, wellness, profile) | API Core |
+| 2 | Tier-0 (`tier0_pre_audit`) | Fetch profile, activities (light+full), wellness; build snapshots | Tier-0 |
+| 3 | Tier-1 (`tier1_controller`) | Dataset validation, visible totals, event log block | Tier-1 |
+| 4 | Tier-2 (all `tier2_*` modules) | Data integrity, completeness, enforced totals, metrics, actions | Tier-2 |
+| 5 | Renderer (`render_unified_report`) | Build URF v5.1 markdown + Report object | Render |
+| 6 | URF Spec (`Unified Reporting Framework.md`) | Canonical 10-section layout and metric semantics | Spec |
+| 7 | Coaching Modules | Profile, heuristics, cheat sheet, narrative | Coaching |
+| 8 | Glossary & Placeholders | Token / flag definitions for all tiers | Reference |
 
 ---
 
@@ -104,10 +99,11 @@ Authoritative reference for all modules used by **IntervalsICU GPT Coach** for C
 | Coaching Cheat Sheet | Load classification tools | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/coaching_cheat_sheet.py |
 
 ## Coaching Markdown Reference Modules
-
-| Unified Reporting Framework  Canonical metric definitions and 10-section layout | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Unified%20Reporting%20Framework.md |
+| Module | Purpose | File Path |
+|:--|:--|:--|
+| Unified Reporting Framework | Canonical metric definitions and 10-section layout | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Unified%20Reporting%20Framework.md |
 | Coaching Profile | Coach heuristics & adaptive logic | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/coaching%20profile.md |
-| Gloassary & Placeholders | Audit state/context tokens (Tier-0 ↔ Tier-1 bridge) | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Glossary%20&%20Placeholders.md |
+| Glossary & Placeholders | Audit state/context tokens (Tier-0 ↔ Tier-1 bridge) | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Glossary%20&%20Placeholders.md |
 | Coaching Cheat Sheet | Narrative templates, tone, and persona  | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Coaching%20Cheat%20Sheet.md |
 
 ---
