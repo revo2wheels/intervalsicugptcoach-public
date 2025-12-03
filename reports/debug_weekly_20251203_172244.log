@@ -1,0 +1,51 @@
+[17:22:44] 🧭 Generating Weekly Report
+[17:22:44] [CHAIN] Using local intervals_icu__jit_plugin bindings
+[17:22:44] [CHAIN] Starting orchestrate_fetch_context for weekly | light=90 full=7 wellness=42
+[17:22:44] [CHAIN] 90-day light activities fetched
+[17:22:44] [CHAIN] 7-day full activities fetched successfully
+[17:22:44] [CHAIN] 42-day wellness data fetched
+[17:22:44] [CHAIN] Context fetch complete for weekly | render_mode=full+metrics
+[17:22:44] [ORCH] Context orchestrated for weekly → mode=full+metrics
+[17:22:44] 🧭 Running Weekly Report (auditFinal=True, render_mode=full+metrics)
+[17:22:44] [INTENT] Validation warning: Expecting value: line 1 column 1 (char 0)
+[17:22:44] [T0] Config → light=90d full=7d chunk=False
+[17:22:44] [T0-LIGHT] Running lightweight prefetch → 2025-09-04 → 2025-12-03
+[17:22:44] [Tier-0] Using API endpoint: https://intervalsicugptcoach.clive-a5a.workers.dev
+[17:22:44] [T0-LIGHT] Using controller-supplied range oldest=2025-09-04 newest=2025-12-03
+[17:22:44] [T0-LIGHT] Fetching lightweight dataset → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/activities_t0light?oldest=2025-09-04&newest=2025-12-03&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin
+[17:22:45] [T0-LIGHT] Retrieved 115 activities with 10 fields
+[17:22:45] [T0-LIGHT-DIAG] ✅ df_light populated. First 3 rows:
+        id    start_date_local        type  icu_training_load                              name  distance  moving_time  average_heartrate        IF  VO2MaxGarmin
+i109604842 2025-12-01T17:48:22 VirtualRide                 63 Zwift - Volcano laps with Jacques  52376.46         4646              111.0  0.696078           0.0
+i109443433 2025-11-30T16:11:01 VirtualRide                 57        Zwift - Genie Volcano laps  43007.23         3946              115.0  0.718954           0.0
+i109381673 2025-11-30T09:59:21        Hike                 14                         Otto walk   6462.55         4725               81.0       NaN           0.0
+[17:22:45] [T0-LIGHT-DIAG] Columns: ['id', 'start_date_local', 'type', 'icu_training_load', 'name', 'distance', 'moving_time', 'average_heartrate', 'IF', 'VO2MaxGarmin']
+[17:22:45] [T0-INIT] Created df_light_slice from df_light → 115 rows.
+[17:22:45] [T0-DIAG] Pre-slice df_light rows=115; min=2025-09-05T15:29:18, max=2025-12-01T17:48:22
+[17:22:45] [T0-SLICE] 7-day window: 2025-11-27 → 2025-12-04 (6 activities selected)
+[17:22:45] [T0-DEDUP] Dropped 0 duplicates → 6 unique events
+[17:22:45] 🧭 Tier-0: 7-day subset (lightweight) = 6.84 h | 202.3 km | 340 TSS (6 events)
+[17:22:45] [T0] Fetching athlete profile via OAuth2: https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/profile
+[17:22:45] [T0] Athlete profile fetched successfully — id=1914741 name=Clive King
+[17:22:45] [T0-FETCH] Adaptive method for report_type=weekly
+[17:22:45] [T0-FETCH] Weekly mode → combining lightweight (for totals) + 7-day full fetch (for detail).
+[17:22:45] [T0] Full fetch: chunking 7 days into 1 parts.
+[17:22:45] [Tier-0 fetch] → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/1914741/activities?oldest=2025-11-27&newest=2025-12-03
+[17:22:46] [T0] Deduplicated 0 duplicate activities.
+[17:22:46] [T0] Expanded icu_zone_times → 8 cols
+[17:22:46] [T0] Expanded icu_hr_zone_times → 7 cols
+[17:22:46] [T0] Diagnostics → Σ(TSS)=340.0, Σ(Time)=6.84h
+[17:22:46] [T0] Completed full fetch → 6 records.
+[17:22:46] [T0-FETCH] Full 7-day fetch complete: 6 activities.
+[17:22:46] [T0] Weekly mode → skipping Light+Full merge (not required; causes instability).
+[17:22:46] [T0-LIGHT] Prefetch failed (non-fatal): ❌ Tier-0: df_light_slice empty in weekly mode; cannot build snapshot_7d_json.
+[17:22:46] [T0-FULL] Running 7-day detailed audit for weekly mode → 2025-11-26 → 2025-12-03
+[17:22:46] [T0-FULL] Full audit failed: Mixing dicts with non-Series may lead to ambiguous ordering.
+[17:22:46] [T0-FULL] Prefetch contained full window — skipping redundant re-fetch.
+[17:22:46] [T0-FULL] No df_master returned — using pre-audit lightweight dataset as fallback.
+[17:22:46] [T0-FULL] WARNING: no valid fallback dataset — initializing empty DataFrame.
+[17:22:46] [T0-FULL] Context synced for Tier-1 — df_master=0 rows, snapshot_7d_json=ok
+[17:22:46] [T0] Completed range alignment → chunk_mode=False
+[17:22:46] [T1] Running Tier-1 controller (weekly mode)
+[17:22:46] [T1] Running Tier-1 controller (weekly mode)
+[17:22:46] [T1] No df_raw_activities in context — using direct df_master from Tier-0.
