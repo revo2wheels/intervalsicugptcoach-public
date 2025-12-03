@@ -38,4 +38,4 @@
 
 ⚠️ **Note**  
 No totals, averages, or metrics appear here.  
-All quantitative fields (hours, TSS, distance, IF, HR, VO₂ max, etc.) are owned by the **Unified Reporting Framework v5.2** and exposed through its `{URF:metrics}` namespace during render.
+All quantitative fields (hours, TSS, distance, IF, HR, VO₂ max, etc.) are owned by the **Unified Reporting Framework v5.1** and exposed through its `{URF:metrics}` namespace during render.

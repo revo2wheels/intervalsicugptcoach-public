@@ -64,7 +64,7 @@ run_report(
 ---
 
 ## Report Enforcement
-- Follow **Unified Reporting Framework v5.2** structural layout.  
+- Follow **Unified Reporting Framework v5.1** structural layout.  
 - Halt on any audit-core failure or variance > 2%.  
 - Confirm variance between event totals and rendered totals ≤ 1%.  
 - Renderer executes only when `auditFinal=True`.  
@@ -116,7 +116,7 @@ run_report(
 
 ## Output Standards
 - Reports render **only when `auditFinal=True`**.  
-- Must follow the **10-Section Unified Layout (v5.2):**  
+- Must follow the **10-Section Unified Layout (v5.1):**  
   1. Header 🧭  
   2. Key Stats 📊  
   3. Event Log 📅  
