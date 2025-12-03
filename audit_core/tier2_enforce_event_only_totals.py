@@ -51,6 +51,7 @@ def enforce_event_only_totals(df_events, context):
             .copy()
         )
     else:
+        # Weekly / calendar: use all qualifying events in the Tier-1 snapshot
         df_event_only = (
             df_source.loc[
                 (df_source.get("origin", "event") == "event")
@@ -60,9 +61,12 @@ def enforce_event_only_totals(df_events, context):
             .drop_duplicates(subset=["id"], keep="first")
             .copy()
         )
-        if len(df_event_only) > 7:
-            df_event_only = df_event_only.sort_values("start_date_local", ascending=False).head(7)
-        debug(context, "🧩 Tier-2 enforcing canonical 7-day event window.")
+
+        debug(
+            context,
+            f"🧩 Tier-2 weekly/calendar: using {len(df_event_only)} event-only rows from snapshot "
+            f"(no hard 7-event cap)."
+        )
 
     # --- Step 4: Canonical recomputation ------------------------------------
     if "moving_time" not in df_event_only.columns:

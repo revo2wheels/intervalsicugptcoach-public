@@ -13,6 +13,10 @@ audit_hash: auto
 **Patch ID:** v16.13-EOD-003  
 **Scope:** Weekly | Calendar | Season | Executive Summary  
 
+header_mode: metadata_only
+header_allow_totals: false
+header_allow_summary: false
+
 ---
 
 ## ⚙️ Purpose  
@@ -113,18 +117,21 @@ Tier-2 variables take precedence where overlap exists.
 ---
 
 ## 3. 📅 Event Log
-Displays validated, daily sessions after the Event Completeness Rule.
+Displays validated, per-session events after the Event Completeness Rule.
 
-| Date | Discipline | Duration (h) | Load (TSS) | RPE | IF | Feel | Device • Source |
-|:--|:--|--:|--:|--:|--:|:--|:--|
+| Date | Name | Duration | Load (TSS) | Distance (km) |
+|:--|:--|:--|--:|--:|
 | {rows from weeklyEventLogBlock} |
 
-**Render logic:**  
-- One row = one calendar day.  
-## Duration = context["eventTotals"]["hours"]
-## Load = Σ icu_training_load.  
+**Cycling Totals:** {summary_cycling.hours} h · {summary_cycling.distance} km · {summary_cycling.tss} TSS · {summary_cycling.sessions} sessions  
+**All Activities:** {summary_all.hours} h · {summary_all.distance} km · {summary_all.tss} TSS · {summary_all.sessions} sessions
+
+**Render logic:**
+- `weeklyEventLogBlock` = last N validated events in the report window (Tier-2 enforced), one row per event.
+- `Cycling Totals` row uses `context["summary_cycling"]` (cycling-only activities in the window).
+- `All Activities` row uses `context["summary_all"]` (all activities in the window).
+- Appears only when `report_type == "weekly"`.
 - RPE = max per day; Feel = min per day; IF = mean.  
-- Appears only when `reportType == "weekly"`.  
 
 ---
 
