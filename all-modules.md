@@ -25,8 +25,8 @@ manifest_note: "Dual-path manifest with explicit ChatGPT and Local modes; full G
 | 3 | `audit_core/fetch_utils.py` *(or equivalent)* | Helper for authenticated HTTP fetches with retry logic | Tier-0 |
 | 4 | `audit_core/tier1_controller.py` | Dataset validation and canonical totals registration | Tier-1 |
 | 5 | `audit_core/tier2_enforcement.py` | Derived metrics and event-level integrity checks | Tier-2 |
-| 6 | `audit_core/render_unified_report.py` | Renderer for Unified Reporting Framework (URF v5.2) | Render |
-| 7 | `Unified Reporting Framework v5.2.md` | Canonical metric definitions and 10-section layout | Spec |
+| 6 | `audit_core/render_unified_report.py` | Renderer for Unified Reporting Framework (URF v5.1) | Render |
+| 7 | `Unified Reporting Framework.md` | Canonical metric definitions and 10-section layout | Spec |
 | 8 | `coaching_cheat_sheet.py` | RPE, feel, and zone reference scales | Coaching |
 | 9 | `coaching_heuristics.py` | Fatigue, ACWR, durability, and recovery logic | Coaching |
 | 10 | `coaching_profile.py` | Narrative templates, tone, and persona | Coaching |
@@ -105,6 +105,7 @@ Authoritative reference for all modules used by **IntervalsICU GPT Coach** for C
 
 ## Coaching Markdown Reference Modules
 
+| Unified Reporting Framework  Canonical metric definitions and 10-section layout | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Unified%20Reporting%20Framework.md |
 | Coaching Profile | Coach heuristics & adaptive logic | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/coaching%20profile.md |
 | Gloassary & Placeholders | Audit state/context tokens (Tier-0 ↔ Tier-1 bridge) | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Glossary%20&%20Placeholders.md |
 | Coaching Cheat Sheet | Narrative templates, tone, and persona  | https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/Coaching%20Cheat%20Sheet.md |
