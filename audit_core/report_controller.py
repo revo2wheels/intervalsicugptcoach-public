@@ -675,7 +675,8 @@ def run_report(
     if isinstance(final_output, dict) and "markdown" in final_output:
         final_output = {
             "markdown": final_output["markdown"],
-            "context": final_output.get("context", {}),
+            # ⭐ Inject the ENTIRE authoritative context for semantic JSON ⭐
+            "context": context,
             "summary": final_output.get("summary", {}),
             "header": final_output.get("header", {})
         }
