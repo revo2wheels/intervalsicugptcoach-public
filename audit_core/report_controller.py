@@ -1,6 +1,6 @@
 import sys, os
 
-# --- Force project root into sys.path ---
+# ---- Force project root into sys.path ----
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(CURRENT_DIR, os.pardir))
 if ROOT_DIR not in sys.path:
