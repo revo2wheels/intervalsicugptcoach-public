@@ -6,7 +6,17 @@ from contextlib import redirect_stdout
 from audit_core.report_controller import run_report
 from audit_core.utils import debug
 
-app = FastAPI(title="IntervalsICU GPTCoach API", version="1.1")
+# ─────────────────────────────────────────────
+# 🧩 Startup debug — verify environment variable
+# ─────────────────────────────────────────────
+print("[DEBUG] Starting IntervalsICU GPTCoach API")
+icuoauth = os.getenv("ICU_OAUTH")
+if icuoauth:
+    print("[DEBUG] ICU_OAUTH ENV VAR detected:", icuoauth[:20], "...")
+else:
+    print("[WARN] ICU_OAUTH ENV VAR missing — Intervals.icu calls may fail!")
+
+app = FastAPI(title="IntervalsICU GPTCoach API", version="1.2")
 
 @app.get("/")
 def root():
@@ -84,3 +94,15 @@ async def run_audit_with_data(request: Request):
             status_code=500,
             content={"status": "error", "message": str(e)},
         )
+
+# ─────────────────────────────────────────────
+# 3️⃣ New /debug_env endpoint
+# ─────────────────────────────────────────────
+@app.get("/debug_env")
+def debug_env():
+    token = os.getenv("ICU_OAUTH")
+    return {
+        "ICU_OAUTH_loaded": bool(token),
+        "ICU_OAUTH_prefix": token[:10] if token else None,
+        "PORT": os.getenv("PORT")
+    }
