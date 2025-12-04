@@ -663,6 +663,22 @@ def finalize_and_validate_render(context, reportType="weekly"):
         "timestamp": context.get("timestamp", datetime.utcnow().isoformat()),
     })
 
+    # --- SAFETY GUARD: Prevent invalid renders when full_7d data missing ---
+    data_source = context.get("data_source", "")
+    variance_ok = context.get("variance_ok", False)
+
+    if not (data_source == "full_7d" and variance_ok):
+        debug(context,
+            f"[RENDER-GUARD] Blocking or demoting render → "
+            f"auditFinal={context.get('auditFinal')} data_source={data_source} variance_ok={variance_ok}")
+        context["auditFinal"] = False
+        context["auditPrecision"] = "degraded"
+        context["render_block_reason"] = "Missing or partial full_7d dataset"
+        # Prevent calling render_report if degraded
+        if not (data_source == "full_7d" and variance_ok):
+            debug(context, "[RENDER-GUARD] Proceeding in degraded mode (no full_7d dataset).")
+            context["auditPrecision"] = "degraded"
+
     # --- Unified Markdown rendering ---
     from render_unified_report import render_report
 
