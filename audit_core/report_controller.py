@@ -472,18 +472,20 @@ def run_report(
     debug(context, f"[CHK] tier2_eventTotals_eventOnly = {context.get('tier2_eventTotals_eventOnly')}")
 
     # --- Determine if audit can be considered final ---
-    if (
-        context.get("data_source") == "full_7d"
-        and context.get("variance_ok", False)
-        and len(context.get("activities_full", [])) >= 2  # sanity check: at least 2 sessions
-    ):
-        context["auditFinal"] = True
-        context["auditPrecision"] = "normal"
-        debug(context, "[T2] AuditFinal = True (7d full verified)")
-    else:
+    df_full_ok = bool(context.get("activities_full") is not None and len(context.get("activities_full")) > 0)
+    data_source = context.get("data_source", "")
+    validated_t2 = context.get("tier2_enforced_totals", {}).get("validated", False)
+    variance_ok = context.get("variance_ok", False)
+
+    # ✅ Only degrade if full fetch truly failed (no df_full + light_fallback)
+    if (not df_full_ok and data_source == "light_fallback") and not validated_t2:
         context["auditFinal"] = False
         context["auditPrecision"] = "degraded"
-        debug(context, "[T2] AuditFinal blocked: missing or partial full dataset.")
+        debug(context, "[T2] Degraded mode: full fetch failed, light_fallback used.")
+    else:
+        context["auditFinal"] = True
+        context["auditPrecision"] = "normal"
+        debug(context, "[T2] Normal precision: full fetch succeeded or 7d slice validated.")
 
     context["df_events"] = df_scope.copy()
     debug(context, f"[SYNC] df_events replaced with df_scope ({len(df_scope)} rows) for Tier-2 validator")

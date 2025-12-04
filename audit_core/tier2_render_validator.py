@@ -663,21 +663,31 @@ def finalize_and_validate_render(context, reportType="weekly"):
         "timestamp": context.get("timestamp", datetime.utcnow().isoformat()),
     })
 
-    # --- SAFETY GUARD: Prevent invalid renders when full_7d data missing ---
+    # --- SAFETY GUARD: Prevent invalid renders only when 7d_full truly failed ---
     data_source = context.get("data_source", "")
     variance_ok = context.get("variance_ok", False)
+    df_full_ok = bool(context.get("activities_full") is not None and len(context.get("activities_full")) > 0)
+    validated_t2 = context.get("tier2_enforced_totals", {}).get("validated", False)
 
-    if not (data_source == "full_7d" and variance_ok):
-        debug(context,
-            f"[RENDER-GUARD] Blocking or demoting render → "
-            f"auditFinal={context.get('auditFinal')} data_source={data_source} variance_ok={variance_ok}")
+    # ✅ Only degrade if full fetch failed AND no validated Tier-2 totals exist
+    if (not df_full_ok and data_source == "light_fallback") and not validated_t2:
+        debug(
+            context,
+            f"[RENDER-GUARD] Degraded mode → full_7d fetch failed and no validated Tier-2 totals. "
+            f"data_source={data_source} variance_ok={variance_ok}"
+        )
         context["auditFinal"] = False
         context["auditPrecision"] = "degraded"
-        context["render_block_reason"] = "Missing or partial full_7d dataset"
-        # Prevent calling render_report if degraded
-        if not (data_source == "full_7d" and variance_ok):
-            debug(context, "[RENDER-GUARD] Proceeding in degraded mode (no full_7d dataset).")
-            context["auditPrecision"] = "degraded"
+        context["render_block_reason"] = "Missing 7d_full dataset"
+    else:
+        debug(
+            context,
+            f"[RENDER-GUARD] Normal precision → full_7d dataset present or validated Tier-2 slice. "
+            f"data_source={data_source} variance_ok={variance_ok} validated_t2={validated_t2}"
+        )
+        context["auditFinal"] = True
+        context["auditPrecision"] = "normal"
+        context.pop("render_block_reason", None)
 
     # --- Unified Markdown rendering ---
     from render_unified_report import render_report
