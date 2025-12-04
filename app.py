@@ -1,8 +1,10 @@
 from fastapi import FastAPI, Query, Request
 from fastapi.responses import JSONResponse
-import os
 import io
 from contextlib import redirect_stdout
+import sys, os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "audit_core"))
 
 # Core audit pipeline
 from audit_core.report_controller import run_report
