@@ -69,10 +69,25 @@ async def run_audit_with_data(request: Request):
             report, compliance = run_report(
                 reportType=range,
                 include_coaching_metrics=True,
-                prefetch_context=context,   # 🧩 this bypasses Tier-0 fetching
+                prefetch_context=context,   # 🧩 bypasses Tier-0 fetching
             )
         logs = buffer.getvalue()
 
         markdown = report.get("markdown", "") if isinstance(report, dict) else str(report)
 
-        return JSON
+        return JSONResponse(
+            content={
+                "status": "ok",
+                "report_type": range,
+                "compliance": compliance,
+                "markdown": markdown,
+                "logs": logs,
+            }
+        )
+
+    except Exception as e:
+        debug({}, f"❌ Error in run_audit_with_data: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": str(e)},
+        )
