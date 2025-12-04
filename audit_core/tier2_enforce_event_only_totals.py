@@ -1,7 +1,7 @@
 """
-Tier-2 Enforcement — Event-Only Totals (v16.14-Integrated)
+Tier-2 Enforcement — Event-Only Totals (v16.15-PATCH)
 Computes canonical totals using Tier-2 validated event dataset if available.
-Falls back to raw Tier-0 data only if no DataFrame is passed.
+🧩 Updated: 7d FULL dataset excluded from totals — only 7d LIGHT slice allowed.
 """
 import os
 import pandas as pd
@@ -14,14 +14,28 @@ def enforce_event_only_totals(df_events, context):
     import pandas as pd
 
     # --- Step 1: Acquire source dataset -------------------------------------
-    if df_events is not None and not df_events.empty:
-        df_source = df_events.copy()
-        source_label = "Tier-2 validated events"
+    report_type = context.get("report_type", "").lower() if isinstance(context, dict) else ""
+
+    # 🧩 PATCH — Prefer 7-day light slice for totals (never totalize full dataset)
+    if report_type in ["weekly", "week", "7d"]:
+        if "df_light_slice" in context and isinstance(context["df_light_slice"], pd.DataFrame):
+            df_source = context["df_light_slice"].copy()
+            source_label = "Tier-0 LIGHT 7d slice (safe totals)"
+            debug(context, "[T2] ✅ Using df_light_slice for total enforcement (full dataset skipped).")
+        else:
+            df_source = df_events if df_events is not None and not df_events.empty else context.get("df_raw_activities")
+            source_label = "⚠️ Missing df_light_slice — fallback to Tier-2 events"
+            debug(context, "[T2 WARN] df_light_slice missing — fallback to df_events/raw_activities.")
     else:
-        df_source = context.get("df_raw_activities")
-        source_label = "raw Tier-0 activities (fallback)"
-        if df_source is None or df_source.empty:
-            raise AuditHalt("❌ enforce_event_only_totals: no dataset available from Tier-2 or Tier-0")
+        # Season mode or 90d block → use validated events as before
+        if df_events is not None and not df_events.empty:
+            df_source = df_events.copy()
+            source_label = "Tier-2 validated events"
+        else:
+            df_source = context.get("df_raw_activities")
+            source_label = "raw Tier-0 activities (fallback)"
+            if df_source is None or df_source.empty:
+                raise AuditHalt("❌ enforce_event_only_totals: no dataset available from Tier-2 or Tier-0")
 
     debug(context, f"🔍 Tier-2 enforcement source: {source_label} ({df_source.shape[0]} rows)")
 
@@ -37,8 +51,6 @@ def enforce_event_only_totals(df_events, context):
         debug(context, "⚠️  'moving_time' column missing")
 
     # --- Step 3: Adaptive event-only enforcement ----------------------------
-    report_type = context.get("report_type", "").lower() if isinstance(context, dict) else ""
-
     if report_type == "season":
         debug(context, "🧩 Tier-2 override: retaining full df_source for season summary (no 7-day enforcement).")
         df_event_only = (
@@ -51,11 +63,10 @@ def enforce_event_only_totals(df_events, context):
             .copy()
         )
     else:
-        # Weekly / calendar: use all qualifying events in the Tier-1 snapshot
+        # ✅ FIX: In weekly mode, treat df_source as the *light* slice (already filtered)
         df_event_only = (
             df_source.loc[
-                (df_source.get("origin", "event") == "event")
-                & (df_source["moving_time"] > 120)
+                (df_source["moving_time"] > 120)
                 & (df_source["icu_training_load"] > 0)
             ]
             .drop_duplicates(subset=["id"], keep="first")
@@ -64,8 +75,8 @@ def enforce_event_only_totals(df_events, context):
 
         debug(
             context,
-            f"🧩 Tier-2 weekly/calendar: using {len(df_event_only)} event-only rows from snapshot "
-            f"(no hard 7-event cap)."
+            f"🧩 Tier-2 weekly/calendar: using {len(df_event_only)} light-slice rows "
+            f"for totals (full 7d dataset excluded)."
         )
 
     # --- Step 4: Canonical recomputation ------------------------------------
@@ -74,24 +85,21 @@ def enforce_event_only_totals(df_events, context):
 
     df_event_only["moving_time"] = pd.to_timedelta(df_event_only["moving_time"], unit="s").dt.total_seconds()
 
+    raw_sum = df_event_only["moving_time"].sum()
+    event_hours = round(raw_sum / 3600, 2)
+    event_tss = df_event_only["icu_training_load"].sum()
+    event_distance = (
+        df_event_only["distance"].sum() / 1000 if "distance" in df_event_only else 0
+    )
+
     if report_type == "season":
-        debug(context, "🧩 Tier-2 override: recomputing canonical totals for season report (full dataset).")
-        raw_sum = df_event_only["moving_time"].sum()
-        event_hours = round(raw_sum / 3600, 2)
-        event_tss = df_event_only["icu_training_load"].sum()
-        event_distance = (
-            df_event_only["distance"].sum() / 1000 if "distance" in df_event_only else 0
-        )
         debug(context, f"🧮 Tier-2 (season): Σ(moving_time)={raw_sum:.0f}s → {event_hours:.2f}h, "
               f"Σ(TSS)={event_tss:.1f}, Σ(Distance)={event_distance:.1f} km")
     else:
-        raw_sum = df_event_only["moving_time"].sum()
-        event_hours = round(raw_sum / 3600, 2)
-        event_tss = df_event_only["icu_training_load"].sum()
-        event_distance = (
-            df_event_only["distance"].sum() / 1000 if "distance" in df_event_only else 0
-        )
-        debug(context, f"🧮 Tier-2: Σ(moving_time)={raw_sum:.0f}s → {event_hours:.2f}h (Intervals seconds source)")
+        debug(context, f"🧮 Tier-2 (weekly, light slice): Σ(moving_time)={raw_sum:.0f}s → {event_hours:.2f}h "
+              f"Σ(TSS)={event_tss:.0f} Σ(Distance)={event_distance:.1f} km (safe scalar fields)")
+
+    # --- Step 5 onward: keep existing validation and injection logic unchanged ---
 
     # --- Step 5: Compare vs Tier-1 snapshot ---------------------------------
     tier1_totals = context.get("tier1_visibleTotals", context.get("tier1_eventTotals", {}))

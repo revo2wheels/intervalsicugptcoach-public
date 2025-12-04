@@ -114,7 +114,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Lightweight 28-day dataset",
+            "description": "Lightweight 90-day dataset",
             "content": {
               "application/json": {
                 "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Activity" } }
