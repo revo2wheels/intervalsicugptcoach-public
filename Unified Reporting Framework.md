@@ -77,7 +77,7 @@ Audit: {auditStatus} | Integrity: {integrityFlag}
 | Key | Tier | Type | Description |
 |:--|:--|:--|:--|
 | **`tier1_eventTotals`** | Tier-1 | `dict` | Canonical event totals (`hours`, `tss`, `distance`) validated after Tier-1 dataset integrity check. Used for variance comparison. |
-| **`tier2_eventTotals`** | Tier-2 | `dict` | ✅ Final enforced event totals (Σ of event-level metrics from validated dataset). Primary source for URF Key Stats section. |
+| **`tier2_eventTotals_eventOnly`** | Tier-2 | `dict` | ✅ Final enforced event totals (Σ of event-level metrics from validated dataset). Primary source for URF Key Stats section. |
 | **`load_metrics`** | Tier-1 | `dict` | CTL / ATL / TSB / Form values merged from wellness feed for renderer and adaptive logic. |
 | **`outliers`** | Tier-1 | `list[dict]` | Detected TSS / IF outliers ± 1.5 σ (`{date, event, metric, observed, expected}`). |
 | **`zone_dist_power`**, **`zone_dist_hr`**, **`zone_dist_pace`** | Tier-2 | `dict` | Percent zone distributions expanded from normalized training zone arrays. |
@@ -92,12 +92,12 @@ Tier-2 variables take precedence where overlap exists.
 ## 2. 📊 Key Stats
 | Metric | Value | Δ | Status |
 |:--|--:|:--:|:--:|
-| Volume (h) | {{ (context.get("tier2_eventTotals", {}).get("hours", 0)) | round(2) }} | {{ ΔHours | round(1) }} | — |
-| Load (TSS) | {{ (context.get("tier2_eventTotals", {}).get("tss", 0)) | round(0) }} | {{ ΔTss | round(0) }} | — |
-| Distance (km) | {{ (context.get("tier2_eventTotals", {}).get("distance", 0)) | round(1) }} | — | — |
-| Avg IF | {{ (context.get("tier2_eventTotals", {}).get("avg_if", 0)) | round(2) }} | — | — |
-| Avg HR | {{ (context.get("tier2_eventTotals", {}).get("avg_hr", 0)) | round(0) }} | — | — |
-| VO₂max | {{ (context.get("tier2_eventTotals", {}).get("vo2max", 0)) | round(1) }} | — | — |
+| Volume (h) | {{ (context.get("tier2_eventTotals_eventOnly", {}).get("hours", 0)) | round(2) }} | {{ ΔHours | round(1) }} | — |
+| Load (TSS) | {{ (context.get("tier2_eventTotals_eventOnly", {}).get("tss", 0)) | round(0) }} | {{ ΔTss | round(0) }} | — |
+| Distance (km) | {{ (context.get("tier2_eventTotals_eventOnly", {}).get("distance", 0)) | round(1) }} | — | — |
+| Avg IF | {{ (context.get("tier2_eventTotals_eventOnly", {}).get("avg_if", 0)) | round(2) }} | — | — |
+| Avg HR | {{ (context.get("tier2_eventTotals_eventOnly", {}).get("avg_hr", 0)) | round(0) }} | — | — |
+| VO₂max | {{ (context.get("tier2_eventTotals_eventOnly", {}).get("vo2max", 0)) | round(1) }} | — | — |
 | ACWR | {{ acwr | round(2) }} | — | {{ acwrFlag }} |
 | Monotony | {{ monotony | round(2) }} | — | {{ monotonyFlag }} |
 | Strain | {{ strain | round(0) }} | — | — |

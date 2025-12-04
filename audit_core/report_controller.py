@@ -461,6 +461,11 @@ def run_report(
         context["totalTss"] = et.get("tss", 0)
         debug(context, f"[SYNC] Totals from enforcement hours={context['totalHours']}, tss={context['totalTss']}")
 
+    # --- Preserve pure event-only totals for renderer ---
+    if "tier2_enforced_totals" in context:
+        context["tier2_eventTotals_eventOnly"] = context["tier2_enforced_totals"].copy()
+        debug(context, "[T2] Preserved event-only totals for renderer binding.")
+
     context["df_events"] = df_scope.copy()
     debug(context, f"[SYNC] df_events replaced with df_scope ({len(df_scope)} rows) for Tier-2 validator")
 
