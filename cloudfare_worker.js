@@ -292,54 +292,64 @@ export default {
         }
       });
     }
-    
+
     // ====================================================================
     // ROUTE 5: Weekly report handoff → Railway backend
     //====================================================================
+    // ROUTE 5: Weekly report handoff → Railway backend
     if (pathname === "/run_weekly") {
       console.log("[WORKER] Running full weekly fetch + Railway handoff");
 
-      const headers = { Authorization: authHeader };
+      try {
+        const headers = { Authorization: authHeader };
 
-      // Fetch from Intervals.icu via this same Worker
-      const [actsLight, actsFull, wellness, profile] = await Promise.all([
-        fetch(`${url.origin}/athlete/0/activities_t0light`, { headers }).then(r => r.json()),
-        fetch(`${url.origin}/athlete/0/activities`, { headers }).then(r => r.json()),
-        fetch(`${url.origin}/athlete/0/wellness`, { headers }).then(r => r.json()),
-        fetch(`${url.origin}/athlete/0/profile`, { headers }).then(r => r.json()),
-      ]);
+        const [actsLight, actsFull, wellness, profile] = await Promise.all([
+          fetch(`${url.origin}/athlete/0/activities_t0light`, { headers }).then(r => r.text()),
+          fetch(`${url.origin}/athlete/0/activities`, { headers }).then(r => r.text()),
+          fetch(`${url.origin}/athlete/0/wellness`, { headers }).then(r => r.text()),
+          fetch(`${url.origin}/athlete/0/profile`, { headers }).then(r => r.text()),
+        ]);
 
-      const payload = {
-        range: "weekly",
-        activities_light: actsLight,
-        activities_full: actsFull,
-        wellness,
-        athlete: profile,
-      };
+        console.log(`[DEBUG] Raw payload sizes → light=${actsLight.length} full=${actsFull.length} wellness=${wellness.length} profile=${profile.length}`);
 
-      const railwayUrl = "https://intervalsicugptcoach-public-production.up.railway.app/run";
-      const response = await fetch(railwayUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: authHeader || "",
-        },
-        body: JSON.stringify(payload),
-      });
+        // Try to parse JSON safely
+        const safeParse = (t) => { try { return JSON.parse(t); } catch { return []; } };
 
-      const text = await response.text();
-      console.log(`[WORKER] Railway response ${response.status}: ${text.slice(0, 300)}...`);
+        const payload = {
+          range: "weekly",
+          activities_light: safeParse(actsLight),
+          activities_full: safeParse(actsFull),
+          wellness: safeParse(wellness),
+          athlete: safeParse(profile),
+        };
 
-      return new Response(text, {
-        status: response.status,
-        headers: {
-          "content-type": "application/json",
-          "access-control-allow-origin": "*",
-          "access-control-allow-headers": "Authorization, Content-Type",
-          "access-control-allow-methods": "GET, POST, OPTIONS",
-        },
-      });
+        const railwayUrl = "https://intervalsicugptcoach-public-production.up.railway.app/run";
+        const response = await fetch(railwayUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+        const text = await response.text();
+        console.log(`[WORKER] Railway response ${response.status} (${text.length} bytes)`);
+
+        return new Response(text, {
+          status: response.status,
+          headers: {
+            "content-type": "application/json",
+            "access-control-allow-origin": "*",
+          },
+        });
+
+      } catch (err) {
+        console.error(`[WORKER] run_weekly failed → ${err.stack || err}`);
+        return new Response(JSON.stringify({ status: "error", message: err.message }), {
+          status: 500,
+          headers: { "content-type": "application/json", "access-control-allow-origin": "*" },
+        });
+      }
     }
+
 
 
     // ====================================================================
