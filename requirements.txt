@@ -26,3 +26,5 @@ python-dotenv>=1.0.0
 
 # --- If using GitHub-based module fetching or caching ---
 PyYAML>=6.0.2
+
+# force rebuild 2025-12-04
