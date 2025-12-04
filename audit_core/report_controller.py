@@ -466,6 +466,25 @@ def run_report(
         context["tier2_eventTotals_eventOnly"] = context["tier2_enforced_totals"].copy()
         debug(context, "[T2] Preserved event-only totals for renderer binding.")
 
+    debug(context, f"[CHK] tier0_snapshotTotals_7d = {context.get('tier0_snapshotTotals_7d')}")
+    debug(context, f"[CHK] tier2_enforced_totals = {context.get('tier2_enforced_totals')}")
+    debug(context, f"[CHK] tier2_eventTotals = {context.get('tier2_eventTotals')}")
+    debug(context, f"[CHK] tier2_eventTotals_eventOnly = {context.get('tier2_eventTotals_eventOnly')}")
+
+    # --- Determine if audit can be considered final ---
+    if (
+        context.get("data_source") == "full_7d"
+        and context.get("variance_ok", False)
+        and len(context.get("activities_full", [])) >= 2  # sanity check: at least 2 sessions
+    ):
+        context["auditFinal"] = True
+        context["auditPrecision"] = "normal"
+        debug(context, "[T2] AuditFinal = True (7d full verified)")
+    else:
+        context["auditFinal"] = False
+        context["auditPrecision"] = "degraded"
+        debug(context, "[T2] AuditFinal blocked: missing or partial full dataset.")
+
     context["df_events"] = df_scope.copy()
     debug(context, f"[SYNC] df_events replaced with df_scope ({len(df_scope)} rows) for Tier-2 validator")
 

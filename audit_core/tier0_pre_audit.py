@@ -200,7 +200,23 @@ def fetch_activities_chunked(athlete_id, oldest, newest, headers, context=None, 
                     for r in payload:
                         r["icu_training_load"] = r.pop("icu_training_load_data")
 
-                df_chunk = pd.DataFrame(payload)
+                # --- Safe normalization to handle nested dict/list rows ---
+                try:
+                    df_chunk = pd.json_normalize(payload, max_level=1)
+                except Exception as e:
+                    debug(context, f"[T0] Normalization fallback due to {e}")
+                    # Fallback: flatten nested dicts manually if json_normalize fails
+                    def flatten_dict(d):
+                        flat = {}
+                        for k, v in d.items():
+                            if isinstance(v, dict):
+                                for subk, subv in v.items():
+                                    flat[f"{k}_{subk}"] = subv
+                            else:
+                                flat[k] = v
+                        return flat
+                    df_chunk = pd.DataFrame([flatten_dict(r) for r in payload])
+
                 if not df_chunk.empty:
                     df_activities_list.append(df_chunk)
 
@@ -550,11 +566,15 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
             df_light = context.get("df_light_slice", pd.DataFrame())
             df_full = df_activities.copy()
 
-            if not df_light.empty and not df_full.empty:
+            # Ensure both are valid DataFrames before merging
+            if isinstance(df_light, pd.DataFrame) and isinstance(df_full, pd.DataFrame) and not df_light.empty and not df_full.empty:
                 df_light["origin"] = "light"
                 df_full["origin"] = "event"
 
+                # ✅ SAFE MERGE using concat — avoids "mixing dicts" bug
                 df_merged = pd.concat([df_light, df_full], ignore_index=True)
+
+                # --- Deduplicate canonical IDs
                 before_dedup = len(df_merged)
                 df_merged = df_merged.drop_duplicates(subset=["id"], keep="last").reset_index(drop=True)
                 dropped = before_dedup - len(df_merged)
@@ -566,12 +586,16 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
                 context["activities_light"] = df_light
                 context["activities_full"] = df_full
 
-                debug(context, f"[T0-MERGE] Light+Full merged: {len(df_merged)} rows (dropped {dropped})")
-                debug(context, f"[T0-MERGE] Σh={df_merged['moving_time'].sum()/3600:.2f} ΣTSS={df_merged['icu_training_load'].sum():.0f}")
+                # ✅ Tag dataset as full verified source for audit gate
+                context["data_source"] = "full_7d"
 
+                debug(context, f"[T0-MERGE] ✅ Light+Full merged successfully: {len(df_merged)} rows (dropped {dropped})")
+                debug(context, f"[T0-MERGE] Σh={df_merged['moving_time'].sum()/3600:.2f}h ΣTSS={df_merged['icu_training_load'].sum():.0f}")
             else:
                 debug(context, "[T0-MERGE] ⚠ Missing light or full dataset — merge skipped.")
+                context["data_source"] = "light_fallback"
         except Exception as e:
+            context["data_source"] = "light_fallback"
             debug(context, f"[T0-MERGE] ❌ Failed during Light+Full merge: {e}")
 
         # --- Determine which dataset should feed Tier-1 snapshot ---
