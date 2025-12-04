@@ -13,25 +13,18 @@ def root():
     return {"message": "IntervalsICU GPTCoach API running 🚴"}
 
 # ─────────────────────────────────────────────
-# 1️⃣ Existing GET endpoint (still works)
+# 1️⃣ Existing GET endpoint
 # ─────────────────────────────────────────────
 @app.get("/run")
 def run_audit(
     range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"])
 ):
-    """
-    Run a full audit (direct Intervals.icu mode).
-    Only works if ICU_OAUTH token is set in environment.
-    """
     os.environ["REPORT_TYPE"] = range.lower()
-
     buffer = io.StringIO()
     with redirect_stdout(buffer):
         report, compliance = run_report(reportType=range, include_coaching_metrics=True)
     logs = buffer.getvalue()
-
     markdown = report.get("markdown", "") if isinstance(report, dict) else str(report)
-
     return JSONResponse(
         content={
             "status": "ok",
