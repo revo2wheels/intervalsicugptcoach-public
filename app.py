@@ -14,7 +14,7 @@ from audit_core.utils import debug
 from semantic_json_builder import build_semantic_json
 
 
-# ─────────────────────────────────────────────
+# ─────────────────────────────────────────────--
 # 🧩 Startup debug — verify environment variable
 # ─────────────────────────────────────────────
 print("[DEBUG] Starting IntervalsICU GPTCoach API")
