@@ -143,7 +143,7 @@ def debug_env():
 @app.get("/debug")
 def debug_endpoint(range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"])):
     """
-    This endpoint triggers the debugging function, captures logs, and returns them.
+    This endpoint triggers the debugging function, captures logs, and returns them as a unified report.
     """
     try:
         # Trigger the full audit and debugging process
@@ -152,18 +152,26 @@ def debug_endpoint(range: str = Query("weekly", enum=["weekly", "season", "welln
         # Ensure the context is populated with debug logs
         debug_logs = "\n".join(context.get('debug_trace', ['No debug logs found.']))
 
-        # Store the debug information in a markdown file
-        log_to_markdown(f"Triggered debug for range={range}. Context: {context}")
+        # Combine debug trace and markdown
+        full_report = (
+            f"# 🧾 {range.title()} Audit Report\n\n"
+            "## Execution Logs\n\n"
+            f"```\n{logs[:20000]}\n```\n\n"  # Limiting logs size to avoid excessive data
+            "## Debug Trace\n\n"
+            f"```\n{debug_logs}\n```\n\n"
+            "## Rendered Markdown Report\n\n"
+            f"{markdown.strip()}\n"
+        )
 
-        # Return the debug logs, semantic graph, and markdown for inspection
+        # Return the unified response (with debug trace, logs, and markdown)
         return JSONResponse(content={
-            "status": "ok", 
+            "status": "ok",
             "message": "Debug triggered and logs captured.",
             "context": context,
             "semantic_graph": semantic_graph,
             "logs": logs[:20000],
             "debug_logs": debug_logs,
-            "markdown_report": markdown  # Return the generated Markdown content
+            "markdown_report": full_report  # Return combined report
         })
 
     except Exception as e:
@@ -173,6 +181,7 @@ def debug_endpoint(range: str = Query("weekly", enum=["weekly", "season", "welln
             status_code=500,
             content={"status": "error", "message": str(e)},
         )
+
 
 # ─────────────────────────────────────────────
 # 🅰️ /semantic — dedicated semantic endpoint
