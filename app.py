@@ -150,8 +150,13 @@ def debug_endpoint(range: str = Query("weekly", enum=["weekly", "season", "welln
         # Trigger the full audit and debugging process
         report, compliance, logs, context, semantic_graph, markdown = _run_full_audit(range=range)
 
-        # Ensure the context is populated with debug logs
+        # Capture detailed debug logs at multiple steps
         debug_logs = "\n".join(context.get('debug_trace', ['No debug logs found.']))
+        
+        # Log at key stages for more detailed trace
+        debug({}, f"[DEBUG] Report generated for range={range}")
+        debug({}, f"[DEBUG] Context after report generation: {context}")
+        debug({}, f"[DEBUG] Semantic graph generated: {semantic_graph}")
 
         # Combine debug trace and markdown or semantic response
         full_report = (
@@ -193,6 +198,7 @@ def debug_endpoint(range: str = Query("weekly", enum=["weekly", "season", "welln
             status_code=500,
             content={"status": "error", "message": str(e)},
         )
+
 
 
 
