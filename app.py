@@ -140,29 +140,37 @@ def debug_env():
         "PORT": os.getenv("PORT"),
     }
 
-# ─────────────────────────────────────────────
-# 🧩 /debug — trigger debug and capture logs
-# ─────────────────────────────────────────────
 @app.get("/debug")
 def debug_endpoint(range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"])):
     """
     This endpoint triggers the debugging function, captures logs, and returns them.
     """
-    # Debugging the context
-    report, compliance, logs, context, semantic_graph, markdown = _run_full_audit(range=range)
-    
-    # Store the debug information in a markdown file
-    log_to_markdown(f"Triggered debug for range={range}. Context: {context}")
-    
-    # Return the debug logs and semantic graph for inspection
-    return JSONResponse(content={
-        "status": "ok", 
-        "message": "Debug triggered and logs captured.",
-        "context": context,
-        "semantic_graph": semantic_graph,
-        "logs": logs[:20000]
-    })
+    try:
+        # Debugging the context with detailed logs
+        report, compliance, logs, context, semantic_graph, markdown = _run_full_audit(range=range)
 
+        # Check if context is empty or malformed
+        if not context:
+            debug({}, "[DEBUG] No valid context received for range={}".format(range))
+
+        # Store the debug information in a markdown file
+        log_to_markdown(f"Triggered debug for range={range}. Context: {context}")
+
+        # Return the debug logs and semantic graph for inspection
+        return JSONResponse(content={
+            "status": "ok", 
+            "message": "Debug triggered and logs captured.",
+            "context": context,
+            "semantic_graph": semantic_graph,
+            "logs": logs[:20000]
+        })
+    except Exception as e:
+        # Log any error that occurs
+        debug({}, f"❌ Error in /debug endpoint: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": str(e)},
+        )
 
 # ─────────────────────────────────────────────
 # 🅰️ /semantic — dedicated semantic endpoint
