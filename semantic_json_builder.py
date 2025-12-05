@@ -161,6 +161,9 @@ def build_semantic_json(context):
         "wellness": context.get("wellness_summary", {}),
     }
 
+    # Debug: Log context before populating semantic graph
+    debug(context, "[DEBUG] Full context before building semantic graph:", context)
+
     # -------------------------------
     # Populate semantic metric descriptors
     # -------------------------------
@@ -184,4 +187,8 @@ def build_semantic_json(context):
         if k in context:
             semantic["metrics"][k] = semantic_block_for_metric(k, context.get(k), context)
 
+    # Debug: Log generated semantic graph
+    debug(semantic, "[DEBUG] Generated semantic graph:", semantic)
+
     return semantic
+
