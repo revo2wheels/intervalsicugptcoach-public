@@ -65,7 +65,15 @@ def _run_full_audit(range: str, prefetch_context: dict | None = None):
     # Log context to markdown file
     log_to_markdown(f"Context before generating semantic graph: {context}")
 
+    # Log the context before generating semantic graph
+    debug(context, f"[DEBUG] Full context before generating semantic graph: {context}")
+    
+    # Generate the semantic graph
     semantic_graph = build_semantic_json(context)
+    
+    # After generating semantic graph
+    debug(context, f"[DEBUG] Generated semantic graph: {semantic_graph}")
+    
     return report, compliance, logs, context, semantic_graph, markdown
 
 # ─────────────────────────────────────────────
