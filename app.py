@@ -150,22 +150,20 @@ def debug_endpoint(range: str = Query("weekly", enum=["weekly", "season", "welln
         report, compliance, logs, context, semantic_graph, markdown = _run_full_audit(range=range)
 
         # Ensure the context is populated with debug logs
-        if 'debug_trace' in context:
-            debug_logs = "\n".join(context['debug_trace'])
-        else:
-            debug_logs = "No debug logs found."
+        debug_logs = "\n".join(context.get('debug_trace', ['No debug logs found.']))
 
         # Store the debug information in a markdown file
         log_to_markdown(f"Triggered debug for range={range}. Context: {context}")
 
-        # Return the debug logs and semantic graph for inspection
+        # Return the debug logs, semantic graph, and markdown for inspection
         return JSONResponse(content={
             "status": "ok", 
             "message": "Debug triggered and logs captured.",
             "context": context,
             "semantic_graph": semantic_graph,
             "logs": logs[:20000],
-            "debug_logs": debug_logs  # Include the captured debug logs from context
+            "debug_logs": debug_logs,
+            "markdown_report": markdown  # Return the generated Markdown content
         })
 
     except Exception as e:
