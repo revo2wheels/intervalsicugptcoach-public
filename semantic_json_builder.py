@@ -26,6 +26,7 @@ It includes:
 from datetime import datetime
 from coaching_cheat_sheet import CHEAT_SHEET  # :contentReference[oaicite:5]{index=5}
 from coaching_profile import COACH_PROFILE    # :contentReference[oaicite:6]{index=6}
+from audit_core.utils import debug
 
 
 def semantic_block_for_metric(name, value, context):
