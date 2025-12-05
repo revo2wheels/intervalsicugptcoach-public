@@ -144,6 +144,7 @@ def debug_env():
 def debug_endpoint(range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"])):
     """
     This endpoint triggers the debugging function, captures logs, and returns them as a unified report.
+    Supports both markdown and semantic report formats.
     """
     try:
         # Trigger the full audit and debugging process
@@ -152,7 +153,7 @@ def debug_endpoint(range: str = Query("weekly", enum=["weekly", "season", "welln
         # Ensure the context is populated with debug logs
         debug_logs = "\n".join(context.get('debug_trace', ['No debug logs found.']))
 
-        # Combine debug trace and markdown
+        # Combine debug trace and markdown or semantic response
         full_report = (
             f"# 🧾 {range.title()} Audit Report\n\n"
             "## Execution Logs\n\n"
@@ -160,10 +161,21 @@ def debug_endpoint(range: str = Query("weekly", enum=["weekly", "season", "welln
             "## Debug Trace\n\n"
             f"```\n{debug_logs}\n```\n\n"
             "## Rendered Markdown Report\n\n"
-            f"{markdown.strip()}\n"
+            f"{markdown.strip()}\n" if markdown.strip() else ""
         )
 
-        # Return the unified response (with debug trace, logs, and markdown)
+        if range == "semantic":
+            return JSONResponse(content={
+                "status": "ok",
+                "message": "Debug triggered and semantic logs captured.",
+                "context": context,
+                "semantic_graph": semantic_graph,  # Return the semantic graph
+                "logs": logs[:20000],
+                "debug_logs": debug_logs,
+                "semantic_report": full_report  # Combined semantic report with trace and logs
+            })
+
+        # If the format is markdown, return the Markdown response
         return JSONResponse(content={
             "status": "ok",
             "message": "Debug triggered and logs captured.",
@@ -171,7 +183,7 @@ def debug_endpoint(range: str = Query("weekly", enum=["weekly", "season", "welln
             "semantic_graph": semantic_graph,
             "logs": logs[:20000],
             "debug_logs": debug_logs,
-            "markdown_report": full_report  # Return combined report
+            "markdown_report": full_report  # Return the combined Markdown report
         })
 
     except Exception as e:
@@ -181,6 +193,7 @@ def debug_endpoint(range: str = Query("weekly", enum=["weekly", "season", "welln
             status_code=500,
             content={"status": "error", "message": str(e)},
         )
+
 
 
 # ─────────────────────────────────────────────
