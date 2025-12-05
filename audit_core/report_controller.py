@@ -668,6 +668,9 @@ def run_report(
     context["enforce_render_source"] = "tier2_enforced_totals"  # ✅ use canonical source
     context["allow_intent_inference"] = False
 
+    # --- Log context after updates ---
+    debug(context, f"[DEBUG] Final context before rendering: {context}")
+
     # --- Final render ---
     final_output, compliance = finalize_and_validate_render(context, reportType=reportType)
 
@@ -685,6 +688,7 @@ def run_report(
 
     debug(context, f"✅ Render + validation completed for {reportType}")
     return final_output, compliance
+
 
 if __name__ == "__main__":
     run_report("weekly")
