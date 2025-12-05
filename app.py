@@ -141,22 +141,18 @@ def debug_env():
     }
 
 @app.get("/debug")
-def debug_endpoint(range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"])):
+def debug_endpoint(range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"]),
+                    format: str = Query("markdown", enum=["markdown", "json", "semantic"])):
     """
     This endpoint triggers the debugging function, captures logs, and returns them as a unified report.
-    Supports both markdown and semantic report formats.
+    Supports both markdown and semantic JSON formats.
     """
     try:
         # Trigger the full audit and debugging process
         report, compliance, logs, context, semantic_graph, markdown = _run_full_audit(range=range)
 
-        # Capture detailed debug logs at multiple steps
+        # Ensure the context is populated with debug logs
         debug_logs = "\n".join(context.get('debug_trace', ['No debug logs found.']))
-        
-        # Log at key stages for more detailed trace
-        debug({}, f"[DEBUG] Report generated for range={range}")
-        debug({}, f"[DEBUG] Context after report generation: {context}")
-        debug({}, f"[DEBUG] Semantic graph generated: {semantic_graph}")
 
         # Combine debug trace and markdown or semantic response
         full_report = (
@@ -169,15 +165,17 @@ def debug_endpoint(range: str = Query("weekly", enum=["weekly", "season", "welln
             f"{markdown.strip()}\n" if markdown.strip() else ""
         )
 
-        if range == "semantic":
+        # Handle the requested format (JSON or Markdown)
+        if format == "json" or format == "semantic":
+            # Return semantic graph in JSON format along with logs and debug trace
             return JSONResponse(content={
                 "status": "ok",
                 "message": "Debug triggered and semantic logs captured.",
                 "context": context,
-                "semantic_graph": semantic_graph,  # Return the semantic graph
+                "semantic_graph": semantic_graph,  # Return the semantic graph as JSON
                 "logs": logs[:20000],
                 "debug_logs": debug_logs,
-                "semantic_report": full_report  # Combined semantic report with trace and logs
+                "semantic_report": full_report  # Include the full report for JSON format
             })
 
         # If the format is markdown, return the Markdown response
@@ -198,9 +196,6 @@ def debug_endpoint(range: str = Query("weekly", enum=["weekly", "season", "welln
             status_code=500,
             content={"status": "error", "message": str(e)},
         )
-
-
-
 
 # ─────────────────────────────────────────────
 # 🅰️ /semantic — dedicated semantic endpoint
