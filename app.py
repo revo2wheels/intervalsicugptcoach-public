@@ -146,12 +146,14 @@ def debug_endpoint(range: str = Query("weekly", enum=["weekly", "season", "welln
     This endpoint triggers the debugging function, captures logs, and returns them.
     """
     try:
-        # Debugging the context with detailed logs
+        # Trigger the full audit and debugging process
         report, compliance, logs, context, semantic_graph, markdown = _run_full_audit(range=range)
 
-        # Check if context is empty or malformed
-        if not context:
-            debug({}, "[DEBUG] No valid context received for range={}".format(range))
+        # Ensure the context is populated with debug logs
+        if 'debug_trace' in context:
+            debug_logs = "\n".join(context['debug_trace'])
+        else:
+            debug_logs = "No debug logs found."
 
         # Store the debug information in a markdown file
         log_to_markdown(f"Triggered debug for range={range}. Context: {context}")
@@ -162,8 +164,10 @@ def debug_endpoint(range: str = Query("weekly", enum=["weekly", "season", "welln
             "message": "Debug triggered and logs captured.",
             "context": context,
             "semantic_graph": semantic_graph,
-            "logs": logs[:20000]
+            "logs": logs[:20000],
+            "debug_logs": debug_logs  # Include the captured debug logs from context
         })
+
     except Exception as e:
         # Log any error that occurs
         debug({}, f"❌ Error in /debug endpoint: {str(e)}")
