@@ -112,14 +112,79 @@ def generate_full_report(report_type="weekly", output_path=None, output_format="
         )
 
     elif output_format == "semantic":
-        Path(output_path).write_text(
-            json.dumps(full_output, indent=2, default=str),
-            encoding="utf-8"
-        )
+        # 1. Sanitize (remove circular refs, DataFrames, timestamps)
+        safe_output = sanitize_for_json(full_output)
+
+        # 2. Convert to JSON text
+        json_text = json.dumps(safe_output, indent=2)
+
+        # 3. Write to disk
+        Path(output_path).write_text(json_text, encoding="utf-8")
 
 
     print(f"✅ {report_type.title()} report written to {Path(output_path).resolve()}")
 
+
+def sanitize_for_json(obj, seen=None):
+    """Recursively convert any Python object into JSON-serialisable form."""
+    import pandas as pd
+    import numpy as np
+    from datetime import datetime, date
+
+    if seen is None:
+        seen = set()
+
+    oid = id(obj)
+    if oid in seen:
+        return "<circular>"
+    seen.add(oid)
+
+    # Primitive types
+    if isinstance(obj, (str, int, float, bool)) or obj is None:
+        return obj
+
+    # Pandas Timestamp
+    if isinstance(obj, (pd.Timestamp,)):
+        return obj.isoformat()
+
+    # datetime & date
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+
+    # numpy scalars
+    if isinstance(obj, (np.integer,)):
+        return int(obj)
+    if isinstance(obj, (np.floating,)):
+        return float(obj)
+
+    # pandas DataFrame
+    if isinstance(obj, pd.DataFrame):
+        return obj.to_dict(orient="records")
+
+    # pandas Series
+    if isinstance(obj, pd.Series):
+        return sanitize_for_json(obj.to_dict(), seen)
+
+    # dict
+    if isinstance(obj, dict):
+        clean = {}
+        for k, v in obj.items():
+            clean[sanitize_for_json(k, seen)] = sanitize_for_json(v, seen)
+        return clean
+
+    # list or tuple
+    if isinstance(obj, (list, tuple)):
+        return [sanitize_for_json(i, seen) for i in obj]
+
+    # objects with .isoformat()
+    if hasattr(obj, "isoformat"):
+        try:
+            return obj.isoformat()
+        except:
+            pass
+
+    # Fallback
+    return str(obj)
 
 
 

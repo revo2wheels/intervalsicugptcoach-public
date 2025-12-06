@@ -5,7 +5,7 @@
     "meta": {
       "framework": "Unified Reporting Framework v5.1",
       "version": "v16.17",
-      "generated_at": "2025-12-06T08:26:32.931664",
+      "generated_at": "2025-12-06T15:10:16.147249",
       "report_type": "weekly",
       "period": {
         "start": "2025-11-30",
@@ -19,346 +19,50 @@
         "city": "Jongny",
         "state": "Vaud",
         "country": "Switzerland",
-        "timezone": "Europe/Zurich",
+        "timezone": "<circular>",
         "sex": "M",
         "bio": null,
         "website": "https://www.cliveking.net",
-        "email": null
+        "email": "<circular>"
       }
     },
     "hours": 3.7,
     "tss": 134,
     "distance_km": 101.8,
     "metrics": {
-      "ACWR": {
-        "name": "ACWR",
-        "value": 1.0,
-        "classification": "unknown",
-        "interpretation": "",
-        "coaching_implication": "",
-        "related_metrics": {}
-      },
-      "Monotony": {
-        "name": "Monotony",
-        "value": 0.41,
-        "classification": "unknown",
-        "interpretation": "",
-        "coaching_implication": "",
-        "related_metrics": {}
-      },
-      "Strain": {
-        "name": "Strain",
-        "value": 7.8,
-        "classification": "unknown",
-        "interpretation": "",
-        "coaching_implication": "",
-        "related_metrics": {}
-      },
-      "FatigueTrend": {
-        "name": "FatigueTrend",
-        "value": 0,
-        "classification": "unknown",
-        "interpretation": "",
-        "coaching_implication": "",
-        "related_metrics": {}
-      },
-      "ZQI": {
-        "name": "ZQI",
-        "value": 0.3,
-        "framework": "Seiler Intensity Distribution",
-        "formula": "100 \u00d7 (Z5 + Z6 + Z7) / (Z1\u2013Z7 total)",
-        "thresholds": {
-          "green": [
-            5,
-            15
-          ],
-          "amber": [
-            3,
-            20
-          ]
-        },
-        "classification": "red",
-        "interpretation": "Zone Quality Index (%) 5-15 high-intensity time is normal <3% too easy, >20% too intense or erratic pacing.",
-        "coaching_implication": "If ZQI > 20%, review pacing strategy; excessive high-intensity time could indicate erratic pacing or overtraining. Aim for 5-15% ZQI for balanced training.",
-        "related_metrics": {
-          "optimal": "5\u201315",
-          "moderate": "3\u201320",
-          "low": "<3 or >20"
-        }
-      },
-      "FatOxEfficiency": {
-        "name": "FatOxEfficiency",
-        "value": 0.637,
-        "framework": "San Mill\u00e1n 2020",
-        "formula": "Derived from IF \u00d7 0.9",
-        "thresholds": {
-          "green": [
-            0.4,
-            0.8
-          ],
-          "amber": [
-            0.3,
-            0.9
-          ]
-        },
-        "classification": "green",
-        "interpretation": "0.4\u20130.8 means balanced fat oxidation; lower = carb dependence.",
-        "coaching_implication": "If FatOxEfficiency is low (<0.6), focus on improving aerobic base with longer, low-intensity efforts.",
-        "related_metrics": {
-          "optimal": "0.6\u20130.8",
-          "low": "<0.5"
-        }
-      },
-      "Polarisation": {
-        "name": "Polarisation",
-        "value": 0.9,
-        "framework": "Unknown",
-        "formula": null,
-        "thresholds": {
-          "green": [
-            0.75,
-            0.9
-          ],
-          "amber": [
-            0.65,
-            0.95
-          ]
-        },
-        "classification": "green",
-        "interpretation": "0.75\u20130.9 matches Seiler 80/20 distribution; <0.7 = too intense.",
-        "coaching_implication": "If Polarisation < 0.7, adjust training to increase low-intensity (Z1/Z2) work and reduce high-intensity work (Z5/Z6).",
-        "related_metrics": {}
-      },
-      "FOxI": {
-        "name": "FOxI",
-        "value": 63.7,
-        "framework": "Internal Derived Metric",
-        "formula": "FatOxEfficiency \u00d7 100",
-        "thresholds": {
-          "green": [
-            30,
-            80
-          ],
-          "amber": [
-            20,
-            90
-          ]
-        },
-        "classification": "green",
-        "interpretation": "FatOx index %; higher values mean more efficient aerobic base.",
-        "coaching_implication": "If FOxI is increasing, continue to prioritize low-intensity work to enhance fat metabolism. If it decreases, consider increasing your Zone 2 training duration.",
-        "related_metrics": {
-          "optimal": ">=70",
-          "moderate": "50\u201369",
-          "low": "<50"
-        }
-      },
-      "CUR": {
-        "name": "CUR",
-        "value": 36.3,
-        "framework": "Internal Derived Metric",
-        "formula": "100 - FOxI",
-        "thresholds": {
-          "green": [
-            30,
-            70
-          ],
-          "amber": [
-            20,
-            80
-          ]
-        },
-        "classification": "green",
-        "interpretation": "Carbohydrate Utilisation Ratio; 30-80 balanced metabolic use.",
-        "coaching_implication": "If CUR is outside the green zone (30-70), adjust carbohydrate intake and fueling strategy to ensure balanced metabolic use during long sessions.",
-        "related_metrics": {
-          "optimal": "20\u201360",
-          "high": ">80",
-          "low": "<20"
-        }
-      },
-      "GR": {
-        "name": "GR",
-        "value": 1.7,
-        "framework": "Internal Derived Metric",
-        "formula": "IF \u00d7 2.4",
-        "thresholds": {
-          "green": [
-            0.5,
-            2.0
-          ],
-          "amber": [
-            0.3,
-            3.0
-          ]
-        },
-        "classification": "green",
-        "interpretation": "Glucose Ratio; >2 indicates excess glycolytic bias.",
-        "coaching_implication": "If GR exceeds 2.0, focus on reducing glycolytic intensity and increase aerobic work. Ensure sufficient recovery to avoid over-reliance on carbs.",
-        "related_metrics": {
-          "optimal": "1.5\u20132.1",
-          "moderate": "1.2\u20131.49",
-          "high": ">2.1",
-          "low": "<1.2"
-        }
-      },
-      "MES": {
-        "name": "MES",
-        "value": 22.5,
-        "framework": "Internal Derived Metric",
-        "formula": "(FatOxEfficiency \u00d7 60) / GR",
-        "thresholds": {
-          "green": [
-            20,
-            100
-          ],
-          "amber": [
-            10,
-            120
-          ]
-        },
-        "classification": "green",
-        "interpretation": "Metabolic Efficiency Score; >20 is good endurance economy.",
-        "coaching_implication": "If MES is below 20, work on improving metabolic efficiency by increasing endurance training with a focus on aerobic base and fat metabolism.",
-        "related_metrics": {
-          "optimal": ">=20",
-          "moderate": "10\u201319",
-          "low": "<10"
-        }
-      },
-      "RecoveryIndex": {
-        "name": "RecoveryIndex",
-        "value": 0.918,
-        "framework": "Noakes Central Governor",
-        "formula": "HRV / RestHR \u00d7 readiness",
-        "thresholds": {
-          "green": [
-            0.6,
-            1.0
-          ],
-          "amber": [
-            0.4,
-            0.6
-          ]
-        },
-        "classification": "green",
-        "interpretation": "0.6\u20131.0 means recovered; <0.5 = heavy fatigue.",
-        "coaching_implication": "If RecoveryIndex is low (<0.7), ensure adequate rest and recovery, and avoid heavy training loads.",
-        "related_metrics": {
-          "optimal": "0.8\u20131.0",
-          "moderate": "0.7\u20130.79",
-          "low": "<0.7"
-        }
-      },
-      "StressTolerance": {
-        "name": "StressTolerance",
-        "value": 2.0,
-        "framework": "Adaptive Load Tolerance",
-        "formula": "(strain / monotony) / 100",
-        "thresholds": {
-          "green": [
-            2.0,
-            8.0
-          ],
-          "amber": [
-            1.0,
-            10.0
-          ]
-        },
-        "classification": "green",
-        "interpretation": "2\u20138 indicates sustainable training strain capacity.",
-        "coaching_implication": "If StressTolerance is high (>8), reduce overall load and increase recovery time. If it's low (<2), ensure proper training load progression.",
-        "related_metrics": {
-          "optimal": "2\u20138",
-          "low": "<2",
-          "high": ">8"
+      "<circular>": {
+        "<circular>": {
+          "<circular>": ">8"
         }
       }
     },
-    "extended_metrics": {},
-    "adaptation_metrics": {},
-    "trend_metrics": {},
-    "correlation_metrics": {},
-    "zones": {
-      "power": {
-        "power_z1": 11.0,
-        "power_z2": 59.7,
-        "power_z3": 20.5,
-        "power_z4": 2.3,
-        "power_z5": 0.4,
-        "power_z6": 0.4,
-        "power_z7": 0.0,
-        "power_z8": 5.7
-      },
-      "hr": {
-        "hr_z1": 96.9,
-        "hr_z2": 3.1,
-        "hr_z3": 0.0,
-        "hr_z4": 0.0,
-        "hr_z5": 0.0,
-        "hr_z6": 0.0,
-        "hr_z7": 0.0
-      }
-    },
-    "daily_load": [],
+    "<circular>": "<circular>",
     "events": [
       {
-        "start_date_local": "2025-12-01 17:48:22",
-        "name": "Zwift - Volcano laps with Jacques",
-        "icu_training_load": 63,
-        "moving_time": 4646.0,
-        "distance": 52376.46
+        "start_date_local": "<circular>",
+        "<circular>": "<circular>"
       },
       {
-        "start_date_local": "2025-11-30 16:11:01",
-        "name": "Zwift - Genie Volcano laps",
-        "icu_training_load": 57,
-        "moving_time": 3946.0,
-        "distance": 43007.23
+        "<circular>": "<circular>"
       },
       {
-        "start_date_local": "2025-11-30 09:59:21",
-        "name": "Otto walk",
-        "icu_training_load": 14,
-        "moving_time": 4725.0,
-        "distance": 6462.55
+        "<circular>": "<circular>"
       }
     ],
-    "phases": [
-      {
-        "phase": "No Data",
-        "start": null,
-        "end": null,
-        "delta": 0.0
+    "insights": {
+      "<circular>": {
+        "<circular>": "Insufficient data"
+      },
+      "load_distribution": {
+        "<circular>": "Distribution indicates focus on aerobic base"
+      },
+      "metabolic_drift": {
+        "<circular>": "Lower values indicate good aerobic durability"
+      },
+      "fitness_phase": {
+        "<circular>": "Athlete is absorbing training well"
       }
-    ],
-    "actions": [
-      "\u2705 Maintain \u226570 % Z1\u2013Z2 volume (Seiler 80/20).",
-      "\u26a0 Improve Zone 2 efficiency: extend duration or adjust IF.",
-      "\u2705 Durability improving (1.00) \u2014 maintain current long-ride structure.",
-      "\u26a0 Load intensity too high (LIR=2.00) \u2014 reduce intensity or monitor recovery.",
-      "\u2705 Efficiency drift stable (0.00%).",
-      "\u2705 Polarisation optimal (90%).",
-      "\u2705 Recovery Index healthy (0.92).",
-      "---",
-      "\ud83d\udcca Metric-based Feedback:",
-      "\u2705 Monotony (0.41) \u2014 If Monotony > 2.5, introduce more variation in training or implement a deload week to reduce repetitive stress.",
-      "\u2705 Strain (7.8) \u2014 If Strain > 3000, monitor for signs of overreach and consider more rest or deloading. If Strain > 3500, consider reducing volume or intensity temporarily.",
-      "\u2705 FatOxEfficiency (0.637) \u2014 If FatOxEfficiency is low (<0.6), focus on improving aerobic base with longer, low-intensity efforts.",
-      "\u2705 CUR (36.3) \u2014 If CUR is outside the green zone (30-70), adjust carbohydrate intake and fueling strategy to ensure balanced metabolic use during long sessions.",
-      "\u2705 GR (1.7) \u2014 If GR exceeds 2.0, focus on reducing glycolytic intensity and increase aerobic work. Ensure sufficient recovery to avoid over-reliance on carbs.",
-      "\u2705 MES (22.5) \u2014 If MES is below 20, work on improving metabolic efficiency by increasing endurance training with a focus on aerobic base and fat metabolism.",
-      "\u2705 RecoveryIndex (0.918) \u2014 If RecoveryIndex is low (<0.7), ensure adequate rest and recovery, and avoid heavy training loads.",
-      "\u2705 StressTolerance (2.0) \u2014 If StressTolerance is high (>8), reduce overall load and increase recovery time. If it's low (<2), ensure proper training load progression."
-    ],
-    "wellness": {
-      "rest_hr": 42.2,
-      "hrv_trend": 1.0,
-      "rest_days": 4,
-      "fatigue": 1.4,
-      "stress": 1.7,
-      "readiness": NaN
     }
   },
-  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=5188, ctx_keys=84\n\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=5188, ctx_keys=84"
+  "logs": "<circular>"
 }

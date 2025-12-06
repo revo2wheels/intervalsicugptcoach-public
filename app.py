@@ -163,30 +163,54 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
 # ─────────────────────────────────────────────
 # 0️⃣ SANITISE JSON
 # ─────────────────────────────────────────────
-def sanitize_json(obj):
-    import math
-    import pandas as pd
-    from datetime import datetime, date
+def sanitize_json(obj, seen=None):
+    """Prevent circular references and convert non-serializable objects."""
+    if seen is None:
+        seen = set()
 
-    # Dict
-    if isinstance(obj, dict):
-        return {k: sanitize_json(v) for k, v in obj.items()}
+    oid = id(obj)
+    if oid in seen:
+        return "<circular>"
+    seen.add(oid)
 
-    # List
-    if isinstance(obj, list):
-        return [sanitize_json(v) for v in obj]
-
-    # Pandas Timestamp / datetime / date
-    if isinstance(obj, (pd.Timestamp, datetime, date)):
-        return obj.isoformat()
-
-    # Floats: NaN / Inf → None
-    if isinstance(obj, float):
-        if math.isnan(obj) or math.isinf(obj):
-            return None
+    # primitives
+    if obj is None or isinstance(obj, (str, int, float, bool)):
         return obj
 
-    return obj
+    # datetime-like
+    if hasattr(obj, "isoformat"):
+        try:
+            return obj.isoformat()
+        except:
+            return str(obj)
+
+    # pandas / numpy
+    try:
+        import pandas as pd
+        import numpy as np
+        if isinstance(obj, pd.DataFrame):
+            return obj.to_dict(orient="records")
+        if isinstance(obj, pd.Series):
+            return obj.to_dict()
+        if isinstance(obj, (np.integer, np.floating)):
+            return float(obj)
+    except:
+        pass
+
+    # dict
+    if isinstance(obj, dict):
+        out = {}
+        for k, v in obj.items():
+            out[str(k)] = sanitize_json(v, seen)
+        return out
+
+    # list / tuple
+    if isinstance(obj, (list, tuple)):
+        return [sanitize_json(v, seen) for v in obj]
+
+    # fallback
+    return str(obj)
+
 
 # ─────────────────────────────────────────────
 # 0️⃣ Root check
