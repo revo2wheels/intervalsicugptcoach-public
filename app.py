@@ -109,7 +109,9 @@ def log_to_markdown(content: str, filename="debug_report.md"):
     with open(filename, "a") as f:
         f.write(f"### {content}\n")
         f.write("\n")
-
+# ─────────────────────────────────────────────
+# 0️⃣ RUN FULL AUDIT
+# ─────────────────────────────────────────────
 def _run_full_audit(range: str, output_format="markdown", prefetch_context=None):
     """
     Centralised execution for all endpoints:
@@ -157,18 +159,34 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
     
     return report, compliance, logs, context, semantic_graph, markdown
 
+
+# ─────────────────────────────────────────────
+# 0️⃣ SANITISE JSON
+# ─────────────────────────────────────────────
 def sanitize_json(obj):
+    import math
     import pandas as pd
     from datetime import datetime, date
 
+    # Dict
     if isinstance(obj, dict):
         return {k: sanitize_json(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
+
+    # List
+    if isinstance(obj, list):
         return [sanitize_json(v) for v in obj]
-    elif isinstance(obj, (pd.Timestamp, datetime, date)):
+
+    # Pandas Timestamp / datetime / date
+    if isinstance(obj, (pd.Timestamp, datetime, date)):
         return obj.isoformat()
-    else:
+
+    # Floats: NaN / Inf → None
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
         return obj
+
+    return obj
 
 # ─────────────────────────────────────────────
 # 0️⃣ Root check
@@ -251,7 +269,7 @@ async def run_audit_with_data(request: Request):
         if output_format in ("json", "semantic"):
             return JSONResponse(content={
                 "status": "ok", "report_type": range, "output_format": "semantic_json", 
-                "semantic_graph": semantic_graph, "compliance": compliance, "logs": logs[:20000]
+                "semantic_graph": sanitize_json(semantic_graph), "compliance": compliance, "logs": logs[:20000]
             })
 
         return JSONResponse(content={
@@ -264,7 +282,7 @@ async def run_audit_with_data(request: Request):
         return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
 
 # ─────────────────────────────────────────────
-# 3️⃣ /debug_env — unchanged
+# 3️⃣ /debug_env
 # ─────────────────────────────────────────────
 @app.get("/debug_env")
 def debug_env():
@@ -274,7 +292,9 @@ def debug_env():
         "ICU_OAUTH_prefix": token[:10] if token else None,
         "PORT": os.getenv("PORT"),
     }
-
+# ─────────────────────────────────────────────
+# 3️⃣ /debug
+# ─────────────────────────────────────────────
 @app.get("/debug")
 def debug_endpoint(range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"]),
                     format: str = Query("markdown", enum=["markdown", "json", "semantic"])):
