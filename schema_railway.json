@@ -1,0 +1,636 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "IntervalsICU GPTCoach Renderer (Railway)",
+    "version": "1.0.0",
+    "description": "URF v5.x renderer and semantic graph API. Railway does not fetch from Intervals; it only renders from prefetched data (POST /run) or internal debug fetches."
+  },
+  "servers": [
+    {
+      "url": "https://intervalsicugptcoach-public-production.up.railway.app"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "Health check",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "API is running",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/run": {
+      "get": {
+        "summary": "Run full audit (internal, OAuth test mode)",
+        "description": "Internal-only endpoint that runs the full audit by fetching directly from Intervals using ICU_OAUTH. Not intended for ChatGPT; included for future debugging.",
+        "operationId": "runAuditInternal",
+        "x-internal": true,
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["weekly", "season", "wellness", "summary"],
+              "default": "weekly"
+            },
+            "description": "Report range to generate."
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["semantic"],
+              "default": "semantic"
+            },
+            "description": "Output format. For ChatGPT semantics we treat this as semantic-only, even though the backend also supports markdown/json."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Semantic JSON report (internal use).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Render URF report from prefetched data (primary entrypoint)",
+        "description": "Primary renderer entrypoint. Expects prefetched Intervals data (activities, wellness, athlete profile) and returns a URF semantic graph and/or markdown.",
+        "operationId": "renderReportFromPrefetchedData",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rendered URF report from supplied data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Renderer error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/debug_env": {
+      "get": {
+        "summary": "Environment debug (internal)",
+        "description": "Internal-only environment debug. Exposes whether ICU_OAUTH and PORT are loaded.",
+        "operationId": "debugEnv",
+        "x-internal": true,
+        "responses": {
+          "200": {
+            "description": "Environment debug state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ICU_OAUTH_loaded": { "type": "boolean" },
+                    "ICU_OAUTH_prefix": { "type": ["string", "null"] },
+                    "PORT": { "type": ["string", "null"] }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/debug": {
+      "get": {
+        "summary": "Full debug audit (internal)",
+        "description": "Internal debug endpoint. Runs full audit, captures logs, debug trace, markdown and semantic graph.",
+        "operationId": "debugAudit",
+        "x-internal": true,
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["weekly", "season", "wellness", "summary"],
+              "default": "weekly"
+            },
+            "description": "Report range to debug."
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["markdown", "json", "semantic"],
+              "default": "markdown"
+            },
+            "description": "Debug output format."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Debug payload with logs and rendered report.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DebugResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Debug error.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/semantic": {
+      "get": {
+        "summary": "Semantic URF report (no markdown)",
+        "description": "Returns the full URF semantic graph for the given range, with metrics, phases, events, actions, and wellness.",
+        "operationId": "getSemanticReport",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["weekly", "season", "wellness", "summary"],
+              "default": "weekly"
+            },
+            "description": "Report range to generate."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Semantic URF report.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SemanticResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/metrics": {
+      "get": {
+        "summary": "Metrics-only view",
+        "description": "Returns core, extended, trend, and adaptation metrics from the semantic graph.",
+        "operationId": "getMetrics",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["weekly", "season", "wellness", "summary"],
+              "default": "weekly"
+            },
+            "description": "Report range to summarise."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Metrics summary.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/phases": {
+      "get": {
+        "summary": "Periodisation phases",
+        "description": "Returns training phases and recommended actions derived from the semantic graph.",
+        "operationId": "getPhases",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["weekly", "season", "wellness", "summary"],
+              "default": "weekly"
+            },
+            "description": "Report range for phase detection."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Phases and actions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhaseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/compare": {
+      "get": {
+        "summary": "Trend / delta comparison",
+        "description": "Exposes trend metrics and core metrics for comparison vs baselines.",
+        "operationId": "comparePeriods",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["weekly", "season", "wellness", "summary"],
+              "default": "weekly"
+            },
+            "description": "Report range to compare."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Comparison metrics.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompareResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/insights": {
+      "get": {
+        "summary": "Coaching-ready insights",
+        "description": "Returns red/amber/green insight buckets plus actions and phases from the semantic graph.",
+        "operationId": "getInsights",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["weekly", "season", "wellness", "summary"],
+              "default": "weekly"
+            },
+            "description": "Report range for insights."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Coaching insights and flags.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InsightsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+
+  "components": {
+    "schemas": {
+      "RenderRequest": {
+        "type": "object",
+        "description": "Prefetched Intervals dataset used to render a URF report.",
+        "properties": {
+          "range": {
+            "type": "string",
+            "enum": ["weekly", "season", "wellness", "summary"],
+            "description": "Report range that this dataset represents."
+          },
+          "format": {
+            "type": "string",
+            "enum": ["markdown", "json", "semantic"],
+            "description": "Requested renderer format. For ChatGPT semantics, use 'semantic'."
+          },
+          "activities_light": {
+            "type": "array",
+            "items": { "type": "object" },
+            "description": "Optional 90-day lightweight activities (Tier-0)."
+          },
+          "activities_full": {
+            "type": "array",
+            "items": { "type": "object" },
+            "description": "Required 7-day full activities (Tier-1/Tier-2)."
+          },
+          "wellness": {
+            "type": "array",
+            "items": { "type": "object" },
+            "description": "Optional 42-day wellness series."
+          },
+          "athlete": {
+            "type": "object",
+            "description": "Athlete profile block."
+          }
+        },
+        "required": ["range", "format", "activities_full"]
+      },
+
+      "RunResponse": {
+        "type": "object",
+        "description": "Unified response shape for /run (GET and POST).",
+        "properties": {
+          "status": { "type": "string", "example": "ok" },
+          "report_type": { "type": "string", "example": "weekly" },
+          "output_format": { "type": "string", "example": "semantic_json" },
+          "semantic_graph": {
+            "type": "object",
+            "description": "Full URF semantic graph including meta, metrics, zones, daily_load, events, phases, actions, wellness.",
+            "additionalProperties": true
+          },
+          "compliance": {
+            "type": ["object", "null"],
+            "description": "Renderer/audit compliance metadata.",
+            "additionalProperties": true
+          },
+          "markdown": {
+            "type": ["string", "null"],
+            "description": "Rendered markdown if requested (format=markdown). Often null for semantic-only usage."
+          },
+          "logs": {
+            "type": ["string", "null"],
+            "description": "Truncated execution logs for diagnostics."
+          }
+        },
+        "required": ["status", "report_type", "output_format", "semantic_graph"]
+      },
+
+      "SemanticResponse": {
+        "type": "object",
+        "description": "Response from /semantic, wrapping the URF semantic graph.",
+        "properties": {
+          "status": { "type": "string", "example": "ok" },
+          "report_type": { "type": "string", "example": "weekly" },
+          "output_format": { "type": "string", "example": "semantic_json" },
+          "semantic_graph": {
+            "type": "object",
+            "description": "URF semantic graph.",
+            "additionalProperties": true
+          },
+          "compliance": {
+            "type": ["object", "null"],
+            "additionalProperties": true
+          },
+          "logs": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["status", "report_type", "semantic_graph"]
+      },
+
+      "MetricsResponse": {
+        "type": "object",
+        "description": "Metrics-focused view from /metrics.",
+        "properties": {
+          "status": { "type": "string", "example": "ok" },
+          "report_type": { "type": "string", "example": "weekly" },
+          "metrics": {
+            "type": "object",
+            "description": "Core metrics dictionary.",
+            "additionalProperties": true
+          },
+          "extended_metrics": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "trend_metrics": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "adaptation_metrics": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "correlation_metrics": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "compliance": {
+            "type": ["object", "null"],
+            "additionalProperties": true
+          },
+          "logs": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["status", "report_type", "metrics"]
+      },
+
+      "PhaseResponse": {
+        "type": "object",
+        "description": "Phase and actions view from /phases.",
+        "properties": {
+          "status": { "type": "string", "example": "ok" },
+          "report_type": { "type": "string", "example": "weekly" },
+          "phases": {
+            "type": "array",
+            "items": { "type": "object" },
+            "description": "List of detected phases."
+          },
+          "actions": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Recommended actions linked to phases or metrics."
+          },
+          "compliance": {
+            "type": ["object", "null"],
+            "additionalProperties": true
+          },
+          "logs": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["status", "report_type", "phases"]
+      },
+
+      "CompareResponse": {
+        "type": "object",
+        "description": "Trend/delta view from /compare.",
+        "properties": {
+          "status": { "type": "string", "example": "ok" },
+          "report_type": { "type": "string", "example": "weekly" },
+          "trend_metrics": {
+            "type": "object",
+            "description": "Time-based trend metrics.",
+            "additionalProperties": true
+          },
+          "core_metrics": {
+            "type": "object",
+            "description": "Core metrics for the focal period.",
+            "additionalProperties": true
+          },
+          "compliance": {
+            "type": ["object", "null"],
+            "additionalProperties": true
+          },
+          "logs": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["status", "report_type", "trend_metrics", "core_metrics"]
+      },
+
+      "InsightsResponse": {
+        "type": "object",
+        "description": "Coaching insights from /insights.",
+        "properties": {
+          "status": { "type": "string", "example": "ok" },
+          "report_type": { "type": "string", "example": "weekly" },
+          "insights": {
+            "type": "object",
+            "description": "Insight buckets and actions.",
+            "properties": {
+              "critical": {
+                "type": "array",
+                "items": { "type": "object" }
+              },
+              "watch": {
+                "type": "array",
+                "items": { "type": "object" }
+              },
+              "positive": {
+                "type": "array",
+                "items": { "type": "object" }
+              },
+              "actions": {
+                "type": "array",
+                "items": { "type": "string" }
+              },
+              "phases": {
+                "type": "array",
+                "items": { "type": "object" }
+              }
+            },
+            "additionalProperties": true
+          },
+          "compliance": {
+            "type": ["object", "null"],
+            "additionalProperties": true
+          },
+          "logs": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["status", "report_type", "insights"]
+      },
+
+      "DebugResponse": {
+        "type": "object",
+        "description": "Debug payload from /debug.",
+        "properties": {
+          "status": { "type": "string" },
+          "message": { "type": "string" },
+          "context": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "semantic_graph": {
+            "type": ["object", "null"],
+            "additionalProperties": true
+          },
+          "logs": {
+            "type": ["string", "null"]
+          },
+          "debug_logs": {
+            "type": ["string", "null"]
+          },
+          "semantic_report": {
+            "type": ["string", "null"],
+            "description": "Markdown+log composite when format=json/semantic."
+          },
+          "markdown_report": {
+            "type": ["string", "null"],
+            "description": "Markdown debug report when format=markdown."
+          }
+        },
+        "required": ["status", "message"]
+      },
+
+      "ErrorResponse": {
+        "type": "object",
+        "description": "Generic error shape.",
+        "properties": {
+          "status": { "type": "string", "example": "error" },
+          "message": { "type": "string" },
+          "trace": { "type": ["string", "null"] }
+        },
+        "required": ["status", "message"]
+      }
+    }
+  }
+}

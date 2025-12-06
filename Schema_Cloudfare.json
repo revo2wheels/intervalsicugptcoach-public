@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Intervals.icu Training Coach Proxy",
-    "version": "5.0.0",
-    "description": "Single-call proxy. ChatGPT never receives raw activity/wellness data."
+    "version": "5.2.0",
+    "description": "Cloudflare proxy for URF reports. ChatGPT never sees raw activities/wellness."
   },
 
   "servers": [
@@ -12,12 +12,24 @@
 
   "paths": {
     "/run_weekly": {
-      "post": {
-        "summary": "Request a weekly URF report",
+      "get": {
+        "summary": "Generate a weekly URF report (7-day)",
         "operationId": "runWeeklyReport",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["semantic", "markdown", "json"],
+              "default": "semantic"
+            },
+            "description": "Select output format. Default = semantic."
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Final URF rendered report (semantic + markdown)",
+            "description": "Weekly URF report output (markdown + semantic graph)",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ReportResponse" }
@@ -29,12 +41,23 @@
     },
 
     "/run_season": {
-      "post": {
-        "summary": "Request a 90-day URF season/block report",
+      "get": {
+        "summary": "Generate a season URF report (90-day block)",
         "operationId": "runSeasonReport",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["semantic", "markdown", "json"],
+              "default": "semantic"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Final URF rendered report",
+            "description": "Season URF report output",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ReportResponse" }
@@ -46,12 +69,23 @@
     },
 
     "/run_wellness": {
-      "post": {
-        "summary": "Request a 42-day wellness URF report",
+      "get": {
+        "summary": "Generate a 42-day wellness URF report",
         "operationId": "runWellnessReport",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["semantic", "markdown", "json"],
+              "default": "semantic"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Final URF rendered report",
+            "description": "Wellness URF report output",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ReportResponse" }
@@ -63,12 +97,23 @@
     },
 
     "/run_summary": {
-      "post": {
-        "summary": "Request a high-level summary URF report",
+      "get": {
+        "summary": "Generate a URF high-level summary",
         "operationId": "runSummaryReport",
+        "parameters": [
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["semantic", "markdown", "json"],
+              "default": "semantic"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Final URF rendered report",
+            "description": "Summary URF output (profile + key stats)",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ReportResponse" }
@@ -100,20 +145,24 @@
       "trigger": [
         "weekly report",
         "run weekly report",
-        "last 7 days report"
+        "generate weekly report",
+        "7 day report",
+        "7-day report",
+        "past week report"
       ],
       "action": "runWeeklyReport",
       "x-intent": {
         "x-intent": "weekly",
-        "strict": true,
-        "description": "ChatGPT must call Cloudflare only; all data-fetching is performed in Railway."
+        "strict": true
       }
     },
     {
       "trigger": [
         "season report",
         "90 day report",
-        "training block report"
+        "block report",
+        "training block report",
+        "run season report"
       ],
       "action": "runSeasonReport",
       "x-intent": {
@@ -124,7 +173,9 @@
     {
       "trigger": [
         "wellness report",
-        "recovery report"
+        "42 day wellness",
+        "recovery report",
+        "run wellness report"
       ],
       "action": "runWellnessReport",
       "x-intent": {
@@ -135,7 +186,9 @@
     {
       "trigger": [
         "summary report",
-        "overview"
+        "overview report",
+        "high level summary",
+        "run summary"
       ],
       "action": "runSummaryReport",
       "x-intent": {
