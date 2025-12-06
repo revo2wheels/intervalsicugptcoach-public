@@ -152,9 +152,8 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
     # Generate the semantic graph ONLY (input = clean context)
     semantic_graph = build_semantic_json(context)
 
-# Return clean objects — no debug injection
-return report, compliance, logs, context, semantic_graph, markdown
-
+    # Return clean objects — no debug injection
+    return report, compliance, logs, context, semantic_graph, markdown
 
 
 # ─────────────────────────────────────────────
