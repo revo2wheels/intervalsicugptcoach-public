@@ -80,6 +80,129 @@ def semantic_block_for_metric(name, value, context):
         "related_metrics": profile_desc.get("criteria", {}),
     }
 
+    # -------------------------
+    # Computes derived coaching insights based on semantic graph content.
+    # These do not change training metrics—only describe them intelligently.
+    # -------------------------
+
+    def build_insights(semantic):
+
+    insights = {}
+
+    # -------------------------
+    # 1. Fatigue Trend Insight
+    # -------------------------
+    fatigue_trend = None
+    try:
+        atl = semantic.get("wellness", {}).get("ATL")
+        ctl = semantic.get("wellness", {}).get("CTL")
+
+        if isinstance(atl, (int, float)) and isinstance(ctl, (int, float)) and ctl > 0:
+            fatigue_trend = round((atl - ctl) / ctl, 3)
+    except Exception:
+        fatigue_trend = None
+
+    insights["fatigue_trend"] = {
+        "value": fatigue_trend,
+        "interpretation": (
+            "Positive = accumulating fatigue, negative = recovering, near zero = stable"
+            if fatigue_trend is not None else "Insufficient data"
+        )
+    }
+
+    # -------------------------
+    # 2. Load Distribution Insight
+    # -------------------------
+    zones = semantic.get("zones", {}).get("power", {})
+    z1 = zones.get("power_z1", 0)
+    z2 = zones.get("power_z2", 0)
+    z3plus = sum(
+        zones.get(k, 0)
+        for k in zones
+        if k not in ("power_z1", "power_z2")
+    )
+
+    distribution_type = "unknown"
+    if (z1 + z2) >= 70:
+        distribution_type = "endurance-focused"
+    if z3plus >= 30:
+        distribution_type = "threshold-heavy"
+    if z1 >= 50 and z3plus >= 20:
+        distribution_type = "polarised"
+
+    insights["load_distribution"] = {
+        "zones": {
+            "z1_z2": round(z1 + z2, 1),
+            "z3_plus": round(z3plus, 1)
+        },
+        "classification": distribution_type,
+        "interpretation": (
+            "Distribution indicates focus on aerobic base"
+            if distribution_type == "endurance-focused"
+            else "High intensity bias; increased recovery required"
+            if distribution_type == "threshold-heavy"
+            else "Strongly polarised training distribution"
+            if distribution_type == "polarised"
+            else "Cannot classify distribution"
+        )
+    }
+
+    # -------------------------
+    # 3. Metabolic Drift Insight
+    # -------------------------
+    drift_value = None
+    try:
+        if "events" in semantic and len(semantic["events"]) > 0:
+            # Using FOxI drift proxy: a stable FOxI suggests low metabolic drift
+            foxi = semantic.get("metrics", {}).get("FOxI", {}).get("value")
+            if isinstance(foxi, (int, float)):
+                drift_value = round((70 - foxi) / 70, 3)  # Normalisation
+    except Exception:
+        drift_value = None
+
+    insights["metabolic_drift"] = {
+        "value": drift_value,
+        "interpretation": (
+            "Lower values indicate good aerobic durability"
+            if drift_value is not None else "Insufficient data"
+        )
+    }
+
+    # -------------------------
+    # 4. Fitness Phase Progression Insight
+    # -------------------------
+    phase = "unknown"
+    try:
+        acwr = semantic.get("metrics", {}).get("ACWR", {}).get("value")
+        monotony = semantic.get("metrics", {}).get("Monotony", {}).get("value")
+        strain = semantic.get("metrics", {}).get("Strain", {}).get("value")
+
+        if acwr is not None:
+            if acwr < 0.8:
+                phase = "recovery/deload"
+            elif 0.8 <= acwr <= 1.3:
+                phase = "productive/loading"
+            elif acwr > 1.3:
+                phase = "overreaching"
+    except Exception:
+        pass
+
+    insights["fitness_phase"] = {
+        "phase": phase,
+        "interpretation": (
+            "Athlete is absorbing training well"
+            if phase == "productive/loading"
+            else "Athlete is under low load — suitable for recovery"
+            if phase == "recovery/deload"
+            else "High risk of overtraining — reduce load"
+            if phase == "overreaching"
+            else "Phase cannot be determined"
+        )
+    }
+
+    return insights
+
+
 def build_semantic_json(context):
     """
     Build the FULL semantic coaching graph used by ChatGPT, using matching sources to render_unified_report.
@@ -185,6 +308,10 @@ def build_semantic_json(context):
         # 9. Wellness summary
         # -------------------------------
         "wellness": context.get("wellness_summary", {}),
+        # -------------------------------
+        # 10. Insights
+        # -------------------------------
+        semantic["insights"] = build_insights(semantic)
     }
 
     # -------------------------------

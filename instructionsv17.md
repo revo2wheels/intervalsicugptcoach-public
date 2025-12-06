@@ -15,7 +15,7 @@ Cloudflare Worker (Fetcher):
 Railway Renderer (Processor):
 - Runs Tier-0, Tier-1, Tier-2
 - Computes canonical totals and derived metrics
-- Applies Unified Reporting Framework v5.2
+- Applies Unified Reporting Framework v5.1
 - Returns semantic graph or markdown
 - Enforces auditFinal, variance checks, and URF layout
 
@@ -54,7 +54,7 @@ Renderer enforces:
 - Tier-0 dataset normalization
 - Tier-1 completeness, canonical totals
 - Tier-2 derived metrics, wellness alignment, actions
-- URF v5.2 layout (10 sections)
+- URF v5.1 layout (10 sections)
 - Render only when auditFinal=True
 - Variance thresholds
 - Semantic graph correctness

@@ -60,9 +60,13 @@ export default {
       }
     };
 
-    const logPayload = (tag, p) => {
+    const logPayload = (tag, payload) => {
+      const light = Array.isArray(payload.activities_light) ? payload.activities_light.length : 0;
+      const full = Array.isArray(payload.activities_full) ? payload.activities_full.length : 0;
+      const well = Array.isArray(payload.wellness) ? payload.wellness.length : 0;
+
       console.log(
-        `[${tag}] range=${p.range} | light=${p.activities_light.length} | full=${p.activities_full.length} | wellness=${p.wellness.length}`
+        `[${tag}] range=${payload.range} | light=${light} | full=${full} | wellness=${well}`
       );
     };
 

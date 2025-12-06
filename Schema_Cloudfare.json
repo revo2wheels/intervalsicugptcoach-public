@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Intervals.icu Training Coach Proxy",
-    "version": "5.2.0",
+    "version": "5.1.0",
     "description": "Cloudflare proxy for URF reports. ChatGPT never sees raw activities/wellness."
   },
 
@@ -14,22 +14,10 @@
     "/run_weekly": {
       "get": {
         "summary": "Generate a weekly URF report (7-day)",
-        "operationId": "runWeeklyReport",
-        "parameters": [
-          {
-            "name": "format",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": ["semantic", "markdown", "json"],
-              "default": "semantic"
-            },
-            "description": "Select output format. Default = semantic."
-          }
-        ],
+        "operationId": "runWeeklyReportV2",        
         "responses": {
           "200": {
-            "description": "Weekly URF report output (markdown + semantic graph)",
+            "description": "Weekly URF report output",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ReportResponse" }
@@ -43,18 +31,7 @@
     "/run_season": {
       "get": {
         "summary": "Generate a season URF report (90-day block)",
-        "operationId": "runSeasonReport",
-        "parameters": [
-          {
-            "name": "format",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": ["semantic", "markdown", "json"],
-              "default": "semantic"
-            }
-          }
-        ],
+        "operationId": "runSeasonReportV2",
         "responses": {
           "200": {
             "description": "Season URF report output",
@@ -71,18 +48,7 @@
     "/run_wellness": {
       "get": {
         "summary": "Generate a 42-day wellness URF report",
-        "operationId": "runWellnessReport",
-        "parameters": [
-          {
-            "name": "format",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": ["semantic", "markdown", "json"],
-              "default": "semantic"
-            }
-          }
-        ],
+        "operationId": "runWellnessReportV2",
         "responses": {
           "200": {
             "description": "Wellness URF report output",
@@ -99,21 +65,10 @@
     "/run_summary": {
       "get": {
         "summary": "Generate a URF high-level summary",
-        "operationId": "runSummaryReport",
-        "parameters": [
-          {
-            "name": "format",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "enum": ["semantic", "markdown", "json"],
-              "default": "semantic"
-            }
-          }
-        ],
+        "operationId": "runSummaryReportV2",
         "responses": {
           "200": {
-            "description": "Summary URF output (profile + key stats)",
+            "description": "Summary URF output",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/ReportResponse" }
@@ -150,7 +105,7 @@
         "7-day report",
         "past week report"
       ],
-      "action": "runWeeklyReport",
+      "action": "runWeeklyReportV2",
       "x-intent": {
         "x-intent": "weekly",
         "strict": true
@@ -164,7 +119,7 @@
         "training block report",
         "run season report"
       ],
-      "action": "runSeasonReport",
+      "action": "runSeasonReportV2",
       "x-intent": {
         "x-intent": "season",
         "strict": true
@@ -177,7 +132,7 @@
         "recovery report",
         "run wellness report"
       ],
-      "action": "runWellnessReport",
+      "action": "runWellnessReportV2",
       "x-intent": {
         "x-intent": "wellness",
         "strict": true
@@ -190,7 +145,7 @@
         "high level summary",
         "run summary"
       ],
-      "action": "runSummaryReport",
+      "action": "runSummaryReportV2",
       "x-intent": {
         "x-intent": "summary",
         "strict": true
@@ -199,21 +154,21 @@
   ],
 
   "x-actions": {
-    "runWeeklyReport": {
+    "runWeeklyReportV2": {
       "type": "operation",
-      "operationId": "runWeeklyReport"
+      "operationId": "runWeeklyReportV2"
     },
-    "runSeasonReport": {
+    "runSeasonReportV2": {
       "type": "operation",
-      "operationId": "runSeasonReport"
+      "operationId": "runSeasonReportV2"
     },
-    "runWellnessReport": {
+    "runWellnessReportV2": {
       "type": "operation",
-      "operationId": "runWellnessReport"
+      "operationId": "runWellnessReportV2"
     },
-    "runSummaryReport": {
+    "runSummaryReportV2": {
       "type": "operation",
-      "operationId": "runSummaryReport"
+      "operationId": "runSummaryReportV2"
     }
   }
 }
