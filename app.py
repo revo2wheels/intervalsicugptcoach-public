@@ -157,6 +157,19 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
     
     return report, compliance, logs, context, semantic_graph, markdown
 
+def sanitize_json(obj):
+    import pandas as pd
+    from datetime import datetime, date
+
+    if isinstance(obj, dict):
+        return {k: sanitize_json(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [sanitize_json(v) for v in obj]
+    elif isinstance(obj, (pd.Timestamp, datetime, date)):
+        return obj.isoformat()
+    else:
+        return obj
+
 # ─────────────────────────────────────────────
 # 0️⃣ Root check
 # ─────────────────────────────────────────────
@@ -179,13 +192,12 @@ def run_audit(
             output_format=format.lower()
         )
 
-        # --- SEMANTIC / JSON OUTPUT ---
         if format.lower() in ("json", "semantic"):
             return JSONResponse(content={
                 "status": "ok",
                 "report_type": range,
                 "output_format": "semantic_json",
-                "semantic_graph": semantic_graph,
+                "semantic_graph": sanitize_json(semantic_graph),
                 "compliance": compliance,
                 "logs": logs[:20000]
             })
