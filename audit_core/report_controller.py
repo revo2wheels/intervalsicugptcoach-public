@@ -31,6 +31,7 @@ from audit_core.tier2_derived_metrics import compute_derived_metrics
 from audit_core.tier2_actions import evaluate_actions
 from audit_core.tier2_render_validator import finalize_and_validate_render
 from audit_core.tier2_extended_metrics import compute_extended_metrics
+from semantic_json_builder import build_semantic_json
 
 # --- optional compatibility alias ---
 from intervals_icu__jit_plugin import (
@@ -173,23 +174,28 @@ def orchestrate_fetch_context(report_type: str = "weekly", today: date | None = 
 
 def run_report(
     reportType: str = "weekly",
-    auditFinal: bool = True,                    # changed
+    auditFinal: bool = True,
     auditPartial: bool = False,
-    force_analysis: bool = True,                # ensures Tier-2
-    preRenderAudit: bool = False,               # changed
-    tier2_enforce_event_only_totals: bool = True, # changed
+    force_analysis: bool = True,
+    preRenderAudit: bool = False,
+    tier2_enforce_event_only_totals: bool = True,
     render_mode: str = "full+metrics",
     autoCommit: bool = True,
     suppressPrompts: bool = True,
-    postRenderAudit: bool = True,               # optional validation
+    postRenderAudit: bool = True,
     merge_events: bool = False,
     render_summary: bool = False,
     include_coaching_metrics: bool = True,
     allowSyntheticRender: bool = False,
+    output_format="markdown",  # Ensure output_format is defined
     **kwargs,
 ):
-
-        # --- Initialize context ---
+    """
+    Centralized execution for all endpoints:
+    - Runs Tier-0 → Tier-1 → Tier-2 → Renderer
+    - Returns (report, compliance, logs, context, semantic_graph)
+    """
+    # Initialize context
     context = {}
     context.update(kwargs)
     context.update({
@@ -197,7 +203,31 @@ def run_report(
         "include_coaching_metrics": include_coaching_metrics,
         "postRenderAudit": postRenderAudit,
     })
+    # Ensure debug_mode is set from kwargs
     context["debug_mode"] = kwargs.get("debug_mode", False)
+
+    # Initialize report
+    report = {}
+
+    if output_format == "semantic":
+        # Generate the semantic graph
+        semantic_output = build_semantic_json(context)  # Pass context to semantic JSON builder
+
+        # Ensure the returned result is always a dictionary
+        report = {
+            "status": "ok",
+            "message": f"{reportType.title()} Semantic Report Generated",
+            "semantic_graph": semantic_output,  # Ensure semantic graph is returned
+        }
+
+        # Log the generated semantic graph for debugging
+        debug(context, f"[REPORT.PY] Generated semantic graph: {semantic_output}")
+
+        # Capture logs directly from the debug trace (context['debug_trace'])
+        log_output = "\n".join(context.get("debug_trace", []))  # Get all debug logs collected so far
+
+        # Add logs to the report
+        report["logs"] = log_output  # Include logs from the debug trace
 
     # --- Tier (-1): Orchestrate initial fetches and context ---
     context = orchestrate_fetch_context(reportType)
@@ -674,20 +704,39 @@ def run_report(
     # --- Final render ---
     final_output, compliance = finalize_and_validate_render(context, reportType=reportType)
 
-    # Defensive guard: extract only markdown text if final_output is complex
-    if isinstance(final_output, dict) and "markdown" in final_output:
+    # Check if the requested format is "semantic" or "markdown"
+    if output_format == "semantic":
+        # Generate the semantic graph
+        semantic_output = build_semantic_json(context)  # Ensure semantic_output is generated
+
+        # If the output format is "semantic", return the semantic graph
         final_output = {
-            "markdown": final_output["markdown"],
-            # ⭐ Inject the ENTIRE authoritative context for semantic JSON ⭐
+            "status": "ok",
+            "message": f"{reportType.title()} Semantic Report Generated",
+            "semantic_graph": semantic_output,  # Directly use the generated semantic_output
+            "context": context,  # Add the full context for reference
+            "logs": final_output.get("logs", "") if isinstance(final_output, dict) else "",  # Optional, include logs if needed
+        }
+
+    elif isinstance(final_output, dict) and "markdown" in final_output:
+        # Existing logic for Markdown output
+        final_output = {
+            "markdown": final_output.get("markdown", "No Markdown Content Available"),  # Ensure markdown is populated
             "context": context,
             "summary": final_output.get("summary", {}),
-            "header": final_output.get("header", {})
+            "header": final_output.get("header", {}),
         }
+
     elif not isinstance(final_output, dict):
+        # Fallback if final_output is not a dictionary (safely convert to markdown string)
         final_output = {"markdown": str(final_output), "context": {}}
 
+    # Log the completion of rendering
     debug(context, f"✅ Render + validation completed for {reportType}")
+
+    # Return the final output and compliance as two values
     return final_output, compliance
+
 
 
 if __name__ == "__main__":
