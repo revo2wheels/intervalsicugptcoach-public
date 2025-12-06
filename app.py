@@ -165,61 +165,71 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
 # ─────────────────────────────────────────────
 def sanitize(obj, seen=None):
     """
-    Universal JSON sanitizer for Railway endpoint.
-    Prevents recursion, handles Timestamps, NaN, Inf,
-    pandas objects, dicts, lists, tuples.
+    Safe JSON sanitizer for semantic_graph.
+    - Prevents infinite recursion
+    - Only tracks container types (dict, list, tuple, DataFrame, Series)
+    - Leaves primitives untouched (no false <circular>)
+    - Normalises timestamps, NaN, Inf
     """
     import math
     import pandas as pd
     import numpy as np
     from datetime import datetime, date
 
-    if seen is None:
-        seen = set()
-
-    oid = id(obj)
-    if oid in seen:
-        return "<circular>"
-    seen.add(oid)
-
-    # Primitives
-    if isinstance(obj, (str, int, bool)) or obj is None:
-        return obj
-
-    # Float and special values
-    if isinstance(obj, float):
-        if math.isnan(obj) or math.isinf(obj):
+    # --- primitives → RETURN IMMEDIATELY (never added to seen) ---
+    if isinstance(obj, (str, int, float, bool)) or obj is None:
+        # Handle NaN / Inf
+        if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
             return None
         return obj
 
-    # Datetime / pandas Timestamp
+    # --- datetime / Timestamp ---
     if isinstance(obj, (datetime, date, pd.Timestamp)):
         try:
             return obj.isoformat()
         except:
             return str(obj)
 
-    # pandas objects
-    if isinstance(obj, pd.DataFrame):
-        return sanitize(obj.to_dict(orient="records"), seen)
-    if isinstance(obj, pd.Series):
-        return sanitize(obj.to_dict(), seen)
+    # --- numpy primitives ---
     if isinstance(obj, (np.integer, np.floating)):
         return float(obj)
 
-    # Dict
+    # --- initialise seen set ---
+    if seen is None:
+        seen = set()
+
+    # --- only CONTAINER TYPES are tracked in seen ---
+    container_types = (dict, list, tuple, pd.DataFrame, pd.Series)
+
+    if isinstance(obj, container_types):
+        oid = id(obj)
+        if oid in seen:
+            return "<circular>"
+        seen.add(oid)
+
+    # --- pandas objects ---
+    if isinstance(obj, pd.DataFrame):
+        return sanitize(obj.to_dict(orient="records"), seen)
+
+    if isinstance(obj, pd.Series):
+        return sanitize(obj.to_dict(), seen)
+
+    # --- dict ---
     if isinstance(obj, dict):
         out = {}
         for k, v in obj.items():
-            out[sanitize(k, seen)] = sanitize(v, seen)
+            key_clean = sanitize(k, seen)
+            val_clean = sanitize(v, seen)
+            out[key_clean] = val_clean
         return out
 
-    # List / tuple
+    # --- list / tuple ---
     if isinstance(obj, (list, tuple)):
-        return [sanitize(i, seen) for i in obj]
+        return [sanitize(item, seen) for item in obj]
 
-    # Fallback
+    # --- fallback ---
     return str(obj)
+
 
 
 # ─────────────────────────────────────────────
