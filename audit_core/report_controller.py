@@ -538,51 +538,7 @@ def run_report(
     # --- Tier-2 core metrics ---
     context = compute_derived_metrics(df_scope, context)
     context = evaluate_actions(context)
-    # NEW — Extended metrics
-    try:
-        context["extended_metrics"] = compute_extended_metrics(df_scope, context)
-        debug(context, f"[T2] Extended metrics computed → {list(context['extended_metrics'].keys())}")
-    except Exception as e:
-        debug(context, f"[T2] Extended metrics failed → {e}")
-        context["extended_metrics"] = {}
 
-    # NEW — Adaptation metrics
-    try:
-        from tier2_extended_metrics import compute_adaptation_metrics
-        context["adaptation_metrics"] = compute_adaptation_metrics(df_scope, context)
-        debug(context, f"[T2] Adaptation metrics computed → {list(context['adaptation_metrics'].keys())}")
-    except Exception as e:
-        debug(context, f"[T2] Adaptation metrics failed → {e}")
-        context["adaptation_metrics"] = {}
-
-    # NEW — Trend metrics
-    try:
-        from tier2_trend_metrics import compute_trend_metrics
-        context["trend_metrics"] = compute_trend_metrics(df_scope, context)
-        debug(context, f"[T2] Trend metrics computed → {list(context['trend_metrics'].keys())}")
-    except Exception as e:
-        debug(context, f"[T2] Trend metrics failed → {e}")
-        context["trend_metrics"] = {}
-
-    # NEW — Correlation metrics
-    try:
-        from tier2_correlation_metrics import compute_correlation_metrics
-        context["correlation_metrics"] = compute_correlation_metrics(df_scope, context)
-        debug(context, f"[T2] Correlation metrics → {list(context['correlation_metrics'].keys())}")
-    except Exception as e:
-        debug(context, f"[T2] Correlation metrics failed → {e}")
-        context["correlation_metrics"] = {}
-
-    # NEW — Daily load
-    try:
-        df = df_scope.copy()
-        df["date"] = pd.to_datetime(df["start_date_local"], errors="coerce")
-        df = df.dropna(subset=["date"])
-        context["daily_load"] = df.groupby(df["date"].dt.date)["icu_training_load"].sum().to_dict()
-        debug(context, f"[T2] Daily load computed ({len(context['daily_load'])} days)")
-    except Exception as e:
-        debug(context, f"[T2] Daily load failed → {e}")
-        context["daily_load"] = {}
 
     # --- Ensure minimum required context keys for validator ---
     if "actions" not in context:

@@ -773,16 +773,11 @@ def render_report(data):
                     continue
                 minimal_ctx[k] = v
 
-        # --- Step 3: Construct final return (semantic-aware) ---
 
-        # Decide which context to return:
-        # - semantic needs FULL ctx
-        # - markdown should return minimal_ctx
-        ctx_to_return = ctx if ctx.get("output_format") == "semantic" else minimal_ctx
-
+        # --- Step 3: Construct final compact return ---
         final_output = {
             "markdown": md_text.strip(),
-            "context": ctx_to_return,
+            "context": minimal_ctx,
             "header": report.get("header", {}) if isinstance(report, dict) else {},
             "summary": report.get("summary", {}) if isinstance(report, dict) else {},
             "actions": report.get("actions", {}) if isinstance(report, dict) else {},
@@ -790,9 +785,8 @@ def render_report(data):
             "phases": report.get("phases", []) if isinstance(report, dict) else [],
         }
 
-        print(f"[FINALIZER] Return OK — len(md)={len(md_text)} | ctx_keys={len(ctx_to_return)}")
+        print(f"[FINALIZER] Markdown-only return OK — len={len(md_text)}, ctx_keys={len(minimal_ctx)}")
         return final_output
-
 
     except Exception as e:
         import traceback
