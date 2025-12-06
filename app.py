@@ -162,39 +162,35 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
 def sanitize(obj, seen=None):
     """
     Safe JSON sanitizer for semantic_graph.
-    - Prevents infinite recursion
-    - Only tracks container types (dict, list, tuple, DataFrame, Series)
-    - Leaves primitives untouched (no false <circular>)
-    - Normalises timestamps, NaN, Inf
+    Prevents recursion, handles pandas/timestamps, strips NaN/Inf,
+    and only marks circular refs for container types.
     """
     import math
     import pandas as pd
     import numpy as np
     from datetime import datetime, date
 
-    # --- primitives → RETURN IMMEDIATELY (never added to seen) ---
+    # ---------- PRIMITIVES ----------
     if isinstance(obj, (str, int, float, bool)) or obj is None:
-        # Handle NaN / Inf
         if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
             return None
         return obj
 
-    # --- datetime / Timestamp ---
+    # ---------- DATETIME ----------
     if isinstance(obj, (datetime, date, pd.Timestamp)):
         try:
             return obj.isoformat()
         except:
             return str(obj)
 
-    # --- numpy primitives ---
+    # ---------- NUMPY ----------
     if isinstance(obj, (np.integer, np.floating)):
         return float(obj)
 
-    # --- initialise seen set ---
+    # ---------- INIT SEEN ----------
     if seen is None:
         seen = set()
 
-    # --- only CONTAINER TYPES are tracked in seen ---
     container_types = (dict, list, tuple, pd.DataFrame, pd.Series)
 
     if isinstance(obj, container_types):
@@ -203,28 +199,26 @@ def sanitize(obj, seen=None):
             return "<circular>"
         seen.add(oid)
 
-    # --- pandas objects ---
+    # ---------- PANDAS ----------
     if isinstance(obj, pd.DataFrame):
         return sanitize(obj.to_dict(orient="records"), seen)
 
     if isinstance(obj, pd.Series):
         return sanitize(obj.to_dict(), seen)
 
-    # --- dict ---
+    # ---------- DICT ----------
     if isinstance(obj, dict):
-        out = {}
+        cleaned = {}
         for k, v in obj.items():
-            key_clean = sanitize(k, seen)
-            val_clean = sanitize(v, seen)
-            out[key_clean] = val_clean
-        return out
+            ck = sanitize(k, seen)
+            cv = sanitize(v, seen)
+            cleaned[ck] = cv
+        return cleaned
 
-    # --- list / tuple ---
+    # ---------- LIST / TUPLE ----------
     if isinstance(obj, (list, tuple)):
-        return [sanitize(item, seen) for item in obj]
+        return [sanitize(i, seen) for i in obj]
 
-    # --- fallback ---
-    return str(obj)
 
 
 
