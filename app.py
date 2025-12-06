@@ -153,10 +153,7 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
     
     # Generate the semantic graph
     semantic_graph = build_semantic_json(context)
-    
-    # After generating semantic graph
-    debug(context, f"[DEBUG] Generated semantic graph: {semantic_graph}")
-    
+
     return report, compliance, logs, context, semantic_graph, markdown
 
 
