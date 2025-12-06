@@ -80,12 +80,12 @@ def semantic_block_for_metric(name, value, context):
         "related_metrics": profile_desc.get("criteria", {}),
     }
 
-    # -------------------------
-    # Computes derived coaching insights based on semantic graph content.
-    # These do not change training metrics—only describe them intelligently.
-    # -------------------------
+# -------------------------
+# Computes derived coaching insights based on semantic graph content.
+# These do not change training metrics—only describe them intelligently.
+# -------------------------
 
-    def build_insights(semantic):
+def build_insights(semantic):
 
     insights = {}
 
@@ -202,7 +202,9 @@ def semantic_block_for_metric(name, value, context):
 
     return insights
 
-
+# ---------------------------------------------------------
+# MAIN BUILDER
+# ---------------------------------------------------------
 def build_semantic_json(context):
     """
     Build the FULL semantic coaching graph used by ChatGPT, using matching sources to render_unified_report.
@@ -308,10 +310,6 @@ def build_semantic_json(context):
         # 9. Wellness summary
         # -------------------------------
         "wellness": context.get("wellness_summary", {}),
-        # -------------------------------
-        # 10. Insights
-        # -------------------------------
-        semantic["insights"] = build_insights(semantic)
     }
 
     # -------------------------------
@@ -338,6 +336,11 @@ def build_semantic_json(context):
     for k in secondary_keys:
         if k in context:
             semantic["metrics"][k] = semantic_block_for_metric(k, context.get(k), context)
+
+    # -------------------------------
+    # 10. Insights
+    # -------------------------------
+    semantic["insights"] = build_insights(semantic)
 
     # Return the semantic graph as a dictionary directly, not as a JSON string
     return semantic
