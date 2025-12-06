@@ -3,79 +3,11 @@
 # Base URL: https://intervalsicugptcoach-public-production.up.railway.app
 # ─────────────────────────────────────────────
 
-# ROOT
-# https://intervalsicugptcoach-public-production.up.railway.app/
-
-# ENV DEBUG
-# https://intervalsicugptcoach-public-production.up.railway.app/debug_env
-
-# MAIN RUN ENDPOINTS (markdown, json, semantic)
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=weekly&format=markdown
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=weekly&format=semantic
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=weekly&format=json
-
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=season&format=markdown
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=season&format=semantic
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=season&format=json
-
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=wellness&format=markdown
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=wellness&format=semantic
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=wellness&format=json
-
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=summary&format=markdown
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=summary&format=semantic
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=summary&format=json
-
-# DEBUG ENDPOINT (logs + markdown OR semantic)
-# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=weekly&format=markdown
-# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=weekly&format=semantic
-
-# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=season&format=markdown
-# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=season&format=semantic
-
-# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=wellness&format=markdown
-# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=wellness&format=semantic
-
-# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=summary&format=markdown
-# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=summary&format=semantic
-
-# SEMANTIC REPORT (semantic JSON)
-# https://intervalsicugptcoach-public-production.up.railway.app/semantic?range=weekly
-# https://intervalsicugptcoach-public-production.up.railway.app/semantic?range=season
-# https://intervalsicugptcoach-public-production.up.railway.app/semantic?range=wellness
-# https://intervalsicugptcoach-public-production.up.railway.app/semantic?range=summary
-
-# METRICS ONLY
-# https://intervalsicugptcoach-public-production.up.railway.app/metrics?range=weekly
-# https://intervalsicugptcoach-public-production.up.railway.app/metrics?range=season
-# https://intervalsicugptcoach-public-production.up.railway.app/metrics?range=wellness
-# https://intervalsicugptcoach-public-production.up.railway.app/metrics?range=summary
-
-# PHASES (Periodisation)
-# https://intervalsicugptcoach-public-production.up.railway.app/phases?range=weekly
-# https://intervalsicugptcoach-public-production.up.railway.app/phases?range=season
-# https://intervalsicugptcoach-public-production.up.railway.app/phases?range=wellness
-# https://intervalsicugptcoach-public-production.up.railway.app/phases?range=summary
-
-# COMPARE (trend/delta metrics)
-# https://intervalsicugptcoach-public-production.up.railway.app/compare?range=weekly
-# https://intervalsicugptcoach-public-production.up.railway.app/compare?range=season
-# https://intervalsicugptcoach-public-production.up.railway.app/compare?range=wellness
-# https://intervalsicugptcoach-public-production.up.railway.app/compare?range=summary
-
-# INSIGHTS (AI-ready coaching flags)
-# https://intervalsicugptcoach-public-production.up.railway.app/insights?range=weekly
-# https://intervalsicugptcoach-public-production.up.railway.app/insights?range=season
-# https://intervalsicugptcoach-public-production.up.railway.app/insights?range=wellness
-# https://intervalsicugptcoach-public-production.up.railway.app/insights?range=summary
-
-
 from fastapi import FastAPI, Query, Request
 from fastapi.responses import JSONResponse
-import io
-import os
-import sys
+import io, os, sys
 from contextlib import redirect_stdout
+
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "audit_core"))
 
@@ -86,9 +18,7 @@ from audit_core.utils import debug
 # Semantic JSON builder
 from semantic_json_builder import build_semantic_json
 
-# ─────────────────────────────────────────────
-# 🧩 Startup debug — verify environment variable
-# ─────────────────────────────────────────────
+
 print("[DEBUG] Starting IntervalsICU GPTCoach API")
 icuoauth = os.getenv("ICU_OAUTH")
 if icuoauth:
@@ -96,43 +26,96 @@ if icuoauth:
 else:
     print("[WARN] ICU_OAUTH ENV VAR missing — Intervals.icu calls may fail!")
 
-# ─────────────────────────────────────────────
-# 🚀 FastAPI app init
-# ─────────────────────────────────────────────
 app = FastAPI(title="IntervalsICU GPTCoach API", version="1.3")
 
+
 # ─────────────────────────────────────────────
-# 🔧 Helper: run full audit and build semantic graph
+#  SANITISER — FINAL VERSION
 # ─────────────────────────────────────────────
-def log_to_markdown(content: str, filename="debug_report.md"):
-    """Log debug content to a markdown file."""
-    with open(filename, "a") as f:
-        f.write(f"### {content}\n")
-        f.write("\n")
+def sanitize(obj, seen=None):
+    """
+    Safe JSON sanitation:
+    - prevents recursion
+    - handles pandas, numpy, timestamps
+    - normalises NaN/Inf
+    - ONLY marks circular on containers
+    """
+    import math
+    import pandas as pd
+    import numpy as np
+    from datetime import datetime, date
+
+    # ----- PRIMITIVES -----
+    if isinstance(obj, (str, int, float, bool)) or obj is None:
+        if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
+            return None
+        return obj
+
+    # ----- DATETIME -----
+    if isinstance(obj, (datetime, date, pd.Timestamp)):
+        try:
+            return obj.isoformat()
+        except:
+            return str(obj)
+
+    # ----- NUMPY -----
+    if isinstance(obj, (np.integer, np.floating)):
+        return float(obj)
+
+    # ----- INIT SEEN -----
+    if seen is None:
+        seen = set()
+
+    container_types = (dict, list, tuple, pd.DataFrame, pd.Series)
+
+    if isinstance(obj, container_types):
+        oid = id(obj)
+        if oid in seen:
+            return "<circular>"
+        seen.add(oid)
+
+    # ----- PANDAS -----
+    if isinstance(obj, pd.DataFrame):
+        return sanitize(obj.to_dict(orient="records"), seen)
+
+    if isinstance(obj, pd.Series):
+        return sanitize(obj.to_dict(), seen)
+
+    # ----- DICT -----
+    if isinstance(obj, dict):
+        out = {}
+        for k, v in obj.items():
+            out[sanitize(k, seen)] = sanitize(v, seen)
+        return out
+
+    # ----- LIST / TUPLE -----
+    if isinstance(obj, (list, tuple)):
+        return [sanitize(i, seen) for i in obj]
+
+    # ----- FALLBACK -----
+    return str(obj)
+
+
 # ─────────────────────────────────────────────
-# 0️⃣ RUN FULL AUDIT
+#  RUN FULL AUDIT — CLEAN VERSION
 # ─────────────────────────────────────────────
 def _run_full_audit(range: str, output_format="markdown", prefetch_context=None):
-    """
-    Centralised execution for all endpoints:
-      - Runs Tier-0 → Tier-1 → Tier-2 → Renderer
-      - Returns (report, compliance, logs, context, semantic_graph)
-    """
-    os.environ["REPORT_TYPE"] = range.lower()
 
+    os.environ["REPORT_TYPE"] = range.lower()
     buffer = io.StringIO()
+
     with redirect_stdout(buffer):
         if prefetch_context:
             report, compliance = run_report(
                 reportType=range,
-                output_format=output_format,     # ← CRITICAL
+                output_format=output_format,
                 include_coaching_metrics=True,
                 prefetch_context=prefetch_context
             )
         else:
             report, compliance = run_report(
                 reportType=range,
-                output_format=output_format,     # ← CRITICAL
+                output_format=output_format,
                 include_coaching_metrics=True
             )
 
@@ -145,101 +128,31 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
         context = {}
         markdown = str(report)
 
-    # --------------------------------------------------------------
-    # 🚫 DO NOT LOG CONTEXT — prevents circular references
-    # -------------------------------------------------------------
-
-    # Generate the semantic graph ONLY (input = clean context)
+    # Build semantic JSON (NO context logging)
     semantic_graph = build_semantic_json(context)
 
-    # Return clean objects — no debug injection
     return report, compliance, logs, context, semantic_graph, markdown
 
 
 # ─────────────────────────────────────────────
-# 0️⃣ SANITISE JSON
+# ENDPOINTS
 # ─────────────────────────────────────────────
-def sanitize(obj, seen=None):
-    """
-    Safe JSON sanitizer for semantic_graph.
-    Prevents recursion, handles pandas/timestamps, strips NaN/Inf,
-    and only marks circular refs for container types.
-    """
-    import math
-    import pandas as pd
-    import numpy as np
-    from datetime import datetime, date
 
-    # ---------- PRIMITIVES ----------
-    if isinstance(obj, (str, int, float, bool)) or obj is None:
-        if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
-            return None
-        return obj
-
-    # ---------- DATETIME ----------
-    if isinstance(obj, (datetime, date, pd.Timestamp)):
-        try:
-            return obj.isoformat()
-        except:
-            return str(obj)
-
-    # ---------- NUMPY ----------
-    if isinstance(obj, (np.integer, np.floating)):
-        return float(obj)
-
-    # ---------- INIT SEEN ----------
-    if seen is None:
-        seen = set()
-
-    container_types = (dict, list, tuple, pd.DataFrame, pd.Series)
-
-    if isinstance(obj, container_types):
-        oid = id(obj)
-        if oid in seen:
-            return "<circular>"
-        seen.add(oid)
-
-    # ---------- PANDAS ----------
-    if isinstance(obj, pd.DataFrame):
-        return sanitize(obj.to_dict(orient="records"), seen)
-
-    if isinstance(obj, pd.Series):
-        return sanitize(obj.to_dict(), seen)
-
-    # ---------- DICT ----------
-    if isinstance(obj, dict):
-        cleaned = {}
-        for k, v in obj.items():
-            ck = sanitize(k, seen)
-            cv = sanitize(v, seen)
-            cleaned[ck] = cv
-        return cleaned
-
-    # ---------- LIST / TUPLE ----------
-    if isinstance(obj, (list, tuple)):
-        return [sanitize(i, seen) for i in obj]
-
-
-
-
-# ─────────────────────────────────────────────
-# 0️⃣ Root check
-# ─────────────────────────────────────────────
 @app.get("/")
 def root():
     return {"message": "IntervalsICU GPTCoach API running 🚴"}
 
-# ─────────────────────────────────────────────
-# 1️⃣ GET /run — markdown or semantic JSON
-# ─────────────────────────────────────────────
+
+# -----------------------------
+# GET /run (markdown / semantic)
+# -----------------------------
 @app.get("/run")
 def run_audit(
     range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"]),
-    format: str = Query("markdown", enum=["markdown", "json", "semantic"])
+    format: str = Query("markdown", enum=["markdown", "json", "semantic"]),
 ):
     try:
-        # Run full audit with format passed to renderer
-        report, compliance, logs, context, semantic_graph, markdown = _run_full_audit(
+        report, compliance, logs, context, sg, markdown = _run_full_audit(
             range=range,
             output_format=format.lower()
         )
@@ -249,42 +162,37 @@ def run_audit(
                 "status": "ok",
                 "report_type": range,
                 "output_format": "semantic_json",
-                "semantic_graph": sanitize(semantic_graph),
+                "semantic_graph": sanitize(sg),
                 "compliance": compliance,
                 "logs": logs[:20000]
             })
 
-        # --- MARKDOWN OUTPUT ---
         return JSONResponse(content={
             "status": "ok",
             "report_type": range,
             "output_format": "markdown",
-            "compliance": compliance,
             "markdown": markdown,
+            "compliance": compliance,
             "logs": logs[:20000]
         })
 
     except Exception as e:
         import traceback
-        return JSONResponse(
-            status_code=500,
-            content={
-                "error": str(e),
-                "trace": traceback.format_exc()
-            }
-        )
+        return JSONResponse(status_code=500, content={
+            "error": str(e),
+            "trace": traceback.format_exc()
+        })
 
 
-# ─────────────────────────────────────────────
-# 2️⃣ POST /run — Cloudflare Worker mode
-# ─────────────────────────────────────────────
+# -----------------------------
+# POST /run (Worker mode)
+# -----------------------------
 @app.post("/run")
 async def run_audit_with_data(request: Request):
-    """Accept pre-fetched data to bypass OAuth fetching."""
     try:
         data = await request.json()
         range = data.get("range", "weekly")
-        output_format = data.get("format", "markdown").lower()
+        fmt = data.get("format", "markdown").lower()
 
         prefetch_context = {
             "activities_light": data.get("activities_light", []),
@@ -293,173 +201,128 @@ async def run_audit_with_data(request: Request):
             "athlete": data.get("athlete", {}),
         }
 
-        report, compliance, logs, context, semantic_graph, markdown = _run_full_audit(
-                range=range,
-                output_format=output_format.lower(),
-                prefetch_context=prefetch_context
-            )
-
-
-        if output_format in ("json", "semantic"):
-            return JSONResponse(content={
-                "status": "ok", "report_type": range, "output_format": "semantic_json", 
-                "semantic_graph": sanitize(semantic_graph), "compliance": compliance, "logs": logs[:20000]
-            })
-
-        return JSONResponse(content={
-            "status": "ok", "report_type": range, "output_format": "markdown", 
-            "compliance": compliance, "markdown": markdown, "logs": logs[:20000]
-        })
-
-    except Exception as e:
-        debug({}, f"❌ Error in run_audit_with_data: {e}")
-        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
-
-# ─────────────────────────────────────────────
-# 3️⃣ /debug_env
-# ─────────────────────────────────────────────
-@app.get("/debug_env")
-def debug_env():
-    token = os.getenv("ICU_OAUTH")
-    return {
-        "ICU_OAUTH_loaded": bool(token),
-        "ICU_OAUTH_prefix": token[:10] if token else None,
-        "PORT": os.getenv("PORT"),
-    }
-# ─────────────────────────────────────────────
-# 3️⃣ /debug
-# ─────────────────────────────────────────────
-@app.get("/debug")
-def debug_endpoint(range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"]),
-                    format: str = Query("markdown", enum=["markdown", "json", "semantic"])):
-    """
-    This endpoint triggers the debugging function, captures logs, and returns them as a unified report.
-    Supports both markdown and semantic JSON formats.
-    """
-    try:
-        # Trigger the full audit and debugging process
-        report, compliance, logs, context, semantic_graph, markdown = _run_full_audit(range=range)
-
-        # Ensure the context is populated with debug logs
-        debug_logs = "\n".join(context.get('debug_trace', ['No debug logs found.']))
-
-        # Combine debug trace and markdown or semantic response
-        full_report = (
-            f"# 🧾 {range.title()} Audit Report\n\n"
-            "## Execution Logs\n\n"
-            f"```\n{logs[:20000]}\n```\n\n"  # Limiting logs size to avoid excessive data
-            "## Debug Trace\n\n"
-            f"```\n{debug_logs}\n```\n\n"
-            "## Rendered Markdown Report\n\n"
-            f"{markdown.strip()}\n" if markdown.strip() else ""
+        r, compliance, logs, context, sg, markdown = _run_full_audit(
+            range=range,
+            output_format=fmt,
+            prefetch_context=prefetch_context
         )
 
-        # Handle the requested format (JSON or Markdown)
-        if format == "json" or format == "semantic":
-            # Return semantic graph in JSON format along with logs and debug trace
+        if fmt in ("json", "semantic"):
             return JSONResponse(content={
                 "status": "ok",
-                "message": "Debug triggered and semantic logs captured.",
-                "context": context,
-                "semantic_graph": semantic_graph,  # Return the semantic graph as JSON
-                "logs": logs[:20000],
-                "debug_logs": debug_logs,
-                "semantic_report": full_report  # Include the full report for JSON format
+                "report_type": range,
+                "output_format": "semantic_json",
+                "semantic_graph": sanitize(sg),
+                "compliance": compliance,
+                "logs": logs[:20000]
             })
 
-        # If the format is markdown, return the Markdown response
         return JSONResponse(content={
             "status": "ok",
-            "message": "Debug triggered and logs captured.",
-            "context": context,
-            "semantic_graph": semantic_graph,
-            "logs": logs[:20000],
-            "debug_logs": debug_logs,
-            "markdown_report": full_report  # Return the combined Markdown report
+            "report_type": range,
+            "output_format": "markdown",
+            "markdown": markdown,
+            "compliance": compliance,
+            "logs": logs[:20000]
         })
 
     except Exception as e:
-        # Log any error that occurs
-        debug({}, f"❌ Error in /debug endpoint: {str(e)}")
-        return JSONResponse(
-            status_code=500,
-            content={"status": "error", "message": str(e)},
-        )
+        return JSONResponse(status_code=500, content={
+            "status": "error",
+            "message": str(e)
+        })
 
-# ─────────────────────────────────────────────
-# 🅰️ /semantic — dedicated semantic endpoint
-# ─────────────────────────────────────────────
+
+# -----------------------------
+# /semantic — full semantic JSON
+# -----------------------------
 @app.get("/semantic")
 def get_semantic(range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"])):
-    _, compliance, logs, _, semantic_graph, _ = _run_full_audit(range=range)
+    _, compliance, logs, _, sg, _ = _run_full_audit(range=range)
     return JSONResponse(content={
-        "status": "ok", "report_type": range, "output_format": "semantic_json", 
-        "semantic_graph": semantic_graph, "compliance": compliance, "logs": logs[:20000]
+        "status": "ok",
+        "report_type": range,
+        "output_format": "semantic_json",
+        "semantic_graph": sanitize(sg),
+        "compliance": compliance,
+        "logs": logs[:20000]
     })
 
-# ─────────────────────────────────────────────
-# 🅱️ /metrics — semantic metric graph only
-# ─────────────────────────────────────────────
+
+# -----------------------------
+# /metrics — sanitized subgraph
+# -----------------------------
 @app.get("/metrics")
 def get_metrics(range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"])):
-    _, compliance, logs, _, semantic_graph, _ = _run_full_audit(range=range)
+    _, compliance, logs, _, sg, _ = _run_full_audit(range=range)
     return JSONResponse(content={
-        "status": "ok", "report_type": range, "metrics": semantic_graph.get("metrics", {}),
-        "extended_metrics": semantic_graph.get("extended_metrics", {}),
-        "trend_metrics": semantic_graph.get("trend_metrics", {}),
-        "adaptation_metrics": semantic_graph.get("adaptation_metrics", {}),
-        "correlation_metrics": semantic_graph.get("correlation_metrics", {}),
-        "compliance": compliance, "logs": logs[:20000]
+        "status": "ok",
+        "report_type": range,
+        "metrics": sanitize(sg.get("metrics", {})),
+        "extended_metrics": sanitize(sg.get("extended_metrics", {})),
+        "trend_metrics": sanitize(sg.get("trend_metrics", {})),
+        "adaptation_metrics": sanitize(sg.get("adaptation_metrics", {})),
+        "correlation_metrics": sanitize(sg.get("correlation_metrics", {})),
+        "compliance": compliance,
+        "logs": logs[:20000]
     })
 
-# ─────────────────────────────────────────────
-# 🅲️ /phases — periodisation / phase info
-# ─────────────────────────────────────────────
+
+# -----------------------------
+# /phases — sanitized
+# -----------------------------
 @app.get("/phases")
 def get_phases(range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"])):
-    _, compliance, logs, _, semantic_graph, _ = _run_full_audit(range=range)
+    _, compliance, logs, _, sg, _ = _run_full_audit(range=range)
     return JSONResponse(content={
-        "status": "ok", "report_type": range, "phases": semantic_graph.get("phases", []),
-        "actions": semantic_graph.get("actions", []), "compliance": compliance, "logs": logs[:20000]
+        "status": "ok",
+        "report_type": range,
+        "phases": sanitize(sg.get("phases", [])),
+        "actions": sanitize(sg.get("actions", [])),
+        "compliance": compliance,
+        "logs": logs[:20000]
     })
 
-# ─────────────────────────────────────────────
-# 🅳️ /compare — expose Tier-2 trend/delta metrics
-# (week vs prior baselines, as already computed by Tier-2)
-# ─────────────────────────────────────────────
+
+# -----------------------------
+# /compare — sanitized
+# -----------------------------
 @app.get("/compare")
 def compare_periods(range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"])):
-    _, compliance, logs, _, semantic_graph, _ = _run_full_audit(range=range)
-
-    trend_metrics = semantic_graph.get("trend_metrics", {})
-    metrics = semantic_graph.get("metrics", {})
-
+    _, compliance, logs, _, sg, _ = _run_full_audit(range=range)
     return JSONResponse(content={
-        "status": "ok", "report_type": range, "trend_metrics": trend_metrics,
-        "core_metrics": metrics, "compliance": compliance, "logs": logs[:20000]
+        "status": "ok",
+        "report_type": range,
+        "trend_metrics": sanitize(sg.get("trend_metrics", {})),
+        "core_metrics": sanitize(sg.get("metrics", {})),
+        "compliance": compliance,
+        "logs": logs[:20000]
     })
 
-# ─────────────────────────────────────────────
-# 🅴️ /insights — AI-ready highlights (flags / hotspots)
-# ─────────────────────────────────────────────
+
+# -----------------------------
+# /insights — sanitized
+# -----------------------------
 @app.get("/insights")
 def get_insights(range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"])):
-    _, compliance, logs, _, semantic_graph, _ = _run_full_audit(range=range)
+    _, compliance, logs, _, sg, _ = _run_full_audit(range=range)
 
-    metrics = semantic_graph.get("metrics", {})
-    actions = semantic_graph.get("actions", [])
-    phases = semantic_graph.get("phases", [])
+    metrics = sg.get("metrics", {})
+    actions = sg.get("actions", [])
+    phases = sg.get("phases", [])
 
     red, amber, green = [], [], []
+
     for name, m in metrics.items():
         cls = m.get("classification")
-        entry = {
+        entry = sanitize({
             "name": name,
             "value": m.get("value"),
             "framework": m.get("framework"),
             "interpretation": m.get("interpretation"),
-            "coaching_implication": m.get("coaching_implication"),
-        }
+            "coaching_implication": m.get("coaching_implication")
+        })
+
         if cls == "red":
             red.append(entry)
         elif cls == "amber":
@@ -468,7 +331,16 @@ def get_insights(range: str = Query("weekly", enum=["weekly", "season", "wellnes
             green.append(entry)
 
     return JSONResponse(content={
-        "status": "ok", "report_type": range,
-        "insights": {"critical": red, "watch": amber, "positive": green, "actions": actions, "phases": phases},
-        "compliance": compliance, "logs": logs[:20000]
+        "status": "ok",
+        "report_type": range,
+        "insights": {
+            "critical": red,
+            "watch": amber,
+            "positive": green,
+            "actions": sanitize(actions),
+            "phases": sanitize(phases),
+        },
+        "compliance": compliance,
+        "logs": logs[:20000]
     })
+
