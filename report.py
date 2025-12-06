@@ -126,7 +126,8 @@ def generate_full_report(report_type="weekly", output_path=None, output_format="
 
 
 def sanitize_for_json(obj, seen=None):
-    """Recursively convert any Python object into JSON-serialisable form."""
+    """Convert report output into JSON-safe form."""
+    import math
     import pandas as pd
     import numpy as np
     from datetime import datetime, date
@@ -136,55 +137,49 @@ def sanitize_for_json(obj, seen=None):
 
     oid = id(obj)
     if oid in seen:
-        return "<circular>"
+        return None
     seen.add(oid)
 
-    # Primitive types
-    if isinstance(obj, (str, int, float, bool)) or obj is None:
+    # primitives
+    if obj is None or isinstance(obj, (str, int, bool)):
         return obj
 
-    # Pandas Timestamp
-    if isinstance(obj, (pd.Timestamp,)):
+    # floats
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+
+    # Timestamps
+    if isinstance(obj, (pd.Timestamp, datetime, date)):
         return obj.isoformat()
 
-    # datetime & date
-    if isinstance(obj, (datetime, date)):
-        return obj.isoformat()
+    # numpy
+    if isinstance(obj, (np.floating, np.integer)):
+        v = float(obj)
+        if math.isnan(v) or math.isinf(v):
+            return None
+        return v
 
-    # numpy scalars
-    if isinstance(obj, (np.integer,)):
-        return int(obj)
-    if isinstance(obj, (np.floating,)):
-        return float(obj)
-
-    # pandas DataFrame
+    # DataFrame
     if isinstance(obj, pd.DataFrame):
-        return obj.to_dict(orient="records")
+        return obj.to_dict("records")
 
-    # pandas Series
+    # Series
     if isinstance(obj, pd.Series):
-        return sanitize_for_json(obj.to_dict(), seen)
+        return obj.to_dict()
 
     # dict
     if isinstance(obj, dict):
-        clean = {}
-        for k, v in obj.items():
-            clean[sanitize_for_json(k, seen)] = sanitize_for_json(v, seen)
-        return clean
+        return {sanitize_for_json(k, seen): sanitize_for_json(v, seen) for k, v in obj.items()}
 
-    # list or tuple
+    # list/tuple
     if isinstance(obj, (list, tuple)):
-        return [sanitize_for_json(i, seen) for i in obj]
+        return [sanitize_for_json(v, seen) for v in obj]
 
-    # objects with .isoformat()
-    if hasattr(obj, "isoformat"):
-        try:
-            return obj.isoformat()
-        except:
-            pass
-
-    # Fallback
+    # fallback
     return str(obj)
+
 
 
 

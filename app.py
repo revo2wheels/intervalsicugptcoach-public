@@ -164,45 +164,55 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
 # 0️⃣ SANITISE JSON
 # ─────────────────────────────────────────────
 def sanitize_json(obj, seen=None):
-    """Prevent circular references and convert non-serializable objects."""
+    """Fully safe JSON sanitizer for semantic graphs.
+       - Removes circular refs
+       - Converts Timestamp → isoformat
+       - Converts NaN / inf → None
+       - Handles lists/dicts recursively
+    """
+    import math
+    import pandas as pd
+    import numpy as np
+
     if seen is None:
         seen = set()
 
     oid = id(obj)
     if oid in seen:
-        return "<circular>"
+        return None
     seen.add(oid)
 
-    # primitives
-    if obj is None or isinstance(obj, (str, int, float, bool)):
+    # Primitives
+    if obj is None or isinstance(obj, (str, int, bool)):
         return obj
 
-    # datetime-like
-    if hasattr(obj, "isoformat"):
+    # Floats
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return None
+        return obj
+
+    # pandas Timestamp
+    if isinstance(obj, (pd.Timestamp, )):
+        return obj.isoformat()
+
+    # datetime
+    if hasattr(obj, "isoformat") and not isinstance(obj, (dict, list, tuple)):
         try:
             return obj.isoformat()
         except:
             return str(obj)
 
-    # pandas / numpy
-    try:
-        import pandas as pd
-        import numpy as np
-        if isinstance(obj, pd.DataFrame):
-            return obj.to_dict(orient="records")
-        if isinstance(obj, pd.Series):
-            return obj.to_dict()
-        if isinstance(obj, (np.integer, np.floating)):
-            return float(obj)
-    except:
-        pass
+    # numpy types
+    if isinstance(obj, (np.floating, np.integer)):
+        v = float(obj)
+        if math.isnan(v) or math.isinf(v):
+            return None
+        return v
 
     # dict
     if isinstance(obj, dict):
-        out = {}
-        for k, v in obj.items():
-            out[str(k)] = sanitize_json(v, seen)
-        return out
+        return {sanitize_json(k, seen): sanitize_json(v, seen) for k, v in obj.items()}
 
     # list / tuple
     if isinstance(obj, (list, tuple)):
@@ -210,6 +220,7 @@ def sanitize_json(obj, seen=None):
 
     # fallback
     return str(obj)
+
 
 
 # ─────────────────────────────────────────────
