@@ -112,75 +112,59 @@ def generate_full_report(report_type="weekly", output_path=None, output_format="
         )
 
     elif output_format == "semantic":
-        # 1. Sanitize (remove circular refs, DataFrames, timestamps)
-        safe_output = sanitize_for_json(full_output)
-
-        # 2. Convert to JSON text
-        json_text = json.dumps(safe_output, indent=2)
-
-        # 3. Write to disk
-        Path(output_path).write_text(json_text, encoding="utf-8")
+        Path(output_path).write_text(
+            json.dumps(full_output, indent=2, default=str),
+            encoding="utf-8"
+        )
 
 
     print(f"✅ {report_type.title()} report written to {Path(output_path).resolve()}")
 
 
 def sanitize_for_json(obj, seen=None):
-    """Convert report output into JSON-safe form."""
-    import math
-    import pandas as pd
-    import numpy as np
-    from datetime import datetime, date
-
+    """Remove circular references & non-serializable objects."""
     if seen is None:
         seen = set()
 
-    oid = id(obj)
-    if oid in seen:
-        return None
-    seen.add(oid)
+    obj_id = id(obj)
+    if obj_id in seen:
+        return "<circular>"
+    seen.add(obj_id)
 
-    # primitives
-    if obj is None or isinstance(obj, (str, int, bool)):
+    # Primitives
+    if isinstance(obj, (str, int, float, bool)) or obj is None:
         return obj
 
-    # floats
-    if isinstance(obj, float):
-        if math.isnan(obj) or math.isinf(obj):
-            return None
-        return obj
+    # Datetime-like
+    if hasattr(obj, "isoformat"):
+        try:
+            return obj.isoformat()
+        except:
+            return str(obj)
 
-    # Timestamps
-    if isinstance(obj, (pd.Timestamp, datetime, date)):
-        return obj.isoformat()
-
-    # numpy
-    if isinstance(obj, (np.floating, np.integer)):
-        v = float(obj)
-        if math.isnan(v) or math.isinf(v):
-            return None
-        return v
-
-    # DataFrame
-    if isinstance(obj, pd.DataFrame):
-        return obj.to_dict("records")
-
-    # Series
-    if isinstance(obj, pd.Series):
-        return obj.to_dict()
+    # pandas / numpy
+    try:
+        import pandas as pd
+        import numpy as np
+        if isinstance(obj, pd.DataFrame):
+            return obj.to_dict(orient="records")
+        if isinstance(obj, pd.Series):
+            return obj.to_dict()
+        if isinstance(obj, (np.integer, np.floating)):
+            return float(obj)
+    except:
+        pass
 
     # dict
     if isinstance(obj, dict):
         return {sanitize_for_json(k, seen): sanitize_for_json(v, seen) for k, v in obj.items()}
 
-    # list/tuple
+    # list / tuple
     if isinstance(obj, (list, tuple)):
-        return [sanitize_for_json(v, seen) for v in obj]
+        return [sanitize_for_json(i, seen) for i in obj]
 
     # fallback
     return str(obj)
-
-
 
 
 

@@ -163,65 +163,30 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
 # ─────────────────────────────────────────────
 # 0️⃣ SANITISE JSON
 # ─────────────────────────────────────────────
-def sanitize_json(obj, seen=None):
-    """Fully safe JSON sanitizer for semantic graphs.
-       - Removes circular refs
-       - Converts Timestamp → isoformat
-       - Converts NaN / inf → None
-       - Handles lists/dicts recursively
-    """
+def sanitize_json(obj):
     import math
     import pandas as pd
-    import numpy as np
+    from datetime import datetime, date
 
-    if seen is None:
-        seen = set()
+    # Dict
+    if isinstance(obj, dict):
+        return {k: sanitize_json(v) for k, v in obj.items()}
 
-    oid = id(obj)
-    if oid in seen:
-        return None
-    seen.add(oid)
+    # List
+    if isinstance(obj, list):
+        return [sanitize_json(v) for v in obj]
 
-    # Primitives
-    if obj is None or isinstance(obj, (str, int, bool)):
-        return obj
+    # Pandas Timestamp / datetime / date
+    if isinstance(obj, (pd.Timestamp, datetime, date)):
+        return obj.isoformat()
 
-    # Floats
+    # Floats: NaN / Inf → None
     if isinstance(obj, float):
         if math.isnan(obj) or math.isinf(obj):
             return None
         return obj
 
-    # pandas Timestamp
-    if isinstance(obj, (pd.Timestamp, )):
-        return obj.isoformat()
-
-    # datetime
-    if hasattr(obj, "isoformat") and not isinstance(obj, (dict, list, tuple)):
-        try:
-            return obj.isoformat()
-        except:
-            return str(obj)
-
-    # numpy types
-    if isinstance(obj, (np.floating, np.integer)):
-        v = float(obj)
-        if math.isnan(v) or math.isinf(v):
-            return None
-        return v
-
-    # dict
-    if isinstance(obj, dict):
-        return {sanitize_json(k, seen): sanitize_json(v, seen) for k, v in obj.items()}
-
-    # list / tuple
-    if isinstance(obj, (list, tuple)):
-        return [sanitize_json(v, seen) for v in obj]
-
-    # fallback
-    return str(obj)
-
-
+    return obj
 
 # ─────────────────────────────────────────────
 # 0️⃣ Root check
