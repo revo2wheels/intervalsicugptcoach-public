@@ -145,12 +145,12 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
         context = {}
         markdown = str(report)
 
-# -------------------------------------------------------------
-# 🚫 DO NOT LOG CONTEXT — prevents circular references
-# -------------------------------------------------------------
+    # -------------------------------------------------------------
+    # 🚫 DO NOT LOG CONTEXT — prevents circular references
+    # -------------------------------------------------------------
 
-# Generate the semantic graph ONLY (input = clean context)
-semantic_graph = build_semantic_json(context)
+    # Generate the semantic graph ONLY (input = clean context)
+    semantic_graph = build_semantic_json(context)
 
 # Return clean objects — no debug injection
 return report, compliance, logs, context, semantic_graph, markdown
