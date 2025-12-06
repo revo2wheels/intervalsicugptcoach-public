@@ -145,16 +145,16 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
         context = {}
         markdown = str(report)
 
-    # Log context to markdown file
-    log_to_markdown(f"Context before generating semantic graph: {context}")
+# -------------------------------------------------------------
+# 🚫 DO NOT LOG CONTEXT — prevents circular references
+# -------------------------------------------------------------
 
-    # Log the context before generating semantic graph
-    debug(context, f"[DEBUG] Full context before generating semantic graph: {context}")
-    
-    # Generate the semantic graph
-    semantic_graph = build_semantic_json(context)
+# Generate the semantic graph ONLY (input = clean context)
+semantic_graph = build_semantic_json(context)
 
-    return report, compliance, logs, context, semantic_graph, markdown
+# Return clean objects — no debug injection
+return report, compliance, logs, context, semantic_graph, markdown
+
 
 
 # ─────────────────────────────────────────────
