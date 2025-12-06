@@ -261,7 +261,7 @@ async def run_audit_with_data(request: Request):
 
         report, compliance, logs, context, semantic_graph, markdown = _run_full_audit(
                 range=range,
-                output_format=format.lower(),
+                output_format=output_format.lower(),
                 prefetch_context=prefetch_context
             )
 

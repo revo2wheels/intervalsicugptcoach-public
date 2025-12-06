@@ -1,0 +1,368 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Intervals.icu Proxy (Cloudflare Worker)",
+    "version": "4.0.0",
+    "description": "Cloudflare Worker proxy to Intervals.icu for activities, wellness, and athlete profile. OAuth is handled inside the worker; ChatGPT only sees this proxy."
+  },
+  "servers": [
+    {
+      "url": "https://intervalsicugptcoach.clive-a5a.workers.dev"
+    }
+  ],
+
+  "x-render-source": {
+    "required": "audit_tier2",
+    "allow_fallback": false,
+    "description": "Renderer must consume validated Tier-2 audit payload only (via the separate Railway renderer Action)."
+  },
+
+  "paths": {
+    "/athlete/0/activities_t0light": {
+      "get": {
+        "summary": "List activities (Tier-0 lightweight, 90-day reduced fieldset)",
+        "operationId": "listActivitiesLight",
+        "parameters": [
+          {
+            "name": "oldest",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Oldest activity date (YYYY-MM-DD)."
+          },
+          {
+            "name": "newest",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Newest activity date (YYYY-MM-DD)."
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Comma-separated field list for lightweight mode."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lightweight 90-day dataset.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Activity" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/athlete/0/activities": {
+      "get": {
+        "summary": "List activities (Tier-0/Tier-1 full, detailed fields)",
+        "operationId": "listActivitiesFull",
+        "parameters": [
+          {
+            "name": "oldest",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Oldest activity date (YYYY-MM-DD)."
+          },
+          {
+            "name": "newest",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Newest activity date (YYYY-MM-DD)."
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": { "type": "integer" },
+            "description": "Page index for pagination."
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "schema": { "type": "integer" },
+            "description": "Number of items per page."
+          },
+          {
+            "name": "chunk",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Optional chunk identifier for staged fetches."
+          },
+          {
+            "name": "auto",
+            "in": "query",
+            "schema": { "type": "boolean" },
+            "description": "If true, automatically fetch an appropriate range without pagination."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Full activity dataset for the requested window.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Activity" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/athlete/0/wellness": {
+      "get": {
+        "summary": "List wellness data (JSON)",
+        "operationId": "listWellness",
+        "parameters": [
+          {
+            "name": "oldest",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Oldest wellness date (YYYY-MM-DD)."
+          },
+          {
+            "name": "newest",
+            "in": "query",
+            "schema": { "type": "string", "format": "date" },
+            "description": "Newest wellness date (YYYY-MM-DD)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Wellness dataset for the requested range.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Wellness" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/athlete/0/profile": {
+      "get": {
+        "summary": "Fetch athlete profile",
+        "operationId": "getAthleteProfile",
+        "responses": {
+          "200": {
+            "description": "Athlete profile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "athlete": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "string" },
+                        "name": { "type": "string" },
+                        "timezone": { "type": ["string", "null"] },
+                        "country": { "type": ["string", "null"] },
+                        "sex": { "type": ["string", "null"] }
+                      },
+                      "required": ["id", "name"]
+                    }
+                  },
+                  "required": ["athlete"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+
+  "components": {
+    "schemas": {
+      "Activity": {
+        "type": "object",
+        "required": ["id", "start_date_local", "type", "distance", "moving_time"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": ["string", "null"] },
+          "type": { "type": "string" },
+          "sport_type": { "type": ["string", "null"] },
+          "start_date_local": { "type": "string", "format": "date-time" },
+          "distance": { "type": "number" },
+          "moving_time": { "type": "number" },
+          "icu_training_load": { "type": ["number", "null"] },
+          "average_heartrate": { "type": ["number", "null"] },
+          "IF": { "type": ["number", "null"] },
+          "VO2MaxGarmin": { "type": ["number", "null"] }
+        }
+      },
+      "Wellness": {
+        "type": "object",
+        "required": ["date"],
+        "properties": {
+          "date": { "type": "string", "format": "date" },
+          "ctl": { "type": ["number", "null"] },
+          "atl": { "type": ["number", "null"] },
+          "form": { "type": ["number", "null"] },
+          "vo2max": { "type": ["number", "null"] },
+          "restingHr": { "type": ["number", "null"] },
+          "fatigue": { "type": ["number", "null"] }
+        }
+      }
+    }
+  },
+
+  "security": [],
+
+  "x-intents": [
+    {
+      "trigger": [
+        "weekly report",
+        "run weekly report",
+        "generate weekly report",
+        "full weekly report",
+        "run 7 day report",
+        "run 7-day report"
+      ],
+      "action": "run_weekly_report_fetch",
+      "x-intent": {
+        "x-intent": "weekly",
+        "enforce_gate": true,
+        "allow_partial": false,
+        "description": "Fetches 90d light, 42d wellness, and 7d full activities for a weekly URF report."
+      }
+    },
+    {
+      "trigger": [
+        "season report",
+        "run season report",
+        "generate season report",
+        "run 90 day report",
+        "training block report",
+        "90 day report",
+        "block report"
+      ],
+      "action": "run_season_report_fetch",
+      "x-intent": {
+        "x-intent": "season",
+        "enforce_gate": true,
+        "allow_partial": false,
+        "description": "Fetches 90d light, 90d full, and 42d wellness datasets for a season (90d) URF report."
+      }
+    },
+    {
+      "trigger": [
+        "wellness report",
+        "run wellness report",
+        "generate wellness report",
+        "run 42 day wellness",
+        "run 42-day wellness"
+      ],
+      "action": "run_wellness_report_fetch",
+      "x-intent": {
+        "x-intent": "wellness",
+        "enforce_gate": true,
+        "allow_partial": false,
+        "description": "Fetches 42d wellness data only, suitable for wellness-focused URF report."
+      }
+    },
+    {
+      "trigger": [
+        "summary report",
+        "run summary report",
+        "high level summary",
+        "overview report"
+      ],
+      "action": "run_summary_report_fetch",
+      "x-intent": {
+        "x-intent": "summary",
+        "enforce_gate": true,
+        "allow_partial": false,
+        "description": "Fetches minimal data (primarily profile) to support an overview/summary URF report."
+      }
+    }
+  ],
+
+  "x-actions": {
+    "run_weekly_report_fetch": {
+      "type": "chain",
+      "steps": [
+        "getAthleteProfile",
+        "listActivitiesLight90",
+        "listWellness42",
+        "listActivitiesFull7"
+      ]
+    },
+    "run_season_report_fetch": {
+      "type": "chain",
+      "steps": [
+        "getAthleteProfile",
+        "listActivitiesLight90",
+        "listWellness42",
+        "listActivitiesFull90"
+      ]
+    },
+    "run_wellness_report_fetch": {
+      "type": "chain",
+      "steps": [
+        "listWellness42"
+      ]
+    },
+    "run_summary_report_fetch": {
+      "type": "chain",
+      "steps": [
+        "getAthleteProfile"
+      ]
+    },
+
+    "getAthleteProfile": {
+      "type": "operation",
+      "operationId": "getAthleteProfile"
+    },
+
+    "listActivitiesLight90": {
+      "type": "operation",
+      "operationId": "listActivitiesLight",
+      "args": {
+        "oldest": "${today.minusDays(90)}",
+        "newest": "${today}"
+      }
+    },
+
+    "listWellness42": {
+      "type": "operation",
+      "operationId": "listWellness",
+      "args": {
+        "oldest": "${today.minusDays(42)}",
+        "newest": "${today}"
+      }
+    },
+
+    "listActivitiesFull7": {
+      "type": "operation",
+      "operationId": "listActivitiesFull",
+      "args": {
+        "oldest": "${today.minusDays(7)}",
+        "newest": "${today}",
+        "auto": true
+      }
+    },
+
+    "listActivitiesFull90": {
+      "type": "operation",
+      "operationId": "listActivitiesFull",
+      "args": {
+        "oldest": "${today.minusDays(90)}",
+        "newest": "${today}",
+        "auto": true
+      }
+    }
+  }
+}
