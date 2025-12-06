@@ -163,30 +163,64 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
 # ─────────────────────────────────────────────
 # 0️⃣ SANITISE JSON
 # ─────────────────────────────────────────────
-def sanitize_json(obj):
+def sanitize(obj, seen=None):
+    """
+    Universal JSON sanitizer for Railway endpoint.
+    Prevents recursion, handles Timestamps, NaN, Inf,
+    pandas objects, dicts, lists, tuples.
+    """
     import math
     import pandas as pd
+    import numpy as np
     from datetime import datetime, date
 
-    # Dict
-    if isinstance(obj, dict):
-        return {k: sanitize_json(v) for k, v in obj.items()}
+    if seen is None:
+        seen = set()
 
-    # List
-    if isinstance(obj, list):
-        return [sanitize_json(v) for v in obj]
+    oid = id(obj)
+    if oid in seen:
+        return "<circular>"
+    seen.add(oid)
 
-    # Pandas Timestamp / datetime / date
-    if isinstance(obj, (pd.Timestamp, datetime, date)):
-        return obj.isoformat()
+    # Primitives
+    if isinstance(obj, (str, int, bool)) or obj is None:
+        return obj
 
-    # Floats: NaN / Inf → None
+    # Float and special values
     if isinstance(obj, float):
         if math.isnan(obj) or math.isinf(obj):
             return None
         return obj
 
-    return obj
+    # Datetime / pandas Timestamp
+    if isinstance(obj, (datetime, date, pd.Timestamp)):
+        try:
+            return obj.isoformat()
+        except:
+            return str(obj)
+
+    # pandas objects
+    if isinstance(obj, pd.DataFrame):
+        return sanitize(obj.to_dict(orient="records"), seen)
+    if isinstance(obj, pd.Series):
+        return sanitize(obj.to_dict(), seen)
+    if isinstance(obj, (np.integer, np.floating)):
+        return float(obj)
+
+    # Dict
+    if isinstance(obj, dict):
+        out = {}
+        for k, v in obj.items():
+            out[sanitize(k, seen)] = sanitize(v, seen)
+        return out
+
+    # List / tuple
+    if isinstance(obj, (list, tuple)):
+        return [sanitize(i, seen) for i in obj]
+
+    # Fallback
+    return str(obj)
+
 
 # ─────────────────────────────────────────────
 # 0️⃣ Root check
@@ -215,7 +249,7 @@ def run_audit(
                 "status": "ok",
                 "report_type": range,
                 "output_format": "semantic_json",
-                "semantic_graph": sanitize_json(semantic_graph),
+                "semantic_graph": sanitize(semantic_graph),
                 "compliance": compliance,
                 "logs": logs[:20000]
             })
@@ -269,7 +303,7 @@ async def run_audit_with_data(request: Request):
         if output_format in ("json", "semantic"):
             return JSONResponse(content={
                 "status": "ok", "report_type": range, "output_format": "semantic_json", 
-                "semantic_graph": sanitize_json(semantic_graph), "compliance": compliance, "logs": logs[:20000]
+                "semantic_graph": sanitize(semantic_graph), "compliance": compliance, "logs": logs[:20000]
             })
 
         return JSONResponse(content={
