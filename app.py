@@ -1,3 +1,75 @@
+# ─────────────────────────────────────────────
+# 📡 Railway Deployment API Endpoints
+# Base URL: https://intervalsicugptcoach-public-production.up.railway.app
+# ─────────────────────────────────────────────
+
+# ROOT
+# https://intervalsicugptcoach-public-production.up.railway.app/
+
+# ENV DEBUG
+# https://intervalsicugptcoach-public-production.up.railway.app/debug_env
+
+# MAIN RUN ENDPOINTS (markdown, json, semantic)
+# https://intervalsicugptcoach-public-production.up.railway.app/run?range=weekly&format=markdown
+# https://intervalsicugptcoach-public-production.up.railway.app/run?range=weekly&format=semantic
+# https://intervalsicugptcoach-public-production.up.railway.app/run?range=weekly&format=json
+
+# https://intervalsicugptcoach-public-production.up.railway.app/run?range=season&format=markdown
+# https://intervalsicugptcoach-public-production.up.railway.app/run?range=season&format=semantic
+# https://intervalsicugptcoach-public-production.up.railway.app/run?range=season&format=json
+
+# https://intervalsicugptcoach-public-production.up.railway.app/run?range=wellness&format=markdown
+# https://intervalsicugptcoach-public-production.up.railway.app/run?range=wellness&format=semantic
+# https://intervalsicugptcoach-public-production.up.railway.app/run?range=wellness&format=json
+
+# https://intervalsicugptcoach-public-production.up.railway.app/run?range=summary&format=markdown
+# https://intervalsicugptcoach-public-production.up.railway.app/run?range=summary&format=semantic
+# https://intervalsicugptcoach-public-production.up.railway.app/run?range=summary&format=json
+
+# DEBUG ENDPOINT (logs + markdown OR semantic)
+# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=weekly&format=markdown
+# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=weekly&format=semantic
+
+# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=season&format=markdown
+# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=season&format=semantic
+
+# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=wellness&format=markdown
+# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=wellness&format=semantic
+
+# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=summary&format=markdown
+# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=summary&format=semantic
+
+# SEMANTIC REPORT (semantic JSON)
+# https://intervalsicugptcoach-public-production.up.railway.app/semantic?range=weekly
+# https://intervalsicugptcoach-public-production.up.railway.app/semantic?range=season
+# https://intervalsicugptcoach-public-production.up.railway.app/semantic?range=wellness
+# https://intervalsicugptcoach-public-production.up.railway.app/semantic?range=summary
+
+# METRICS ONLY
+# https://intervalsicugptcoach-public-production.up.railway.app/metrics?range=weekly
+# https://intervalsicugptcoach-public-production.up.railway.app/metrics?range=season
+# https://intervalsicugptcoach-public-production.up.railway.app/metrics?range=wellness
+# https://intervalsicugptcoach-public-production.up.railway.app/metrics?range=summary
+
+# PHASES (Periodisation)
+# https://intervalsicugptcoach-public-production.up.railway.app/phases?range=weekly
+# https://intervalsicugptcoach-public-production.up.railway.app/phases?range=season
+# https://intervalsicugptcoach-public-production.up.railway.app/phases?range=wellness
+# https://intervalsicugptcoach-public-production.up.railway.app/phases?range=summary
+
+# COMPARE (trend/delta metrics)
+# https://intervalsicugptcoach-public-production.up.railway.app/compare?range=weekly
+# https://intervalsicugptcoach-public-production.up.railway.app/compare?range=season
+# https://intervalsicugptcoach-public-production.up.railway.app/compare?range=wellness
+# https://intervalsicugptcoach-public-production.up.railway.app/compare?range=summary
+
+# INSIGHTS (AI-ready coaching flags)
+# https://intervalsicugptcoach-public-production.up.railway.app/insights?range=weekly
+# https://intervalsicugptcoach-public-production.up.railway.app/insights?range=season
+# https://intervalsicugptcoach-public-production.up.railway.app/insights?range=wellness
+# https://intervalsicugptcoach-public-production.up.railway.app/insights?range=summary
+
+
 from fastapi import FastAPI, Query, Request
 from fastapi.responses import JSONResponse
 import io
