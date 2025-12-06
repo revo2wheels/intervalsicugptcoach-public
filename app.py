@@ -168,19 +168,48 @@ def root():
 # 1️⃣ GET /run — markdown or semantic JSON
 # ─────────────────────────────────────────────
 @app.get("/run")
-def run_audit(range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"]), format: str = Query("markdown", enum=["markdown", "json", "semantic"])):
-    report, compliance, logs, context, semantic_graph, markdown = _run_full_audit(range=range, output_format=format)
+def run_audit(
+    range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"]),
+    format: str = Query("markdown", enum=["markdown", "json", "semantic"])
+):
+    try:
+        # Run full audit with format passed to renderer
+        report, compliance, logs, context, semantic_graph, markdown = _run_full_audit(
+            range=range,
+            output_format=format.lower()
+        )
 
-    if format.lower() in ("json", "semantic"):
+        # --- SEMANTIC / JSON OUTPUT ---
+        if format.lower() in ("json", "semantic"):
+            return JSONResponse(content={
+                "status": "ok",
+                "report_type": range,
+                "output_format": "semantic_json",
+                "semantic_graph": semantic_graph,
+                "compliance": compliance,
+                "logs": logs[:20000]
+            })
+
+        # --- MARKDOWN OUTPUT ---
         return JSONResponse(content={
-            "status": "ok", "report_type": range, "output_format": "semantic_json", 
-            "semantic_graph": semantic_graph, "compliance": compliance, "logs": logs[:20000]
+            "status": "ok",
+            "report_type": range,
+            "output_format": "markdown",
+            "compliance": compliance,
+            "markdown": markdown,
+            "logs": logs[:20000]
         })
 
-    return JSONResponse(content={
-        "status": "ok", "report_type": range, "output_format": "markdown", 
-        "compliance": compliance, "markdown": markdown, "logs": logs[:20000]
-    })
+    except Exception as e:
+        import traceback
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": str(e),
+                "trace": traceback.format_exc()
+            }
+        )
+
 
 # ─────────────────────────────────────────────
 # 2️⃣ POST /run — Cloudflare Worker mode
