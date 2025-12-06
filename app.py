@@ -110,7 +110,7 @@ def log_to_markdown(content: str, filename="debug_report.md"):
         f.write(f"### {content}\n")
         f.write("\n")
 
-def _run_full_audit(range: str, prefetch_context: dict | None = None):
+def _run_full_audit(range: str, output_format="markdown", prefetch_context=None):
     """
     Centralised execution for all endpoints:
       - Runs Tier-0 → Tier-1 → Tier-2 → Renderer
@@ -121,9 +121,18 @@ def _run_full_audit(range: str, prefetch_context: dict | None = None):
     buffer = io.StringIO()
     with redirect_stdout(buffer):
         if prefetch_context:
-            report, compliance = run_report(reportType=range, include_coaching_metrics=True, prefetch_context=prefetch_context)
+            report, compliance = run_report(
+                reportType=range,
+                output_format=output_format,     # ← CRITICAL
+                include_coaching_metrics=True,
+                prefetch_context=prefetch_context
+            )
         else:
-            report, compliance = run_report(reportType=range, include_coaching_metrics=True)
+            report, compliance = run_report(
+                reportType=range,
+                output_format=output_format,     # ← CRITICAL
+                include_coaching_metrics=True
+            )
 
     logs = buffer.getvalue()
 
@@ -160,7 +169,7 @@ def root():
 # ─────────────────────────────────────────────
 @app.get("/run")
 def run_audit(range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"]), format: str = Query("markdown", enum=["markdown", "json", "semantic"])):
-    report, compliance, logs, context, semantic_graph, markdown = _run_full_audit(range=range)
+    report, compliance, logs, context, semantic_graph, markdown = _run_full_audit(range=range, output_format=format)
 
     if format.lower() in ("json", "semantic"):
         return JSONResponse(content={
@@ -191,7 +200,12 @@ async def run_audit_with_data(request: Request):
             "athlete": data.get("athlete", {}),
         }
 
-        report, compliance, logs, context, semantic_graph, markdown = _run_full_audit(range=range, prefetch_context=prefetch_context)
+        report, compliance, logs, context, semantic_graph, markdown = _run_full_audit(
+                range=range,
+                output_format=output_format,     # ← CRITICAL
+                prefetch_context=prefetch_context
+            )
+
 
         if output_format in ("json", "semantic"):
             return JSONResponse(content={
