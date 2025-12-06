@@ -145,7 +145,7 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
         context = {}
         markdown = str(report)
 
-    # -------------------------------------------------------------
+    # --------------------------------------------------------------
     # 🚫 DO NOT LOG CONTEXT — prevents circular references
     # -------------------------------------------------------------
 
