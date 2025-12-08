@@ -1,36 +1,63 @@
-"""
-Tier-2 Extended Metrics (v16.14-integrated)
-Bridges derived_metrics with higher-order coaching, trend, and correlation layers.
-Builds on Tier-2 Step 3 (Derived Metrics Calculation).
-"""
-from audit_core.utils import debug
-from audit_core.tier2_derived_metrics import compute_derived_metrics
-from coaching_profile import COACH_PROFILE, get_profile_metrics
-from coaching_heuristics import HEURISTICS, derive_trends, derive_correlations
-from coaching_cheat_sheet import CHEAT_SHEET, summarize_load_block
+def compute_extended_metrics(context):
+    """
+    Tier-3 Extended Metrics for URF v5.1
+    ------------------------------------
+    MUST use df_light (90-day dataset), not df_events (7-day),
+    otherwise adaptation / trends / correlations all collapse to {}.
 
+    Produces:
+      • CTL / ATL / TSB
+      • Adaptation metrics
+      • Trend metrics
+      • Correlation metrics
+    """
 
-def compute_extended_metrics(df_daily, context):
-    """Integrate derived metrics with Tier-3 knowledge modules."""
+    # ---------------------------------------------------------
+    # 1️⃣ SOURCE DATA: must use df_light (long horizon)
+    # ---------------------------------------------------------
+    df_light = context.get("df_light")
+    if df_light is None or isinstance(df_light, list):
+        try:
+            df_light = pd.DataFrame(df_light)
+        except Exception:
+            df_light = pd.DataFrame()
 
-    # Step 1 — Core derived metrics (Tier-2)
-    context = compute_derived_metrics(df_daily, context)
+    if df_light is None or df_light.empty:
+        debug(context, "[EXT] ERROR: df_light missing — extended metrics unavailable.")
+        context["extended_metrics"] = {}
+        return context
 
-    # Step 2 — Tier-3: Load block insights (CTL, ATL, TSB)
-    load_data = summarize_load_block(context)
+    # ---------------------------------------------------------
+    # 2️⃣ Build DAILY LOAD TABLE required for CTL/ATL
+    # ---------------------------------------------------------
+    df_daily = (
+        df_light[["start_date_local", "icu_training_load"]]
+        .rename(columns={"start_date_local": "date"})
+        .copy()
+    )
+
+    df_daily["date"] = pd.to_datetime(df_daily["date"]).dt.date
+    df_daily = df_daily.groupby("date")["icu_training_load"].sum().reset_index()
+    context["df_daily"] = df_daily
+
+    # ---------------------------------------------------------
+    # 3️⃣ LOAD METRICS: CTL / ATL / TSB
+    # ---------------------------------------------------------
+    from coaching_cheat_sheet import summarize_load_block
+    load = summarize_load_block(context)
+
     context["load_metrics"] = {
-        "CTL": {"value": load_data.get("ctl", 0), "status": "ok"},
-        "ATL": {"value": load_data.get("atl", 0), "status": "ok"},
-        "TSB": {"value": load_data.get("tsb", 0), "status": "ok"},
-        "ACWR": {"value": context.get("ACWR", 1.0), "status": "ok"},
-        "Monotony": {"value": context.get("Monotony", 1.0), "status": "ok"},
-        "Strain": {"value": context.get("Strain", 0), "status": "ok"},
-        "Polarisation": {"value": context.get("Polarisation", 0), "status": "ok"},
-        "RecoveryIndex": {"value": context.get("RecoveryIndex", 0), "status": "ok"},
+        "CTL": {"value": load.get("ctl", 0), "status": "ok"},
+        "ATL": {"value": load.get("atl", 0), "status": "ok"},
+        "TSB": {"value": load.get("tsb", 0), "status": "ok"},
     }
 
-    # Step 3 — Tier-3: Coaching profile metrics
+    # ---------------------------------------------------------
+    # 4️⃣ ADAPTATION METRICS (profile-based)
+    # ---------------------------------------------------------
+    from coaching_profile import get_profile_metrics
     profile = get_profile_metrics(context)
+
     context["adaptation_metrics"] = {
         "Efficiency Factor": profile.get("eff_factor", "—"),
         "Fatigue Resistance": profile.get("fatigue_resistance", "—"),
@@ -39,22 +66,56 @@ def compute_extended_metrics(df_daily, context):
         "Aerobic Decay": profile.get("aerobic_decay", "—"),
     }
 
-    # Step 4 — Tier-3: Trends
+    # ---------------------------------------------------------
+    # 5️⃣ TREND METRICS (42-day behaviour)
+    # ---------------------------------------------------------
+    from coaching_heuristics import derive_trends
     trend = derive_trends(context)
+
     context["trend_metrics"] = {
         "load_trend": trend.get("load_trend", "—"),
         "fitness_trend": trend.get("fitness_trend", "—"),
         "fatigue_trend": trend.get("fatigue_trend", "—"),
-        "note": trend.get("note", ""),
     }
 
-    # Step 5 — Tier-3: Correlations
+    # ---------------------------------------------------------
+    # 6️⃣ CORRELATION METRICS
+    # ---------------------------------------------------------
+    from coaching_heuristics import derive_correlations
     corr = derive_correlations(context)
+
     context["correlation_metrics"] = {
         "power_hr_correlation": corr.get("power_hr_correlation", "—"),
         "efficiency_factor_change": corr.get("efficiency_factor_change", "—"),
         "fatigue_vs_load": corr.get("fatigue_vs_load", "—"),
-        "note": corr.get("note", ""),
     }
 
+    # ---------------------------------------------------------
+    # 7️⃣ EXTENDED METRIC OUTPUT (no duplication)
+    # ---------------------------------------------------------
+    context["extended_metrics"] = {
+        # Load block
+        "CTL": context["load_metrics"]["CTL"],
+        "ATL": context["load_metrics"]["ATL"],
+        "TSB": context["load_metrics"]["TSB"],
+
+        # Adaptation
+        "EfficiencyFactor": context["adaptation_metrics"]["Efficiency Factor"],
+        "FatigueResistance": context["adaptation_metrics"]["Fatigue Resistance"],
+        "EnduranceDecay": context["adaptation_metrics"]["Endurance Decay"],
+        "Z2Stability": context["adaptation_metrics"]["Z2 Stability"],
+        "AerobicDecay": context["adaptation_metrics"]["Aerobic Decay"],
+
+        # Trends
+        "LoadTrend": context["trend_metrics"]["load_trend"],
+        "FitnessTrend": context["trend_metrics"]["fitness_trend"],
+        "FatigueTrend": context["trend_metrics"]["fatigue_trend"],
+
+        # Correlations
+        "PowerHRCorr": context["correlation_metrics"]["power_hr_correlation"],
+        "EfficiencyFactorChange": context["correlation_metrics"]["efficiency_factor_change"],
+        "FatigueVsLoad": context["correlation_metrics"]["fatigue_vs_load"],
+    }
+
+    debug(context, "[EXT] Extended metrics computed successfully (90-day horizon).")
     return context

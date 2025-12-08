@@ -5,50 +5,56 @@ semantic_json_builder.py
 Builds a FULL semantic DICT coaching graph based on the Unified Reporting
 Framework v5.1, Coaching Profile, Coaching Cheat Sheet, and all Tier-2 modules.
 
-This is the DICT ChatGPT was designed to consume — NOT raw data, NOT totals-only.
-
-It includes:
+Includes:
  - Authoritative totals
  - Derived metrics
  - Extended metrics
+ - Adaptation metrics
  - Trend metrics
  - Correlations
- - Framework metadata
- - Thresholds
- - Interpretations
- - Coaching implications
+ - Wellness (sanitised)
+ - Thresholds / interpretations / coaching links
+ - Actions
  - Phase detection
- - Actions (with reasoning)
- - Event previews (safe)
+ - Event previews (stable)
  - Daily load summaries
 """
+
 import json
 from datetime import datetime, date
-import pandas as pd  # Ensure pandas is imported for Timestamp handling
-from math import isnan  # To handle NaN values
-from coaching_cheat_sheet import CHEAT_SHEET  # :contentReference[oaicite:5]{index=5}
-from coaching_profile import COACH_PROFILE    # :contentReference[oaicite:6]{index=6}
+import pandas as pd
+from math import isnan
+from coaching_cheat_sheet import CHEAT_SHEET
+from coaching_profile import COACH_PROFILE
 from audit_core.utils import debug
 
+
+# ---------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------
+
 def handle_missing_data(value, default_value=None):
-    """Handles missing data like None or NaN."""
-    if value is None or isinstance(value, float) and isnan(value):
+    """Convert NaN or None → safe default."""
+    if value is None:
+        return default_value
+    if isinstance(value, float) and isnan(value):
         return default_value
     return value
 
-# Helper function to convert Timestamp or datetime to string
+
 def convert_to_str(value):
-    """Convert datetime, Timestamp, or date objects to ISO format string."""
-    if isinstance(value, (datetime,)):  # If the value is a datetime object
-        return value.isoformat()  # Converts to ISO 8601 string
-    elif isinstance(value, pd.Timestamp):  # Handle pandas Timestamp objects
-        return value.isoformat()  # Convert to string
-    elif isinstance(value, date):  # Handle date objects as well
-        return value.isoformat()  # Convert to string
+    """Convert datetime/Timestamp/date → ISO string."""
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, pd.Timestamp):
+        return value.isoformat()
+    if isinstance(value, date):
+        return value.isoformat()
     return value
 
+
 def semantic_block_for_metric(name, value, context):
-    """Build the semantic envelope for a single metric."""
+    """Builds semantic envelope for a single metric."""
     thresholds = CHEAT_SHEET["thresholds"].get(name, {})
     interpretation = CHEAT_SHEET["context"].get(name)
     coaching_link = CHEAT_SHEET["coaching_links"].get(name)
@@ -59,6 +65,7 @@ def semantic_block_for_metric(name, value, context):
         try:
             green = thresholds.get("green")
             amber = thresholds.get("amber")
+
             if green and green[0] <= float(value) <= green[1]:
                 classification = "green"
             elif amber and amber[0] <= float(value) <= amber[1]:
@@ -70,7 +77,7 @@ def semantic_block_for_metric(name, value, context):
 
     return {
         "name": name,
-        "value": convert_to_str(value),  # Convert np.float64 to regular float or datetime to string
+        "value": convert_to_str(value),
         "framework": profile_desc.get("framework") or "Unknown",
         "formula": profile_desc.get("formula"),
         "thresholds": thresholds,
@@ -80,112 +87,86 @@ def semantic_block_for_metric(name, value, context):
         "related_metrics": profile_desc.get("criteria", {}),
     }
 
-# -------------------------
-# Computes derived coaching insights based on semantic graph content.
-# These do not change training metrics—only describe them intelligently.
-# -------------------------
+
+# ---------------------------------------------------------
+# Insights Builder
+# ---------------------------------------------------------
 
 def build_insights(semantic):
-
     insights = {}
 
-    # -------------------------
-    # 1. Fatigue Trend Insight
-    # -------------------------
-    fatigue_trend = None
-    try:
-        atl = semantic.get("wellness", {}).get("ATL")
-        ctl = semantic.get("wellness", {}).get("CTL")
+    load = semantic.get("extended_metrics", {})
+    atl = load.get("ATL", {}).get("value")
+    ctl = load.get("CTL", {}).get("value")
 
-        if isinstance(atl, (int, float)) and isinstance(ctl, (int, float)) and ctl > 0:
-            fatigue_trend = round((atl - ctl) / ctl, 3)
-    except Exception:
-        fatigue_trend = None
+    ft = None
+    if isinstance(atl, (int, float)) and isinstance(ctl, (int, float)) and ctl > 0:
+        ft = round((atl - ctl) / ctl, 3)
 
     insights["fatigue_trend"] = {
-        "value": fatigue_trend,
+        "value": ft,
         "interpretation": (
             "Positive = accumulating fatigue, negative = recovering, near zero = stable"
-            if fatigue_trend is not None else "Insufficient data"
+            if ft is not None else "Insufficient data"
         )
     }
 
-    # -------------------------
-    # 2. Load Distribution Insight
-    # -------------------------
+    # 2 — Load distribution
     zones = semantic.get("zones", {}).get("power", {})
     z1 = zones.get("power_z1", 0)
     z2 = zones.get("power_z2", 0)
-    z3plus = sum(
-        zones.get(k, 0)
-        for k in zones
-        if k not in ("power_z1", "power_z2")
-    )
+    z3plus = sum(zones.get(k, 0) for k in zones if k not in ("power_z1", "power_z2"))
 
-    distribution_type = "unknown"
+    distribution = "unknown"
     if (z1 + z2) >= 70:
-        distribution_type = "endurance-focused"
+        distribution = "endurance-focused"
     if z3plus >= 30:
-        distribution_type = "threshold-heavy"
+        distribution = "threshold-heavy"
     if z1 >= 50 and z3plus >= 20:
-        distribution_type = "polarised"
+        distribution = "polarised"
 
     insights["load_distribution"] = {
         "zones": {
             "z1_z2": round(z1 + z2, 1),
             "z3_plus": round(z3plus, 1)
         },
-        "classification": distribution_type,
+        "classification": distribution,
         "interpretation": (
             "Distribution indicates focus on aerobic base"
-            if distribution_type == "endurance-focused"
+            if distribution == "endurance-focused"
             else "High intensity bias; increased recovery required"
-            if distribution_type == "threshold-heavy"
+            if distribution == "threshold-heavy"
             else "Strongly polarised training distribution"
-            if distribution_type == "polarised"
+            if distribution == "polarised"
             else "Cannot classify distribution"
         )
     }
 
-    # -------------------------
-    # 3. Metabolic Drift Insight
-    # -------------------------
-    drift_value = None
-    try:
-        if "events" in semantic and len(semantic["events"]) > 0:
-            # Using FOxI drift proxy: a stable FOxI suggests low metabolic drift
-            foxi = semantic.get("metrics", {}).get("FOxI", {}).get("value")
-            if isinstance(foxi, (int, float)):
-                drift_value = round((70 - foxi) / 70, 3)  # Normalisation
-    except Exception:
-        drift_value = None
+    # 3 — Metabolic drift proxy (FOxI based)
+    foxi = semantic.get("metrics", {}).get("FOxI", {}).get("value")
+    drift = None
+    if isinstance(foxi, (int, float)):
+        drift = round((70 - foxi) / 70, 3)
 
     insights["metabolic_drift"] = {
-        "value": drift_value,
+        "value": drift,
         "interpretation": (
             "Lower values indicate good aerobic durability"
-            if drift_value is not None else "Insufficient data"
+            if drift is not None else "Insufficient data"
         )
     }
 
-    # -------------------------
-    # 4. Fitness Phase Progression Insight
-    # -------------------------
+    # 4 — Fitness phase classification
+    acwr = semantic.get("metrics", {}).get("ACWR", {}).get("value")
     phase = "unknown"
-    try:
-        acwr = semantic.get("metrics", {}).get("ACWR", {}).get("value")
-        monotony = semantic.get("metrics", {}).get("Monotony", {}).get("value")
-        strain = semantic.get("metrics", {}).get("Strain", {}).get("value")
 
-        if acwr is not None:
-            if acwr < 0.8:
-                phase = "recovery/deload"
-            elif 0.8 <= acwr <= 1.3:
-                phase = "productive/loading"
-            elif acwr > 1.3:
-                phase = "overreaching"
-    except Exception:
-        pass
+    if isinstance(acwr, (int, float)):
+        if acwr < 0.8:
+            phase = "recovery/deload"
+        elif 0.8 <= acwr <= 1.3:
+            phase = "productive/loading"
+        elif acwr > 1.3:
+            phase = "overreaching"
 
     insights["fitness_phase"] = {
         "phase": phase,
@@ -202,17 +183,14 @@ def build_insights(semantic):
 
     return insights
 
+
 # ---------------------------------------------------------
 # MAIN BUILDER
 # ---------------------------------------------------------
-def build_semantic_json(context):
-    """
-    Build the FULL semantic coaching graph used by ChatGPT, using matching sources to render_unified_report.
-    """
 
-    # -------------------------------
-    # 0. Metadata
-    # -------------------------------
+def build_semantic_json(context):
+    """Build the final semantic graph."""
+
     semantic = {
         "meta": {
             "framework": "Unified Reporting Framework v5.1",
@@ -227,94 +205,118 @@ def build_semantic_json(context):
             "athlete": context.get("athlete", {}),
         },
 
-        # -------------------------------
-        # 1. Authoritative Totals (Tier-2)
-        # -------------------------------
+        # Totals
         "hours": handle_missing_data(
-            context.get("totalHours")  # ← canonical, created by render_unified_report
+            context.get("totalHours")
             or context.get("tier2_enforced_totals", {}).get("time_h")
-            or context.get("tier1_visibleTotals", {}).get("hours")
-            or context.get("eventTotals", {}).get("hours"),
-            0
+            or 0
         ),
-
         "tss": handle_missing_data(
             context.get("totalTss")
             or context.get("tier2_enforced_totals", {}).get("tss")
-            or context.get("tier1_visibleTotals", {}).get("tss")
-            or context.get("eventTotals", {}).get("tss"),
-            0
+            or 0
         ),
-
         "distance_km": handle_missing_data(
             context.get("totalDistance")
             or context.get("tier2_enforced_totals", {}).get("distance_km")
-            or context.get("tier1_visibleTotals", {}).get("distance")
-            or context.get("eventTotals", {}).get("distance"),
-            0
+            or 0
         ),
-        # -------------------------------
-        # 2. Semantic Derived Metrics
-        # -------------------------------
-        "metrics": {},
 
-        # -------------------------------
-        # 3. Extended, Adaptation, Trends, Correlations
-        # -------------------------------
+        # Metric containers
+        "metrics": {},
         "extended_metrics": context.get("extended_metrics", {}),
         "adaptation_metrics": context.get("adaptation_metrics", {}),
         "trend_metrics": context.get("trend_metrics", {}),
         "correlation_metrics": context.get("correlation_metrics", {}),
 
-        # -------------------------------
-        # 4. Zone Distribution (% only)
-        # -------------------------------
+        # Zones
         "zones": {
             "power": context.get("zone_dist_power", {}),
             "hr": context.get("zone_dist_hr", {}),
         },
 
-        # -------------------------------
-        # 5. Daily Load (TSS only)
-        # -------------------------------
+        # Daily load (df_daily optional)
         "daily_load": [
             {
-                "date": row["date"],  # These will be handled automatically
+                "date": row["date"],
                 "tss": float(row["icu_training_load"])
             }
             for _, row in getattr(context.get("df_daily"), "iterrows", lambda: [])()
         ] if context.get("df_daily") is not None else [],
 
-        # -------------------------------
-        # 6. Event Preview (safe)
-        # -------------------------------
-        "events": [
-            {
-                "start_date_local": event.get("start_date_local"),  # These will be handled automatically
-                **event
-            }
-            for event in context.get("df_event_only_preview", [])
-        ],
+        # Events — FIXED (canonical df_events)
+        "events": [],
 
-        # -------------------------------
-        # 7. Phases (Periodisation)
-        # -------------------------------
         "phases": context.get("phases", []),
-
-        # -------------------------------
-        # 8. Actions (with reasoning)
-        # -------------------------------
         "actions": context.get("actions", []),
 
-        # -------------------------------
-        # 9. Wellness summary
-        # -------------------------------
-        "wellness": context.get("wellness_summary", {}),
+        # Wellness — FIXED (NaN sanitised)
+        "wellness": {
+            k: handle_missing_data(v, None)
+            for k, v in context.get("wellness_summary", {}).items()
+        },
     }
+    # --- FORCE semantic CTL/ATL/TSB to match markdown (Tier-1 canonical load_metrics) ---
+    lm = context.get("load_metrics", {})
+    if lm:
+        semantic.setdefault("extended_metrics", {})
 
-    # -------------------------------
-    # Populate semantic metric descriptors
-    # -------------------------------
+        for key in ("CTL", "ATL", "TSB"):
+            if key in lm:
+                val = lm[key]["value"] if isinstance(lm[key], dict) else lm[key]
+                semantic["extended_metrics"][key] = {
+                    "value": val,
+                    "source": "tier1"
+                }
+
+    # ---------------------------------------------------------
+    # Inject canonical CTL/ATL/TSB from Tier-1 load_metrics
+    # Ensures semantic = markdown output exactly
+    # ---------------------------------------------------------
+    lm = context.get("load_metrics", {})
+
+    def extract_load_value(key):
+        val = lm.get(key)
+        if isinstance(val, dict):
+            return val.get("value")
+        return val
+
+    ctl = extract_load_value("CTL")
+    atl = extract_load_value("ATL")
+    tsb = extract_load_value("TSB")
+
+    # Inject into semantic wellness (same as Markdown)
+    semantic.setdefault("wellness", {})
+    semantic["wellness"]["CTL"] = ctl
+    semantic["wellness"]["ATL"] = atl
+    semantic["wellness"]["TSB"] = tsb
+
+    # Inject canonical load metrics into extended_metrics (override Tier-2)
+    semantic.setdefault("extended_metrics", {})
+    semantic["extended_metrics"]["CTL"] = {"value": ctl, "status": "ok"}
+    semantic["extended_metrics"]["ATL"] = {"value": atl, "status": "ok"}
+    semantic["extended_metrics"]["TSB"] = {"value": tsb, "status": "ok"}
+
+
+    # ---------------------------------------------------------
+    # EVENTS: canonical df_events (FIXED)
+    # ---------------------------------------------------------
+    df_events = context.get("df_events")
+    if isinstance(df_events, pd.DataFrame) and not df_events.empty:
+        semantic["events"] = [
+            {
+                "start_date_local": convert_to_str(row.get("start_date_local")),
+                "name": row.get("name"),
+                "icu_training_load": row.get("icu_training_load"),
+                "moving_time": row.get("moving_time"),
+                "distance": row.get("distance"),
+            }
+            for _, row in df_events.iterrows()
+        ]
+
+    # ---------------------------------------------------------
+    # DERIVED METRICS
+    # ---------------------------------------------------------
     derived = context.get("derived_metrics", {})
     for metric_name, info in derived.items():
         semantic["metrics"][metric_name] = {
@@ -326,21 +328,21 @@ def build_semantic_json(context):
             "related_metrics": info.get("related_metrics", {}),
         }
 
-    # -------------------------------
-    # Integrate secondary markers
-    # -------------------------------
+    # ---------------------------------------------------------
+    # SECONDARY METRICS — do NOT overwrite derived metrics (FIXED)
+    # ---------------------------------------------------------
     secondary_keys = [
         "FatOxEfficiency", "FOxI", "CUR", "GR", "MES",
         "StressTolerance", "RecoveryIndex", "ZQI", "Polarisation"
     ]
+
     for k in secondary_keys:
-        if k in context:
+        if k in context and k not in semantic["metrics"]:
             semantic["metrics"][k] = semantic_block_for_metric(k, context.get(k), context)
 
-    # -------------------------------
-    # 10. Insights
-    # -------------------------------
+    # ---------------------------------------------------------
+    # Insights (final)
+    # ---------------------------------------------------------
     semantic["insights"] = build_insights(semantic)
 
-    # Return the semantic graph as a dictionary directly, not as a JSON string
     return semantic

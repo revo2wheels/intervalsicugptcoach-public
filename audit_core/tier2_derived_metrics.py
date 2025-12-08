@@ -161,7 +161,10 @@ def compute_derived_metrics(df_events, context):
     debug(context, f"[T2] Columns available: {list(df_events.columns)}")
 
     # --- ✅ 2. Build daily load time series ---
-    df_events["start_date_local"] = pd.to_datetime(df_events["start_date_local"], errors="coerce")
+    # FIX: convert millis → proper datetime
+    df_events["start_date_local"] = pd.to_datetime(
+        df_events["start_date_local"], unit="ms", origin="unix", errors="coerce"
+    )
     df_daily = (
         df_events.groupby(df_events["start_date_local"].dt.date)["icu_training_load"]
         .sum(min_count=1)
@@ -173,6 +176,10 @@ def compute_derived_metrics(df_events, context):
 
     debug(context, f"[T2] Daily aggregated load (rows={len(df_daily)}):")
     debug(context, f"[T2] {df_daily.tail(7).to_string(index=False)}")
+
+    # FIX: store df_daily for CTL/ATL/TSB and semantic builder
+    context["df_daily"] = df_daily
+    debug(context, f"[T2] df_daily stored in context ({len(df_daily)} rows)")
 
     load_series = df_daily["icu_training_load"].fillna(0)
 

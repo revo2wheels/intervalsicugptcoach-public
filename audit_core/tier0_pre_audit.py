@@ -423,6 +423,7 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
             raise AuditHalt("❌ Tier-0 lightweight fetch returned no data")
 
         df_light = pd.DataFrame(payload)
+        context["df_light_full"] = df_light.copy()
         df_acts = df_light.copy()
         debug(context, f"[T0-LIGHT] Retrieved {len(df_light)} activities with {len(df_light.columns)} fields")
 
@@ -783,10 +784,23 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         except Exception as e:
             debug(context, f"[T0-SEASON WARN] Failed to create season snapshot: {e}")
 
-    # --- Final sync for controller ---
-    context["df_light"] = df_light
+    # ------------------------------------------------------------
+    # PRESERVE REAL 90-DAY DATASET (for extended metrics)
+    # ------------------------------------------------------------
+
+    # If we captured df_light_full earlier, use it.
+    if "df_light_full" in context and isinstance(context["df_light_full"], pd.DataFrame):
+        context["df_light"] = context["df_light_full"].copy()      # <-- 90-day dataset
+        context["activities_light"] = context["df_light_full"].copy()
+    else:
+        # Fallback: use whatever df_light is
+        context["df_light"] = df_light
+        context["activities_light"] = df_light.copy()
+
+    # Always preserve the sliced window too
     context["df_light_slice"] = df_light_slice
-    context["activities_light"] = activities_light if "activities_light" in locals() else df_light
+
+    # Full detailed 7-day dataset
     context["df_master"] = df_activities
 
     return df_activities, wellness, context, context.get("auditPartial"), context.get("auditFinal")

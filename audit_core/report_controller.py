@@ -210,27 +210,22 @@ def run_report(
     report = {}
 
     if output_format == "semantic":
-        # Generate the semantic graph
-        semantic_output = build_semantic_json(context)  # Pass context to semantic JSON builder
-
-        # Ensure the returned result is always a dictionary
-        report = {
-            "status": "ok",
-            "message": f"{reportType.title()} Semantic Report Generated",
-            "semantic_graph": semantic_output,  # Ensure semantic graph is returned
-        }
-
-        # Log the generated semantic graph for debugging
-        debug(context, f"[REPORT.PY] Generated semantic graph: {semantic_output}")
-
-        # Capture logs directly from the debug trace (context['debug_trace'])
-        log_output = "\n".join(context.get("debug_trace", []))  # Get all debug logs collected so far
-
-        # Add logs to the report
-        report["logs"] = log_output  # Include logs from the debug trace
+        # Defer semantic build until AFTER full pipeline completes.
+        context["semantic_mode"] = True   # marker for downstream render stage
 
     # --- Tier (-1): Orchestrate initial fetches and context ---
-    context = orchestrate_fetch_context(reportType)
+    # preserve any existing context BEFORE fetch
+    old_context = context.copy()
+
+    new_context = orchestrate_fetch_context(reportType)
+
+    # merge preserved keys back in
+    for k, v in old_context.items():
+        if k not in new_context:
+            new_context[k] = v
+
+    context = new_context
+
     debug(context, f"[ORCH] Context orchestrated for {reportType} → mode={context.get('render_mode')}")
 
     # --- NEW: Bind reportMode for schema-based orchestration ---
@@ -468,6 +463,58 @@ def run_report(
     debug(context, f"[T1] Running Tier-1 controller ({reportType} mode)")
     df_master, wellness, context = run_tier1_controller(df_master, wellness, context)
 
+    # ------------------------------------------------------------
+    # T1 RESTORE 
+    # ------------------------------------------------------------
+
+    # --- Ensure df_light exists and is a DataFrame ---
+    if "df_light" not in context or not isinstance(context["df_light"], pd.DataFrame):
+        
+        # 1) direct df_light_full (best source)
+        if isinstance(context.get("df_light_full"), pd.DataFrame):
+            context["df_light"] = context["df_light_full"].copy()
+            debug(context, f"[T1] Restored df_light from df_light_full ({len(context['df_light'])} rows).")
+
+        # 2) fallback to activities_light
+        elif isinstance(context.get("activities_light"), pd.DataFrame):
+            context["df_light"] = context["activities_light"].copy()
+            debug(context, f"[T1] Restored df_light from activities_light ({len(context['df_light'])} rows).")
+
+        # 3) fallback if activities_light is a list
+        elif isinstance(context.get("activities_light"), list):
+            context["df_light"] = pd.DataFrame(context["activities_light"])
+            debug(context, f"[T1] Converted activities_light list → df_light ({len(context['df_light'])} rows).")
+
+        else:
+            context["df_light"] = pd.DataFrame()
+            debug(context, "[T1] WARNING: No valid df_light source found — df_light = empty.")
+
+
+    # ------------------------------------------------------------
+    # T1 FIXES — ensure load_metrics & scalar markers exist
+    # ------------------------------------------------------------
+
+    # 1. Ensure load_metrics exists (markdown uses this)
+    if "load_metrics" not in context or not context["load_metrics"]:
+        debug(context, "[T1-FIX] load_metrics missing → injecting empty container")
+        context["load_metrics"] = {}
+
+    # 2. Rehydrate derived metric scalars needed by extended metrics
+    dm = context.get("derived_metrics", {})
+
+    for key in ("ACWR", "Monotony", "Strain", "Polarisation"):
+        if key in dm:
+            context[key] = dm[key].get("value")
+        else:
+            context[key] = None
+
+    debug(context, f"[T1-FIX] Rehydrated scalars for extended: "
+                f"ACWR={context.get('ACWR')} "
+                f"Monotony={context.get('Monotony')} "
+                f"Strain={context.get('Strain')} "
+                f"Polarisation={context.get('Polarisation')}")
+
+
     # --- Tier-2 Enforcement Chain ---
     df_master, _ = validate_event_completeness(df_master)
 
@@ -538,6 +585,22 @@ def run_report(
     # --- Tier-2 core metrics ---
     context = compute_derived_metrics(df_scope, context)
     context = evaluate_actions(context)
+
+    # --- Ensure df_light exists (must be full 90-day dataset) ---
+    if "df_light" not in context or not isinstance(context["df_light"], pd.DataFrame):
+        if "df_light_full" in context and isinstance(context["df_light_full"], pd.DataFrame):
+            context["df_light"] = context["df_light_full"].copy()
+            debug(context, f"[T1] Restored df_light from df_light_full ({len(context['df_light'])} rows).")
+        else:
+            context["df_light"] = pd.DataFrame()
+            debug(context, "[T1] WARNING: df_light missing and df_light_full unavailable.")
+
+    # --- Tier-2 EXTENDED METRICS ---
+    try:
+        context = compute_extended_metrics(context)
+        debug(context, "[T2] Extended metrics computed.")
+    except Exception as e:
+        debug(context, f"[T2-ERROR] Extended metrics failed: {e}")
 
 
     # --- Ensure minimum required context keys for validator ---
