@@ -1,0 +1,11 @@
+[11:02:10] 🧭 Generating Weekly Report
+[11:02:10] [ORCH] No Cloudflare payload → running Tier-0 orchestrate_fetch_context()
+[11:02:10] [CHAIN] Using local intervals_icu__jit_plugin bindings
+[11:02:10] [CHAIN] Starting orchestrate_fetch_context for weekly | light=90 full=7 wellness=42
+[11:02:10] [CHAIN] 90-day light activities fetched
+[11:02:10] [CHAIN] 7-day full activities fetched successfully
+[11:02:10] [CHAIN] 42-day wellness data fetched
+[11:02:10] [CHAIN] Context fetch complete for weekly | render_mode=full+metrics
+[11:02:10] [ORCH] Context ready for weekly → mode=full+metrics
+[11:02:10] 🧭 Running Weekly Report (auditFinal=True, render_mode=full+metrics)
+[11:02:10] [INTENT] Validation warning: Expecting value: line 1 column 1 (char 0)

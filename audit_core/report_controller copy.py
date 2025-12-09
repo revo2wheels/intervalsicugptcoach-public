@@ -19,7 +19,7 @@ from datetime import timedelta, datetime, date
 from audit_core.utils import debug
 from api_github_com__jit_plugin import loadAllRules
 
-from audit_core.tier0_pre_audit import run_tier0_pre_audit
+#from audit_core.tier0_pre_audit import run_tier0_pre_audit
 from audit_core.tier1_controller import run_tier1_controller
 from audit_core.tier2_event_completeness import validate_event_completeness
 from audit_core.tier2_enforce_event_only_totals import enforce_event_only_totals
@@ -34,12 +34,12 @@ from audit_core.tier2_extended_metrics import compute_extended_metrics
 from semantic_json_builder import build_semantic_json
 
 # --- optional compatibility alias ---
-from intervals_icu__jit_plugin import (
-    getAthleteProfile,
-    listActivitiesLight,
-    listActivitiesFull,
-    listWellness,
-)
+#from intervals_icu__jit_plugin import (
+#    getAthleteProfile,
+#    listActivitiesLight,
+#    listActivitiesFull,
+#    listWellness,
+#)
 
 def orchestrate_fetch_context(report_type: str = "weekly", today: date | None = None):
     """
@@ -305,155 +305,156 @@ def run_report(
         debug(context, f"[INTENT] Validation warning: {e}")
 
 
-    if not cloudflare_mode:
-        # --- Tier-0 Range Configuration (aligned with worker) ---
-        today = datetime.now().date()
 
+    # --- Tier-0 Range Configuration (aligned with worker) ---
+    today = datetime.now().date()
+
+    if reportType.lower() == "season":
+        context["range"] = {"lightDays": 90, "fullDays": 42, "wellnessDays": 90, "chunk": True}
+    else:  # weekly / wellness / summary
+        context["range"] = {"lightDays": 90, "fullDays": 7, "wellnessDays": 42, "chunk": False}
+
+    # Local variable bindings for convenience
+    light_days = context["range"]["lightDays"]
+    full_days = context["range"]["fullDays"]
+    chunk = context["range"]["chunk"]
+
+    debug(context, f"[T0] Config → light={light_days}d full={full_days}d chunk={chunk}")
+
+    # --- Tier-0 Lightweight Prefetch ---
+    context["report_type"] = reportType.lower() if isinstance(reportType, str) else "weekly"
+    try:
+        light_start = today - timedelta(days=light_days)
+        light_end = today
+        debug(context, f"[T0-LIGHT] Running lightweight prefetch → {light_start} → {light_end}")
+        # Inject into context only, not as argument
+        context["light_range"] = run_tier0_pre_audit(
+            str(light_start),
+            str(light_end),
+            context,
+        )
+    except Exception as e:
+        debug(context, f"[T0-LIGHT] Prefetch failed (non-fatal): {e}")
+
+        # --- Tier-0 Full Audit (short detailed window only) ---
+    import pandas as pd
+
+    try:
+        full_start = today - timedelta(days=full_days)
+        full_end = today
+
+        # --- Mode-aware control ---
         if reportType.lower() == "season":
-            context["range"] = {"lightDays": 90, "fullDays": 42, "wellnessDays": 90, "chunk": True}
-        else:  # weekly / wellness / summary
-            context["range"] = {"lightDays": 90, "fullDays": 7, "wellnessDays": 42, "chunk": False}
+            debug(context, "[T0-FULL] Skipping full audit for season mode (lightweight only).")
+            df_master, wellness, auditPartial, auditFinal = None, None, None, None
 
-        # Local variable bindings for convenience
-        light_days = context["range"]["lightDays"]
-        full_days = context["range"]["fullDays"]
-        chunk = context["range"]["chunk"]
+        elif reportType.lower() == "weekly":
+            debug(context, f"[T0-FULL] Running 7-day detailed audit for weekly mode → {full_start} → {full_end}")
 
-        debug(context, f"[T0] Config → light={light_days}d full={full_days}d chunk={chunk}")
+            # --- Prevent double counting between light and full datasets ---
+            if "activities_light" in context and "activities_full" in context:
+                light_df = pd.DataFrame(context["activities_light"])
+                full_df = pd.DataFrame(context["activities_full"])
+                
+                if "id" in light_df.columns and "id" in full_df.columns:
+                    # Remove any overlapping activity IDs from the light dataset
+                    light_df = light_df[~light_df["id"].isin(full_df["id"])]
+                    debug(context, f"[DEDUPE] Removed {len(context['activities_light']) - len(light_df)} duplicates from light dataset")
+                
+                # Replace cleaned dataset back
+                context["activities_light"] = light_df.to_dict(orient="records")
 
-        # --- Tier-0 Lightweight Prefetch ---
-        context["report_type"] = reportType.lower() if isinstance(reportType, str) else "weekly"
-        try:
-            light_start = today - timedelta(days=light_days)
-            light_end = today
-            debug(context, f"[T0-LIGHT] Running lightweight prefetch → {light_start} → {light_end}")
-            # Inject into context only, not as argument
-            context["light_range"] = run_tier0_pre_audit(
-                str(light_start),
-                str(light_end),
-                context,
-            )
-        except Exception as e:
-            debug(context, f"[T0-LIGHT] Prefetch failed (non-fatal): {e}")
-
-            # --- Tier-0 Full Audit (short detailed window only) ---
-        import pandas as pd
-
-        try:
-            full_start = today - timedelta(days=full_days)
-            full_end = today
-
-            # --- Mode-aware control ---
-            if reportType.lower() == "season":
-                debug(context, "[T0-FULL] Skipping full audit for season mode (lightweight only).")
+            # If prefetch already captured the window, avoid refetch
+            if context.get("prefetch_done") and context.get("snapshot_7d_json"):
+                debug(context, "[T0-FULL] Prefetch contained full window — skipping redundant re-fetch.")
                 df_master, wellness, auditPartial, auditFinal = None, None, None, None
-
-            elif reportType.lower() == "weekly":
-                debug(context, f"[T0-FULL] Running 7-day detailed audit for weekly mode → {full_start} → {full_end}")
-
-                # --- Prevent double counting between light and full datasets ---
-                if "activities_light" in context and "activities_full" in context:
-                    light_df = pd.DataFrame(context["activities_light"])
-                    full_df = pd.DataFrame(context["activities_full"])
-                    
-                    if "id" in light_df.columns and "id" in full_df.columns:
-                        # Remove any overlapping activity IDs from the light dataset
-                        light_df = light_df[~light_df["id"].isin(full_df["id"])]
-                        debug(context, f"[DEDUPE] Removed {len(context['activities_light']) - len(light_df)} duplicates from light dataset")
-                    
-                    # Replace cleaned dataset back
-                    context["activities_light"] = light_df.to_dict(orient="records")
-
-                # If prefetch already captured the window, avoid refetch
-                if context.get("prefetch_done") and context.get("snapshot_7d_json"):
-                    debug(context, "[T0-FULL] Prefetch contained full window — skipping redundant re-fetch.")
-                    df_master, wellness, auditPartial, auditFinal = None, None, None, None
-                else:
-                    df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
-                        str(full_start),
-                        str(full_end),
-                        context,
-                    )
-
             else:
-                debug(context, f"[T0-FULL] Running standard audit window → {full_start} → {full_end}")
                 df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
                     str(full_start),
                     str(full_end),
                     context,
                 )
 
-        except Exception as e:
-            debug(context, f"[T0-FULL] Full audit failed: {e}")
-            df_master, wellness, auditPartial, auditFinal = None, None, None, None
-
-        # --- Preserve existing full fetch if prefetch already covered it ---
-        if context.get("prefetch_done") and context.get("snapshot_7d_json"):
-            debug(context, "[T0-FULL] Prefetch contained full window — skipping redundant re-fetch.")
-            # Retain previously fetched detailed dataset and wellness
-            if context.get("df_master") is not None:
-                df_master = context.get("df_master")
-                debug(context, f"[T0-FULL] Reusing prefetch df_master with {len(df_master)} rows.")
-            elif "df_light_slice" in context:
-                df_master = context.get("df_light_slice")
-                debug(context, f"[T0-FULL] Fallback to df_light_slice ({len(df_master)} rows).")
-
-            # Preserve wellness if available in context
-            if (wellness is None or not isinstance(wellness, pd.DataFrame) or wellness.empty) and \
-            isinstance(context.get("wellness"), pd.DataFrame):
-                wellness = context["wellness"].copy()
-                debug(context, "[T0-FULL] Rehydrated wellness DataFrame from context.")
-
-        # --- Capture post-audit context safely for fallback use ---
-        context_pre_audit = context.copy()
-
-
-        if df_master is None or not isinstance(df_master, pd.DataFrame) or df_master.empty:
-            debug(context, "[T0-FULL] No df_master returned — using pre-audit lightweight dataset as fallback.")
-
-            # Helper function for safe extraction
-            def pick_valid_df(*candidates):
-                for df in candidates:
-                    if isinstance(df, pd.DataFrame) and not df.empty:
-                        return df
-                return None
-
-            df_master = pick_valid_df(
-                context_pre_audit.get("df_light_slice"),
-                context_pre_audit.get("df_light"),
-                context_pre_audit.get("activities_light"),
-                context.get("df_light_slice"),
-                context.get("df_light"),
-                context.get("activities_light"),
+        else:
+            debug(context, f"[T0-FULL] Running standard audit window → {full_start} → {full_end}")
+            df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
+                str(full_start),
+                str(full_end),
+                context,
             )
 
-            if df_master is None:
-                debug(context, "[T0-FULL] WARNING: no valid fallback dataset — initializing empty DataFrame.")
-                df_master = pd.DataFrame()
-            else:
-                debug(context, f"[T0-FULL] Using fallback df_master with {len(df_master)} rows and columns={list(df_master.columns)}")
+    except Exception as e:
+        debug(context, f"[T0-FULL] Full audit failed: {e}")
+        df_master, wellness, auditPartial, auditFinal = None, None, None, None
 
-            # --- Sync fallback dataset into context for Tier-1 ---
-            context["df_master"] = df_master
-            context["df_light"] = context_pre_audit.get("df_light", context.get("df_light"))
-            context["df_light_slice"] = context_pre_audit.get("df_light_slice", context.get("df_light_slice"))
-            context["snapshot_7d_json"] = context_pre_audit.get("snapshot_7d_json", context.get("snapshot_7d_json"))
+    # --- Preserve existing full fetch if prefetch already covered it ---
+    if context.get("prefetch_done") and context.get("snapshot_7d_json"):
+        debug(context, "[T0-FULL] Prefetch contained full window — skipping redundant re-fetch.")
+        # Retain previously fetched detailed dataset and wellness
+        if context.get("df_master") is not None:
+            df_master = context.get("df_master")
+            debug(context, f"[T0-FULL] Reusing prefetch df_master with {len(df_master)} rows.")
+        elif "df_light_slice" in context:
+            df_master = context.get("df_light_slice")
+            debug(context, f"[T0-FULL] Fallback to df_light_slice ({len(df_master)} rows).")
 
-            debug(context, f"[T0-FULL] Context synced for Tier-1 — df_master={len(df_master)} rows, snapshot_7d_json={'ok' if 'snapshot_7d_json' in context else 'missing'}")
+        # Preserve wellness if available in context
+        if (wellness is None or not isinstance(wellness, pd.DataFrame) or wellness.empty) and \
+        isinstance(context.get("wellness"), pd.DataFrame):
+            wellness = context["wellness"].copy()
+            debug(context, "[T0-FULL] Rehydrated wellness DataFrame from context.")
 
-        # --- Preserve wellness for Tier-1 downstream ---
-        if isinstance(wellness, pd.DataFrame) and not wellness.empty:
-            context["wellness"] = wellness.copy()
-            debug(context, f"[T0-FULL] Preserved wellness in context ({len(wellness)} rows)")
+    # --- Capture post-audit context safely for fallback use ---
+    context_pre_audit = context.copy()
 
-        # --- Mark mode in context for downstream components ---
-        context["report_type"] = reportType.lower() if isinstance(reportType, str) else "weekly"
-        context["chunk_mode"] = chunk
-        context["light_days"] = light_days
-        context["full_days"] = full_days
 
-        debug(context, f"[T0] Completed range alignment → chunk_mode={chunk}")
-        
+    if df_master is None or not isinstance(df_master, pd.DataFrame) or df_master.empty:
+        debug(context, "[T0-FULL] No df_master returned — using pre-audit lightweight dataset as fallback.")
+
+        # Helper function for safe extraction
+        def pick_valid_df(*candidates):
+            for df in candidates:
+                if isinstance(df, pd.DataFrame) and not df.empty:
+                    return df
+            return None
+
+        df_master = pick_valid_df(
+            context_pre_audit.get("df_light_slice"),
+            context_pre_audit.get("df_light"),
+            context_pre_audit.get("activities_light"),
+            context.get("df_light_slice"),
+            context.get("df_light"),
+            context.get("activities_light"),
+        )
+
+        if df_master is None:
+            debug(context, "[T0-FULL] WARNING: no valid fallback dataset — initializing empty DataFrame.")
+            df_master = pd.DataFrame()
+        else:
+            debug(context, f"[T0-FULL] Using fallback df_master with {len(df_master)} rows and columns={list(df_master.columns)}")
+
+        # --- Sync fallback dataset into context for Tier-1 ---
+        context["df_master"] = df_master
+        context["df_light"] = context_pre_audit.get("df_light", context.get("df_light"))
+        context["df_light_slice"] = context_pre_audit.get("df_light_slice", context.get("df_light_slice"))
+        context["snapshot_7d_json"] = context_pre_audit.get("snapshot_7d_json", context.get("snapshot_7d_json"))
+
+        debug(context, f"[T0-FULL] Context synced for Tier-1 — df_master={len(df_master)} rows, snapshot_7d_json={'ok' if 'snapshot_7d_json' in context else 'missing'}")
+
+    # --- Preserve wellness for Tier-1 downstream ---
+    if isinstance(wellness, pd.DataFrame) and not wellness.empty:
+        context["wellness"] = wellness.copy()
+        debug(context, f"[T0-FULL] Preserved wellness in context ({len(wellness)} rows)")
+
+    # --- Mark mode in context for downstream components ---
+    context["report_type"] = reportType.lower() if isinstance(reportType, str) else "weekly"
+    context["chunk_mode"] = chunk
+    context["light_days"] = light_days
+    context["full_days"] = full_days
+
+    debug(context, f"[T0] Completed range alignment → chunk_mode={chunk}")
+
+
 
     # --- Merge static knowledge base ---
     from athlete_profile import ATHLETE_PROFILE
