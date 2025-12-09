@@ -1,0 +1,1354 @@
+{
+  "status": "ok",
+  "message": "Season report generated",
+  "semantic_graph": {
+    "meta": {
+      "framework": "Unified Reporting Framework v5.1",
+      "version": "v16.17",
+      "generated_at": "2025-12-08T10:11:43.097695",
+      "report_type": "season",
+      "period": {
+        "start": "2025-09-09T11:11:41.535676",
+        "end": "2025-12-08T11:11:41.535742"
+      },
+      "timezone": "Europe/Zurich",
+      "athlete": {
+        "id": "1914741",
+        "name": "Clive King",
+        "profile_medium": "https://storage.googleapis.com/intervals-icu-images/profile_pics/2eaed503-0e10-40a4-b7dc-b63768fecbef",
+        "city": "Jongny",
+        "state": "Vaud",
+        "country": "Switzerland",
+        "timezone": "Europe/Zurich",
+        "sex": "M",
+        "bio": null,
+        "website": "https://www.cliveking.net",
+        "email": null
+      }
+    },
+    "hours": 159.4,
+    "tss": 7394,
+    "distance_km": 3742.1,
+    "metrics": {
+      "ACWR": {
+        "name": "ACWR",
+        "value": 0.97,
+        "classification": "unknown",
+        "interpretation": "",
+        "coaching_implication": "",
+        "related_metrics": {}
+      },
+      "Monotony": {
+        "name": "Monotony",
+        "value": 0.58,
+        "classification": "unknown",
+        "interpretation": "",
+        "coaching_implication": "",
+        "related_metrics": {}
+      },
+      "Strain": {
+        "name": "Strain",
+        "value": 16.6,
+        "classification": "unknown",
+        "interpretation": "",
+        "coaching_implication": "",
+        "related_metrics": {}
+      },
+      "FatigueTrend": {
+        "name": "FatigueTrend",
+        "value": 16.1,
+        "classification": "unknown",
+        "interpretation": "",
+        "coaching_implication": "",
+        "related_metrics": {}
+      },
+      "ZQI": {
+        "name": "ZQI",
+        "value": 0.0,
+        "classification": "unknown",
+        "interpretation": "",
+        "coaching_implication": "",
+        "related_metrics": {}
+      },
+      "FatOxEfficiency": {
+        "name": "FatOxEfficiency",
+        "value": 0.624,
+        "classification": "unknown",
+        "interpretation": "",
+        "coaching_implication": "",
+        "related_metrics": {}
+      },
+      "Polarisation": {
+        "name": "Polarisation",
+        "value": 0.9,
+        "classification": "unknown",
+        "interpretation": "",
+        "coaching_implication": "",
+        "related_metrics": {}
+      },
+      "FOxI": {
+        "name": "FOxI",
+        "value": 62.4,
+        "classification": "unknown",
+        "interpretation": "",
+        "coaching_implication": "",
+        "related_metrics": {}
+      },
+      "CUR": {
+        "name": "CUR",
+        "value": 37.6,
+        "classification": "unknown",
+        "interpretation": "",
+        "coaching_implication": "",
+        "related_metrics": {}
+      },
+      "GR": {
+        "name": "GR",
+        "value": 1.66,
+        "classification": "unknown",
+        "interpretation": "",
+        "coaching_implication": "",
+        "related_metrics": {}
+      },
+      "MES": {
+        "name": "MES",
+        "value": 22.6,
+        "classification": "unknown",
+        "interpretation": "",
+        "coaching_implication": "",
+        "related_metrics": {}
+      },
+      "RecoveryIndex": {
+        "name": "RecoveryIndex",
+        "value": 0.884,
+        "classification": "unknown",
+        "interpretation": "",
+        "coaching_implication": "",
+        "related_metrics": {}
+      },
+      "StressTolerance": {
+        "name": "StressTolerance",
+        "value": 2.0,
+        "classification": "unknown",
+        "interpretation": "",
+        "coaching_implication": "",
+        "related_metrics": {}
+      }
+    },
+    "extended_metrics": {
+      "CTL": {
+        "value": 88.31,
+        "status": "ok"
+      },
+      "ATL": {
+        "value": 80.38,
+        "status": "ok"
+      },
+      "TSB": {
+        "value": 7.94,
+        "status": "ok"
+      }
+    },
+    "adaptation_metrics": {},
+    "trend_metrics": {},
+    "correlation_metrics": {},
+    "zones": {
+      "power": {},
+      "hr": {}
+    },
+    "daily_load": [
+      {
+        "date": "2025-09-10 00:00:00",
+        "tss": 139.0
+      },
+      {
+        "date": "2025-09-11 00:00:00",
+        "tss": 105.0
+      },
+      {
+        "date": "2025-09-13 00:00:00",
+        "tss": 224.0
+      },
+      {
+        "date": "2025-09-14 00:00:00",
+        "tss": 120.0
+      },
+      {
+        "date": "2025-09-15 00:00:00",
+        "tss": 82.0
+      },
+      {
+        "date": "2025-09-17 00:00:00",
+        "tss": 129.0
+      },
+      {
+        "date": "2025-09-18 00:00:00",
+        "tss": 134.0
+      },
+      {
+        "date": "2025-09-19 00:00:00",
+        "tss": 84.0
+      },
+      {
+        "date": "2025-09-20 00:00:00",
+        "tss": 204.0
+      },
+      {
+        "date": "2025-09-21 00:00:00",
+        "tss": 125.0
+      },
+      {
+        "date": "2025-09-22 00:00:00",
+        "tss": 23.0
+      },
+      {
+        "date": "2025-09-23 00:00:00",
+        "tss": 68.0
+      },
+      {
+        "date": "2025-09-24 00:00:00",
+        "tss": 81.0
+      },
+      {
+        "date": "2025-09-25 00:00:00",
+        "tss": 15.0
+      },
+      {
+        "date": "2025-09-27 00:00:00",
+        "tss": 155.0
+      },
+      {
+        "date": "2025-09-28 00:00:00",
+        "tss": 168.0
+      },
+      {
+        "date": "2025-09-30 00:00:00",
+        "tss": 135.0
+      },
+      {
+        "date": "2025-10-01 00:00:00",
+        "tss": 83.0
+      },
+      {
+        "date": "2025-10-02 00:00:00",
+        "tss": 79.0
+      },
+      {
+        "date": "2025-10-03 00:00:00",
+        "tss": 64.0
+      },
+      {
+        "date": "2025-10-04 00:00:00",
+        "tss": 189.0
+      },
+      {
+        "date": "2025-10-05 00:00:00",
+        "tss": 87.0
+      },
+      {
+        "date": "2025-10-06 00:00:00",
+        "tss": 13.0
+      },
+      {
+        "date": "2025-10-07 00:00:00",
+        "tss": 148.0
+      },
+      {
+        "date": "2025-10-10 00:00:00",
+        "tss": 144.0
+      },
+      {
+        "date": "2025-10-11 00:00:00",
+        "tss": 81.0
+      },
+      {
+        "date": "2025-10-12 00:00:00",
+        "tss": 66.0
+      },
+      {
+        "date": "2025-10-13 00:00:00",
+        "tss": 198.0
+      },
+      {
+        "date": "2025-10-16 00:00:00",
+        "tss": 208.0
+      },
+      {
+        "date": "2025-10-17 00:00:00",
+        "tss": 80.0
+      },
+      {
+        "date": "2025-10-18 00:00:00",
+        "tss": 119.0
+      },
+      {
+        "date": "2025-10-19 00:00:00",
+        "tss": 190.0
+      },
+      {
+        "date": "2025-10-20 00:00:00",
+        "tss": 27.0
+      },
+      {
+        "date": "2025-10-21 00:00:00",
+        "tss": 43.0
+      },
+      {
+        "date": "2025-10-22 00:00:00",
+        "tss": 83.0
+      },
+      {
+        "date": "2025-10-23 00:00:00",
+        "tss": 90.0
+      },
+      {
+        "date": "2025-10-25 00:00:00",
+        "tss": 126.0
+      },
+      {
+        "date": "2025-10-26 00:00:00",
+        "tss": 151.0
+      },
+      {
+        "date": "2025-10-27 00:00:00",
+        "tss": 97.0
+      },
+      {
+        "date": "2025-10-28 00:00:00",
+        "tss": 115.0
+      },
+      {
+        "date": "2025-10-29 00:00:00",
+        "tss": 49.0
+      },
+      {
+        "date": "2025-10-30 00:00:00",
+        "tss": 106.0
+      },
+      {
+        "date": "2025-10-31 00:00:00",
+        "tss": 51.0
+      },
+      {
+        "date": "2025-11-01 00:00:00",
+        "tss": 177.0
+      },
+      {
+        "date": "2025-11-03 00:00:00",
+        "tss": 134.0
+      },
+      {
+        "date": "2025-11-04 00:00:00",
+        "tss": 62.0
+      },
+      {
+        "date": "2025-11-06 00:00:00",
+        "tss": 80.0
+      },
+      {
+        "date": "2025-11-07 00:00:00",
+        "tss": 178.0
+      },
+      {
+        "date": "2025-11-08 00:00:00",
+        "tss": 122.0
+      },
+      {
+        "date": "2025-11-09 00:00:00",
+        "tss": 146.0
+      },
+      {
+        "date": "2025-11-11 00:00:00",
+        "tss": 114.0
+      },
+      {
+        "date": "2025-11-12 00:00:00",
+        "tss": 63.0
+      },
+      {
+        "date": "2025-11-13 00:00:00",
+        "tss": 88.0
+      },
+      {
+        "date": "2025-11-15 00:00:00",
+        "tss": 206.0
+      },
+      {
+        "date": "2025-11-17 00:00:00",
+        "tss": 98.0
+      },
+      {
+        "date": "2025-11-18 00:00:00",
+        "tss": 56.0
+      },
+      {
+        "date": "2025-11-19 00:00:00",
+        "tss": 101.0
+      },
+      {
+        "date": "2025-11-20 00:00:00",
+        "tss": 135.0
+      },
+      {
+        "date": "2025-11-21 00:00:00",
+        "tss": 61.0
+      },
+      {
+        "date": "2025-11-22 00:00:00",
+        "tss": 15.0
+      },
+      {
+        "date": "2025-11-23 00:00:00",
+        "tss": 236.0
+      },
+      {
+        "date": "2025-11-25 00:00:00",
+        "tss": 88.0
+      },
+      {
+        "date": "2025-11-26 00:00:00",
+        "tss": 79.0
+      },
+      {
+        "date": "2025-11-27 00:00:00",
+        "tss": 80.0
+      },
+      {
+        "date": "2025-11-29 00:00:00",
+        "tss": 126.0
+      },
+      {
+        "date": "2025-11-30 00:00:00",
+        "tss": 71.0
+      },
+      {
+        "date": "2025-12-01 00:00:00",
+        "tss": 63.0
+      },
+      {
+        "date": "2025-12-07 00:00:00",
+        "tss": 137.0
+      }
+    ],
+    "events": [
+      {
+        "start_date_local": "2025-09-10T14:32:10",
+        "name": "Mt Pel-le Cr\u00e9t-Paccots",
+        "icu_training_load": 120,
+        "moving_time": 7539,
+        "distance": 57557.74
+      },
+      {
+        "start_date_local": "2025-09-10T17:10:12",
+        "name": "Otto walk",
+        "icu_training_load": 19,
+        "moving_time": 4027,
+        "distance": 5840.27
+      },
+      {
+        "start_date_local": "2025-09-11T18:08:33",
+        "name": "Evening Pal-Eco-Mar",
+        "icu_training_load": 77,
+        "moving_time": 4001,
+        "distance": 33955.36
+      },
+      {
+        "start_date_local": "2025-09-11T19:25:25",
+        "name": "Otto walk",
+        "icu_training_load": 28,
+        "moving_time": 3040,
+        "distance": 5125.19
+      },
+      {
+        "start_date_local": "2025-09-13T10:08:51",
+        "name": "Moudon et retour via paccots",
+        "icu_training_load": 193,
+        "moving_time": 12225,
+        "distance": 91329.37
+      },
+      {
+        "start_date_local": "2025-09-13T16:01:54",
+        "name": "Otto walk Vaurat",
+        "icu_training_load": 31,
+        "moving_time": 6798,
+        "distance": 9344.42
+      },
+      {
+        "start_date_local": "2025-09-14T11:41:09",
+        "name": "Lazy Sunday",
+        "icu_training_load": 110,
+        "moving_time": 7941,
+        "distance": 55500.62
+      },
+      {
+        "start_date_local": "2025-09-14T16:00:49",
+        "name": "Otto walk",
+        "icu_training_load": 10,
+        "moving_time": 4800,
+        "distance": 6400.0
+      },
+      {
+        "start_date_local": "2025-09-15T15:55:24",
+        "name": "Windy one \ud83d\udca8\ud83d\udca8",
+        "icu_training_load": 82,
+        "moving_time": 4835,
+        "distance": 38113.89
+      },
+      {
+        "start_date_local": "2025-09-17T12:50:34",
+        "name": "Jongny ROAD",
+        "icu_training_load": 115,
+        "moving_time": 7480,
+        "distance": 57374.71
+      },
+      {
+        "start_date_local": "2025-09-17T16:17:53",
+        "name": "Otto walk",
+        "icu_training_load": 14,
+        "moving_time": 4098,
+        "distance": 5800.81
+      },
+      {
+        "start_date_local": "2025-09-18T14:25:39",
+        "name": "Saletta workout",
+        "icu_training_load": 121,
+        "moving_time": 7251,
+        "distance": 48298.03
+      },
+      {
+        "start_date_local": "2025-09-18T17:34:48",
+        "name": "Otto evening walk",
+        "icu_training_load": 13,
+        "moving_time": 4631,
+        "distance": 6507.56
+      },
+      {
+        "start_date_local": "2025-09-19T12:20:33",
+        "name": "Jongny ROAD",
+        "icu_training_load": 84,
+        "moving_time": 5497,
+        "distance": 38005.4
+      },
+      {
+        "start_date_local": "2025-09-20T09:21:59",
+        "name": "Endurance pace",
+        "icu_training_load": 192,
+        "moving_time": 12633,
+        "distance": 86495.77
+      },
+      {
+        "start_date_local": "2025-09-20T15:43:55",
+        "name": "Otto and Moses walk",
+        "icu_training_load": 12,
+        "moving_time": 4042,
+        "distance": 5769.89
+      },
+      {
+        "start_date_local": "2025-09-21T10:04:30",
+        "name": "Au revoir Mr blue sky it's been nice having you",
+        "icu_training_load": 125,
+        "moving_time": 8854,
+        "distance": 64408.76
+      },
+      {
+        "start_date_local": "2025-09-22T19:47:13",
+        "name": "Active Rec spin.",
+        "icu_training_load": 23,
+        "moving_time": 3025,
+        "distance": 27616.98
+      },
+      {
+        "start_date_local": "2025-09-23T18:59:09",
+        "name": "2x~8m",
+        "icu_training_load": 68,
+        "moving_time": 4072,
+        "distance": 41358.1
+      },
+      {
+        "start_date_local": "2025-09-24T12:57:12",
+        "name": "Otto walk",
+        "icu_training_load": 12,
+        "moving_time": 4207,
+        "distance": 6215.97
+      },
+      {
+        "start_date_local": "2025-09-24T17:49:23",
+        "name": "Sub Threshold",
+        "icu_training_load": 69,
+        "moving_time": 4120,
+        "distance": 40979.2
+      },
+      {
+        "start_date_local": "2025-09-25T17:03:00",
+        "name": "Otto walk",
+        "icu_training_load": 15,
+        "moving_time": 4808,
+        "distance": 6508.77
+      },
+      {
+        "start_date_local": "2025-09-27T12:48:49",
+        "name": "Lunch Ride",
+        "icu_training_load": 140,
+        "moving_time": 7798,
+        "distance": 60290.57
+      },
+      {
+        "start_date_local": "2025-09-27T16:03:41",
+        "name": "Otto walk",
+        "icu_training_load": 15,
+        "moving_time": 4127,
+        "distance": 5961.49
+      },
+      {
+        "start_date_local": "2025-09-28T12:07:54",
+        "name": "Lunch Ride",
+        "icu_training_load": 149,
+        "moving_time": 8952,
+        "distance": 70261.36
+      },
+      {
+        "start_date_local": "2025-09-28T16:30:17",
+        "name": "Otto walk and scramble in places",
+        "icu_training_load": 19,
+        "moving_time": 5001,
+        "distance": 6450.99
+      },
+      {
+        "start_date_local": "2025-09-30T15:42:13",
+        "name": "Fighting the wind",
+        "icu_training_load": 111,
+        "moving_time": 5943,
+        "distance": 46933.6
+      },
+      {
+        "start_date_local": "2025-09-30T18:03:13",
+        "name": "Otto walk",
+        "icu_training_load": 24,
+        "moving_time": 3031,
+        "distance": 4653.96
+      },
+      {
+        "start_date_local": "2025-10-01T19:16:53",
+        "name": "zAlpe tempo",
+        "icu_training_load": 83,
+        "moving_time": 4802,
+        "distance": 31863.49
+      },
+      {
+        "start_date_local": "2025-10-02T18:22:34",
+        "name": "Zwift - Triple Flat Loops in Watopia",
+        "icu_training_load": 3,
+        "moving_time": 347,
+        "distance": 3477.44
+      },
+      {
+        "start_date_local": "2025-10-02T18:29:56",
+        "name": "Zwift - Masters Race",
+        "icu_training_load": 76,
+        "moving_time": 3637,
+        "distance": 41743.23
+      },
+      {
+        "start_date_local": "2025-10-03T17:59:52",
+        "name": "pacer group ladder until if felt right",
+        "icu_training_load": 49,
+        "moving_time": 4035,
+        "distance": 43518.85
+      },
+      {
+        "start_date_local": "2025-10-03T19:14:17",
+        "name": "Otto walk \ud83c\udf14",
+        "icu_training_load": 15,
+        "moving_time": 2889,
+        "distance": 4676.02
+      },
+      {
+        "start_date_local": "2025-10-04T09:29:48",
+        "name": "Paccots and P\u00e8lerin",
+        "icu_training_load": 171,
+        "moving_time": 9076,
+        "distance": 63662.17
+      },
+      {
+        "start_date_local": "2025-10-04T13:50:08",
+        "name": "Otto walk after \ud83d\udeb2 and \u2702\ufe0f\ud83c\udf3f and just before \ud83c\udf27\ufe0f\ud83c\udf2a\ufe0f",
+        "icu_training_load": 18,
+        "moving_time": 3996,
+        "distance": 5978.05
+      },
+      {
+        "start_date_local": "2025-10-05T15:25:46",
+        "name": "Not ready for leggings yet \ud83d\ude1c",
+        "icu_training_load": 87,
+        "moving_time": 4357,
+        "distance": 33476.8
+      },
+      {
+        "start_date_local": "2025-10-06T16:38:18",
+        "name": "Otto walk",
+        "icu_training_load": 13,
+        "moving_time": 4480,
+        "distance": 6591.25
+      },
+      {
+        "start_date_local": "2025-10-07T12:27:26",
+        "name": "Lunch base pace ride",
+        "icu_training_load": 128,
+        "moving_time": 9060,
+        "distance": 64645.5
+      },
+      {
+        "start_date_local": "2025-10-07T17:00:57",
+        "name": "Otto walk",
+        "icu_training_load": 20,
+        "moving_time": 6606,
+        "distance": 9069.88
+      },
+      {
+        "start_date_local": "2025-10-10T11:04:55",
+        "name": "Sea Wynd! \ud83c\udf2c\ufe0f\ud83c\udf2c\ufe0fGravel Ride w/Madz",
+        "icu_training_load": 144,
+        "moving_time": 12452,
+        "distance": 68767.13
+      },
+      {
+        "start_date_local": "2025-10-11T11:24:08",
+        "name": "Cardrona Gravel Ride",
+        "icu_training_load": 81,
+        "moving_time": 6483,
+        "distance": 27748.0
+      },
+      {
+        "start_date_local": "2025-10-12T10:24:14",
+        "name": "\ud83e\udd7ePentland hills w/Madz",
+        "icu_training_load": 66,
+        "moving_time": 12669,
+        "distance": 14339.22
+      },
+      {
+        "start_date_local": "2025-10-13T10:38:47",
+        "name": "Pentland hills gravel + Cobbles and cycleways and horrific roads",
+        "icu_training_load": 198,
+        "moving_time": 14582,
+        "distance": 84055.45
+      },
+      {
+        "start_date_local": "2025-10-16T13:25:13",
+        "name": "Jorat mtb / hardtail",
+        "icu_training_load": 208,
+        "moving_time": 14309,
+        "distance": 75214.45
+      },
+      {
+        "start_date_local": "2025-10-17T14:50:14",
+        "name": "Backyard mtb",
+        "icu_training_load": 80,
+        "moving_time": 6143,
+        "distance": 26185.62
+      },
+      {
+        "start_date_local": "2025-10-18T12:27:07",
+        "name": "Jongny ROAD",
+        "icu_training_load": 108,
+        "moving_time": 5731,
+        "distance": 44428.3
+      },
+      {
+        "start_date_local": "2025-10-18T14:23:58",
+        "name": "Otto walk",
+        "icu_training_load": 11,
+        "moving_time": 3720,
+        "distance": 5654.62
+      },
+      {
+        "start_date_local": "2025-10-19T10:20:26",
+        "name": "Paccots MTB",
+        "icu_training_load": 190,
+        "moving_time": 15204,
+        "distance": 53078.98
+      },
+      {
+        "start_date_local": "2025-10-20T17:53:00",
+        "name": "active recovery",
+        "icu_training_load": 27,
+        "moving_time": 3080,
+        "distance": 29870.92
+      },
+      {
+        "start_date_local": "2025-10-21T17:42:41",
+        "name": "Zwift - Tempus Fugit in Watopia",
+        "icu_training_load": 1,
+        "moving_time": 353,
+        "distance": 2609.47
+      },
+      {
+        "start_date_local": "2025-10-21T17:48:51",
+        "name": "1 with Yumi and Werner",
+        "icu_training_load": 42,
+        "moving_time": 3759,
+        "distance": 40328.86
+      },
+      {
+        "start_date_local": "2025-10-22T15:29:54",
+        "name": "Otto walk",
+        "icu_training_load": 17,
+        "moving_time": 4773,
+        "distance": 6800.46
+      },
+      {
+        "start_date_local": "2025-10-22T17:38:07",
+        "name": "Volcano KOM Holo chasing",
+        "icu_training_load": 66,
+        "moving_time": 3666,
+        "distance": 34133.92
+      },
+      {
+        "start_date_local": "2025-10-23T17:17:08",
+        "name": "Zwift - Race: DZR After Party Series",
+        "icu_training_load": 90,
+        "moving_time": 3878,
+        "distance": 40508.14
+      },
+      {
+        "start_date_local": "2025-10-25T09:59:57",
+        "name": "Zwift - Group Ride: Stage 3 - Zwift Unlocked - Long on London Calling",
+        "icu_training_load": 67,
+        "moving_time": 2982,
+        "distance": 33841.13
+      },
+      {
+        "start_date_local": "2025-10-25T10:51:36",
+        "name": "Zwift - Alpha on Loch Loop in Scotland",
+        "icu_training_load": 1,
+        "moving_time": 251,
+        "distance": 2212.06
+      },
+      {
+        "start_date_local": "2025-10-25T11:01:00",
+        "name": "Zwift - Group Ride: Stage 3 - Zwift Unlocked - Short on Scotland After Party",
+        "icu_training_load": 38,
+        "moving_time": 1646,
+        "distance": 18091.52
+      },
+      {
+        "start_date_local": "2025-10-25T11:28:52",
+        "name": "Zwift - D\u00f9n Dash in Scotland",
+        "icu_training_load": 20,
+        "moving_time": 1528,
+        "distance": 14642.89
+      },
+      {
+        "start_date_local": "2025-10-26T11:00:08",
+        "name": "Zwift - eFondo: zFondo Series",
+        "icu_training_load": 130,
+        "moving_time": 8387,
+        "distance": 80225.11
+      },
+      {
+        "start_date_local": "2025-10-26T14:19:50",
+        "name": "Otto walk",
+        "icu_training_load": 21,
+        "moving_time": 4339,
+        "distance": 6667.58
+      },
+      {
+        "start_date_local": "2025-10-27T17:00:16",
+        "name": "Zwift - Group Ride: Stage 4 - Zwift Unlocked - Long on The Greenway",
+        "icu_training_load": 97,
+        "moving_time": 4174,
+        "distance": 47597.73
+      },
+      {
+        "start_date_local": "2025-10-28T14:07:50",
+        "name": "Mr blue sky came back",
+        "icu_training_load": 115,
+        "moving_time": 7348,
+        "distance": 54963.74
+      },
+      {
+        "start_date_local": "2025-10-29T18:02:29",
+        "name": "Zwift - Group Ride: Stage 4 - Zwift Unlocked - Short on Spinfinity in New York",
+        "icu_training_load": 25,
+        "moving_time": 1891,
+        "distance": 19730.65
+      },
+      {
+        "start_date_local": "2025-10-29T18:35:24",
+        "name": "Zwift - Electric Break in Makuri Islands",
+        "icu_training_load": 24,
+        "moving_time": 1980,
+        "distance": 17896.02
+      },
+      {
+        "start_date_local": "2025-10-30T18:00:17",
+        "name": "Zwift - Group Ride: Stage 4 - Zwift Unlocked - Long on The Greenway in New York",
+        "icu_training_load": 106,
+        "moving_time": 4847,
+        "distance": 53586.81
+      },
+      {
+        "start_date_local": "2025-10-31T18:35:54",
+        "name": "1 with Yumi",
+        "icu_training_load": 51,
+        "moving_time": 4239,
+        "distance": 40545.4
+      },
+      {
+        "start_date_local": "2025-11-01T09:13:07",
+        "name": "3 hours endurance",
+        "icu_training_load": 155,
+        "moving_time": 11501,
+        "distance": 83297.41
+      },
+      {
+        "start_date_local": "2025-11-01T13:11:36",
+        "name": "Otto walk",
+        "icu_training_load": 22,
+        "moving_time": 3783,
+        "distance": 5908.15
+      },
+      {
+        "start_date_local": "2025-11-03T17:09:50",
+        "name": "Zwift - Race: Stage 5 - Zwift Unlocked - Race (A) on The Double Borough in New York",
+        "icu_training_load": 46,
+        "moving_time": 1866,
+        "distance": 22000.13
+      },
+      {
+        "start_date_local": "2025-11-03T17:41:35",
+        "name": "Zwift - Issendorf Express in New York",
+        "icu_training_load": 8,
+        "moving_time": 782,
+        "distance": 7455.04
+      },
+      {
+        "start_date_local": "2025-11-03T18:01:18",
+        "name": "Zwift - Group Ride: Stage 5 - Zwift Unlocked - Long on Stay Puft Pursuit in New York",
+        "icu_training_load": 80,
+        "moving_time": 3636,
+        "distance": 37979.06
+      },
+      {
+        "start_date_local": "2025-11-04T17:43:18",
+        "name": "Zwift - Pacer Group Ride: The 6 Train in New York with Yumi",
+        "icu_training_load": 10,
+        "moving_time": 933,
+        "distance": 9801.86
+      },
+      {
+        "start_date_local": "2025-11-04T18:00:55",
+        "name": "Zwift - Group Ride: Stage 5 - Zwift Unlocked - Short on The Double Borough in New York",
+        "icu_training_load": 52,
+        "moving_time": 3644,
+        "distance": 39272.8
+      },
+      {
+        "start_date_local": "2025-11-06T18:16:29",
+        "name": "90 avec Jacques",
+        "icu_training_load": 80,
+        "moving_time": 5767,
+        "distance": 65265.38
+      },
+      {
+        "start_date_local": "2025-11-07T17:52:06",
+        "name": "Zwift - Tempus Fugit in Watopia",
+        "icu_training_load": 17,
+        "moving_time": 1582,
+        "distance": 15851.62
+      },
+      {
+        "start_date_local": "2025-11-07T18:30:08",
+        "name": "Zwift - Race: Zwift Epic Race - Fuhgeddaboudit B=A",
+        "icu_training_load": 161,
+        "moving_time": 7238,
+        "distance": 82282.34
+      },
+      {
+        "start_date_local": "2025-11-08T09:56:34",
+        "name": "Otto walk",
+        "icu_training_load": 12,
+        "moving_time": 4239,
+        "distance": 6613.03
+      },
+      {
+        "start_date_local": "2025-11-08T11:49:24",
+        "name": "2hrs in the sunshine",
+        "icu_training_load": 110,
+        "moving_time": 8568,
+        "distance": 59275.05
+      },
+      {
+        "start_date_local": "2025-11-09T10:04:45",
+        "name": "Otto walk",
+        "icu_training_load": 17,
+        "moving_time": 4069,
+        "distance": 6064.97
+      },
+      {
+        "start_date_local": "2025-11-09T12:14:22",
+        "name": "Rathvel",
+        "icu_training_load": 129,
+        "moving_time": 7653,
+        "distance": 54930.42
+      },
+      {
+        "start_date_local": "2025-11-11T13:11:48",
+        "name": "Otto Walk",
+        "icu_training_load": 20,
+        "moving_time": 5464,
+        "distance": 7042.57
+      },
+      {
+        "start_date_local": "2025-11-11T17:40:35",
+        "name": "Zwift - Tick Tock in Watopia",
+        "icu_training_load": 6,
+        "moving_time": 613,
+        "distance": 6397.29
+      },
+      {
+        "start_date_local": "2025-11-11T17:52:01",
+        "name": "zAlp low cadence",
+        "icu_training_load": 88,
+        "moving_time": 4980,
+        "distance": 35855.19
+      },
+      {
+        "start_date_local": "2025-11-12T16:55:11",
+        "name": "Zwift - 90 base sometimes with coco",
+        "icu_training_load": 63,
+        "moving_time": 5629,
+        "distance": 60446.88
+      },
+      {
+        "start_date_local": "2025-11-13T16:59:36",
+        "name": "Zwift - Group Ride: DBR Base Endurance Ride",
+        "icu_training_load": 88,
+        "moving_time": 5507,
+        "distance": 58343.66
+      },
+      {
+        "start_date_local": "2025-11-15T09:58:20",
+        "name": "Perry",
+        "icu_training_load": 178,
+        "moving_time": 8644,
+        "distance": 67534.03
+      },
+      {
+        "start_date_local": "2025-11-15T13:04:52",
+        "name": "Otto walk",
+        "icu_training_load": 28,
+        "moving_time": 5189,
+        "distance": 6860.01
+      },
+      {
+        "start_date_local": "2025-11-17T17:31:03",
+        "name": "Holo intervals",
+        "icu_training_load": 98,
+        "moving_time": 4804,
+        "distance": 46883.0
+      },
+      {
+        "start_date_local": "2025-11-18T17:45:30",
+        "name": "Zwift - base",
+        "icu_training_load": 56,
+        "moving_time": 3939,
+        "distance": 44711.85
+      },
+      {
+        "start_date_local": "2025-11-19T18:03:36",
+        "name": "Zwift - Oh Hill No x3 \ud83d\udca5",
+        "icu_training_load": 101,
+        "moving_time": 4669,
+        "distance": 35500.89
+      },
+      {
+        "start_date_local": "2025-11-20T10:43:56",
+        "name": "Otto walk",
+        "icu_training_load": 15,
+        "moving_time": 5585,
+        "distance": 6213.86
+      },
+      {
+        "start_date_local": "2025-11-20T17:00:13",
+        "name": "Zwift - Greater London Flat in London",
+        "icu_training_load": 4,
+        "moving_time": 408,
+        "distance": 3619.5
+      },
+      {
+        "start_date_local": "2025-11-20T17:09:48",
+        "name": "Zwift - Race: Brompton World Champs || Range 1 (A) on Greater London Flat in London",
+        "icu_training_load": 49,
+        "moving_time": 2120,
+        "distance": 23368.44
+      },
+      {
+        "start_date_local": "2025-11-20T17:46:12",
+        "name": "Zwift - Group Ride: Off The MAAP Training Rides on Three Sisters",
+        "icu_training_load": 67,
+        "moving_time": 4677,
+        "distance": 38375.26
+      },
+      {
+        "start_date_local": "2025-11-21T17:34:52",
+        "name": "Zwift - Priming Tempo + sprints",
+        "icu_training_load": 61,
+        "moving_time": 3773,
+        "distance": 40540.92
+      },
+      {
+        "start_date_local": "2025-11-22T09:35:02",
+        "name": "Otto walk",
+        "icu_training_load": 15,
+        "moving_time": 5052,
+        "distance": 6227.98
+      },
+      {
+        "start_date_local": "2025-11-23T11:09:12",
+        "name": "Zwift - Volcano Flat in Watopia",
+        "icu_training_load": 2,
+        "moving_time": 447,
+        "distance": 3781.17
+      },
+      {
+        "start_date_local": "2025-11-23T11:17:42",
+        "name": "Zwift - Downtown Eruption in Watopia",
+        "icu_training_load": 37,
+        "moving_time": 2683,
+        "distance": 25596.38
+      },
+      {
+        "start_date_local": "2025-11-23T12:04:34",
+        "name": "Zwift - Group Ride: DIRT The Merge ENDURANCE (C) on Triple Flat Loops",
+        "icu_training_load": 158,
+        "moving_time": 11325,
+        "distance": 130512.73
+      },
+      {
+        "start_date_local": "2025-11-23T15:35:02",
+        "name": "Otto walk",
+        "icu_training_load": 39,
+        "moving_time": 3746,
+        "distance": 5313.98
+      },
+      {
+        "start_date_local": "2025-11-25T17:52:29",
+        "name": "Zwift - 1hr Base on Prospect Park Loop in New York",
+        "icu_training_load": 9,
+        "moving_time": 877,
+        "distance": 8208.79
+      },
+      {
+        "start_date_local": "2025-11-25T18:10:04",
+        "name": "Zwift - Race: Stage 1: NYC Showdown: Times Square Circuit (A)",
+        "icu_training_load": 79,
+        "moving_time": 3727,
+        "distance": 39208.43
+      },
+      {
+        "start_date_local": "2025-11-26T17:59:56",
+        "name": "Zwift - Group Ride: Off The MAAP 2025: Stage 1 on Keith Hill After Party",
+        "icu_training_load": 79,
+        "moving_time": 3979,
+        "distance": 42600.84
+      },
+      {
+        "start_date_local": "2025-11-27T17:52:27",
+        "name": "Zwift - Prospect Park Loop in New York",
+        "icu_training_load": 14,
+        "moving_time": 901,
+        "distance": 9309.06
+      },
+      {
+        "start_date_local": "2025-11-27T18:10:03",
+        "name": "Zwift - Race: Stage 2: NYC Showdown: Prospect Park Loop (A)",
+        "icu_training_load": 66,
+        "moving_time": 2911,
+        "distance": 32988.02
+      },
+      {
+        "start_date_local": "2025-11-29T13:31:02",
+        "name": "Winter lap",
+        "icu_training_load": 126,
+        "moving_time": 7501,
+        "distance": 58205.23
+      },
+      {
+        "start_date_local": "2025-11-30T09:59:21",
+        "name": "Otto walk",
+        "icu_training_load": 14,
+        "moving_time": 4725,
+        "distance": 6462.55
+      },
+      {
+        "start_date_local": "2025-11-30T16:11:01",
+        "name": "Zwift - Genie Volcano laps",
+        "icu_training_load": 57,
+        "moving_time": 3946,
+        "distance": 43007.23
+      },
+      {
+        "start_date_local": "2025-12-01T17:48:22",
+        "name": "Zwift - Volcano laps with Jacques",
+        "icu_training_load": 63,
+        "moving_time": 4646,
+        "distance": 52376.46
+      },
+      {
+        "start_date_local": "2025-12-07T09:41:24",
+        "name": "Zwift - Group Ride: Flanders Coffee Ride en France",
+        "icu_training_load": 118,
+        "moving_time": 10896,
+        "distance": 111229.03
+      },
+      {
+        "start_date_local": "2025-12-07T13:46:06",
+        "name": "Otto walk",
+        "icu_training_load": 19,
+        "moving_time": 2731,
+        "distance": 3922.37
+      }
+    ],
+    "phases": [
+      {
+        "phase": "Week 37",
+        "distance_km": 265.05296999999996,
+        "hours": 13.991944444444444,
+        "tss": 588.0
+      },
+      {
+        "phase": "Week 38",
+        "distance_km": 350.77482000000003,
+        "hours": 16.478055555555557,
+        "tss": 758.0
+      },
+      {
+        "phase": "Week 39",
+        "distance_km": 265.64342999999997,
+        "hours": 12.808333333333334,
+        "tss": 510.0
+      },
+      {
+        "phase": "Week 40",
+        "distance_km": 279.98361,
+        "hours": 11.698055555555555,
+        "tss": 637.0
+      },
+      {
+        "phase": "Week 41",
+        "distance_km": 191.16098000000002,
+        "hours": 14.375,
+        "tss": 452.0
+      },
+      {
+        "phase": "Week 42",
+        "distance_km": 288.61742,
+        "hours": 16.580277777777777,
+        "tss": 795.0
+      },
+      {
+        "phase": "Week 43",
+        "distance_km": 309.93206,
+        "hours": 10.733888888888888,
+        "tss": 520.0
+      },
+      {
+        "phase": "Week 44",
+        "distance_km": 323.52590999999995,
+        "hours": 11.045277777777779,
+        "tss": 595.0
+      },
+      {
+        "phase": "Week 45",
+        "distance_km": 406.7917,
+        "hours": 13.8825,
+        "tss": 722.0
+      },
+      {
+        "phase": "Week 46",
+        "distance_km": 242.47963000000001,
+        "hours": 10.007222222222222,
+        "tss": 471.0
+      },
+      {
+        "phase": "Week 47",
+        "distance_km": 410.64595999999995,
+        "hours": 14.785555555555556,
+        "tss": 702.0
+      },
+      {
+        "phase": "Week 48",
+        "distance_km": 239.99015,
+        "hours": 7.935277777777777,
+        "tss": 444.0
+      },
+      {
+        "phase": "Week 49",
+        "distance_km": 167.52785999999998,
+        "hours": 5.075833333333334,
+        "tss": 200.0
+      }
+    ],
+    "actions": [
+      "\u2705 Maintain \u226570 % Z1\u2013Z2 volume (Seiler 80/20).",
+      "\u26a0 Improve Zone 2 efficiency: extend duration or adjust IF.",
+      "\u2705 FatigueTrend (16.1%) \u2014 Increasing fatigue trend. Consider adjusting intensity or recovery.",
+      "\u2705 Durability improving (1.00) \u2014 maintain current long-ride structure.",
+      "\u26a0 Load intensity too high (LIR=2.00) \u2014 reduce intensity or monitor recovery.",
+      "\u2705 Efficiency drift stable (0.00%).",
+      "\u2705 Polarisation optimal (90%).",
+      "\u2705 Recovery Index healthy (0.88).",
+      "---",
+      "\ud83e\ude9c **Seasonal Phase Analysis**",
+      "\ud83d\udd01 **Continuous Load** (None \u2192 None) \u2014 steady training; insert variation if fatigue rises.",
+      "",
+      "\ud83d\udcd8 **Coach Note:**",
+      "Phases correspond to the macrocycle model (Base \u2192 Build \u2192 Peak \u2192 Taper \u2192 Recovery). Maintain ACWR \u2264 1.3, positive TSB for freshness, and use taper reduction of ATL by 30\u201350%. Derived from Friel / Seiler / Bannister periodisation heuristics.",
+      "\u2705 Reference: Coaching Cheat Sheet \u2014 Periodisation & Load Ratios (Section 9\u201311)",
+      "---",
+      "\ud83d\udcca Metric-based Feedback:",
+      "\u2705 Monotony (0.58) \u2014 If Monotony > 2.5, introduce more variation in training or implement a deload week to reduce repetitive stress.",
+      "\u2705 Strain (16.6) \u2014 If Strain > 3000, monitor for signs of overreach and consider more rest or deloading. If Strain > 3500, consider reducing volume or intensity temporarily.",
+      "\u2705 FatOxEfficiency (0.624) \u2014 If FatOxEfficiency is low (<0.6), focus on improving aerobic base with longer, low-intensity efforts.",
+      "\u2705 CUR (37.6) \u2014 If CUR is outside the green zone (30-70), adjust carbohydrate intake and fueling strategy to ensure balanced metabolic use during long sessions.",
+      "\u2705 GR (1.66) \u2014 If GR exceeds 2.0, focus on reducing glycolytic intensity and increase aerobic work. Ensure sufficient recovery to avoid over-reliance on carbs.",
+      "\u2705 MES (22.6) \u2014 If MES is below 20, work on improving metabolic efficiency by increasing endurance training with a focus on aerobic base and fat metabolism.",
+      "\u2705 RecoveryIndex (0.884) \u2014 If RecoveryIndex is low (<0.7), ensure adequate rest and recovery, and avoid heavy training loads.",
+      "\u2705 StressTolerance (2.0) \u2014 If StressTolerance is high (>8), reduce overall load and increase recovery time. If it's low (<2), ensure proper training load progression."
+    ],
+    "wellness": {
+      "rest_hr": 42.2,
+      "hrv_trend": 0.0,
+      "rest_days": 22,
+      "fatigue": 1.4,
+      "stress": 1.7,
+      "readiness": null,
+      "CTL": 88.31,
+      "ATL": 80.38,
+      "TSB": 7.94
+    },
+    "insights": {
+      "fatigue_trend": {
+        "value": -0.09,
+        "interpretation": "Positive = accumulating fatigue, negative = recovering, near zero = stable"
+      },
+      "load_distribution": {
+        "zones": {
+          "z1_z2": 0,
+          "z3_plus": 0
+        },
+        "classification": "unknown",
+        "interpretation": "Cannot classify distribution"
+      },
+      "metabolic_drift": {
+        "value": 0.109,
+        "interpretation": "Lower values indicate good aerobic durability"
+      },
+      "fitness_phase": {
+        "phase": "productive/loading",
+        "interpretation": "Athlete is absorbing training well"
+      }
+    }
+  },
+  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=6298, ctx_keys=84"
+}

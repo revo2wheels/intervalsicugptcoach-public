@@ -213,20 +213,38 @@ def run_report(
         # Defer semantic build until AFTER full pipeline completes.
         context["semantic_mode"] = True   # marker for downstream render stage
 
-    # --- Tier (-1): Orchestrate initial fetches and context ---
-    # preserve any existing context BEFORE fetch
-    old_context = context.copy()
+    # Initialize report
+    report = {}
 
-    new_context = orchestrate_fetch_context(reportType)
+    if output_format == "semantic":
+        context["semantic_mode"] = True
 
-    # merge preserved keys back in
-    for k, v in old_context.items():
-        if k not in new_context:
-            new_context[k] = v
+    # --- Tier (-1): CLOUD-FETCH DETECTION (Dual-Mode Tier-0) --------------------
+    # If Cloudflare worker already provided datasets, we SKIP orchestrate_fetch_context entirely.
+    cloud_payload = all(
+        key in context and context[key] not in (None, [], {})
+        for key in ("activities_light", "activities_full", "wellness", "athlete")
+    )
 
-    context = new_context
+    if cloud_payload:
+        debug(context, "[ORCH] Cloudflare payload detected → SKIPPING Tier-0 fetch orchestration.")
+    else:
+        debug(context, "[ORCH] No Cloudflare payload → running Tier-0 orchestrate_fetch_context()")
 
-    debug(context, f"[ORCH] Context orchestrated for {reportType} → mode={context.get('render_mode')}")
+        # Preserve any manually supplied values before orchestration overwrites them
+        old_context = context.copy()
+
+        new_context = orchestrate_fetch_context(reportType)
+
+        # Merge preserved keys back into context
+        for k, v in old_context.items():
+            if k not in new_context:
+                new_context[k] = v
+
+        context = new_context
+
+    debug(context, f"[ORCH] Context ready for {reportType} → mode={context.get('render_mode')}")
+
 
     # --- NEW: Bind reportMode for schema-based orchestration ---
     context["reportMode"] = reportType.lower() if isinstance(reportType, str) else "weekly"
