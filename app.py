@@ -262,7 +262,15 @@ def run_audit(
 @app.post("/run")
 async def run_audit_with_data(request: Request):
     try:
-        data = await request.json()
+        raw = await request.body()
+        if not raw:
+            raise ValueError("Empty request body received")
+
+        try:
+            data = json.loads(raw)
+        except Exception as e:
+            raise ValueError(f"JSON parse failed: {e}, raw={raw[:200]}")
+
         range = data.get("range", "weekly")
         fmt = data.get("format", "markdown").lower()
 
