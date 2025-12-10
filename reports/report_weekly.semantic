@@ -5,11 +5,11 @@
     "meta": {
       "framework": "Unified Reporting Framework v5.1",
       "version": "v16.17",
-      "generated_at": "2025-12-09T10:02:29.019435",
+      "generated_at": "2025-12-10T08:31:40.884810",
       "report_type": "weekly",
       "period": {
-        "start": "2025-12-03",
-        "end": "2025-12-09"
+        "start": "2025-12-04",
+        "end": "2025-12-10"
       },
       "timezone": "Europe/Zurich",
       "athlete": {
@@ -26,13 +26,13 @@
         "email": null
       }
     },
-    "hours": 4.71,
-    "tss": 176,
-    "distance_km": 151.6,
+    "hours": 5.73,
+    "tss": 235,
+    "distance_km": 184.0,
     "metrics": {
       "ACWR": {
         "name": "ACWR",
-        "value": 0.94,
+        "value": 0.93,
         "classification": "unknown",
         "interpretation": "",
         "coaching_implication": "",
@@ -40,7 +40,7 @@
       },
       "Monotony": {
         "name": "Monotony",
-        "value": 0.53,
+        "value": 0.7,
         "classification": "unknown",
         "interpretation": "",
         "coaching_implication": "",
@@ -48,7 +48,7 @@
       },
       "Strain": {
         "name": "Strain",
-        "value": 13.3,
+        "value": 23.5,
         "classification": "unknown",
         "interpretation": "",
         "coaching_implication": "",
@@ -56,7 +56,7 @@
       },
       "FatigueTrend": {
         "name": "FatigueTrend",
-        "value": 16.1,
+        "value": 9.6,
         "classification": "unknown",
         "interpretation": "",
         "coaching_implication": "",
@@ -72,7 +72,7 @@
       },
       "FatOxEfficiency": {
         "name": "FatOxEfficiency",
-        "value": 0.572,
+        "value": 0.61,
         "classification": "unknown",
         "interpretation": "",
         "coaching_implication": "",
@@ -80,7 +80,7 @@
       },
       "Polarisation": {
         "name": "Polarisation",
-        "value": 0.89,
+        "value": 0.9,
         "classification": "unknown",
         "interpretation": "",
         "coaching_implication": "",
@@ -88,7 +88,7 @@
       },
       "FOxI": {
         "name": "FOxI",
-        "value": 57.2,
+        "value": 61.0,
         "classification": "unknown",
         "interpretation": "",
         "coaching_implication": "",
@@ -96,7 +96,7 @@
       },
       "CUR": {
         "name": "CUR",
-        "value": 42.8,
+        "value": 39.0,
         "classification": "unknown",
         "interpretation": "",
         "coaching_implication": "",
@@ -104,7 +104,7 @@
       },
       "GR": {
         "name": "GR",
-        "value": 1.53,
+        "value": 1.63,
         "classification": "unknown",
         "interpretation": "",
         "coaching_implication": "",
@@ -112,7 +112,7 @@
       },
       "MES": {
         "name": "MES",
-        "value": 22.4,
+        "value": 22.5,
         "classification": "unknown",
         "interpretation": "",
         "coaching_implication": "",
@@ -120,7 +120,7 @@
       },
       "RecoveryIndex": {
         "name": "RecoveryIndex",
-        "value": 0.894,
+        "value": 0.86,
         "classification": "unknown",
         "interpretation": "",
         "coaching_implication": "",
@@ -137,15 +137,15 @@
     },
     "extended_metrics": {
       "CTL": {
-        "value": 87.85,
+        "value": 87.47,
         "status": "ok"
       },
       "ATL": {
-        "value": 79.08,
+        "value": 78.06,
         "status": "ok"
       },
       "TSB": {
-        "value": 8.78,
+        "value": 9.41,
         "status": "ok"
       }
     },
@@ -154,20 +154,20 @@
     "correlation_metrics": {},
     "zones": {
       "power": {
-        "power_z1": 17.8,
-        "power_z2": 75.9,
-        "power_z3": 5.1,
-        "power_z4": 0.4,
+        "power_z1": 14.3,
+        "power_z2": 69.2,
+        "power_z3": 10.2,
+        "power_z4": 2.5,
         "power_z5": 0.0,
         "power_z6": 0.0,
         "power_z7": 0.0,
-        "power_z8": 0.7
+        "power_z8": 3.7
       },
       "hr": {
-        "hr_z1": 88.3,
-        "hr_z2": 9.8,
-        "hr_z3": 1.5,
-        "hr_z4": 0.3,
+        "hr_z1": 77.8,
+        "hr_z2": 15.4,
+        "hr_z3": 4.3,
+        "hr_z4": 2.4,
         "hr_z5": 0.0,
         "hr_z6": 0.0,
         "hr_z7": 0.0
@@ -181,9 +181,20 @@
       {
         "date": "2025-12-08 00:00:00",
         "tss": 39.0
+      },
+      {
+        "date": "2025-12-09 00:00:00",
+        "tss": 59.0
       }
     ],
     "events": [
+      {
+        "start_date_local": 1765300085000,
+        "name": "Zwift - Group Workout: BaseCamp Aerobic Endurance with Cadence Builds",
+        "icu_training_load": 59,
+        "moving_time": 3649,
+        "distance": 32474.04
+      },
       {
         "start_date_local": 1765212772000,
         "name": "Zwift - nope",
@@ -217,48 +228,49 @@
     "actions": [
       "\u2705 Maintain \u226570 % Z1\u2013Z2 volume (Seiler 80/20).",
       "\u26a0 Improve Zone 2 efficiency: extend duration or adjust IF.",
-      "\u2705 FatigueTrend (16.1%) \u2014 Increasing fatigue trend. Consider adjusting intensity or recovery.",
+      "\u2705 FatigueTrend (9.6%) \u2014 Increasing fatigue trend. Consider adjusting intensity or recovery.",
       "\u2705 Durability improving (1.00) \u2014 maintain current long-ride structure.",
       "\u26a0 Load intensity too high (LIR=2.00) \u2014 reduce intensity or monitor recovery.",
       "\u2705 Efficiency drift stable (0.00%).",
-      "\u2705 Polarisation optimal (89%).",
-      "\u2705 Recovery Index healthy (0.89).",
+      "\u2705 Polarisation optimal (90%).",
+      "\u2705 Recovery Index healthy (0.86).",
       "---",
       "\ud83d\udcca Metric-based Feedback:",
-      "\u2705 Monotony (0.53) \u2014 If Monotony > 2.5, introduce more variation in training or implement a deload week to reduce repetitive stress.",
-      "\u2705 Strain (13.3) \u2014 If Strain > 3000, monitor for signs of overreach and consider more rest or deloading. If Strain > 3500, consider reducing volume or intensity temporarily.",
-      "\u2705 CUR (42.8) \u2014 If CUR is outside the green zone (30-70), adjust carbohydrate intake and fueling strategy to ensure balanced metabolic use during long sessions.",
-      "\u2705 GR (1.53) \u2014 If GR exceeds 2.0, focus on reducing glycolytic intensity and increase aerobic work. Ensure sufficient recovery to avoid over-reliance on carbs.",
-      "\u2705 MES (22.4) \u2014 If MES is below 20, work on improving metabolic efficiency by increasing endurance training with a focus on aerobic base and fat metabolism.",
-      "\u2705 RecoveryIndex (0.894) \u2014 If RecoveryIndex is low (<0.7), ensure adequate rest and recovery, and avoid heavy training loads.",
+      "\u2705 Monotony (0.7) \u2014 If Monotony > 2.5, introduce more variation in training or implement a deload week to reduce repetitive stress.",
+      "\u2705 Strain (23.5) \u2014 If Strain > 3000, monitor for signs of overreach and consider more rest or deloading. If Strain > 3500, consider reducing volume or intensity temporarily.",
+      "\u2705 FatOxEfficiency (0.61) \u2014 If FatOxEfficiency is low (<0.6), focus on improving aerobic base with longer, low-intensity efforts.",
+      "\u2705 CUR (39.0) \u2014 If CUR is outside the green zone (30-70), adjust carbohydrate intake and fueling strategy to ensure balanced metabolic use during long sessions.",
+      "\u2705 GR (1.63) \u2014 If GR exceeds 2.0, focus on reducing glycolytic intensity and increase aerobic work. Ensure sufficient recovery to avoid over-reliance on carbs.",
+      "\u2705 MES (22.5) \u2014 If MES is below 20, work on improving metabolic efficiency by increasing endurance training with a focus on aerobic base and fat metabolism.",
+      "\u2705 RecoveryIndex (0.86) \u2014 If RecoveryIndex is low (<0.7), ensure adequate rest and recovery, and avoid heavy training loads.",
       "\u2705 StressTolerance (2.0) \u2014 If StressTolerance is high (>8), reduce overall load and increase recovery time. If it's low (<2), ensure proper training load progression."
     ],
     "wellness": {
-      "rest_hr": 42.7,
-      "hrv_trend": -11.0,
-      "rest_days": 4,
+      "rest_hr": 43.0,
+      "hrv_trend": 1.0,
+      "rest_days": 3,
       "fatigue": 1.5,
       "stress": 1.6,
       "readiness": null,
-      "CTL": 87.85,
-      "ATL": 79.08,
-      "TSB": 8.78
+      "CTL": 87.47,
+      "ATL": 78.06,
+      "TSB": 9.41
     },
     "insights": {
       "fatigue_trend": {
-        "value": -0.1,
+        "value": -0.108,
         "interpretation": "Positive = accumulating fatigue, negative = recovering, near zero = stable"
       },
       "load_distribution": {
         "zones": {
-          "z1_z2": 93.7,
-          "z3_plus": 6.2
+          "z1_z2": 83.5,
+          "z3_plus": 16.4
         },
         "classification": "endurance-focused",
         "interpretation": "Distribution indicates focus on aerobic base"
       },
       "metabolic_drift": {
-        "value": 0.183,
+        "value": 0.129,
         "interpretation": "Lower values indicate good aerobic durability"
       },
       "fitness_phase": {
@@ -267,5 +279,5 @@
       }
     }
   },
-  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=5182, ctx_keys=88\n\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=5182, ctx_keys=88"
+  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=5403, ctx_keys=89\n\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=5403, ctx_keys=89"
 }

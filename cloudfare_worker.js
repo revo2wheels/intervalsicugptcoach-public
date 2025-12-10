@@ -163,19 +163,28 @@ export default {
       });
     }
 
-    // 7-day full
+    // 7-day full (must request ALL fields)
     if (pathname.startsWith(`/athlete/${athleteId}/activities`) &&
         !pathname.includes("t0light")) {
+
       const { oldest, newest } = normaliseDateParams(url.searchParams, 7);
-      const target = `${INTERVALS_API_BASE}/athlete/${athleteId}/activities?oldest=${oldest}&newest=${newest}`;
+
+      // request all activity fields
+      const target = `${INTERVALS_API_BASE}/athlete/${athleteId}/activities` +
+                    `?oldest=${oldest}&newest=${newest}`;
+
       console.log(`[FULL] → ${target}`);
 
       const r = await fetch(target, { headers: buildAuthHeaders() });
+
       return new Response(await r.text(), {
         status: r.status,
-        headers: { "content-type": "application/json", "access-control-allow-origin": "*" }
+        headers: {
+          "content-type": "application/json",
+          "access-control-allow-origin": "*"
+        }
       });
-    }
+}
 
     // 42-day wellness
     if (pathname.startsWith(`/athlete/${athleteId}/wellness`)) {
