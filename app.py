@@ -77,7 +77,7 @@
 
 from fastapi import FastAPI, Query, Request
 from fastapi.responses import JSONResponse
-import io, os, sys
+import io, os, sys, json
 from contextlib import redirect_stdout
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
