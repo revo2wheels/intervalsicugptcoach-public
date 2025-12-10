@@ -178,11 +178,12 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
 
     with redirect_stdout(buffer):
         if prefetch_context:
+            # Unpack Cloudflare payload directly into context
             report, compliance = run_report(
                 reportType=range,
                 output_format=output_format,
                 include_coaching_metrics=True,
-                prefetch_context=prefetch_context
+                **prefetch_context
             )
         else:
             report, compliance = run_report(
