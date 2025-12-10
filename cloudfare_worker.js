@@ -9,20 +9,22 @@ export default {
     // ================================================================
     // 🧠 UNIFIED AUTH HANDLING
     // ================================================================
+    // ALWAYS use ICU_OAUTH, never the inbound header for Intervals.icu
     let bearerToken = null;
 
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      bearerToken = authHeader.trim();
-    } else if (env.ICU_OAUTH) {
-      bearerToken = `Bearer ${env.ICU_OAUTH}`;
-      console.log("[AUTH] Using fallback ICU_OAUTH");
+    if (env.ICU_OAUTH) {
+        bearerToken = `Bearer ${env.ICU_OAUTH}`;
+        console.log("[AUTH] Using ICU_OAUTH token");
+    } else if (authHeader && authHeader.startsWith("Bearer ")) {
+        bearerToken = authHeader.trim();
+        console.log("[AUTH] WARNING: Falling back to inbound Authorization header");
     }
 
     if (!bearerToken) {
-      return new Response(
-        JSON.stringify({ status: 401, error: "Missing Authorization token." }),
-        { status: 401, headers: { "content-type": "application/json", "access-control-allow-origin": "*" } }
-      );
+        return new Response(
+          JSON.stringify({ error: "No OAuth token available" }),
+          { status: 401 }
+        );
     }
 
     // ================================================================
@@ -219,11 +221,22 @@ export default {
     if (pathname === "/run_weekly" && request.method === "GET") {
       console.log("[RUN_WEEKLY] Fetching datasets…");
 
+      const { oldest: lightOldest, newest: lightNewest } = normaliseDateParams(url.searchParams, 90);
+      const { oldest: fullOldest,  newest: fullNewest  } = normaliseDateParams(url.searchParams, 7);
+      const { oldest: wellOldest,  newest: wellNewest  } = normaliseDateParams(url.searchParams, 42);
+
       const [lightTxt, fullTxt, wellTxt, profTxt] = await Promise.all([
-        fetch(`${url.origin}/athlete/0/activities_t0light`, { headers: buildAuthHeaders() }).then(r => r.text()),
-        fetch(`${url.origin}/athlete/0/activities`, { headers: buildAuthHeaders() }).then(r => r.text()),
-        fetch(`${url.origin}/athlete/0/wellness`, { headers: buildAuthHeaders() }).then(r => r.text()),
-        fetch(`${url.origin}/athlete/0/profile`, { headers: buildAuthHeaders() }).then(r => r.text())
+        fetch(`${INTERVALS_API_BASE}/athlete/0/activities?oldest=${lightOldest}&newest=${lightNewest}&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin`,
+              { headers: buildAuthHeaders() }).then(r => r.text()),
+
+        fetch(`${INTERVALS_API_BASE}/athlete/0/activities?oldest=${fullOldest}&newest=${fullNewest}`,
+              { headers: buildAuthHeaders() }).then(r => r.text()),
+
+        fetch(`${INTERVALS_API_BASE}/athlete/0/wellness?oldest=${wellOldest}&newest=${wellNewest}`,
+              { headers: buildAuthHeaders() }).then(r => r.text()),
+
+        fetch(`${INTERVALS_API_BASE}/athlete/0/profile`,
+              { headers: buildAuthHeaders() }).then(r => r.text())
       ]);
 
       const payload = {
@@ -242,10 +255,18 @@ export default {
     if (pathname === "/run_season" && request.method === "GET") {
       console.log("[RUN_SEASON] Fetching datasets…");
 
+      const { oldest: lightOldest, newest: lightNewest } = normaliseDateParams(url.searchParams, 90);
+      const { oldest: wellOldest, newest: wellNewest } = normaliseDateParams(url.searchParams, 42);
+
       const [lightTxt, wellTxt, profTxt] = await Promise.all([
-        fetch(`${url.origin}/athlete/0/activities_t0light`, { headers: buildAuthHeaders() }).then(r => r.text()),
-        fetch(`${url.origin}/athlete/0/wellness`, { headers: buildAuthHeaders() }).then(r => r.text()),
-        fetch(`${url.origin}/athlete/0/profile`, { headers: buildAuthHeaders() }).then(r => r.text())
+        fetch(`${INTERVALS_API_BASE}/athlete/0/activities?oldest=${lightOldest}&newest=${lightNewest}&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin`,
+              { headers: buildAuthHeaders() }).then(r => r.text()),
+
+        fetch(`${INTERVALS_API_BASE}/athlete/0/wellness?oldest=${wellOldest}&newest=${wellNewest}`,
+              { headers: buildAuthHeaders() }).then(r => r.text()),
+
+        fetch(`${INTERVALS_API_BASE}/athlete/0/profile`,
+              { headers: buildAuthHeaders() }).then(r => r.text())
       ]);
 
       const payload = {
@@ -264,9 +285,17 @@ export default {
     if (pathname === "/run_wellness" && request.method === "GET") {
       console.log("[RUN_WELLNESS] Fetching datasets…");
 
-      const wellTxt = await fetch(`${url.origin}/athlete/0/wellness`, {
-        headers: buildAuthHeaders()
-      }).then((r) => r.text());
+      const { oldest, newest } = normaliseDateParams(url.searchParams, 42);
+
+      const [wellTxt, profTxt] = await Promise.all([
+          fetch(`${INTERVALS_API_BASE}/athlete/0/wellness?oldest=${oldest}&newest=${newest}`, {
+              headers: buildAuthHeaders()
+          }).then(r => r.text()),
+
+          fetch(`${INTERVALS_API_BASE}/athlete/0/profile`, {
+              headers: buildAuthHeaders()
+          }).then(r => r.text())
+      ]);
 
       const payload = {
         range: "wellness",
@@ -274,7 +303,7 @@ export default {
         activities_light: [],
         activities_full: [],
         wellness: safeParse(wellTxt),
-        athlete: {}
+        athlete: safeParse(profTxt)
       };
 
       return await callRailway(payload, "WELLNESS");
@@ -284,11 +313,22 @@ export default {
     if (pathname === "/run_summary" && request.method === "GET") {
       console.log("[RUN_SUMMARY] Fetching datasets…");
 
+      const { oldest: lightOldest, newest: lightNewest } = normaliseDateParams(url.searchParams, 90);
+      const { oldest: fullOldest,  newest: fullNewest  } = normaliseDateParams(url.searchParams, 7);
+      const { oldest: wellOldest,  newest: wellNewest  } = normaliseDateParams(url.searchParams, 42);
+
       const [lightTxt, fullTxt, wellTxt, profTxt] = await Promise.all([
-        fetch(`${url.origin}/athlete/0/activities_t0light`, { headers: buildAuthHeaders() }).then(r => r.text()),
-        fetch(`${url.origin}/athlete/0/activities`, { headers: buildAuthHeaders() }).then(r => r.text()),
-        fetch(`${url.origin}/athlete/0/wellness`, { headers: buildAuthHeaders() }).then(r => r.text()),
-        fetch(`${url.origin}/athlete/0/profile`, { headers: buildAuthHeaders() }).then(r => r.text())
+        fetch(`${INTERVALS_API_BASE}/athlete/0/activities?oldest=${lightOldest}&newest=${lightNewest}&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin`,
+              { headers: buildAuthHeaders() }).then(r => r.text()),
+
+        fetch(`${INTERVALS_API_BASE}/athlete/0/activities?oldest=${fullOldest}&newest=${fullNewest}`,
+              { headers: buildAuthHeaders() }).then(r => r.text()),
+
+        fetch(`${INTERVALS_API_BASE}/athlete/0/wellness?oldest=${wellOldest}&newest=${wellNewest}`,
+              { headers: buildAuthHeaders() }).then(r => r.text()),
+
+        fetch(`${INTERVALS_API_BASE}/athlete/0/profile`,
+              { headers: buildAuthHeaders() }).then(r => r.text())
       ]);
 
       const payload = {
