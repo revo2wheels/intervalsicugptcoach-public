@@ -1,0 +1,66 @@
+[10:50:13] 🧭 Generating Weekly Report
+[10:50:13] 🧭 Running Weekly Report (auditFinal=True, render_mode=full+metrics)
+[10:50:13] [INTENT] Validation warning: Expecting value: line 1 column 1 (char 0)
+[10:50:13] [T0] Config → light=90d full=7d chunk=False
+[10:50:13] [T0-LIGHT] Running lightweight prefetch → 2025-09-12 → 2025-12-11
+[10:50:13] [Tier-0] Using API endpoint: https://intervalsicugptcoach.clive-a5a.workers.dev
+[10:50:13] [T0-LIGHT] Using controller-supplied range oldest=2025-09-12 newest=2025-12-11
+[10:50:13] [T0-LIGHT] Fetching lightweight dataset → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/activities_t0light?oldest=2025-09-12&newest=2025-12-11&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin
+[10:50:13] [T0-LIGHT] Retrieved 111 activities with 10 fields
+[10:50:13] [T0-LIGHT-DIAG] ✅ df_light populated. First 3 rows:
+        id    start_date_local        type  icu_training_load                                                                                                            name  distance  moving_time  average_heartrate        IF  VO2MaxGarmin
+i111262469 2025-12-10T18:29:30 VirtualRide                 82 Zwift - Group Workout: RAD RACE VO2 max Booster Plan - Week 6 - 3x10x40/20 VO2 max Intervalle With Freddy Ovett  41037.59         4236              132.0  0.833333           0.0
+i111245880 2025-12-10T18:16:22 VirtualRide                  4                                                                                    Zwift - Tick Tock in Watopia   5626.88          608               94.0  0.470588           0.0
+i111056415 2025-12-09T18:08:05 VirtualRide                 59                                           Zwift - Group Workout: BaseCamp Aerobic Endurance with Cadence Builds  32474.04         3649              134.0  0.761438           0.0
+[10:50:13] [T0-LIGHT-DIAG] Columns: ['id', 'start_date_local', 'type', 'icu_training_load', 'name', 'distance', 'moving_time', 'average_heartrate', 'IF', 'VO2MaxGarmin']
+[10:50:13] [T0-INIT] Created df_light_slice from df_light → 111 rows.
+[10:50:13] [T0-DIAG] Pre-slice df_light rows=111; min=2025-09-13T10:08:51, max=2025-12-10T18:29:30
+[10:50:13] [T0-SLICE] 7-day window: 2025-12-05 → 2025-12-12 (6 activities selected)
+[10:50:13] [T0-DEDUP] Dropped 0 duplicates → 6 unique events
+[10:50:13] 🧭 Tier-0: 7-day subset (lightweight) = 7.07 h | 230.7 km | 321 TSS (6 events)
+[10:50:13] [T0] Fetching athlete profile via OAuth2: https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/profile
+[10:50:14] [T0] Athlete profile fetched successfully — id=1914741 name=Clive King
+[10:50:14] [T0-FETCH] Adaptive method for report_type=weekly
+[10:50:14] [T0-FETCH] Weekly mode → combining lightweight (for totals) + 7-day full fetch (for detail).
+[10:50:14] [T0] Full fetch: chunking 7 days into 1 parts.
+[10:50:14] [Tier-0 fetch] → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/1914741/activities?oldest=2025-12-05&newest=2025-12-11
+[10:50:14] [T0] Deduplicated 0 duplicate activities.
+[10:50:14] [T0] Expanded icu_zone_times → 8 cols
+[10:50:14] [T0] Expanded icu_hr_zone_times → 7 cols
+[10:50:14] [T0] Diagnostics → Σ(TSS)=321.0, Σ(Time)=7.07h
+[10:50:14] [T0] Completed full fetch → 6 records.
+[10:50:14] [T0-FETCH] Full 7-day fetch complete: 6 activities.
+[10:50:14] [T0-MERGE] ⚠ Missing light or full dataset — merge skipped.
+[10:50:14] [T0] Weekly mode → using FULL 7-day dataset for snapshot_7d_json (6 rows)
+[10:50:14] [T0-FIX] snapshot_7d_json serialized from fallback source (6 rows).
+[10:50:14] [T0] Fetching wellness for 42 days → 2025-10-30 00:00:00 → 2025-12-11 00:00:00
+[10:50:14] [T0-WELLNESS] Requested range 43d exceeds default 42d — using full requested span.
+[10:50:14] [T0-WELLNESS] Fetching wellness for 43d range, chunk size=42d
+[10:50:14] [T0-WELLNESS] Fetching wellness for 43d range, chunk size=42d
+[10:50:14] [T0-WELLNESS] Fetching chunk → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/1914741/wellness?oldest=2025-10-30&newest=2025-12-10
+[10:50:14] [T0-WELLNESS] Fetching chunk → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/1914741/wellness?oldest=2025-12-11&newest=2025-12-11
+[10:50:15] [T0-WELLNESS] Missing 'date' column — coercing.
+[10:50:15] [T0-WELLNESS] Final wellness shape=(43, 43), columns=['date', 'ctl', 'atl', 'rampRate', 'ctlLoad', 'atlLoad', 'sportInfo', 'updated', 'weight', 'restingHR', 'hrv', 'hrvSDNN', 'menstrualPhase', 'menstrualPhasePredicted', 'kcalConsumed', 'sleepSecs', 'sleepScore', 'sleepQuality', 'avgSleepingHR', 'soreness', 'fatigue', 'stress', 'mood', 'motivation', 'injury', 'spO2', 'systolic', 'diastolic', 'hydration', 'hydrationVolume', 'readiness', 'baevskySI', 'bloodGlucose', 'lactate', 'bodyFat', 'abdomen', 'vo2max', 'comments', 'steps', 'respiration', 'locked', 'tempWeight', 'tempRestingHR']
+[10:50:15] [T0] Stored wellness in context (43 rows)
+[10:50:15] [T0] Activities range: 2025-12-07 → 2025-12-10
+[10:50:15] [T0] Wellness range: 2025-10-30 → 2025-12-11
+[10:50:15] [T0] Clipped wellness to last 42 days relative to activities end date (2025-10-29 onward) → 43 rows.
+[10:50:15] [DEBUG] wellness raw: <class 'pandas.core.frame.DataFrame'> 43
+[10:50:15] [DEBUG] wellness columns: ['date', 'ctl', 'atl', 'rampRate', 'ctlLoad', 'atlLoad', 'sportInfo', 'updated', 'weight', 'restingHR', 'hrv', 'hrvSDNN', 'menstrualPhase', 'menstrualPhasePredicted', 'kcalConsumed', 'sleepSecs', 'sleepScore', 'sleepQuality', 'avgSleepingHR', 'soreness', 'fatigue', 'stress', 'mood', 'motivation', 'injury', 'spO2', 'systolic', 'diastolic', 'hydration', 'hydrationVolume', 'readiness', 'baevskySI', 'bloodGlucose', 'lactate', 'bodyFat', 'abdomen', 'vo2max', 'comments', 'steps', 'respiration', 'locked', 'tempWeight', 'tempRestingHR']
+[10:50:15] [DEBUG] wellness head:
+          date        ctl        atl  ...  locked  tempWeight  tempRestingHR
+0  2025-10-30  92.034690  91.445175  ...    None        True          False
+1  2025-10-31  91.069214  86.061030  ...    None        True          False
+2  2025-11-01  93.091020  98.167015  ...    None       False          False
+3  2025-11-02  90.900740  85.098816  ...    None       False          False
+4  2025-11-03  91.914795  91.608640  ...    None        True          False
+
+[5 rows x 43 columns]
+[10:50:15] [T0] Diagnostic only: 6 rows fetched, moving_time present=True
+[10:50:15] [T0] Pre-audit complete: activities=6, wellness_rows=43
+[10:50:15] [T0] Stored wellness for Tier-1 (43 rows)
+[10:50:15] [T0] ⚠ No df_light data available to build snapshots
+[10:50:15] [T0-FULL] Running 7-day detailed audit for weekly mode → 2025-12-04 → 2025-12-11
+[10:50:15] [T0-FULL] Prefetch contained full window — skipping redundant re-fetch.
+[10:50:15] [T0-FULL] Prefetch contained full window — skipping redundant re-fetch.
+[10:50:15] [T0-FULL] Reusing prefetch df_master with 6 rows.
