@@ -7,22 +7,29 @@ export default {
     const authHeader = request.headers.get("Authorization");
 
     // ================================================================
-    // 🧠 UNIFIED AUTH HANDLING
+    // 🧠 UNIFIED AUTH HANDLING (Corrected)
     // ================================================================
     let bearerToken = null;
 
-    if (env.ICU_OAUTH) {
-      bearerToken = `Bearer ${env.ICU_OAUTH}`;
-      console.log("[AUTH] Using ICU_OAUTH token");
-    } else if (authHeader && authHeader.startsWith("Bearer ")) {
-      bearerToken = authHeader.trim();
-      console.log("[AUTH] WARNING: Falling back to inbound Authorization header");
+    // 1️⃣ Always prefer the Worker-stored secret token
+    if (env.ICU_OAUTH && env.ICU_OAUTH.trim() !== "") {
+      bearerToken = `Bearer ${env.ICU_OAUTH.trim()}`;
+      console.log("[AUTH] Using ICU_OAUTH from Worker environment");
     }
 
+    // 2️⃣ If ChatGPT or local Python sends an Authorization header, override
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      bearerToken = authHeader.trim();
+      console.log("[AUTH] Overriding with inbound Authorization header");
+    }
+
+    // 3️⃣ If still nothing → fail explicitly (should never happen)
     if (!bearerToken) {
-      return new Response(JSON.stringify({ error: "No OAuth token available" }), {
-        status: 401
-      });
+      console.log("[AUTH] ERROR — No Authorization token available");
+      return new Response(
+        JSON.stringify({ error: "No OAuth token available for Intervals.icu" }),
+        { status: 401 }
+      );
     }
 
     // ================================================================

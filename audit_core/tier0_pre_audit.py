@@ -379,49 +379,38 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     # - snapshot creation
     # =======================================================
 
+    # ============================================================
+    # CLOUD-FLARE MODE → use injected datasets instead of API
+    # ============================================================
+
     if context.get("cloudflare_mode"):
         debug(context, "[T0] Cloudflare mode → using injected datasets (no API calls)")
 
-        # 1) Build dataframes from injected lists
         df_light = pd.DataFrame(context.get("cf_light", []))
         df_full = pd.DataFrame(context.get("cf_full", []))
         wellness = pd.DataFrame(context.get("cf_wellness", []))
 
-        # 2) Athlete
-        context["athlete"] = context.get("cf_athlete", {})
-
-        # 3) df_light_slice (7-day window)
+        # slice df_light into 7-day window (if needed)
         if "start_date_local" in df_light.columns:
             df_light["start_date_local"] = pd.to_datetime(df_light["start_date_local"], errors="coerce")
             slice_end = pd.to_datetime(end)
             slice_start = slice_end - pd.Timedelta(days=6)
             df_light_slice = df_light[
-                (df_light["start_date_local"] >= slice_start)
-                & (df_light["start_date_local"] <= slice_end)
+                (df_light["start_date_local"] >= slice_start) &
+                (df_light["start_date_local"] <= slice_end)
             ].copy()
         else:
             df_light_slice = df_light.copy()
 
-        # 4) df_master = full or light fallback
-        if not df_full.empty:
-            df_master = df_full.copy()
-            debug(context, f"[T0] df_master = df_full ({len(df_master)} rows)")
-        else:
-            df_master = df_light_slice.copy()
-            debug(context, f"[T0] df_master = df_light_slice ({len(df_master)} rows)")
+        df_master = df_full.copy() if not df_full.empty else df_light_slice.copy()
 
-        # 5) Inject into context for Tier-1 and Tier-2
         context["df_light"] = df_light
         context["df_light_slice"] = df_light_slice
         context["df_master"] = df_master
         context["wellness"] = wellness
-
-        # 6) Snapshot for Tier-1
         context["snapshot_7d_json"] = df_master.to_json(orient="records")
 
-        # IMPORTANT: Immediately return into Tier-1 pipeline
         return df_master, wellness, context, False, False
-
 
 
     if not ICU_TOKEN:
