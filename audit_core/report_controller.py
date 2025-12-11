@@ -214,65 +214,33 @@ def run_report(
         context["semantic_mode"] = True   # marker for downstream render stage
 
     # ============================================================
-    # CLOUD-FLARE MODE: Worker already supplied data → SKIP Tier-0
+    # CLOUD-FLARE MODE (Worker supplied 4 datasets)
+    # → DO NOT BYPASS TIER-0
+    # → JUST PASS PAYLOAD INTO CONTEXT
     # ============================================================
 
-    import pandas as pd
-
-    # Cloudflare mode = athlete exists AND has an id (0 or real)
     cloudflare_mode = (
-        isinstance(context.get("athlete"), dict)
-        and "id" in context["athlete"]
+        isinstance(context.get("activities_light"), list)
+        and isinstance(context.get("activities_full"), list)
+        and isinstance(context.get("wellness"), list)
+        and isinstance(context.get("athlete"), dict)
     )
 
     if cloudflare_mode:
-        debug(context, "[ORCH] Cloudflare payload detected → FULL Tier-0 bypass enabled.")
-        context["T0_BYPASS"] = True
+        debug(context, "[ORCH] Cloudflare payload detected → forwarding datasets into Tier-0")
 
-        # --- SAFE DataFrame assignment ---
-        # Convert lists if present, otherwise fallback to empty DataFrame
-        context["df_light"] = (
-            pd.DataFrame(context.get("activities_light"))
-            if isinstance(context.get("activities_light"), list)
-            else pd.DataFrame()
-        )
+        # Mark mode
+        context["cloudflare_mode"] = True
 
-        context["df_full"] = (
-            pd.DataFrame(context.get("activities_full"))
-            if isinstance(context.get("activities_full"), list)
-            else pd.DataFrame()
-        )
-
-        context["wellness"] = (
-            pd.DataFrame(context.get("wellness"))
-            if isinstance(context.get("wellness"), list)
-            else pd.DataFrame()
-        )
-
-        # --- df_master = full → else light ---
-        if not context["df_full"].empty:
-            context["df_master"] = context["df_full"].copy()
-            debug(context, f"[ORCH] df_master = df_full ({len(context['df_full'])} rows)")
-        else:
-            context["df_master"] = context["df_light"].copy()
-            debug(context, f"[ORCH] df_master = df_light ({len(context['df_light'])} rows)")
+        # Pass payload through exactly
+        context["cf_light"] = context.get("activities_light", [])
+        context["cf_full"] = context.get("activities_full", [])
+        context["cf_wellness"] = context.get("wellness", [])
+        context["cf_athlete"] = context.get("athlete", {})
 
     else:
-        debug(context, "[ORCH] No Cloudflare payload → Tier-0 orchestrate_fetch_context REQUIRED.")
-        context["T0_BYPASS"] = False
+        context["cloudflare_mode"] = False
 
-        # Preserve manually supplied context keys
-        old_context = context.copy()
-
-        # Run actual Tier-0 fetch chain
-        new_context = orchestrate_fetch_context(reportType)
-
-        # Merge preserved (kwargs) values back in
-        for k, v in old_context.items():
-            if k not in new_context:
-                new_context[k] = v
-
-        context = new_context
 
 
 
@@ -320,9 +288,6 @@ def run_report(
         debug(context, f"[INTENT] Validation warning: {e}")
 
 
-    if context.get("T0_BYPASS"):
-        debug(context, "[T0] Skipped (Cloudflare mode).")
-    else:
         # --- Tier-0 Range Configuration (aligned with worker) ---
         today = datetime.now().date()
 
