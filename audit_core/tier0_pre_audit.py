@@ -378,11 +378,9 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     # - wellness clipping
     # - snapshot creation
     # =======================================================
-
     # ============================================================
-    # CLOUD-FLARE MODE → use injected datasets instead of API
+    # CLOUD-FLARE MODE → Skip fetches but still build full Tier-0
     # ============================================================
-
     if context.get("cloudflare_mode"):
         debug(context, "[T0] Cloudflare mode → using injected datasets (no API calls)")
 
@@ -390,27 +388,44 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         df_full = pd.DataFrame(context.get("cf_full", []))
         wellness = pd.DataFrame(context.get("cf_wellness", []))
 
-        # slice df_light into 7-day window (if needed)
+        # Parse dates for slicing
         if "start_date_local" in df_light.columns:
             df_light["start_date_local"] = pd.to_datetime(df_light["start_date_local"], errors="coerce")
-            slice_end = pd.to_datetime(end)
-            slice_start = slice_end - pd.Timedelta(days=6)
+
+            end_dt = pd.to_datetime(end)
+            start_dt = end_dt - pd.Timedelta(days=6)
+
             df_light_slice = df_light[
-                (df_light["start_date_local"] >= slice_start) &
-                (df_light["start_date_local"] <= slice_end)
+                (df_light["start_date_local"] >= start_dt)
+                & (df_light["start_date_local"] <= end_dt)
             ].copy()
         else:
             df_light_slice = df_light.copy()
 
-        df_master = df_full.copy() if not df_full.empty else df_light_slice.copy()
+        # df_master = df_full or fallback to 7-day light slice
+        if not df_full.empty:
+            df_master = df_full.copy()
+        else:
+            df_master = df_light_slice.copy()
 
+        # Inject back into context
         context["df_light"] = df_light
         context["df_light_slice"] = df_light_slice
         context["df_master"] = df_master
         context["wellness"] = wellness
-        context["snapshot_7d_json"] = df_master.to_json(orient="records")
+        context["athlete"] = context.get("cf_athlete", {})
 
+        # Create Tier-0 snapshot
+        context["snapshot_7d_json"] = df_master.to_json(orient="records")
+        context["tier0_snapshotTotals_7d"] = {
+            "hours": df_master["moving_time"].sum() / 3600 if "moving_time" in df_master else 0,
+            "tss": df_master["icu_training_load"].sum() if "icu_training_load" in df_master else 0,
+            "sessions": len(df_master)
+        }
+
+        # Return directly into Tier-1
         return df_master, wellness, context, False, False
+
 
 
     if not ICU_TOKEN:
