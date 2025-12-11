@@ -318,7 +318,7 @@ def run_report(
     # ------------------------------------------------------------
     # --- Tier-0 Full Audit (short detailed window only) ---
     # ------------------------------------------------------------
-    import pandas as pd
+    #import pandas as pd
 
     # Only initialize data outputs here
     df_master = None
@@ -667,7 +667,7 @@ def run_report(
 
     # --- Inject full Tier-0 dataset for proper ACWR (acute/chronic load ratio) ---
     if "activities_light" in context and isinstance(context["activities_light"], list):
-        import pandas as pd
+        #import pandas as pd
         context["df_event_only_full"] = pd.DataFrame(context["activities_light"])
         debug(context, f"[TIER-2 INIT] Injected Tier-0 full dataset ({len(context['activities_light'])} activities)")
 
