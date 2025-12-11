@@ -287,7 +287,6 @@ def run_report(
     except Exception as e:
         debug(context, f"[INTENT] Validation warning: {e}")
 
-
         # --- Tier-0 Range Configuration (aligned with worker) ---
         today = datetime.now().date()
 
@@ -303,90 +302,97 @@ def run_report(
 
         debug(context, f"[T0] Config → light={light_days}d full={full_days}d chunk={chunk}")
 
-        # --- Tier-0 Lightweight Prefetch ---
-        context["report_type"] = reportType.lower() if isinstance(reportType, str) else "weekly"
-        try:
-            light_start = today - timedelta(days=light_days)
-            light_end = today
-            debug(context, f"[T0-LIGHT] Running lightweight prefetch → {light_start} → {light_end}")
-            # Inject into context only, not as argument
-            context["light_range"] = run_tier0_pre_audit(
-                str(light_start),
-                str(light_end),
-                context,
-            )
-        except Exception as e:
-            debug(context, f"[T0-LIGHT] Prefetch failed (non-fatal): {e}")
 
-            # --- Tier-0 Full Audit (short detailed window only) ---
+        # ============================================================
+        # TIER-0 PREFETCH BLOCK (ONLY USED IN NON-CLOUDFLARE MODE)
+        # Cloudflare mode → skip ALL local prefetches
+        # ============================================================
+
+        skip_prefetch = context.get("cloudflare_mode", False)
+
+        # ------------------------------------------------------------
+        # 1) T0-LIGHT PREFETCH (SKIPPED IN CLOUDFLARE MODE)
+        # ------------------------------------------------------------
+        if not skip_prefetch:
+            context["report_type"] = reportType.lower() if isinstance(reportType, str) else "weekly"
+
+            try:
+                light_start = today - timedelta(days=light_days)
+                light_end = today
+                debug(context, f"[T0-LIGHT] Running lightweight prefetch → {light_start} → {light_end}")
+
+                context["light_range"] = run_tier0_pre_audit(
+                    str(light_start),
+                    str(light_end),
+                    context,
+                )
+            except Exception as e:
+                debug(context, f"[T0-LIGHT] Prefetch failed (non-fatal): {e}")
+
+        else:
+            debug(context, "[ORCH] Skipping LIGHT prefetch (Cloudflare mode)")
+
+
+        # ------------------------------------------------------------
+        # 2) T0-FULL DETAILED AUDIT PREFETCH (ALSO SKIPPED IN CLOUDFLARE MODE)
+        # ------------------------------------------------------------
         import pandas as pd
 
-        try:
-            full_start = today - timedelta(days=full_days)
-            full_end = today
+        if not skip_prefetch:
 
-            # --- Mode-aware control ---
-            if reportType.lower() == "season":
-                debug(context, "[T0-FULL] Skipping full audit for season mode (lightweight only).")
-                df_master, wellness, auditPartial, auditFinal = None, None, None, None
+            try:
+                full_start = today - timedelta(days=full_days)
+                full_end = today
 
-            elif reportType.lower() == "weekly":
-                debug(context, f"[T0-FULL] Running 7-day detailed audit for weekly mode → {full_start} → {full_end}")
-
-                # --- Prevent double counting between light and full datasets ---
-                if "activities_light" in context and "activities_full" in context:
-                    light_df = pd.DataFrame(context["activities_light"])
-                    full_df = pd.DataFrame(context["activities_full"])
-                    
-                    if "id" in light_df.columns and "id" in full_df.columns:
-                        # Remove any overlapping activity IDs from the light dataset
-                        light_df = light_df[~light_df["id"].isin(full_df["id"])]
-                        debug(context, f"[DEDUPE] Removed {len(context['activities_light']) - len(light_df)} duplicates from light dataset")
-                    
-                    # Replace cleaned dataset back
-                    context["activities_light"] = light_df.to_dict(orient="records")
-
-                # If prefetch already captured the window, avoid refetch
-                if context.get("prefetch_done") and context.get("snapshot_7d_json"):
-                    debug(context, "[T0-FULL] Prefetch contained full window — skipping redundant re-fetch.")
+                if reportType.lower() == "season":
+                    debug(context, "[T0-FULL] Skipping full audit for season mode (lightweight only).")
                     df_master, wellness, auditPartial, auditFinal = None, None, None, None
+
+                elif reportType.lower() == "weekly":
+                    debug(context, f"[T0-FULL] Running 7-day detailed audit for weekly mode → {full_start} → {full_end}")
+
+                    # Remove overlapping IDs if both datasets exist
+                    if "activities_light" in context and "activities_full" in context:
+                        light_df = pd.DataFrame(context["activities_light"])
+                        full_df = pd.DataFrame(context["activities_full"])
+
+                        if "id" in light_df.columns and "id" in full_df.columns:
+                            before = len(light_df)
+                            light_df = light_df[~light_df["id"].isin(full_df["id"])]
+                            debug(context, f"[DEDUPE] Removed {before - len(light_df)} duplicates from light dataset")
+
+                        context["activities_light"] = light_df.to_dict(orient="records")
+
+                    # Skip redundant re-fetch if prefetch already captured the window
+                    if context.get("prefetch_done") and context.get("snapshot_7d_json"):
+                        debug(context, "[T0-FULL] Prefetch contained full window — skipping redundant re-fetch.")
+                        df_master, wellness, auditPartial, auditFinal = None, None, None, None
+                    else:
+                        df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
+                            str(full_start),
+                            str(full_end),
+                            context,
+                        )
+
                 else:
+                    debug(context, f"[T0-FULL] Running standard audit window → {full_start} → {full_end}")
                     df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
                         str(full_start),
                         str(full_end),
                         context,
                     )
 
-            else:
-                debug(context, f"[T0-FULL] Running standard audit window → {full_start} → {full_end}")
-                df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
-                    str(full_start),
-                    str(full_end),
-                    context,
-                )
+            except Exception as e:
+                debug(context, f"[T0-FULL] Full audit failed: {e}")
+                df_master, wellness, auditPartial, auditFinal = None, None, None, None
 
-        except Exception as e:
-            debug(context, f"[T0-FULL] Full audit failed: {e}")
-            df_master, wellness, auditPartial, auditFinal = None, None, None, None
+        else:
+            debug(context, "[ORCH] Skipping FULL prefetch (Cloudflare mode)")
 
-        # --- Preserve existing full fetch if prefetch already covered it ---
-        if context.get("prefetch_done") and context.get("snapshot_7d_json"):
-            debug(context, "[T0-FULL] Prefetch contained full window — skipping redundant re-fetch.")
-            # Retain previously fetched detailed dataset and wellness
-            if context.get("df_master") is not None:
-                df_master = context.get("df_master")
-                debug(context, f"[T0-FULL] Reusing prefetch df_master with {len(df_master)} rows.")
-            elif "df_light_slice" in context:
-                df_master = context.get("df_light_slice")
-                debug(context, f"[T0-FULL] Fallback to df_light_slice ({len(df_master)} rows).")
 
-            # Preserve wellness if available in context
-            if (wellness is None or not isinstance(wellness, pd.DataFrame) or wellness.empty) and \
-            isinstance(context.get("wellness"), pd.DataFrame):
-                wellness = context["wellness"].copy()
-                debug(context, "[T0-FULL] Rehydrated wellness DataFrame from context.")
-
-        # --- Capture post-audit context safely for fallback use ---
+        # ------------------------------------------------------------
+        # 3) POST-AUDIT CONTEXT STABILISATION (kept identical)
+        # ------------------------------------------------------------
         context_pre_audit = context.copy()
 
 
