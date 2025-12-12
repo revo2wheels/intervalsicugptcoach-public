@@ -361,9 +361,13 @@ def run_report(
         full_end = today
 
         # --- Mode-aware control ---
-        if reportType.lower() == "season":
-            debug(context, "[T0-FULL] Skipping full audit for season mode (lightweight only).")
-
+        if reportType.lower() in ("weekly", "season", "summary", "wellness"):
+            debug(context, f"[T0-FULL] Running 7-day detailed audit → {full_start} → {full_end}")
+            df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
+                str(full_start),
+                str(full_end),
+                context,
+            )
         elif reportType.lower() == "weekly":
             debug(context, f"[T0-FULL] Running 7-day detailed audit for weekly mode → {full_start} → {full_end}")
 

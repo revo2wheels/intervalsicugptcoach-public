@@ -402,11 +402,15 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         else:
             df_light_slice = df_light.copy()
 
-        # df_master = df_full or fallback to 7-day light slice
-        if not df_full.empty:
-            df_master = df_full.copy()
+        report_type = context.get("report_type", "").lower()
+
+        if report_type in ("season", "season_phases", "season_summary"):
+            # NEVER use df_full for season
+            df_master = df_light.copy()
+            debug(context, f"[T0-CF] Season mode → df_master=90d light ({len(df_master)} rows)")
         else:
-            df_master = df_light_slice.copy()
+            # weekly / summary / wellness
+            df_master = df_full.copy() if not df_full.empty else df_light_slice.copy()
 
         # Inject back into context
         context["df_light"] = df_light
