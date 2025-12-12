@@ -5,11 +5,11 @@
     "meta": {
       "framework": "Unified Reporting Framework v5.1",
       "version": "v16.17",
-      "generated_at": "2025-12-12T08:05:46.280351",
+      "generated_at": "2025-12-12T09:20:25.528189",
       "report_type": "season",
       "period": {
-        "start": "2025-09-13T09:05:44.778279",
-        "end": "2025-12-12T09:05:44.778337"
+        "start": "2025-09-13T10:20:24.311407",
+        "end": "2025-12-12T10:20:24.311467"
       },
       "timezone": "Europe/Zurich",
       "athlete": {
@@ -137,15 +137,15 @@
     },
     "extended_metrics": {
       "CTL": {
-        "value": 86.9,
+        "value": 86.78,
         "status": "ok"
       },
       "ATL": {
-        "value": 76.97,
+        "value": 76.63,
         "status": "ok"
       },
       "TSB": {
-        "value": 9.93,
+        "value": 10.15,
         "status": "ok"
       }
     },
@@ -1343,13 +1343,13 @@
       "fatigue": 1.5,
       "stress": 1.6,
       "readiness": null,
-      "CTL": 86.9,
-      "ATL": 76.97,
-      "TSB": 9.93
+      "CTL": 86.78,
+      "ATL": 76.63,
+      "TSB": 10.15
     },
     "insights": {
       "fatigue_trend": {
-        "value": -0.114,
+        "value": -0.117,
         "interpretation": "Positive = accumulating fatigue, negative = recovering, near zero = stable"
       },
       "load_distribution": {
@@ -1370,5 +1370,5 @@
       }
     }
   },
-  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=6194, ctx_keys=81"
+  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=6196, ctx_keys=81"
 }

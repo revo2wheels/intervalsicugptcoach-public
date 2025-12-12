@@ -1,0 +1,705 @@
+[10:22:07] 🧭 Generating Wellness Report
+[10:22:07] 🧭 Running Wellness Report (auditFinal=True, render_mode=full+metrics)
+[10:22:07] [INTENT] Validation warning: Expecting value: line 1 column 1 (char 0)
+[10:22:07] [T0] Config → light=42d full=0d wellness=42d chunk=False
+[10:22:07] [T0-LIGHT] Running lightweight prefetch → 2025-10-31 → 2025-12-12
+[10:22:07] [Tier-0] Using API endpoint: https://intervalsicugptcoach.clive-a5a.workers.dev
+[10:22:07] [T0-LIGHT] Using controller-supplied range oldest=2025-10-31 newest=2025-12-12
+[10:22:07] [T0-LIGHT] Fetching lightweight dataset → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/activities_t0light?oldest=2025-10-31&newest=2025-12-12&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin
+[10:22:08] [T0-LIGHT] Retrieved 51 activities with 10 fields
+[10:22:08] [T0-LIGHT-DIAG] ✅ df_light populated. First 3 rows:
+        id    start_date_local        type  icu_training_load                                                                                                            name  distance  moving_time  average_heartrate        IF  VO2MaxGarmin
+i111444276 2025-12-11T17:43:49 VirtualRide                 75                                                                                                 Zwift - AT Base  54733.44         4849                124  0.748366           0.0
+i111262469 2025-12-10T18:29:30 VirtualRide                 82 Zwift - Group Workout: RAD RACE VO2 max Booster Plan - Week 6 - 3x10x40/20 VO2 max Intervalle With Freddy Ovett  41037.59         4236                132  0.833333           0.0
+i111245880 2025-12-10T18:16:22 VirtualRide                  4                                                                                    Zwift - Tick Tock in Watopia   5626.88          608                 94  0.470588           0.0
+[10:22:08] [T0-LIGHT-DIAG] Columns: ['id', 'start_date_local', 'type', 'icu_training_load', 'name', 'distance', 'moving_time', 'average_heartrate', 'IF', 'VO2MaxGarmin']
+[10:22:08] [T0-INIT] Created df_light_slice from df_light → 51 rows.
+[10:22:08] [T0-DIAG] Pre-slice df_light rows=51; min=2025-10-31T18:35:54, max=2025-12-11T17:43:49
+[10:22:08] [T0-SLICE] 7-day window: 2025-12-06 → 2025-12-13 (7 activities selected)
+[10:22:08] [T0-DEDUP] Dropped 0 duplicates → 7 unique events
+[10:22:08] 🧭 Tier-0: 7-day subset (lightweight) = 8.42 h | 285.4 km | 396 TSS (7 events)
+[10:22:08] [T0] Fetching athlete profile via OAuth2: https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/profile
+[10:22:08] [T0] Athlete profile fetched successfully — id=1914741 name=Clive King
+[10:22:08] [T0-FETCH] Adaptive method for report_type=wellness
+[10:22:08] [T0-FETCH] Weekly mode → combining lightweight (for totals) + 7-day full fetch (for detail).
+[10:22:08] [T0] Full fetch: chunking 7 days into 1 parts.
+[10:22:08] [Tier-0 fetch] → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/1914741/activities?oldest=2025-12-06&newest=2025-12-12
+[10:22:08] [T0] Deduplicated 0 duplicate activities.
+[10:22:08] [T0] Expanded icu_zone_times → 8 cols
+[10:22:09] [T0] Expanded icu_hr_zone_times → 7 cols
+[10:22:09] [T0] Diagnostics → Σ(TSS)=396.0, Σ(Time)=8.42h
+[10:22:09] [T0] Completed full fetch → 7 records.
+[10:22:09] [T0-FETCH] Full 7-day fetch complete: 7 activities.
+[10:22:09] [T0-MERGE] ⚠ Missing light or full dataset — merge skipped.
+[10:22:09] [T0] Unknown report_type='wellness' → defaulting to LIGHT dataset (7 rows)
+[10:22:09] [T0-FIX] snapshot_7d_json serialized from fallback source (7 rows).
+[10:22:09] [T0] Fetching wellness for 42 days → 2025-10-31 00:00:00 → 2025-12-12 00:00:00
+[10:22:09] [T0-WELLNESS] Requested range 43d exceeds default 42d — using full requested span.
+[10:22:09] [T0-WELLNESS] Fetching wellness for 43d range, chunk size=42d
+[10:22:09] [T0-WELLNESS] Fetching wellness for 43d range, chunk size=42d
+[10:22:09] [T0-WELLNESS] Fetching chunk → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/1914741/wellness?oldest=2025-10-31&newest=2025-12-11
+[10:22:09] [T0-WELLNESS] Fetching chunk → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/1914741/wellness?oldest=2025-12-12&newest=2025-12-12
+[10:22:09] [T0-WELLNESS] Missing 'date' column — coercing.
+[10:22:09] [T0-WELLNESS] Final wellness shape=(43, 43), columns=['date', 'ctl', 'atl', 'rampRate', 'ctlLoad', 'atlLoad', 'sportInfo', 'updated', 'weight', 'restingHR', 'hrv', 'hrvSDNN', 'menstrualPhase', 'menstrualPhasePredicted', 'kcalConsumed', 'sleepSecs', 'sleepScore', 'sleepQuality', 'avgSleepingHR', 'soreness', 'fatigue', 'stress', 'mood', 'motivation', 'injury', 'spO2', 'systolic', 'diastolic', 'hydration', 'hydrationVolume', 'readiness', 'baevskySI', 'bloodGlucose', 'lactate', 'bodyFat', 'abdomen', 'vo2max', 'comments', 'steps', 'respiration', 'locked', 'tempWeight', 'tempRestingHR']
+[10:22:09] [T0] Stored wellness in context (43 rows)
+[10:22:09] [T0] Activities range: 2025-12-07 → 2025-12-11
+[10:22:09] [T0] Wellness range: 2025-10-31 → 2025-12-12
+[10:22:09] [T0] Clipped wellness to last 42 days relative to activities end date (2025-10-30 onward) → 43 rows.
+[10:22:09] [DEBUG] wellness raw: <class 'pandas.core.frame.DataFrame'> 43
+[10:22:09] [DEBUG] wellness columns: ['date', 'ctl', 'atl', 'rampRate', 'ctlLoad', 'atlLoad', 'sportInfo', 'updated', 'weight', 'restingHR', 'hrv', 'hrvSDNN', 'menstrualPhase', 'menstrualPhasePredicted', 'kcalConsumed', 'sleepSecs', 'sleepScore', 'sleepQuality', 'avgSleepingHR', 'soreness', 'fatigue', 'stress', 'mood', 'motivation', 'injury', 'spO2', 'systolic', 'diastolic', 'hydration', 'hydrationVolume', 'readiness', 'baevskySI', 'bloodGlucose', 'lactate', 'bodyFat', 'abdomen', 'vo2max', 'comments', 'steps', 'respiration', 'locked', 'tempWeight', 'tempRestingHR']
+[10:22:09] [DEBUG] wellness head:
+          date        ctl        atl  ...  locked  tempWeight  tempRestingHR
+0  2025-10-31  91.069214  86.061030  ...    None        True          False
+1  2025-11-01  93.091020  98.167015  ...    None       False          False
+2  2025-11-02  90.900740  85.098816  ...    None       False          False
+3  2025-11-03  91.914795  91.608640  ...    None        True          False
+4  2025-11-04  91.210950  87.667076  ...    None        True          False
+
+[5 rows x 43 columns]
+[10:22:09] [T0] Diagnostic only: 7 rows fetched, moving_time present=True
+[10:22:09] [T0] Pre-audit complete: activities=7, wellness_rows=43
+[10:22:09] [T0] Stored wellness for Tier-1 (43 rows)
+[10:22:09] [T0] ⚠ No df_light data available to build snapshots
+[10:22:09] [T0-FULL] Running standard audit window → 2025-12-12 → 2025-12-12
+[10:22:09] [Tier-0] Using API endpoint: https://intervalsicugptcoach.clive-a5a.workers.dev
+[10:22:09] [T0-LIGHT] Prefetch already completed — skipping redundant lightweight call.
+[10:22:09] [T0] Fetching athlete profile via OAuth2: https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/profile
+[10:22:09] [T0] Athlete profile fetched successfully — id=1914741 name=Clive King
+[10:22:09] [T0-FETCH] Adaptive method for report_type=wellness
+[10:22:09] [T0-FETCH] Weekly mode → combining lightweight (for totals) + 7-day full fetch (for detail).
+[10:22:09] [T0] Full fetch: chunking 7 days into 1 parts.
+[10:22:09] [Tier-0 fetch] → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/1914741/activities?oldest=2025-12-06&newest=2025-12-12
+[10:22:10] [T0] Deduplicated 0 duplicate activities.
+[10:22:10] [T0] Expanded icu_zone_times → 8 cols
+[10:22:10] [T0] Expanded icu_hr_zone_times → 7 cols
+[10:22:10] [T0] Diagnostics → Σ(TSS)=396.0, Σ(Time)=8.42h
+[10:22:10] [T0] Completed full fetch → 7 records.
+[10:22:10] [T0-FETCH] Full 7-day fetch complete: 7 activities.
+[10:22:10] [T0-MERGE] ✅ Light+Full merged successfully: 7 rows (dropped 7)
+[10:22:10] [T0-MERGE] Σh=8.42h ΣTSS=396
+[10:22:10] [T0] Unknown report_type='wellness' → defaulting to LIGHT dataset (0 rows)
+[10:22:10] [T0-FULL] Full audit failed: ❌ Tier-0: snapshot source empty before serialization (report_type=wellness)
+[10:22:10] [T0-FULL] Prefetch contained full window — skipping redundant re-fetch.
+[10:22:10] [T0-FULL] Reusing prefetch df_master with 7 rows.
+[10:22:10] [T0-FULL] Rehydrated wellness DataFrame from context.
+[10:22:10] [T0-FULL] Preserved wellness in context (43 rows)
+[10:22:10] [T0] Completed range alignment → chunk_mode=False
+[10:22:10] ⚙️ Normalization: seconds detected, no conversion (max=10896)
+[10:22:10] [T1] Running Tier-1 controller (wellness mode)
+[10:22:10] [T1] Running Tier-1 controller (weekly mode)
+[10:22:10] [T1] Using merged df_raw_activities (7 rows) as base dataset.
+[10:22:10] [T1] Filtered origin=='event' → 7/7 rows retained.
+[10:22:10] [T1] Columns at entry: ['id', 'start_date_local', 'type', 'icu_training_load', 'name', 'distance', 'moving_time', 'average_heartrate', 'IF', 'VO2MaxGarmin', 'origin', 'icu_ignore_time', 'icu_pm_cp', 'icu_pm_w_prime', 'icu_pm_p_max', 'icu_pm_ftp', 'icu_pm_ftp_secs', 'icu_pm_ftp_watts', 'icu_ignore_power', 'icu_rolling_cp', 'icu_rolling_w_prime', 'icu_rolling_p_max', 'icu_rolling_ftp', 'icu_rolling_ftp_delta', 'icu_atl', 'icu_ctl', 'ss_p_max', 'ss_w_prime', 'ss_cp', 'paired_event_id', 'icu_ftp', 'icu_joules', 'icu_recording_time', 'elapsed_time', 'icu_weighted_avg_watts', 'carbs_used', 'description', 'start_date', 'icu_distance', 'coasting_time', 'total_elevation_gain', 'total_elevation_loss', 'timezone', 'trainer', 'sub_type', 'commute', 'race', 'max_speed', 'average_speed', 'device_watts', 'has_heartrate', 'max_heartrate', 'average_cadence', 'calories', 'average_temp', 'min_temp', 'max_temp', 'avg_lr_balance', 'gap', 'gap_model', 'use_elevation_correction', 'perceived_exertion', 'device_name', 'power_meter', 'power_meter_serial', 'power_meter_battery', 'crank_length', 'external_id', 'file_sport_index', 'file_type', 'icu_athlete_id', 'created', 'icu_sync_date', 'analyzed', 'icu_w_prime', 'p_max', 'threshold_pace', 'icu_hr_zones', 'pace_zones', 'lthr', 'icu_resting_hr', 'icu_weight', 'icu_power_zones', 'icu_sweet_spot_min', 'icu_sweet_spot_max', 'icu_power_spike_threshold', 'trimp', 'icu_warmup_time', 'icu_cooldown_time', 'icu_chat_id', 'icu_ignore_hr', 'ignore_velocity', 'ignore_pace', 'ignore_parts', 'icu_training_load_data', 'interval_summary', 'skyline_chart_bytes', 'stream_types', 'has_weather', 'has_segments', 'power_field_names', 'power_field', 'pace_zone_times', 'gap_zone_times', 'use_gap_zone_times', 'custom_zones', 'tiz_order', 'polarization_index', 'icu_achievements', 'icu_intervals_edited', 'lock_intervals', 'icu_lap_count', 'icu_joules_above_ftp', 'icu_max_wbal_depletion', 'icu_hrr', 'icu_sync_error', 'icu_color', 'icu_power_hr_z2', 'icu_power_hr_z2_mins', 'icu_cadence_z2', 'icu_rpe', 'feel', 'kg_lifted', 'decoupling', 'icu_median_time_delta', 'p30s_exponent', 'workout_shift_secs', 'strava_id', 'lengths', 'pool_length', 'compliance', 'coach_tick', 'source', 'oauth_client_id', 'oauth_client_name', 'average_altitude', 'min_altitude', 'max_altitude', 'power_load', 'hr_load', 'pace_load', 'hr_load_type', 'pace_load_type', 'tags', 'attachments', 'recording_stops', 'average_weather_temp', 'min_weather_temp', 'max_weather_temp', 'average_feels_like', 'min_feels_like', 'max_feels_like', 'average_wind_speed', 'average_wind_gust', 'prevailing_wind_deg', 'headwind_percent', 'tailwind_percent', 'average_clouds', 'max_rain', 'max_snow', 'carbs_ingested', 'route_id', 'pace', 'athlete_max_hr', 'group', 'icu_intensity', 'icu_efficiency_factor', 'icu_power_hr', 'session_rpe', 'average_stride', 'icu_average_watts', 'icu_variability_index', 'strain_score', 'gear.id', 'gear.name', 'gear.distance', 'gear.primary', 'icu_hrr.start_index', 'icu_hrr.end_index', 'icu_hrr.start_time', 'icu_hrr.end_time', 'icu_hrr.start_bpm', 'icu_hrr.end_bpm', 'icu_hrr.average_watts', 'icu_hrr.hrr', 'PerformanceCondition', 'date', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7']
+[10:22:10] [Tier-1] Visible subset unified: 8.42 h | 285.4 km | 396 TSS | IF=None HR=None VO₂=None
+[10:22:10] ✅ Tier-1 finalization: 7 events | 8.42 h | 396 TSS
+[10:22:10] 🧩 Tier-1 variance check passed (Δh=0.00, ΔTSS=0.0)
+[10:22:10] [T1] Normalizing and merging wellness with activity dataset before alignment check.
+[10:22:10] [T1] Wellness merged successfully — shape=(7, 246)
+[10:22:10] [T1] Wellness alignment window (tz-aware): 2025-12-07 09:41:24+01:00 → 2025-12-11 17:43:49+01:00
+[10:22:10] [T1] Wellness date range: 2025-10-31 → 2025-12-12
+[10:22:10] ✅ Wellness alignment check passed.
+[10:22:10] [T1-WELLNESS] numeric coercion failed for atl: arg must be a list, tuple, 1-d array, or Series
+[10:22:10] [T1-WELLNESS] numeric coercion failed for ctl: arg must be a list, tuple, 1-d array, or Series
+[10:22:10] [T1-REST] Starting rest day calculation from df_master.
+[10:22:10] [T1-REST] Normalized date range base → 2025-12-07 00:00:00 to 2025-12-12 00:00:00
+[10:22:10] [T1-REST] Using icu_training_load as primary load source.
+[10:22:10] [T1-REST] Daily load sample (last 7 days): {Timestamp('2025-12-06 00:00:00'): 0, Timestamp('2025-12-07 00:00:00'): 137, Timestamp('2025-12-08 00:00:00'): 39, Timestamp('2025-12-09 00:00:00'): 59, Timestamp('2025-12-10 00:00:00'): 86, Timestamp('2025-12-11 00:00:00'): 75, Timestamp('2025-12-12 00:00:00'): 0}
+[10:22:10] [T1-REST] Counted rest days: 1 → Dates: ['2025-12-06']
+[10:22:10] [T1-READINESS] readiness column summary: exists=True, non-null count=0, values=[]
+[10:22:10] [T1] Wellness summary → rest_days=1, rest_hr=43.6, hrv_trend=-1.0
+[10:22:10] [T1] Using wellness-derived load metrics: ['ctl', 'atl']
+[10:22:10] [T1] Derived TSB column added from CTL–ATL
+[10:22:10] [T1] Promoted CTL=86.78 ATL=76.63 TSB=10.15 to context
+[10:22:10] [DEBUG-T1] sanity check before Step 6b — rows in df_master: 7
+[10:22:10] [DEBUG-T1] athleteProfile present: True
+[10:22:10] [DEBUG-T1] athleteProfile keys: ['athlete_id', 'name', 'discipline', 'ftp', 'weight', 'hr_rest', 'hr_max', 'ftp_wkg', 'hr_reserve', 'zone_model', 'training_age_years', 'preferred_units', 'environment', 'timezone', 'updated']
+[10:22:10] [DEBUG-T1] Starting zone distribution extraction...
+[10:22:10] [DEBUG-T1] Activity columns sample: ['id', 'start_date_local', 'type', 'icu_training_load', 'name', 'distance', 'moving_time', 'average_heartrate', 'IF', 'VO2MaxGarmin', 'origin', 'icu_ignore_time', 'icu_pm_cp', 'icu_pm_w_prime', 'icu_pm_p_max', 'icu_pm_ftp', 'icu_pm_ftp_secs', 'icu_pm_ftp_watts', 'icu_ignore_power', 'icu_rolling_cp', 'icu_rolling_w_prime', 'icu_rolling_p_max', 'icu_rolling_ftp', 'icu_rolling_ftp_delta', 'icu_atl', 'icu_ctl', 'ss_p_max', 'ss_w_prime', 'ss_cp', 'paired_event_id', 'icu_ftp', 'icu_joules', 'icu_recording_time', 'elapsed_time', 'icu_weighted_avg_watts', 'carbs_used', 'description', 'start_date', 'icu_distance', 'coasting_time']
+[10:22:10] [DEBUG-ZONE] Available columns: ['id', 'start_date_local', 'type', 'icu_training_load', 'name', 'distance', 'moving_time', 'average_heartrate', 'IF', 'VO2MaxGarmin', 'origin', 'icu_ignore_time', 'icu_pm_cp', 'icu_pm_w_prime', 'icu_pm_p_max', 'icu_pm_ftp', 'icu_pm_ftp_secs', 'icu_pm_ftp_watts', 'icu_ignore_power', 'icu_rolling_cp', 'icu_rolling_w_prime', 'icu_rolling_p_max', 'icu_rolling_ftp', 'icu_rolling_ftp_delta', 'icu_atl', 'icu_ctl', 'ss_p_max', 'ss_w_prime', 'ss_cp', 'paired_event_id', 'icu_ftp', 'icu_joules', 'icu_recording_time', 'elapsed_time', 'icu_weighted_avg_watts', 'carbs_used', 'description', 'start_date', 'icu_distance', 'coasting_time', 'total_elevation_gain', 'total_elevation_loss', 'timezone', 'trainer', 'sub_type', 'commute', 'race', 'max_speed', 'average_speed', 'device_watts', 'has_heartrate', 'max_heartrate', 'average_cadence', 'calories', 'average_temp', 'min_temp', 'max_temp', 'avg_lr_balance', 'gap', 'gap_model', 'use_elevation_correction', 'perceived_exertion', 'device_name', 'power_meter', 'power_meter_serial', 'power_meter_battery', 'crank_length', 'external_id', 'file_sport_index', 'file_type', 'icu_athlete_id', 'created', 'icu_sync_date', 'analyzed', 'icu_w_prime', 'p_max', 'threshold_pace', 'icu_hr_zones', 'pace_zones', 'lthr', 'icu_resting_hr', 'icu_weight', 'icu_power_zones', 'icu_sweet_spot_min', 'icu_sweet_spot_max', 'icu_power_spike_threshold', 'trimp', 'icu_warmup_time', 'icu_cooldown_time', 'icu_chat_id', 'icu_ignore_hr', 'ignore_velocity', 'ignore_pace', 'ignore_parts', 'icu_training_load_data', 'interval_summary', 'skyline_chart_bytes', 'stream_types', 'has_weather', 'has_segments', 'power_field_names', 'power_field', 'pace_zone_times', 'gap_zone_times', 'use_gap_zone_times', 'custom_zones', 'tiz_order', 'polarization_index', 'icu_achievements', 'icu_intervals_edited', 'lock_intervals', 'icu_lap_count', 'icu_joules_above_ftp', 'icu_max_wbal_depletion', 'icu_hrr', 'icu_sync_error', 'icu_color', 'icu_power_hr_z2', 'icu_power_hr_z2_mins', 'icu_cadence_z2', 'icu_rpe', 'feel', 'kg_lifted', 'decoupling', 'icu_median_time_delta', 'p30s_exponent', 'workout_shift_secs', 'strava_id', 'lengths', 'pool_length', 'compliance', 'coach_tick', 'source', 'oauth_client_id', 'oauth_client_name', 'average_altitude', 'min_altitude', 'max_altitude', 'power_load', 'hr_load', 'pace_load', 'hr_load_type', 'pace_load_type', 'tags', 'attachments', 'recording_stops', 'average_weather_temp', 'min_weather_temp', 'max_weather_temp', 'average_feels_like', 'min_feels_like', 'max_feels_like', 'average_wind_speed', 'average_wind_gust', 'prevailing_wind_deg', 'headwind_percent', 'tailwind_percent', 'average_clouds', 'max_rain', 'max_snow', 'carbs_ingested', 'route_id', 'pace', 'athlete_max_hr', 'group', 'icu_intensity', 'icu_efficiency_factor', 'icu_power_hr', 'session_rpe', 'average_stride', 'icu_average_watts', 'icu_variability_index', 'strain_score', 'gear.id', 'gear.name', 'gear.distance', 'gear.primary', 'icu_hrr.start_index', 'icu_hrr.end_index', 'icu_hrr.start_time', 'icu_hrr.end_time', 'icu_hrr.start_bpm', 'icu_hrr.end_bpm', 'icu_hrr.average_watts', 'icu_hrr.hrr', 'PerformanceCondition', 'date', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7', 'merge_date', 'date_well', 'ctl', 'atl', 'rampRate', 'ctlLoad', 'atlLoad', 'sportInfo', 'updated', 'weight', 'restingHR', 'hrv', 'hrvSDNN', 'menstrualPhase', 'menstrualPhasePredicted', 'kcalConsumed', 'sleepSecs', 'sleepScore', 'sleepQuality', 'avgSleepingHR', 'soreness', 'fatigue', 'stress', 'mood', 'motivation', 'injury', 'spO2', 'systolic', 'diastolic', 'hydration', 'hydrationVolume', 'readiness', 'baevskySI', 'bloodGlucose', 'lactate', 'bodyFat', 'abdomen', 'vo2max', 'comments', 'steps', 'respiration', 'locked', 'tempWeight', 'tempRestingHR']
+[10:22:10] [DEBUG-ZONE] Detected Power zone columns: ['icu_power_zones', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8']
+[10:22:10] [DEBUG-ZONE] Detected HR zone columns: ['hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7']
+[10:22:10] [DEBUG-ZONE] Detected Pace zone columns: ['pace_zones', 'pace_zone_times', 'gap_zone_times']
+[10:22:10] [DEBUG-ZONES] power zones computed: {'power_z1': 19.2, 'power_z2': 54.4, 'power_z3': 17.7, 'power_z4': 1.9, 'power_z5': 2.3, 'power_z6': 1.6, 'power_z7': 0.0, 'power_z8': 3.0}
+[10:22:10] [DEBUG-ZONES] hr zones computed: {'hr_z1': 69.1, 'hr_z2': 20.2, 'hr_z3': 3.3, 'hr_z4': 3.0, 'hr_z5': 2.2, 'hr_z6': 2.2, 'hr_z7': 0.0}
+[10:22:10] [DEBUG-ZONES] No valid data for pace zones — total=0.
+[10:22:10] [DEBUG-T1] Completed zone distribution extraction.
+[10:22:10] [DEBUG-T1] Zone distributions now in context:
+[10:22:10]   zone_dist_power: {'power_z1': 19.2, 'power_z2': 54.4, 'power_z3': 17.7, 'power_z4': 1.9, 'power_z5': 2.3, 'power_z6': 1.6, 'power_z7': 0.0, 'power_z8': 3.0}
+[10:22:10]   zone_dist_hr: {'hr_z1': 69.1, 'hr_z2': 20.2, 'hr_z3': 3.3, 'hr_z4': 3.0, 'hr_z5': 2.2, 'hr_z6': 2.2, 'hr_z7': 0.0}
+[10:22:10]   zone_dist_pace: {}
+[10:22:10] [DEBUG-OUTLIER] Starting detection on 7 rows
+[10:22:10] [DEBUG-T1] Outlier events detected: 1
+[10:22:10] [DEBUG-OUTLIER] mean TSS=56.6, std=39.3, threshold=58.9
+[10:22:10] [DEBUG-OUTLIER] min/max TSS: 4 / 118
+[10:22:10] [TRACE] df_light_slice already present → 7 rows.
+[10:22:10] [T1] Summary → 7 events | 8.42 h | 396 TSS | 285.4 km
+[10:22:10] [T1-FIX] Rehydrated scalars for extended: ACWR=None Monotony=None Strain=None Polarisation=None
+[10:22:10] None [T2] Daily completeness summary built — 5 rows
+[10:22:10] [ALIGN] Using Tier-1 7-day snapshot for Tier-2 enforcement (7 rows)
+[10:22:10] 📁 Tier-2 module loaded from: C:\users\user\onedrive\documents\git\revo2wheels\intervalsicugptcoach\audit_core\tier2_enforce_event_only_totals.py
+[10:22:10] 🔍 Tier-2 enforcement source: Tier-2 validated events (7 rows)
+[10:22:10] ⚠️  'origin' column missing in dataset
+[10:22:10] moving_time stats:
+ count        7.000000
+mean      4330.000000
+std       3194.853153
+min        608.000000
+25%       3036.000000
+50%       3649.000000
+75%       4542.500000
+max      10896.000000
+Name: moving_time, dtype: float64
+[10:22:10] 🧩 Tier-2 weekly/calendar: using 7 light-slice rows for totals (full 7d dataset excluded).
+[10:22:10] 🧮 Tier-2 (weekly, light slice): Σ(moving_time)=30310s → 8.42h Σ(TSS)=396 Σ(Distance)=285.4 km (safe scalar fields)
+[10:22:10] [T2] Tier-1 totals validated (Δh=0.00, ΔTSS=0.0, Δd=0.0)
+[10:22:10] [T2] Retaining Tier-1 totals as validated canonical snapshot.
+[10:22:10] [DEBUG-T2] injected lightweight df_event_only preview (7 rows); full dataset retained only in memory (not serialized)
+[10:22:10] [DEBUG-T2] enforced load_metrics sync in context: {'CTL': {'value': 86.78, 'status': 'ok'}, 'ATL': {'value': 76.63, 'status': 'ok'}, 'TSB': {'value': 10.15, 'status': 'ok'}}
+[10:22:10] [T2] Enriched load_metrics propagated to renderer
+[10:22:10] [T2] Locked canonical totals — Hours=0, TSS=396, Dist=0 km
+[10:22:10] [SYNC] Totals from enforcement hours=0, tss=396
+[10:22:10] [T2] Preserved event-only totals for renderer binding.
+[10:22:10] [CHK] tier0_snapshotTotals_7d = {'hours': np.float64(8.42), 'distance': np.float64(285.4), 'tss': 396, 'count': 7, 'start': '2025-12-06', 'end': '2025-12-13'}
+[10:22:10] [CHK] tier2_enforced_totals = {'hours': np.float64(8.42), 'distance': np.float64(285.4), 'tss': 396, 'count': 7, 'start': '2025-12-06', 'end': '2025-12-13', 'avg_if': np.float64(0.68), 'avg_hr': 119, 'vo2max': nan, 'validated': True}
+[10:22:10] [CHK] tier2_eventTotals = None
+[10:22:10] [CHK] tier2_eventTotals_eventOnly = {'hours': np.float64(8.42), 'distance': np.float64(285.4), 'tss': 396, 'count': 7, 'start': '2025-12-06', 'end': '2025-12-13', 'avg_if': np.float64(0.68), 'avg_hr': 119, 'vo2max': nan, 'validated': True}
+[10:22:10] [T2] Normal precision: full fetch succeeded or 7d slice validated.
+[10:22:10] [SYNC] df_events replaced with df_scope (7 rows) for Tier-2 validator
+[10:22:10] [T2-FIX] Derived totals directly from df_scope
+[10:22:10] [T2-ACTIONS] Integrated derived metrics:
+[10:22:10] {'ACWR': {'value': np.float64(0.97), 'status': 'productive', 'icon': '🟢', 'desc': 'EWMA Acute:Chronic Load Ratio'}, 'Monotony': {'value': np.float64(1.25), 'status': 'optimal', 'icon': '🟢', 'desc': 'Foster Load Variability'}, 'Strain': {'value': np.float64(70.7), 'status': 'optimal', 'icon': '🟢', 'desc': 'Foster Load × Monotony'}, 'FatigueTrend': {'value': np.float64(-14.7), 'status': 'recovering', 'icon': '🟠', 'desc': '7d vs 28d load delta'}, 'ZQI': {'value': 0.0, 'status': 'low', 'icon': '🔴', 'desc': 'Zone Quality Index'}, 'FatOxEfficiency': {'value': np.float64(0.613), 'status': 'optimal', 'icon': '🟢', 'desc': 'Fat oxidation efficiency'}, 'Polarisation': {'value': np.float64(0.9), 'status': 'polarised', 'icon': '🟢', 'desc': 'Intensity distribution (Seiler 80/20)'}, 'FOxI': {'value': np.float64(61.3), 'status': 'moderate', 'icon': '🟠', 'desc': 'Fat oxidation index'}, 'CUR': {'value': np.float64(38.7), 'status': 'optimal', 'icon': '🟢', 'desc': 'Carbohydrate utilisation ratio'}, 'GR': {'value': np.float64(1.63), 'status': 'optimal', 'icon': '🟢', 'desc': 'Glucose ratio'}, 'MES': {'value': np.float64(22.6), 'status': 'optimal', 'icon': '🟢', 'desc': 'Metabolic efficiency score'}, 'RecoveryIndex': {'value': np.float64(0.75), 'status': 'moderate', 'icon': '🟠', 'desc': 'Recovery readiness (Noakes Central Governor)'}, 'StressTolerance': {'value': 2.0, 'status': 'optimal', 'icon': '🟢', 'desc': 'Sustainable training tolerance'}}
+[10:22:10] [T2-ACTIONS] Integrated extended metrics:
+[10:22:10] {}
+[10:22:10] [T2-ERROR] Extended metrics failed: name 'pd' is not defined
+[10:22:10] [PATCH-LOCK] Preserved load_metrics before validator: {'CTL': {'value': 86.78, 'status': 'ok'}, 'ATL': {'value': 76.63, 'status': 'ok'}, 'TSB': {'value': 10.15, 'status': 'ok'}}
+[10:22:10] 🧩 Render mode forced to full+metrics for URF layout
+[10:22:10] [SYNC] Canonical totals restored from Tier-2 enforced totals.
+[10:22:10] [RENDER-READY] Totals source=tier2_enforced_totals | hours=8.42 | tss=396 | distance=285.4
+[10:22:10] [FINALIZER] First and only render pass permitted.
+[10:22:10] [T2] Injected dual totals → cycling={'hours': np.float64(7.660833333333334), 'distance': np.float64(281.50927), 'tss': np.int64(377), 'sessions': 6}, all={'hours': np.float64(8.419444444444444), 'distance': np.float64(285.43164), 'tss': np.int64(396), 'sessions': 7}
+[10:22:10] [DEBUG] Final context before rendering: {'render_summary': False, 'include_coaching_metrics': True, 'postRenderAudit': True, 'debug_mode': False, 'cloudflare_mode': False, 'reportMode': 'wellness', 'debug_trace': ['[10:22:07] 🧭 Running Wellness Report (auditFinal=True, render_mode=full+metrics)', '[10:22:07] [INTENT] Validation warning: Expecting value: line 1 column 1 (char 0)', '[10:22:07] [T0] Config → light=42d full=0d wellness=42d chunk=False', '[10:22:07] [T0-LIGHT] Running lightweight prefetch → 2025-10-31 → 2025-12-12', '[10:22:07] [Tier-0] Using API endpoint: https://intervalsicugptcoach.clive-a5a.workers.dev', '[10:22:07] [T0-LIGHT] Using controller-supplied range oldest=2025-10-31 newest=2025-12-12', '[10:22:07] [T0-LIGHT] Fetching lightweight dataset → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/activities_t0light?oldest=2025-10-31&newest=2025-12-12&fields=id,name,type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin', '[10:22:08] [T0-LIGHT] Retrieved 51 activities with 10 fields', '[10:22:08] [T0-LIGHT-DIAG] ✅ df_light populated. First 3 rows:\n        id    start_date_local        type  icu_training_load                                                                                                            name  distance  moving_time  average_heartrate        IF  VO2MaxGarmin\ni111444276 2025-12-11T17:43:49 VirtualRide                 75                                                                                                 Zwift - AT Base  54733.44         4849                124  0.748366           0.0\ni111262469 2025-12-10T18:29:30 VirtualRide                 82 Zwift - Group Workout: RAD RACE VO2 max Booster Plan - Week 6 - 3x10x40/20 VO2 max Intervalle With Freddy Ovett  41037.59         4236                132  0.833333           0.0\ni111245880 2025-12-10T18:16:22 VirtualRide                  4                                                                                    Zwift - Tick Tock in Watopia   5626.88          608                 94  0.470588           0.0', "[10:22:08] [T0-LIGHT-DIAG] Columns: ['id', 'start_date_local', 'type', 'icu_training_load', 'name', 'distance', 'moving_time', 'average_heartrate', 'IF', 'VO2MaxGarmin']", '[10:22:08] [T0-INIT] Created df_light_slice from df_light → 51 rows.', '[10:22:08] [T0-DIAG] Pre-slice df_light rows=51; min=2025-10-31T18:35:54, max=2025-12-11T17:43:49', '[10:22:08] [T0-SLICE] 7-day window: 2025-12-06 → 2025-12-13 (7 activities selected)', '[10:22:08] [T0-DEDUP] Dropped 0 duplicates → 7 unique events', '[10:22:08] 🧭 Tier-0: 7-day subset (lightweight) = 8.42 h | 285.4 km | 396 TSS (7 events)', '[10:22:08] [T0] Fetching athlete profile via OAuth2: https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/profile', '[10:22:08] [T0] Athlete profile fetched successfully — id=1914741 name=Clive King', '[10:22:08] [T0-FETCH] Adaptive method for report_type=wellness', '[10:22:08] [T0-FETCH] Weekly mode → combining lightweight (for totals) + 7-day full fetch (for detail).', '[10:22:08] [T0] Full fetch: chunking 7 days into 1 parts.', '[10:22:08] [Tier-0 fetch] → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/1914741/activities?oldest=2025-12-06&newest=2025-12-12', '[10:22:08] [T0] Deduplicated 0 duplicate activities.', '[10:22:08] [T0] Expanded icu_zone_times → 8 cols', '[10:22:09] [T0] Expanded icu_hr_zone_times → 7 cols', '[10:22:09] [T0] Diagnostics → Σ(TSS)=396.0, Σ(Time)=8.42h', '[10:22:09] [T0] Completed full fetch → 7 records.', '[10:22:09] [T0-FETCH] Full 7-day fetch complete: 7 activities.', '[10:22:09] [T0-MERGE] ⚠ Missing light or full dataset — merge skipped.', "[10:22:09] [T0] Unknown report_type='wellness' → defaulting to LIGHT dataset (7 rows)", '[10:22:09] [T0-FIX] snapshot_7d_json serialized from fallback source (7 rows).', '[10:22:09] [T0] Fetching wellness for 42 days → 2025-10-31 00:00:00 → 2025-12-12 00:00:00', '[10:22:09] [T0-WELLNESS] Requested range 43d exceeds default 42d — using full requested span.', '[10:22:09] [T0-WELLNESS] Fetching wellness for 43d range, chunk size=42d', '[10:22:09] [T0-WELLNESS] Fetching wellness for 43d range, chunk size=42d', '[10:22:09] [T0-WELLNESS] Fetching chunk → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/1914741/wellness?oldest=2025-10-31&newest=2025-12-11', '[10:22:09] [T0-WELLNESS] Fetching chunk → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/1914741/wellness?oldest=2025-12-12&newest=2025-12-12', "[10:22:09] [T0-WELLNESS] Missing 'date' column — coercing.", "[10:22:09] [T0-WELLNESS] Final wellness shape=(43, 43), columns=['date', 'ctl', 'atl', 'rampRate', 'ctlLoad', 'atlLoad', 'sportInfo', 'updated', 'weight', 'restingHR', 'hrv', 'hrvSDNN', 'menstrualPhase', 'menstrualPhasePredicted', 'kcalConsumed', 'sleepSecs', 'sleepScore', 'sleepQuality', 'avgSleepingHR', 'soreness', 'fatigue', 'stress', 'mood', 'motivation', 'injury', 'spO2', 'systolic', 'diastolic', 'hydration', 'hydrationVolume', 'readiness', 'baevskySI', 'bloodGlucose', 'lactate', 'bodyFat', 'abdomen', 'vo2max', 'comments', 'steps', 'respiration', 'locked', 'tempWeight', 'tempRestingHR']", '[10:22:09] [T0] Stored wellness in context (43 rows)', '[10:22:09] [T0] Activities range: 2025-12-07 → 2025-12-11', '[10:22:09] [T0] Wellness range: 2025-10-31 → 2025-12-12', '[10:22:09] [T0] Clipped wellness to last 42 days relative to activities end date (2025-10-30 onward) → 43 rows.', "[10:22:09] [DEBUG] wellness raw: <class 'pandas.core.frame.DataFrame'> 43", "[10:22:09] [DEBUG] wellness columns: ['date', 'ctl', 'atl', 'rampRate', 'ctlLoad', 'atlLoad', 'sportInfo', 'updated', 'weight', 'restingHR', 'hrv', 'hrvSDNN', 'menstrualPhase', 'menstrualPhasePredicted', 'kcalConsumed', 'sleepSecs', 'sleepScore', 'sleepQuality', 'avgSleepingHR', 'soreness', 'fatigue', 'stress', 'mood', 'motivation', 'injury', 'spO2', 'systolic', 'diastolic', 'hydration', 'hydrationVolume', 'readiness', 'baevskySI', 'bloodGlucose', 'lactate', 'bodyFat', 'abdomen', 'vo2max', 'comments', 'steps', 'respiration', 'locked', 'tempWeight', 'tempRestingHR']", '[10:22:09] [DEBUG] wellness head:\n          date        ctl        atl  ...  locked  tempWeight  tempRestingHR\n0  2025-10-31  91.069214  86.061030  ...    None        True          False\n1  2025-11-01  93.091020  98.167015  ...    None       False          False\n2  2025-11-02  90.900740  85.098816  ...    None       False          False\n3  2025-11-03  91.914795  91.608640  ...    None        True          False\n4  2025-11-04  91.210950  87.667076  ...    None        True          False\n\n[5 rows x 43 columns]', '[10:22:09] [T0] Diagnostic only: 7 rows fetched, moving_time present=True', '[10:22:09] [T0] Pre-audit complete: activities=7, wellness_rows=43', '[10:22:09] [T0] Stored wellness for Tier-1 (43 rows)', '[10:22:09] [T0] ⚠ No df_light data available to build snapshots', '[10:22:09] [T0-FULL] Running standard audit window → 2025-12-12 → 2025-12-12', '[10:22:09] [Tier-0] Using API endpoint: https://intervalsicugptcoach.clive-a5a.workers.dev', '[10:22:09] [T0-LIGHT] Prefetch already completed — skipping redundant lightweight call.', '[10:22:09] [T0] Fetching athlete profile via OAuth2: https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/0/profile', '[10:22:09] [T0] Athlete profile fetched successfully — id=1914741 name=Clive King', '[10:22:09] [T0-FETCH] Adaptive method for report_type=wellness', '[10:22:09] [T0-FETCH] Weekly mode → combining lightweight (for totals) + 7-day full fetch (for detail).', '[10:22:09] [T0] Full fetch: chunking 7 days into 1 parts.', '[10:22:09] [Tier-0 fetch] → https://intervalsicugptcoach.clive-a5a.workers.dev/athlete/1914741/activities?oldest=2025-12-06&newest=2025-12-12', '[10:22:10] [T0] Deduplicated 0 duplicate activities.', '[10:22:10] [T0] Expanded icu_zone_times → 8 cols', '[10:22:10] [T0] Expanded icu_hr_zone_times → 7 cols', '[10:22:10] [T0] Diagnostics → Σ(TSS)=396.0, Σ(Time)=8.42h', '[10:22:10] [T0] Completed full fetch → 7 records.', '[10:22:10] [T0-FETCH] Full 7-day fetch complete: 7 activities.', '[10:22:10] [T0-MERGE] ✅ Light+Full merged successfully: 7 rows (dropped 7)', '[10:22:10] [T0-MERGE] Σh=8.42h ΣTSS=396', "[10:22:10] [T0] Unknown report_type='wellness' → defaulting to LIGHT dataset (0 rows)", '[10:22:10] [T0-FULL] Full audit failed: ❌ Tier-0: snapshot source empty before serialization (report_type=wellness)', '[10:22:10] [T0-FULL] Prefetch contained full window — skipping redundant re-fetch.', '[10:22:10] [T0-FULL] Reusing prefetch df_master with 7 rows.', '[10:22:10] [T0-FULL] Rehydrated wellness DataFrame from context.', '[10:22:10] [T0-FULL] Preserved wellness in context (43 rows)', '[10:22:10] [T0] Completed range alignment → chunk_mode=False', '[10:22:10] ⚙️ Normalization: seconds detected, no conversion (max=10896)', '[10:22:10] [T1] Running Tier-1 controller (wellness mode)', '[10:22:10] [T1] Running Tier-1 controller (weekly mode)', '[10:22:10] [T1] Using merged df_raw_activities (7 rows) as base dataset.', "[10:22:10] [T1] Filtered origin=='event' → 7/7 rows retained.", "[10:22:10] [T1] Columns at entry: ['id', 'start_date_local', 'type', 'icu_training_load', 'name', 'distance', 'moving_time', 'average_heartrate', 'IF', 'VO2MaxGarmin', 'origin', 'icu_ignore_time', 'icu_pm_cp', 'icu_pm_w_prime', 'icu_pm_p_max', 'icu_pm_ftp', 'icu_pm_ftp_secs', 'icu_pm_ftp_watts', 'icu_ignore_power', 'icu_rolling_cp', 'icu_rolling_w_prime', 'icu_rolling_p_max', 'icu_rolling_ftp', 'icu_rolling_ftp_delta', 'icu_atl', 'icu_ctl', 'ss_p_max', 'ss_w_prime', 'ss_cp', 'paired_event_id', 'icu_ftp', 'icu_joules', 'icu_recording_time', 'elapsed_time', 'icu_weighted_avg_watts', 'carbs_used', 'description', 'start_date', 'icu_distance', 'coasting_time', 'total_elevation_gain', 'total_elevation_loss', 'timezone', 'trainer', 'sub_type', 'commute', 'race', 'max_speed', 'average_speed', 'device_watts', 'has_heartrate', 'max_heartrate', 'average_cadence', 'calories', 'average_temp', 'min_temp', 'max_temp', 'avg_lr_balance', 'gap', 'gap_model', 'use_elevation_correction', 'perceived_exertion', 'device_name', 'power_meter', 'power_meter_serial', 'power_meter_battery', 'crank_length', 'external_id', 'file_sport_index', 'file_type', 'icu_athlete_id', 'created', 'icu_sync_date', 'analyzed', 'icu_w_prime', 'p_max', 'threshold_pace', 'icu_hr_zones', 'pace_zones', 'lthr', 'icu_resting_hr', 'icu_weight', 'icu_power_zones', 'icu_sweet_spot_min', 'icu_sweet_spot_max', 'icu_power_spike_threshold', 'trimp', 'icu_warmup_time', 'icu_cooldown_time', 'icu_chat_id', 'icu_ignore_hr', 'ignore_velocity', 'ignore_pace', 'ignore_parts', 'icu_training_load_data', 'interval_summary', 'skyline_chart_bytes', 'stream_types', 'has_weather', 'has_segments', 'power_field_names', 'power_field', 'pace_zone_times', 'gap_zone_times', 'use_gap_zone_times', 'custom_zones', 'tiz_order', 'polarization_index', 'icu_achievements', 'icu_intervals_edited', 'lock_intervals', 'icu_lap_count', 'icu_joules_above_ftp', 'icu_max_wbal_depletion', 'icu_hrr', 'icu_sync_error', 'icu_color', 'icu_power_hr_z2', 'icu_power_hr_z2_mins', 'icu_cadence_z2', 'icu_rpe', 'feel', 'kg_lifted', 'decoupling', 'icu_median_time_delta', 'p30s_exponent', 'workout_shift_secs', 'strava_id', 'lengths', 'pool_length', 'compliance', 'coach_tick', 'source', 'oauth_client_id', 'oauth_client_name', 'average_altitude', 'min_altitude', 'max_altitude', 'power_load', 'hr_load', 'pace_load', 'hr_load_type', 'pace_load_type', 'tags', 'attachments', 'recording_stops', 'average_weather_temp', 'min_weather_temp', 'max_weather_temp', 'average_feels_like', 'min_feels_like', 'max_feels_like', 'average_wind_speed', 'average_wind_gust', 'prevailing_wind_deg', 'headwind_percent', 'tailwind_percent', 'average_clouds', 'max_rain', 'max_snow', 'carbs_ingested', 'route_id', 'pace', 'athlete_max_hr', 'group', 'icu_intensity', 'icu_efficiency_factor', 'icu_power_hr', 'session_rpe', 'average_stride', 'icu_average_watts', 'icu_variability_index', 'strain_score', 'gear.id', 'gear.name', 'gear.distance', 'gear.primary', 'icu_hrr.start_index', 'icu_hrr.end_index', 'icu_hrr.start_time', 'icu_hrr.end_time', 'icu_hrr.start_bpm', 'icu_hrr.end_bpm', 'icu_hrr.average_watts', 'icu_hrr.hrr', 'PerformanceCondition', 'date', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7']", '[10:22:10] [Tier-1] Visible subset unified: 8.42 h | 285.4 km | 396 TSS | IF=None HR=None VO₂=None', '[10:22:10] ✅ Tier-1 finalization: 7 events | 8.42 h | 396 TSS', '[10:22:10] 🧩 Tier-1 variance check passed (Δh=0.00, ΔTSS=0.0)', '[10:22:10] [T1] Normalizing and merging wellness with activity dataset before alignment check.', '[10:22:10] [T1] Wellness merged successfully — shape=(7, 246)', '[10:22:10] [T1-WELLNESS] numeric coercion failed for atl: arg must be a list, tuple, 1-d array, or Series', '[10:22:10] [T1-WELLNESS] numeric coercion failed for ctl: arg must be a list, tuple, 1-d array, or Series', '[10:22:10] [T1-REST] Starting rest day calculation from df_master.', '[10:22:10] [T1-REST] Normalized date range base → 2025-12-07 00:00:00 to 2025-12-12 00:00:00', '[10:22:10] [T1-REST] Using icu_training_load as primary load source.', "[10:22:10] [T1-REST] Daily load sample (last 7 days): {Timestamp('2025-12-06 00:00:00'): 0, Timestamp('2025-12-07 00:00:00'): 137, Timestamp('2025-12-08 00:00:00'): 39, Timestamp('2025-12-09 00:00:00'): 59, Timestamp('2025-12-10 00:00:00'): 86, Timestamp('2025-12-11 00:00:00'): 75, Timestamp('2025-12-12 00:00:00'): 0}", "[10:22:10] [T1-REST] Counted rest days: 1 → Dates: ['2025-12-06']", '[10:22:10] [T1-READINESS] readiness column summary: exists=True, non-null count=0, values=[]', '[10:22:10] [T1] Wellness summary → rest_days=1, rest_hr=43.6, hrv_trend=-1.0', "[10:22:10] [T1] Using wellness-derived load metrics: ['ctl', 'atl']", '[10:22:10] [T1] Derived TSB column added from CTL–ATL', '[10:22:10] [T1] Promoted CTL=86.78 ATL=76.63 TSB=10.15 to context', '[10:22:10] [DEBUG-T1] sanity check before Step 6b — rows in df_master: 7', '[10:22:10] [DEBUG-T1] athleteProfile present: True', "[10:22:10] [DEBUG-T1] athleteProfile keys: ['athlete_id', 'name', 'discipline', 'ftp', 'weight', 'hr_rest', 'hr_max', 'ftp_wkg', 'hr_reserve', 'zone_model', 'training_age_years', 'preferred_units', 'environment', 'timezone', 'updated']", '[10:22:10] [DEBUG-T1] Starting zone distribution extraction...', "[10:22:10] [DEBUG-T1] Activity columns sample: ['id', 'start_date_local', 'type', 'icu_training_load', 'name', 'distance', 'moving_time', 'average_heartrate', 'IF', 'VO2MaxGarmin', 'origin', 'icu_ignore_time', 'icu_pm_cp', 'icu_pm_w_prime', 'icu_pm_p_max', 'icu_pm_ftp', 'icu_pm_ftp_secs', 'icu_pm_ftp_watts', 'icu_ignore_power', 'icu_rolling_cp', 'icu_rolling_w_prime', 'icu_rolling_p_max', 'icu_rolling_ftp', 'icu_rolling_ftp_delta', 'icu_atl', 'icu_ctl', 'ss_p_max', 'ss_w_prime', 'ss_cp', 'paired_event_id', 'icu_ftp', 'icu_joules', 'icu_recording_time', 'elapsed_time', 'icu_weighted_avg_watts', 'carbs_used', 'description', 'start_date', 'icu_distance', 'coasting_time']", "[10:22:10] [DEBUG-ZONE] Available columns: ['id', 'start_date_local', 'type', 'icu_training_load', 'name', 'distance', 'moving_time', 'average_heartrate', 'IF', 'VO2MaxGarmin', 'origin', 'icu_ignore_time', 'icu_pm_cp', 'icu_pm_w_prime', 'icu_pm_p_max', 'icu_pm_ftp', 'icu_pm_ftp_secs', 'icu_pm_ftp_watts', 'icu_ignore_power', 'icu_rolling_cp', 'icu_rolling_w_prime', 'icu_rolling_p_max', 'icu_rolling_ftp', 'icu_rolling_ftp_delta', 'icu_atl', 'icu_ctl', 'ss_p_max', 'ss_w_prime', 'ss_cp', 'paired_event_id', 'icu_ftp', 'icu_joules', 'icu_recording_time', 'elapsed_time', 'icu_weighted_avg_watts', 'carbs_used', 'description', 'start_date', 'icu_distance', 'coasting_time', 'total_elevation_gain', 'total_elevation_loss', 'timezone', 'trainer', 'sub_type', 'commute', 'race', 'max_speed', 'average_speed', 'device_watts', 'has_heartrate', 'max_heartrate', 'average_cadence', 'calories', 'average_temp', 'min_temp', 'max_temp', 'avg_lr_balance', 'gap', 'gap_model', 'use_elevation_correction', 'perceived_exertion', 'device_name', 'power_meter', 'power_meter_serial', 'power_meter_battery', 'crank_length', 'external_id', 'file_sport_index', 'file_type', 'icu_athlete_id', 'created', 'icu_sync_date', 'analyzed', 'icu_w_prime', 'p_max', 'threshold_pace', 'icu_hr_zones', 'pace_zones', 'lthr', 'icu_resting_hr', 'icu_weight', 'icu_power_zones', 'icu_sweet_spot_min', 'icu_sweet_spot_max', 'icu_power_spike_threshold', 'trimp', 'icu_warmup_time', 'icu_cooldown_time', 'icu_chat_id', 'icu_ignore_hr', 'ignore_velocity', 'ignore_pace', 'ignore_parts', 'icu_training_load_data', 'interval_summary', 'skyline_chart_bytes', 'stream_types', 'has_weather', 'has_segments', 'power_field_names', 'power_field', 'pace_zone_times', 'gap_zone_times', 'use_gap_zone_times', 'custom_zones', 'tiz_order', 'polarization_index', 'icu_achievements', 'icu_intervals_edited', 'lock_intervals', 'icu_lap_count', 'icu_joules_above_ftp', 'icu_max_wbal_depletion', 'icu_hrr', 'icu_sync_error', 'icu_color', 'icu_power_hr_z2', 'icu_power_hr_z2_mins', 'icu_cadence_z2', 'icu_rpe', 'feel', 'kg_lifted', 'decoupling', 'icu_median_time_delta', 'p30s_exponent', 'workout_shift_secs', 'strava_id', 'lengths', 'pool_length', 'compliance', 'coach_tick', 'source', 'oauth_client_id', 'oauth_client_name', 'average_altitude', 'min_altitude', 'max_altitude', 'power_load', 'hr_load', 'pace_load', 'hr_load_type', 'pace_load_type', 'tags', 'attachments', 'recording_stops', 'average_weather_temp', 'min_weather_temp', 'max_weather_temp', 'average_feels_like', 'min_feels_like', 'max_feels_like', 'average_wind_speed', 'average_wind_gust', 'prevailing_wind_deg', 'headwind_percent', 'tailwind_percent', 'average_clouds', 'max_rain', 'max_snow', 'carbs_ingested', 'route_id', 'pace', 'athlete_max_hr', 'group', 'icu_intensity', 'icu_efficiency_factor', 'icu_power_hr', 'session_rpe', 'average_stride', 'icu_average_watts', 'icu_variability_index', 'strain_score', 'gear.id', 'gear.name', 'gear.distance', 'gear.primary', 'icu_hrr.start_index', 'icu_hrr.end_index', 'icu_hrr.start_time', 'icu_hrr.end_time', 'icu_hrr.start_bpm', 'icu_hrr.end_bpm', 'icu_hrr.average_watts', 'icu_hrr.hrr', 'PerformanceCondition', 'date', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8', 'hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7', 'merge_date', 'date_well', 'ctl', 'atl', 'rampRate', 'ctlLoad', 'atlLoad', 'sportInfo', 'updated', 'weight', 'restingHR', 'hrv', 'hrvSDNN', 'menstrualPhase', 'menstrualPhasePredicted', 'kcalConsumed', 'sleepSecs', 'sleepScore', 'sleepQuality', 'avgSleepingHR', 'soreness', 'fatigue', 'stress', 'mood', 'motivation', 'injury', 'spO2', 'systolic', 'diastolic', 'hydration', 'hydrationVolume', 'readiness', 'baevskySI', 'bloodGlucose', 'lactate', 'bodyFat', 'abdomen', 'vo2max', 'comments', 'steps', 'respiration', 'locked', 'tempWeight', 'tempRestingHR']", "[10:22:10] [DEBUG-ZONE] Detected Power zone columns: ['icu_power_zones', 'power_z1', 'power_z2', 'power_z3', 'power_z4', 'power_z5', 'power_z6', 'power_z7', 'power_z8']", "[10:22:10] [DEBUG-ZONE] Detected HR zone columns: ['hr_z1', 'hr_z2', 'hr_z3', 'hr_z4', 'hr_z5', 'hr_z6', 'hr_z7']", "[10:22:10] [DEBUG-ZONE] Detected Pace zone columns: ['pace_zones', 'pace_zone_times', 'gap_zone_times']", "[10:22:10] [DEBUG-ZONES] power zones computed: {'power_z1': 19.2, 'power_z2': 54.4, 'power_z3': 17.7, 'power_z4': 1.9, 'power_z5': 2.3, 'power_z6': 1.6, 'power_z7': 0.0, 'power_z8': 3.0}", "[10:22:10] [DEBUG-ZONES] hr zones computed: {'hr_z1': 69.1, 'hr_z2': 20.2, 'hr_z3': 3.3, 'hr_z4': 3.0, 'hr_z5': 2.2, 'hr_z6': 2.2, 'hr_z7': 0.0}", '[10:22:10] [DEBUG-ZONES] No valid data for pace zones — total=0.', '[10:22:10] [DEBUG-T1] Completed zone distribution extraction.', '[10:22:10] [DEBUG-T1] Zone distributions now in context:', "[10:22:10]   zone_dist_power: {'power_z1': 19.2, 'power_z2': 54.4, 'power_z3': 17.7, 'power_z4': 1.9, 'power_z5': 2.3, 'power_z6': 1.6, 'power_z7': 0.0, 'power_z8': 3.0}", "[10:22:10]   zone_dist_hr: {'hr_z1': 69.1, 'hr_z2': 20.2, 'hr_z3': 3.3, 'hr_z4': 3.0, 'hr_z5': 2.2, 'hr_z6': 2.2, 'hr_z7': 0.0}", '[10:22:10]   zone_dist_pace: {}', '[10:22:10] [DEBUG-OUTLIER] Starting detection on 7 rows', '[10:22:10] [DEBUG-T1] Outlier events detected: 1', '[10:22:10] [DEBUG-OUTLIER] mean TSS=56.6, std=39.3, threshold=58.9', '[10:22:10] [DEBUG-OUTLIER] min/max TSS: 4 / 118', '[10:22:10] [TRACE] df_light_slice already present → 7 rows.', '[10:22:10] [T1] Summary → 7 events | 8.42 h | 396 TSS | 285.4 km', '[10:22:10] [T1-FIX] Rehydrated scalars for extended: ACWR=None Monotony=None Strain=None Polarisation=None', '[10:22:10] [ALIGN] Using Tier-1 7-day snapshot for Tier-2 enforcement (7 rows)', '[10:22:10] 📁 Tier-2 module loaded from: C:\\users\\user\\onedrive\\documents\\git\\revo2wheels\\intervalsicugptcoach\\audit_core\\tier2_enforce_event_only_totals.py', '[10:22:10] 🔍 Tier-2 enforcement source: Tier-2 validated events (7 rows)', "[10:22:10] ⚠️  'origin' column missing in dataset", '[10:22:10] moving_time stats:\n count        7.000000\nmean      4330.000000\nstd       3194.853153\nmin        608.000000\n25%       3036.000000\n50%       3649.000000\n75%       4542.500000\nmax      10896.000000\nName: moving_time, dtype: float64', '[10:22:10] 🧩 Tier-2 weekly/calendar: using 7 light-slice rows for totals (full 7d dataset excluded).', '[10:22:10] 🧮 Tier-2 (weekly, light slice): Σ(moving_time)=30310s → 8.42h Σ(TSS)=396 Σ(Distance)=285.4 km (safe scalar fields)', '[10:22:10] [T2] Tier-1 totals validated (Δh=0.00, ΔTSS=0.0, Δd=0.0)', '[10:22:10] [T2] Retaining Tier-1 totals as validated canonical snapshot.', '[10:22:10] [DEBUG-T2] injected lightweight df_event_only preview (7 rows); full dataset retained only in memory (not serialized)', "[10:22:10] [DEBUG-T2] enforced load_metrics sync in context: {'CTL': {'value': 86.78, 'status': 'ok'}, 'ATL': {'value': 76.63, 'status': 'ok'}, 'TSB': {'value': 10.15, 'status': 'ok'}}", '[10:22:10] [T2] Enriched load_metrics propagated to renderer', '[10:22:10] [T2] Locked canonical totals — Hours=0, TSS=396, Dist=0 km', '[10:22:10] [SYNC] Totals from enforcement hours=0, tss=396', '[10:22:10] [T2] Preserved event-only totals for renderer binding.', "[10:22:10] [CHK] tier0_snapshotTotals_7d = {'hours': np.float64(8.42), 'distance': np.float64(285.4), 'tss': 396, 'count': 7, 'start': '2025-12-06', 'end': '2025-12-13'}", "[10:22:10] [CHK] tier2_enforced_totals = {'hours': np.float64(8.42), 'distance': np.float64(285.4), 'tss': 396, 'count': 7, 'start': '2025-12-06', 'end': '2025-12-13', 'avg_if': np.float64(0.68), 'avg_hr': 119, 'vo2max': nan, 'validated': True}", '[10:22:10] [CHK] tier2_eventTotals = None', "[10:22:10] [CHK] tier2_eventTotals_eventOnly = {'hours': np.float64(8.42), 'distance': np.float64(285.4), 'tss': 396, 'count': 7, 'start': '2025-12-06', 'end': '2025-12-13', 'avg_if': np.float64(0.68), 'avg_hr': 119, 'vo2max': nan, 'validated': True}", '[10:22:10] [T2] Normal precision: full fetch succeeded or 7d slice validated.', '[10:22:10] [SYNC] df_events replaced with df_scope (7 rows) for Tier-2 validator', '[10:22:10] [T2-FIX] Derived totals directly from df_scope', '[10:22:10] [T2-ACTIONS] Integrated derived metrics:', "[10:22:10] {'ACWR': {'value': np.float64(0.97), 'status': 'productive', 'icon': '🟢', 'desc': 'EWMA Acute:Chronic Load Ratio'}, 'Monotony': {'value': np.float64(1.25), 'status': 'optimal', 'icon': '🟢', 'desc': 'Foster Load Variability'}, 'Strain': {'value': np.float64(70.7), 'status': 'optimal', 'icon': '🟢', 'desc': 'Foster Load × Monotony'}, 'FatigueTrend': {'value': np.float64(-14.7), 'status': 'recovering', 'icon': '🟠', 'desc': '7d vs 28d load delta'}, 'ZQI': {'value': 0.0, 'status': 'low', 'icon': '🔴', 'desc': 'Zone Quality Index'}, 'FatOxEfficiency': {'value': np.float64(0.613), 'status': 'optimal', 'icon': '🟢', 'desc': 'Fat oxidation efficiency'}, 'Polarisation': {'value': np.float64(0.9), 'status': 'polarised', 'icon': '🟢', 'desc': 'Intensity distribution (Seiler 80/20)'}, 'FOxI': {'value': np.float64(61.3), 'status': 'moderate', 'icon': '🟠', 'desc': 'Fat oxidation index'}, 'CUR': {'value': np.float64(38.7), 'status': 'optimal', 'icon': '🟢', 'desc': 'Carbohydrate utilisation ratio'}, 'GR': {'value': np.float64(1.63), 'status': 'optimal', 'icon': '🟢', 'desc': 'Glucose ratio'}, 'MES': {'value': np.float64(22.6), 'status': 'optimal', 'icon': '🟢', 'desc': 'Metabolic efficiency score'}, 'RecoveryIndex': {'value': np.float64(0.75), 'status': 'moderate', 'icon': '🟠', 'desc': 'Recovery readiness (Noakes Central Governor)'}, 'StressTolerance': {'value': 2.0, 'status': 'optimal', 'icon': '🟢', 'desc': 'Sustainable training tolerance'}}", '[10:22:10] [T2-ACTIONS] Integrated extended metrics:', '[10:22:10] {}', "[10:22:10] [T2-ERROR] Extended metrics failed: name 'pd' is not defined", "[10:22:10] [PATCH-LOCK] Preserved load_metrics before validator: {'CTL': {'value': 86.78, 'status': 'ok'}, 'ATL': {'value': 76.63, 'status': 'ok'}, 'TSB': {'value': 10.15, 'status': 'ok'}}", '[10:22:10] 🧩 Render mode forced to full+metrics for URF layout', '[10:22:10] [SYNC] Canonical totals restored from Tier-2 enforced totals.', '[10:22:10] [RENDER-READY] Totals source=tier2_enforced_totals | hours=8.42 | tss=396 | distance=285.4', '[10:22:10] [FINALIZER] First and only render pass permitted.', "[10:22:10] [T2] Injected dual totals → cycling={'hours': np.float64(7.660833333333334), 'distance': np.float64(281.50927), 'tss': np.int64(377), 'sessions': 6}, all={'hours': np.float64(8.419444444444444), 'distance': np.float64(285.43164), 'tss': np.int64(396), 'sessions': 7}"], 'range': {'lightDays': 42, 'fullDays': 0, 'wellnessDays': 42, 'chunk': False}, 'report_type': 'wellness', 'prefetch_done': True, 'df_light_full':             id     start_date_local  ...        IF  VO2MaxGarmin
+0   i111444276  2025-12-11T17:43:49  ...  0.748366      0.000000
+1   i111262469  2025-12-10T18:29:30  ...  0.833333      0.000000
+2   i111245880  2025-12-10T18:16:22  ...  0.470588      0.000000
+3   i111056415  2025-12-09T18:08:05  ...  0.761438      0.000000
+4   i110861675  2025-12-08T17:52:52  ...  0.647059      0.000000
+5   i110641320  2025-12-07T13:46:06  ...       NaN      0.000000
+6   i110622356  2025-12-07T09:41:24  ...  0.624183      0.000000
+7   i109604842  2025-12-01T17:48:22  ...  0.696078      0.000000
+8   i109443433  2025-11-30T16:11:01  ...  0.718954      0.000000
+9   i109381673  2025-11-30T09:59:21  ...       NaN      0.000000
+10  i109278153  2025-11-29T13:31:02  ...  0.776667     66.630630
+11  i108999789  2025-11-27T18:10:03  ...  0.901961      0.000000
+12  i108993708  2025-11-27T17:52:27  ...  0.735294      0.000000
+13  i108837453  2025-11-26T17:59:56  ...  0.843137      0.000000
+14  i108683330  2025-11-25T18:10:04  ...  0.872549      0.000000
+15  i108671982  2025-11-25T17:52:29  ...  0.591503      0.000000
+16  i108336864  2025-11-23T15:35:02  ...       NaN      0.000000
+17  i108324360  2025-11-23T12:04:34  ...   0.70915      0.000000
+18  i108294494  2025-11-23T11:17:42  ...   0.70915      0.000000
+19  i108284800  2025-11-23T11:09:12  ...  0.359477      0.000000
+20  i108154181  2025-11-22T09:35:02  ...       NaN      0.000000
+21  i108072763  2025-11-21T17:34:52  ...  0.761438      0.000000
+22  i107926202  2025-11-20T17:46:12  ...  0.718954      0.000000
+23  i107914422  2025-11-20T17:09:48  ...  0.911765      0.000000
+24  i107909104  2025-11-20T17:00:13  ...  0.607843      0.000000
+25  i107863792  2025-11-20T10:43:56  ...       NaN      0.000000
+26  i107771198  2025-11-19T18:03:36  ...  0.882353      0.000000
+27  i107583717  2025-11-18T17:45:30  ...  0.712418      0.000000
+28  i107464421  2025-11-17T17:31:03  ...  0.856209      0.000000
+29  i107048066  2025-11-15T13:04:52  ...       NaN      0.000000
+30  i107028184  2025-11-15T09:58:20  ...      0.86     65.791893
+31  i106764996  2025-11-13T16:59:36  ...   0.75817      0.000000
+32  i106588124  2025-11-12T16:55:11  ...  0.637255      0.000000
+33  i106415992  2025-11-11T17:52:01  ...  0.797386      0.000000
+34  i106401331  2025-11-11T17:40:35  ...  0.584967      0.000000
+35  i106373243  2025-11-11T13:11:48  ...       NaN      0.000000
+36  i106037029  2025-11-09T12:14:22  ...      0.78     68.270081
+37  i105981176  2025-11-09T10:04:45  ...       NaN      0.000000
+38  i105859346  2025-11-08T11:49:24  ...      0.68     68.858505
+39  i105833043  2025-11-08T09:56:34  ...       NaN      0.000000
+40  i105773857  2025-11-07T18:30:08  ...  0.895425      0.000000
+41  i105758697  2025-11-07T17:52:06  ...  0.614379      0.000000
+42  i105624388  2025-11-06T18:16:29  ...  0.705882      0.000000
+43  i105308685  2025-11-04T18:00:55  ...  0.715686      0.000000
+44  i105297636  2025-11-04T17:43:18  ...  0.627451      0.000000
+45  i105148826  2025-11-03T18:01:18  ...  0.892157      0.000000
+46  i105140121  2025-11-03T17:41:35  ...  0.604575      0.000000
+47  i105138333  2025-11-03T17:09:50  ...  0.944444      0.000000
+48  i104781214  2025-11-01T13:11:36  ...       NaN      0.000000
+49  i104753457  2025-11-01T09:13:07  ...  0.696667     69.020325
+50  i104670958  2025-10-31T18:35:54  ...  0.656863      0.000000
+
+[51 rows x 10 columns], 'tier0_snapshotTotals_7d': {'hours': np.float64(8.42), 'distance': np.float64(285.4), 'tss': 396, 'count': 7, 'start': '2025-12-06', 'end': '2025-12-13'}, 'snapshot_7d_json': '[{"id":"i111444276","start_date_local":1765475029000,"type":"VirtualRide","icu_training_load":75,"name":"Zwift - AT Base","distance":54733.44,"moving_time":4849,"average_heartrate":124,"IF":0.7483660131,"VO2MaxGarmin":0.0},{"id":"i111262469","start_date_local":1765391370000,"type":"VirtualRide","icu_training_load":82,"name":"Zwift - Group Workout: RAD RACE VO2 max Booster Plan - Week 6 - 3x10x40\\/20 VO2 max Intervalle With Freddy Ovett","distance":41037.59,"moving_time":4236,"average_heartrate":132,"IF":0.8333333333,"VO2MaxGarmin":0.0},{"id":"i111245880","start_date_local":1765390582000,"type":"VirtualRide","icu_training_load":4,"name":"Zwift - Tick Tock in Watopia","distance":5626.88,"moving_time":608,"average_heartrate":94,"IF":0.4705882353,"VO2MaxGarmin":0.0},{"id":"i111056415","start_date_local":1765303685000,"type":"VirtualRide","icu_training_load":59,"name":"Zwift - Group Workout: BaseCamp Aerobic Endurance with Cadence Builds","distance":32474.04,"moving_time":3649,"average_heartrate":134,"IF":0.7614379085,"VO2MaxGarmin":0.0},{"id":"i110861675","start_date_local":1765216372000,"type":"VirtualRide","icu_training_load":39,"name":"Zwift - nope","distance":36408.29,"moving_time":3341,"average_heartrate":113,"IF":0.6470588235,"VO2MaxGarmin":0.0},{"id":"i110641320","start_date_local":1765115166000,"type":"Hike","icu_training_load":19,"name":"Otto walk","distance":3922.37,"moving_time":2731,"average_heartrate":110,"IF":"NaN","VO2MaxGarmin":0.0},{"id":"i110622356","start_date_local":1765100484000,"type":"VirtualRide","icu_training_load":118,"name":"Zwift - Group Ride: Flanders Coffee Ride en France","distance":111229.03,"moving_time":10896,"average_heartrate":117,"IF":0.6241830065,"VO2MaxGarmin":0.0}]', 'timezone': 'Europe/Zurich', 'athleteProfile': {'athlete_id': '1914741', 'name': 'Clive King', 'discipline': 'cycling', 'ftp': None, 'weight': None, 'hr_rest': None, 'hr_max': None, 'ftp_wkg': None, 'hr_reserve': None, 'zone_model': {'type': 'power_zones', 'schema': 'Coggan_7Z', 'zones': {}}, 'training_age_years': None, 'preferred_units': 'metric', 'environment': None, 'timezone': 'Europe/Zurich', 'updated': None}, 'athlete': {'id': '1914741', 'name': 'Clive King', 'profile_medium': 'https://storage.googleapis.com/intervals-icu-images/profile_pics/2eaed503-0e10-40a4-b7dc-b63768fecbef', 'city': 'Jongny', 'state': 'Vaud', 'country': 'Switzerland', 'timezone': 'Europe/Zurich', 'sex': 'M', 'bio': None, 'website': 'https://www.cliveking.net', 'email': None}, 'report_mode': 'rolling', 'window_start': datetime.date(2025, 12, 6), 'window_end': datetime.date(2025, 12, 12), 'fetch_mode': 'full', 'data_source': 'full_7d', 'wellness': {'rest_hr': np.float64(43.6), 'hrv_trend': -1.0, 'rest_days': 1, 'fatigue': np.float64(1.5), 'stress': np.float64(1.6), 'readiness': nan}, 'auditPartial': False, 'auditFinal': True, 'window_summary': {'mode': 'rolling', 'start': '2025-12-06', 'end': '2025-12-12'}, 'df_light':             id     start_date_local  ...        IF  VO2MaxGarmin
+0   i111444276  2025-12-11T17:43:49  ...  0.748366      0.000000
+1   i111262469  2025-12-10T18:29:30  ...  0.833333      0.000000
+2   i111245880  2025-12-10T18:16:22  ...  0.470588      0.000000
+3   i111056415  2025-12-09T18:08:05  ...  0.761438      0.000000
+4   i110861675  2025-12-08T17:52:52  ...  0.647059      0.000000
+5   i110641320  2025-12-07T13:46:06  ...       NaN      0.000000
+6   i110622356  2025-12-07T09:41:24  ...  0.624183      0.000000
+7   i109604842  2025-12-01T17:48:22  ...  0.696078      0.000000
+8   i109443433  2025-11-30T16:11:01  ...  0.718954      0.000000
+9   i109381673  2025-11-30T09:59:21  ...       NaN      0.000000
+10  i109278153  2025-11-29T13:31:02  ...  0.776667     66.630630
+11  i108999789  2025-11-27T18:10:03  ...  0.901961      0.000000
+12  i108993708  2025-11-27T17:52:27  ...  0.735294      0.000000
+13  i108837453  2025-11-26T17:59:56  ...  0.843137      0.000000
+14  i108683330  2025-11-25T18:10:04  ...  0.872549      0.000000
+15  i108671982  2025-11-25T17:52:29  ...  0.591503      0.000000
+16  i108336864  2025-11-23T15:35:02  ...       NaN      0.000000
+17  i108324360  2025-11-23T12:04:34  ...   0.70915      0.000000
+18  i108294494  2025-11-23T11:17:42  ...   0.70915      0.000000
+19  i108284800  2025-11-23T11:09:12  ...  0.359477      0.000000
+20  i108154181  2025-11-22T09:35:02  ...       NaN      0.000000
+21  i108072763  2025-11-21T17:34:52  ...  0.761438      0.000000
+22  i107926202  2025-11-20T17:46:12  ...  0.718954      0.000000
+23  i107914422  2025-11-20T17:09:48  ...  0.911765      0.000000
+24  i107909104  2025-11-20T17:00:13  ...  0.607843      0.000000
+25  i107863792  2025-11-20T10:43:56  ...       NaN      0.000000
+26  i107771198  2025-11-19T18:03:36  ...  0.882353      0.000000
+27  i107583717  2025-11-18T17:45:30  ...  0.712418      0.000000
+28  i107464421  2025-11-17T17:31:03  ...  0.856209      0.000000
+29  i107048066  2025-11-15T13:04:52  ...       NaN      0.000000
+30  i107028184  2025-11-15T09:58:20  ...      0.86     65.791893
+31  i106764996  2025-11-13T16:59:36  ...   0.75817      0.000000
+32  i106588124  2025-11-12T16:55:11  ...  0.637255      0.000000
+33  i106415992  2025-11-11T17:52:01  ...  0.797386      0.000000
+34  i106401331  2025-11-11T17:40:35  ...  0.584967      0.000000
+35  i106373243  2025-11-11T13:11:48  ...       NaN      0.000000
+36  i106037029  2025-11-09T12:14:22  ...      0.78     68.270081
+37  i105981176  2025-11-09T10:04:45  ...       NaN      0.000000
+38  i105859346  2025-11-08T11:49:24  ...      0.68     68.858505
+39  i105833043  2025-11-08T09:56:34  ...       NaN      0.000000
+40  i105773857  2025-11-07T18:30:08  ...  0.895425      0.000000
+41  i105758697  2025-11-07T17:52:06  ...  0.614379      0.000000
+42  i105624388  2025-11-06T18:16:29  ...  0.705882      0.000000
+43  i105308685  2025-11-04T18:00:55  ...  0.715686      0.000000
+44  i105297636  2025-11-04T17:43:18  ...  0.627451      0.000000
+45  i105148826  2025-11-03T18:01:18  ...  0.892157      0.000000
+46  i105140121  2025-11-03T17:41:35  ...  0.604575      0.000000
+47  i105138333  2025-11-03T17:09:50  ...  0.944444      0.000000
+48  i104781214  2025-11-01T13:11:36  ...       NaN      0.000000
+49  i104753457  2025-11-01T09:13:07  ...  0.696667     69.020325
+50  i104670958  2025-10-31T18:35:54  ...  0.656863      0.000000
+
+[51 rows x 10 columns], 'activities_light':            id    start_date_local         type  ...        IF VO2MaxGarmin  origin
+0  i111444276 2025-12-11 17:43:49  VirtualRide  ...  0.748366          0.0   light
+1  i111262469 2025-12-10 18:29:30  VirtualRide  ...  0.833333          0.0   light
+2  i111245880 2025-12-10 18:16:22  VirtualRide  ...  0.470588          0.0   light
+3  i111056415 2025-12-09 18:08:05  VirtualRide  ...  0.761438          0.0   light
+4  i110861675 2025-12-08 17:52:52  VirtualRide  ...  0.647059          0.0   light
+5  i110641320 2025-12-07 13:46:06         Hike  ...       NaN          0.0   light
+6  i110622356 2025-12-07 09:41:24  VirtualRide  ...  0.624183          0.0   light
+
+[7 rows x 11 columns], 'df_light_slice':            id    start_date_local         type  ...        IF VO2MaxGarmin  origin
+0  i111444276 2025-12-11 17:43:49  VirtualRide  ...  0.748366          0.0   light
+1  i111262469 2025-12-10 18:29:30  VirtualRide  ...  0.833333          0.0   light
+2  i111245880 2025-12-10 18:16:22  VirtualRide  ...  0.470588          0.0   light
+3  i111056415 2025-12-09 18:08:05  VirtualRide  ...  0.761438          0.0   light
+4  i110861675 2025-12-08 17:52:52  VirtualRide  ...  0.647059          0.0   light
+5  i110641320 2025-12-07 13:46:06         Hike  ...       NaN          0.0   light
+6  i110622356 2025-12-07 09:41:24  VirtualRide  ...  0.624183          0.0   light
+
+[7 rows x 11 columns], 'df_master':            id          start_date_local         type  ...  hr_z5  hr_z6  hr_z7
+0  i111444276 2025-12-11 17:43:49+01:00  VirtualRide  ...    0.0    0.0    0.0
+1  i111262469 2025-12-10 18:29:30+01:00  VirtualRide  ...  661.0  662.0    9.0
+2  i111245880 2025-12-10 18:16:22+01:00  VirtualRide  ...    0.0    0.0    0.0
+3  i111056415 2025-12-09 18:08:05+01:00  VirtualRide  ...    5.0    0.0    0.0
+4  i110861675 2025-12-08 17:52:52+01:00  VirtualRide  ...    0.0    0.0    0.0
+5  i110641320 2025-12-07 13:46:06+01:00         Hike  ...    0.0    0.0    0.0
+6  i110622356 2025-12-07 09:41:24+01:00  VirtualRide  ...    0.0    0.0    0.0
+
+[7 rows x 202 columns], 'light_range': (           id          start_date_local         type  ...  hr_z5  hr_z6  hr_z7
+0  i111444276 2025-12-11 17:43:49+01:00  VirtualRide  ...    0.0    0.0    0.0
+1  i111262469 2025-12-10 18:29:30+01:00  VirtualRide  ...  661.0  662.0    9.0
+2  i111245880 2025-12-10 18:16:22+01:00  VirtualRide  ...    0.0    0.0    0.0
+3  i111056415 2025-12-09 18:08:05+01:00  VirtualRide  ...    5.0    0.0    0.0
+4  i110861675 2025-12-08 17:52:52+01:00  VirtualRide  ...    0.0    0.0    0.0
+5  i110641320 2025-12-07 13:46:06+01:00         Hike  ...    0.0    0.0    0.0
+6  i110622356 2025-12-07 09:41:24+01:00  VirtualRide  ...    0.0    0.0    0.0
+
+[7 rows x 202 columns],           date        ctl         atl  ...  locked  tempWeight  tempRestingHR
+0   2025-10-31  91.069214   86.061030  ...    None        True          False
+1   2025-11-01  93.091020   98.167015  ...    None       False          False
+2   2025-11-02  90.900740   85.098816  ...    None       False          False
+3   2025-11-03  91.914795   91.608640  ...    None        True          False
+4   2025-11-04  91.210950   87.667076  ...    None        True          False
+5   2025-11-05  89.064910   75.996650  ...    None       False          False
+6   2025-11-06  88.851630   76.529590  ...    None        True          False
+7   2025-11-07  90.949140   90.037544  ...    None        True          False
+8   2025-11-08  91.679720   94.292450  ...    None       False          False
+9   2025-11-09  92.957780  101.175865  ...    None        True          False
+10  2025-11-10  90.770640   87.707120  ...    None       False          False
+11  2025-11-11  91.317184   91.207280  ...    None       False          False
+12  2025-11-12  90.650930   87.452270  ...    None       False          False
+13  2025-11-13  90.588560   87.525185  ...    None       False          False
+14  2025-11-14  88.457170   75.873650  ...    None       False          False
+15  2025-11-15  91.222755   93.196340  ...    None       False          False
+16  2025-11-16  89.076440   80.789850  ...    None       False          False
+17  2025-11-17  89.286390   83.080900  ...    None        True          False
+18  2025-11-18  88.503220   79.475840  ...    None        True          False
+19  2025-11-19  88.797250   82.341180  ...    None        True          False
+20  2025-11-20  89.884320   89.351234  ...    None        True          False
+21  2025-11-21  89.204730   85.577060  ...    None        True          False
+22  2025-11-22  87.458820   76.181694  ...    None        True          False
+23  2025-11-23  90.953740   97.457040  ...    None       False          False
+24  2025-11-24  88.813750   84.483350  ...    None       False          False
+25  2025-11-25  88.794600   84.951500  ...    None        True          False
+26  2025-11-26  88.564150   84.159225  ...    None        True          False
+27  2025-11-27  88.362650   83.605540  ...    None        True          False
+28  2025-11-28  86.283620   72.475790  ...    None       False          False
+29  2025-11-29  87.218080   79.601040  ...    None        True          False
+30  2025-11-30  86.836494   78.456055  ...    None        True          False
+31  2025-12-01  86.275665   76.398510  ...    None        True          False
+32  2025-12-02  84.245740   66.228180  ...    None       False          False
+33  2025-12-03  82.263580   57.411747  ...    None       False          False
+34  2025-12-04  80.328060   49.768974  ...    None       False          False
+35  2025-12-05  78.438070   43.143623  ...    None       False          False
+36  2025-12-06  76.592560   37.400253  ...    None       False          False
+37  2025-12-07  78.013850   50.659180  ...    None        True          False
+38  2025-12-08  77.095920   49.107086  ...    None        True          False
+39  2025-12-09  76.670150   50.424053  ...    None        True          False
+40  2025-12-10  76.889660   55.160000  ...    None        True          False
+41  2025-12-11  76.845200   57.801144  ...    None       False          False
+42  2025-12-12  75.037160   50.106533  ...    None       False          False
+
+[43 rows x 43 columns], {...}, False, False), 'df_raw_activities':            id           start_date_local         type  ...  hr_z5  hr_z6  hr_z7
+0  i111444276  2025-12-11 17:43:49+01:00  VirtualRide  ...    0.0    0.0    0.0
+1  i111262469  2025-12-10 18:29:30+01:00  VirtualRide  ...  661.0  662.0    9.0
+2  i111245880  2025-12-10 18:16:22+01:00  VirtualRide  ...    0.0    0.0    0.0
+3  i111056415  2025-12-09 18:08:05+01:00  VirtualRide  ...    5.0    0.0    0.0
+4  i110861675  2025-12-08 17:52:52+01:00  VirtualRide  ...    0.0    0.0    0.0
+5  i110641320  2025-12-07 13:46:06+01:00         Hike  ...    0.0    0.0    0.0
+6  i110622356  2025-12-07 09:41:24+01:00  VirtualRide  ...    0.0    0.0    0.0
+
+[7 rows x 202 columns], 'df_full_slice':            id          start_date_local         type  ...  hr_z5  hr_z6  hr_z7
+0  i111444276 2025-12-11 17:43:49+01:00  VirtualRide  ...    0.0    0.0    0.0
+1  i111262469 2025-12-10 18:29:30+01:00  VirtualRide  ...  661.0  662.0    9.0
+2  i111245880 2025-12-10 18:16:22+01:00  VirtualRide  ...    0.0    0.0    0.0
+3  i111056415 2025-12-09 18:08:05+01:00  VirtualRide  ...    5.0    0.0    0.0
+4  i110861675 2025-12-08 17:52:52+01:00  VirtualRide  ...    0.0    0.0    0.0
+5  i110641320 2025-12-07 13:46:06+01:00         Hike  ...    0.0    0.0    0.0
+6  i110622356 2025-12-07 09:41:24+01:00  VirtualRide  ...    0.0    0.0    0.0
+
+[7 rows x 202 columns], 'activities_full':            id          start_date_local         type  ...  hr_z5  hr_z6  hr_z7
+0  i111444276 2025-12-11 17:43:49+01:00  VirtualRide  ...    0.0    0.0    0.0
+1  i111262469 2025-12-10 18:29:30+01:00  VirtualRide  ...  661.0  662.0    9.0
+2  i111245880 2025-12-10 18:16:22+01:00  VirtualRide  ...    0.0    0.0    0.0
+3  i111056415 2025-12-09 18:08:05+01:00  VirtualRide  ...    5.0    0.0    0.0
+4  i110861675 2025-12-08 17:52:52+01:00  VirtualRide  ...    0.0    0.0    0.0
+5  i110641320 2025-12-07 13:46:06+01:00         Hike  ...    0.0    0.0    0.0
+6  i110622356 2025-12-07 09:41:24+01:00  VirtualRide  ...    0.0    0.0    0.0
+
+[7 rows x 202 columns], 'chunk_mode': False, 'light_days': 42, 'full_days': 0, 'knowledge': {'athlete_profile': {'athlete_id': None, 'name': None, 'discipline': None, 'ftp': None, 'weight': None, 'hr_rest': None, 'hr_max': None, 'ftp_wkg': None, 'hr_reserve': None, 'zone_model': {'type': 'power_zones', 'schema': 'Coggan_7Z', 'zones': {}}, 'training_age_years': None, 'preferred_units': 'metric', 'environment': None, 'timezone': None, 'updated': None}, 'coach_profile': {'version': 'v16.1', 'bio': {'summary': 'Data-driven endurance coaching blending objective load metrics (TSS, CTL, ATL, HRV, VO₂max) with subjective readiness (RPE, mood, recovery). Implements evidence-based frameworks for phase-specific training adaptation.', 'domains': ['Triathlon', 'Cycling', 'Running', 'Endurance', 'Ironman', 'Gran Fondo', 'Marathon'], 'principles': ['Seiler 80/20 Polarisation', 'Banister TRIMP', 'Foster Monotony/Strain', 'San Millán Zone 2', 'Friel Periodisation', 'Sandbakk Durability', 'Skiba Critical Power', 'Coggan Power Zones', 'Noakes Central Governor']}, 'skills_matrix': {'load_management': ['ACWR', 'Strain', 'Monotony', 'CTL', 'ATL', 'Form', 'TRIMP', 'W′/CP Modeling'], 'recovery_analysis': ['RecoveryIndex', 'HRV Integration', 'Fatigue Detection', 'Sleep Quality', 'Readiness Tracking'], 'training_quality': ['PolarisationIndex', 'DurabilityIndex', 'SessionQualityRatio', 'FatOxidationIndex'], 'performance_benchmarking': ['BenchmarkIndex', 'SpecificityIndex', 'ConsistencyIndex', 'AgeFactor', 'MicrocycleRecoveryWeek']}, 'markers': {'ACWR': {'framework': 'Banister Load Ratio', 'formula': 'EWMA(Acute) / EWMA(Chronic)', 'criteria': {'productive': '0.8–1.3', 'recovery': '<0.8', 'overload': '>1.5'}}, 'Monotony': {'framework': 'Foster 2001', 'formula': 'Mean_7d / SD_7d', 'criteria': {'optimal': '0–2', 'moderate': '2.1–2.5', 'high': '>2.5'}}, 'Strain': {'framework': 'Foster 2001', 'formula': 'Monotony × ΣLoad_7d', 'criteria': {'optimal': '<600', 'moderate': '600–800', 'high': '>800'}}, 'FatigueTrend': {'framework': 'Banister EWMA Delta', 'formula': 'Mean(7d) – Mean(28d)', 'criteria': {'balanced': '-0.2–+0.2', 'accumulating': '>+0.2', 'recovering': '<-0.2'}}, 'StressTolerance': {'framework': 'Adaptive Load Tolerance', 'formula': '(strain / monotony) / 100', 'criteria': {'optimal': '2–8', 'low': '<2', 'high': '>8'}}, 'RecoveryIndex': {'framework': 'Noakes Central Governor', 'formula': 'HRV / RestHR × readiness', 'criteria': {'optimal': '0.8–1.0', 'moderate': '0.7–0.79', 'low': '<0.7'}}, 'FatOxidationIndex': {'framework': 'San Millán Zone 2 Model', 'formula': '(1 - |IF - 0.7| / 0.1) × (1 - Decoupling / 10)', 'criteria': {'optimal': '>=0.80', 'moderate': '0.60–0.79', 'low': '<0.60'}, 'placement': 'Training Quality section'}, 'FatOxEfficiency': {'framework': 'San Millán 2020', 'formula': 'Derived from IF × 0.9', 'criteria': {'optimal': '0.6–0.8', 'low': '<0.5'}}, 'FOxI': {'framework': 'Internal Derived Metric', 'formula': 'FatOxEfficiency × 100', 'criteria': {'optimal': '>=70', 'moderate': '50–69', 'low': '<50'}, 'placement': 'Training Quality section'}, 'CUR': {'framework': 'Internal Derived Metric', 'formula': '100 - FOxI', 'criteria': {'optimal': '20–60', 'high': '>80', 'low': '<20'}, 'placement': 'Training Quality section'}, 'GR': {'framework': 'Internal Derived Metric', 'formula': 'IF × 2.4', 'criteria': {'optimal': '1.5–2.1', 'moderate': '1.2–1.49', 'high': '>2.1', 'low': '<1.2'}, 'placement': 'Metabolic section'}, 'MES': {'framework': 'Internal Derived Metric', 'formula': '(FatOxEfficiency × 60) / GR', 'criteria': {'optimal': '>=20', 'moderate': '10–19', 'low': '<10'}, 'placement': 'Metabolic section'}, 'ZQI': {'framework': 'Seiler Intensity Distribution', 'formula': '100 × (Z5 + Z6 + Z7) / (Z1–Z7 total)', 'criteria': {'optimal': '5–15', 'moderate': '3–20', 'low': '<3 or >20'}, 'placement': 'Training Quality section'}, 'DurabilityIndex': {'framework': 'Sandbakk Durability', 'formula': '1 - (PowerDrop% / 100)'}, 'PolarisationIndex': {'framework': 'Seiler 80/20 Model', 'formula': '((Z1% + Z3%) - Z2%) / 100', 'criteria': {'polarised': '>0.5', 'mixed': '0.3–0.49', 'threshold': '<0.3'}}, 'TRIMP': {'framework': 'Banister Load Model', 'formula': 'Duration × HR_ratio × e^(1.92 × HR_ratio)'}, 'Readiness': {'framework': 'Noakes Central Governor', 'formula': '0.3×Mood + 0.3×Sleep + 0.2×Stress + 0.2×Fatigue'}, 'BenchmarkIndex': {'framework': 'Friel Functional Benchmarking', 'formula': '(FTP_current / FTP_prior) - 1', 'criteria': {'productive': '+2–5%', 'stagnant': '0%', 'regression': '>−3%'}}, 'SpecificityIndex': {'framework': 'Friel Specificity Ratio', 'formula': 'race_specific_hours / total_hours', 'criteria': {'peak': '0.70–0.90', 'build': '0.50–0.69', 'base': '<0.50'}}, 'ConsistencyIndex': {'framework': 'Friel Consistency Metric', 'formula': 'completed_sessions / planned_sessions', 'criteria': {'consistent': '>=0.90', 'variable': '0.75–0.89', 'inconsistent': '<0.75'}}, 'AgeFactor': {'framework': 'Friel Aging Adaptation', 'formula': 'ATL_adj = ATL × (1 - 0.005 × (Age - 40))'}}, 'metadata': {'framework_chain': ['Seiler', 'Banister', 'Foster', 'San Millán', 'Friel', 'Sandbakk', 'Skiba', 'Coggan', 'Noakes'], 'unified_framework': 'v5.1', 'audit_validation': 'Tier-2 verified, event-only totals enforced', 'variance': '<= 2%', 'last_revision': '2025-11-03'}}, 'heuristics': {'acwr_window_days': 7, 'baseline_window_days': 28, 'fatigue_decay_const': 0.2, 'stress_tolerance_scale': 100, 'polarisation_target': 0.85, 'recovery_floor': 0.75, 'efficiency_smoothing': 0.15}, 'cheatsheet': {'thresholds': {'ACWR': {'green': (0.8, 1.3), 'amber': (0.6, 1.5)}, 'Monotony': {'green': (1.0, 2.0), 'amber': (0.8, 2.5)}, 'Strain': {'green': (0, 3000), 'amber': (3000, 4000)}, 'RecoveryIndex': {'green': (0.6, 1.0), 'amber': (0.4, 0.6)}, 'Polarisation': {'green': (0.75, 0.9), 'amber': (0.65, 0.95)}, 'FatigueTrend': {'green': (-10, 10), 'amber': (-20, 20)}, 'StressTolerance': {'green': (2.0, 8.0), 'amber': (1.0, 10.0)}, 'LIR': {'green': (0.8, 1.2), 'amber': (0.6, 1.4), 'red': (0.0, 0.6)}, 'EnduranceReserve': {'green': (1.2, 2.0), 'amber': (0.8, 1.2), 'red': (0.0, 0.8)}, 'FatOxEfficiency': {'green': (0.4, 0.8), 'amber': (0.3, 0.9)}, 'FOxI': {'green': (30, 80), 'amber': (20, 90)}, 'CUR': {'green': (30, 70), 'amber': (20, 80)}, 'GR': {'green': (0.5, 2.0), 'amber': (0.3, 3.0)}, 'MES': {'green': (20, 100), 'amber': (10, 120)}, 'ACWR_Risk': {'green': (0, 1), 'amber': (1, 1)}, 'ZQI': {'green': (5, 15), 'amber': (3, 20)}, 'Durability': {'green': (0.9, 1.2), 'amber': (0.7, 0.9), 'red': (0.0, 0.7)}, 'IFDrift': {'green': (0.0, 0.05), 'amber': (0.05, 0.1), 'red': (0.1, 1.0)}}, 'context': {'ACWR': 'EWMA Acute:Chronic Load Ratio — compares 7-day vs 28-day weighted loads. 0.8–1.3 = productive training, <0.8 = recovery or detraining, >1.5 = overload/injury risk.', 'Monotony': '1–2 shows healthy variation; >2.5 means repetitive stress pattern.', 'Strain': 'Product of load × monotony; >3500 signals potential overreach.', 'FatigueTrend': 'FatigueTrend is calculated as the percentage change between the 7-day and 28-day moving averages. A 0% change indicates balance, while a positive percentage change indicates accumulating fatigue, and a negative percentage change indicates recovery.', 'ZQI': 'Zone Quality Index (%) 5-15 high-intensity time is normal <3% too easy, >20% too intense or erratic pacing.', 'FatOxEfficiency': '0.4–0.8 means balanced fat oxidation; lower = carb dependence.', 'Polarisation': '0.75–0.9 matches Seiler 80/20 distribution; <0.7 = too intense.', 'FOxI': 'FatOx index %; higher values mean more efficient aerobic base.', 'CUR': 'Carbohydrate Utilisation Ratio; 30-80 balanced metabolic use.', 'GR': 'Glucose Ratio; >2 indicates excess glycolytic bias.', 'MES': 'Metabolic Efficiency Score; >20 is good endurance economy.', 'RecoveryIndex': '0.6–1.0 means recovered; <0.5 = heavy fatigue.', 'ACWR_Risk': 'Used internally for stability check.', 'StressTolerance': '2–8 indicates sustainable training strain capacity.', 'Durability': 'Durability index — ratio of power/HR stability under fatigue; >0.9 indicates good endurance robustness.', 'LIR': 'Load Intensity Ratio — ratio of total intensity to total duration; 0.8–1.2 indicates balanced training intensity distribution.', 'EnduranceReserve': 'Endurance Reserve — ratio of aerobic durability to fatigue index; >1.2 indicates strong endurance foundation.', 'IFDrift': 'IF Drift — change in Intensity Factor (power vs HR) over time; <5% stable, >10% indicates endurance fatigue or overheating.'}, 'coaching_links': {'ACWR': 'If ACWR > 1.5, reduce intensity and focus on recovery to avoid overload. If ACWR < 0.8, gradually increase training load with controlled progression to build endurance.', 'Monotony': 'If Monotony > 2.5, introduce more variation in training or implement a deload week to reduce repetitive stress.', 'Strain': 'If Strain > 3000, monitor for signs of overreach and consider more rest or deloading. If Strain > 3500, consider reducing volume or intensity temporarily.', 'RecoveryIndex': 'If RecoveryIndex is low (<0.7), ensure adequate rest and recovery, and avoid heavy training loads.', 'FatigueTrend': 'If FatigueTrend is negative (e.g., below -0.2), this indicates a recovering state. Continue with controlled training load and focus on recovery to ensure sustained progress. Avoid aggressive increases in load.', 'FatOxEfficiency': 'If FatOxEfficiency is low (<0.6), focus on improving aerobic base with longer, low-intensity efforts.', 'Polarisation': 'If Polarisation < 0.7, adjust training to increase low-intensity (Z1/Z2) work and reduce high-intensity work (Z5/Z6).', 'ZQI': 'If ZQI > 20%, review pacing strategy; excessive high-intensity time could indicate erratic pacing or overtraining. Aim for 5-15% ZQI for balanced training.', 'FOxI': 'If FOxI is increasing, continue to prioritize low-intensity work to enhance fat metabolism. If it decreases, consider increasing your Zone 2 training duration.', 'CUR': 'If CUR is outside the green zone (30-70), adjust carbohydrate intake and fueling strategy to ensure balanced metabolic use during long sessions.', 'GR': 'If GR exceeds 2.0, focus on reducing glycolytic intensity and increase aerobic work. Ensure sufficient recovery to avoid over-reliance on carbs.', 'MES': 'If MES is below 20, work on improving metabolic efficiency by increasing endurance training with a focus on aerobic base and fat metabolism.', 'StressTolerance': "If StressTolerance is high (>8), reduce overall load and increase recovery time. If it's low (<2), ensure proper training load progression."}, 'advice': {'Durability': {'low': '⚠ Durability low ({:.2f}) — extend steady-state endurance or increase time-in-zone.', 'improving': '✅ Durability improving ({:.2f}) — maintain current long-ride structure.'}, 'LIR': {'high': '⚠ Load intensity too high (LIR={:.2f}) — reduce intensity or monitor recovery.', 'low': '⚠ Load intensity low (LIR={:.2f}) — add tempo or sweet-spot intervals.', 'balanced': '✅ Load intensity balanced (LIR={:.2f}).'}, 'EnduranceReserve': {'depleted': '⚠ Endurance reserve depleted ({:.2f}) — add recovery or split long sessions.', 'strong': '✅ Endurance reserve strong ({:.2f}).'}, 'EfficiencyDrift': {'high': '⚠ Efficiency drift high ({:.2%}) — improve aerobic durability or reduce fatigue load.', 'stable': '✅ Efficiency drift stable ({:.2%}).'}, 'Polarisation': {'low': '⚠ Polarisation low ({:.0%}) — increase Z1–Z2 share toward ≥70 %. ', 'optimal': '✅ Polarisation optimal ({:.0%}).'}, 'RecoveryIndex': {'poor': '⚠ Recovery Index poor ({:.2f}) — insert deload or reduce intensity.', 'moderate': '🟠 Recovery Index moderate ({:.2f}) — monitor fatigue trend.', 'healthy': '✅ Recovery Index healthy ({:.2f}).'}, 'FatigueTrend': {'recovery': '⚠ FatigueTrend ({:.2f}%) — Recovery phase detected. Maintain steady training load and prioritize recovery.', 'increasing': '✅ FatigueTrend ({:.2f}%) — Increasing fatigue trend. Consider adjusting intensity or recovery.'}, 'PhaseAdvice': {'Base': '🧱 **Base phase detected** — focus on aerobic volume (Z1–Z2 ≥ 70%), maintain ACWR ≤ 1.0.', 'Build': '📈 **Build phase detected** — progressive overload active; maintain ACWR ≤ 1.3.', 'Peak': '🏁 **Peak phase detected** — high-intensity emphasis; monitor fatigue (RI ≥ 0.6).', 'Taper': '📉 **Taper phase detected** — reduce ATL by 30–50%, maintain intensity; expected RI ↑.', 'Recovery': '💤 **Recovery phase detected** — active regeneration; target RI ≥ 0.8 and low monotony.', 'Deload': '🧘 **Deload phase detected** — reduced load, maintain frequency; transition readiness improving.', 'Continuous Load': '🔁 **Continuous Load** — steady training; insert variation if fatigue rises.'}}, 'labels': {'acwr_risk': 'EWMA Acute:Chronic Load Ratio', 'strain': 'Load × Monotony', 'fatigue_trend': 'EMA(Load, decay=0.2) (Percentage change)'}}}, 'tier1_visibleTotals': {'hours': np.float64(8.42), 'distance': np.float64(285.4), 'tss': 396, 'count': 7, 'start': '2025-12-06', 'end': '2025-12-13', 'avg_if': np.float64(0.68), 'avg_hr': 119, 'vo2max': nan, 'validated': True}, 'weeklyEventLogBlock': [{'id': 'i111444276', 'start_date_local': 1765475029000, 'type': 'VirtualRide', 'icu_training_load': 75, 'name': 'Zwift - AT Base', 'distance': 54733.44, 'moving_time': 4849, 'average_heartrate': 124, 'IF': 0.75, 'VO2MaxGarmin': 0}, {'id': 'i111262469', 'start_date_local': 1765391370000, 'type': 'VirtualRide', 'icu_training_load': 82, 'name': 'Zwift - Group Workout: RAD RACE VO2 max Booster Plan - Week 6 - 3x10x40/20 VO2 max Intervalle With Freddy Ovett', 'distance': 41037.59, 'moving_time': 4236, 'average_heartrate': 132, 'IF': 0.83, 'VO2MaxGarmin': 0}, {'id': 'i111245880', 'start_date_local': 1765390582000, 'type': 'VirtualRide', 'icu_training_load': 4, 'name': 'Zwift - Tick Tock in Watopia', 'distance': 5626.88, 'moving_time': 608, 'average_heartrate': 94, 'IF': 0.47, 'VO2MaxGarmin': 0}, {'id': 'i111056415', 'start_date_local': 1765303685000, 'type': 'VirtualRide', 'icu_training_load': 59, 'name': 'Zwift - Group Workout: BaseCamp Aerobic Endurance with Cadence Builds', 'distance': 32474.04, 'moving_time': 3649, 'average_heartrate': 134, 'IF': 0.76, 'VO2MaxGarmin': 0}, {'id': 'i110861675', 'start_date_local': 1765216372000, 'type': 'VirtualRide', 'icu_training_load': 39, 'name': 'Zwift - nope', 'distance': 36408.29, 'moving_time': 3341, 'average_heartrate': 113, 'IF': 0.65, 'VO2MaxGarmin': 0}, {'id': 'i110641320', 'start_date_local': 1765115166000, 'type': 'Hike', 'icu_training_load': 19, 'name': 'Otto walk', 'distance': 3922.37, 'moving_time': 2731, 'average_heartrate': 110, 'IF': 0.0, 'VO2MaxGarmin': 0}, {'id': 'i110622356', 'start_date_local': 1765100484000, 'type': 'VirtualRide', 'icu_training_load': 118, 'name': 'Zwift - Group Ride: Flanders Coffee Ride en France', 'distance': 111229.03, 'moving_time': 10896, 'average_heartrate': 117, 'IF': 0.62, 'VO2MaxGarmin': 0}], 'df_events':            id  start_date_local  ...        IF  VO2MaxGarmin
+0  i111444276     1765475029000  ...  0.748366             0
+1  i111262469     1765391370000  ...  0.833333             0
+2  i111245880     1765390582000  ...  0.470588             0
+3  i111056415     1765303685000  ...  0.761438             0
+4  i110861675     1765216372000  ...  0.647059             0
+5  i110641320     1765115166000  ...       NaN             0
+6  i110622356     1765100484000  ...  0.624183             0
+
+[7 rows x 10 columns], 'wellness_metrics': {'rest_hr': np.float64(43.6), 'hrv_trend': -1.0, 'rest_days': 1, 'fatigue': np.float64(1.5), 'stress': np.float64(1.6), 'readiness': nan}, 'wellness_summary': {'rest_hr': np.float64(43.6), 'hrv_trend': -1.0, 'rest_days': 1, 'fatigue': np.float64(1.5), 'stress': np.float64(1.6), 'readiness': nan}, 'dailyMerged':          date        ctl  ...  hydration_label  readiness_label
+0  2025-10-31  91.069214  ...              NaN              NaN
+1  2025-11-01  93.091020  ...    slightly high              NaN
+2  2025-11-02  90.900740  ...              NaN              NaN
+3  2025-11-03  91.914795  ...              NaN              NaN
+4  2025-11-04  91.210950  ...              NaN              NaN
+5  2025-11-05  89.064910  ...              NaN              NaN
+6  2025-11-06  88.851630  ...              NaN              NaN
+7  2025-11-07  90.949140  ...              NaN              NaN
+8  2025-11-08  91.679720  ...    slightly high              NaN
+9  2025-11-09  92.957780  ...              NaN              NaN
+10 2025-11-10  90.770640  ...              NaN              NaN
+11 2025-11-11  91.317184  ...    slightly high              NaN
+12 2025-11-12  90.650930  ...    slightly high              NaN
+13 2025-11-13  90.588560  ...    slightly high              NaN
+14 2025-11-14  88.457170  ...    slightly high              NaN
+15 2025-11-15  91.222755  ...    slightly high              NaN
+16 2025-11-16  89.076440  ...    slightly high              NaN
+17 2025-11-17  89.286390  ...              NaN              NaN
+18 2025-11-18  88.503220  ...              NaN              NaN
+19 2025-11-19  88.797250  ...              NaN              NaN
+20 2025-11-20  89.884320  ...              NaN              NaN
+21 2025-11-21  89.204730  ...              NaN              NaN
+22 2025-11-22  87.458820  ...              NaN              NaN
+23 2025-11-23  90.953740  ...              NaN              NaN
+24 2025-11-24  88.813750  ...              NaN              NaN
+25 2025-11-25  88.794600  ...              NaN              NaN
+26 2025-11-26  88.564150  ...              NaN              NaN
+27 2025-11-27  88.362650  ...              NaN              NaN
+28 2025-11-28  86.283620  ...              NaN              NaN
+29 2025-11-29  87.218080  ...              NaN              NaN
+30 2025-11-30  86.836494  ...              NaN              NaN
+31 2025-12-01  86.275665  ...              NaN              NaN
+32 2025-12-02  84.245740  ...              NaN              NaN
+33 2025-12-03  82.263580  ...              NaN              NaN
+34 2025-12-04  80.328060  ...              NaN              NaN
+35 2025-12-05  78.438070  ...              NaN              NaN
+36 2025-12-06  76.592560  ...              NaN              NaN
+37 2025-12-07  78.013850  ...              NaN              NaN
+38 2025-12-08  77.095920  ...              NaN              NaN
+39 2025-12-09  76.670150  ...              NaN              NaN
+40 2025-12-10  76.889660  ...              NaN              NaN
+41 2025-12-11  76.845200  ...              NaN              NaN
+42 2025-12-12  75.037160  ...              NaN              NaN
+
+[43 rows x 51 columns], 'ctl': 86.78, 'atl': 76.63, 'tsb': 10.15, 'load_metrics': {'CTL': {'value': 86.78, 'status': 'ok'}, 'ATL': {'value': 76.63, 'status': 'ok'}, 'TSB': {'value': 10.15, 'status': 'ok'}}, 'zone_dist_power': {'power_z1': 19.2, 'power_z2': 54.4, 'power_z3': 17.7, 'power_z4': 1.9, 'power_z5': 2.3, 'power_z6': 1.6, 'power_z7': 0.0, 'power_z8': 3.0}, 'zone_dist_hr': {'hr_z1': 69.1, 'hr_z2': 20.2, 'hr_z3': 3.3, 'hr_z4': 3.0, 'hr_z5': 2.2, 'hr_z6': 2.2, 'hr_z7': 0.0}, 'zone_dist_pace': {}, 'outliers': [{'date': '2025-12-07', 'event': 'Zwift - Group Ride: Flanders Coffee Ride en France', 'issue': 'TSS outlier', 'obs': 'TSS=118'}], 'ACWR': np.float64(0.97), 'Monotony': np.float64(1.25), 'Strain': np.float64(70.7), 'Polarisation': np.float64(0.9), 'tier2_enforced_totals': {'hours': np.float64(8.42), 'distance': np.float64(285.4), 'tss': 396, 'count': 7, 'start': '2025-12-06', 'end': '2025-12-13', 'avg_if': np.float64(0.68), 'avg_hr': 119, 'vo2max': nan, 'validated': True}, 'eventTotals': {'hours': np.float64(8.42), 'distance': np.float64(285.4), 'tss': 396, 'count': 7, 'start': '2025-12-06', 'end': '2025-12-13', 'avg_if': np.float64(0.68), 'avg_hr': 119, 'vo2max': nan, 'validated': True}, 'df_event_only_preview': [{'start_date_local': 1765475029000, 'name': 'Zwift - AT Base', 'icu_training_load': 75, 'moving_time': 4849.0, 'distance': 54733.44}, {'start_date_local': 1765391370000, 'name': 'Zwift - Group Workout: RAD RACE VO2 max Booster Plan - Week 6 - 3x10x40/20 VO2 max Intervalle With Freddy Ovett', 'icu_training_load': 82, 'moving_time': 4236.0, 'distance': 41037.59}, {'start_date_local': 1765390582000, 'name': 'Zwift - Tick Tock in Watopia', 'icu_training_load': 4, 'moving_time': 608.0, 'distance': 5626.88}, {'start_date_local': 1765303685000, 'name': 'Zwift - Group Workout: BaseCamp Aerobic Endurance with Cadence Builds', 'icu_training_load': 59, 'moving_time': 3649.0, 'distance': 32474.04}, {'start_date_local': 1765216372000, 'name': 'Zwift - nope', 'icu_training_load': 39, 'moving_time': 3341.0, 'distance': 36408.29}, {'start_date_local': 1765115166000, 'name': 'Otto walk', 'icu_training_load': 19, 'moving_time': 2731.0, 'distance': 3922.37}, {'start_date_local': 1765100484000, 'name': 'Zwift - Group Ride: Flanders Coffee Ride en France', 'icu_training_load': 118, 'moving_time': 10896.0, 'distance': 111229.03}], 'event_count': 7, 'trace': ['T2 totals computed from Tier-2 validated events (Δh=0.00, ΔTSS=0.0, events=7)'], 'locked_totalHours': 0, 'locked_totalTss': 396, 'locked_totalDistance': 0, 'totalHours': np.float64(8.42), 'totalTss': 396, 'tier2_eventTotals_eventOnly': {'hours': np.float64(8.42), 'distance': np.float64(285.4), 'tss': 396, 'count': 7, 'start': '2025-12-06', 'end': '2025-12-13', 'avg_if': np.float64(0.68), 'avg_hr': 119, 'vo2max': nan, 'validated': True}, 'auditPrecision': 'normal', 'fetch_status': 'complete', 'df_daily':         date  icu_training_load
+0 2025-12-07                137
+1 2025-12-08                 39
+2 2025-12-09                 59
+3 2025-12-10                 86
+4 2025-12-11                 75, 'FatigueTrend': np.float64(-14.7), 'ZQI': 0.0, 'FatOxEfficiency': np.float64(0.613), 'FOxI': np.float64(61.3), 'CUR': np.float64(38.7), 'GR': np.float64(1.63), 'MES': np.float64(22.6), 'RecoveryIndex': np.float64(0.75), 'StressTolerance': 2.0, 'derived_metrics': {'ACWR': {'value': np.float64(0.97), 'status': 'productive', 'icon': '🟢', 'desc': 'EWMA Acute:Chronic Load Ratio'}, 'Monotony': {'value': np.float64(1.25), 'status': 'optimal', 'icon': '🟢', 'desc': 'Foster Load Variability'}, 'Strain': {'value': np.float64(70.7), 'status': 'optimal', 'icon': '🟢', 'desc': 'Foster Load × Monotony'}, 'FatigueTrend': {'value': np.float64(-14.7), 'status': 'recovering', 'icon': '🟠', 'desc': '7d vs 28d load delta'}, 'ZQI': {'value': 0.0, 'status': 'low', 'icon': '🔴', 'desc': 'Zone Quality Index'}, 'FatOxEfficiency': {'value': np.float64(0.613), 'status': 'optimal', 'icon': '🟢', 'desc': 'Fat oxidation efficiency'}, 'Polarisation': {'value': np.float64(0.9), 'status': 'polarised', 'icon': '🟢', 'desc': 'Intensity distribution (Seiler 80/20)'}, 'FOxI': {'value': np.float64(61.3), 'status': 'moderate', 'icon': '🟠', 'desc': 'Fat oxidation index'}, 'CUR': {'value': np.float64(38.7), 'status': 'optimal', 'icon': '🟢', 'desc': 'Carbohydrate utilisation ratio'}, 'GR': {'value': np.float64(1.63), 'status': 'optimal', 'icon': '🟢', 'desc': 'Glucose ratio'}, 'MES': {'value': np.float64(22.6), 'status': 'optimal', 'icon': '🟢', 'desc': 'Metabolic efficiency score'}, 'RecoveryIndex': {'value': np.float64(0.75), 'status': 'moderate', 'icon': '🟠', 'desc': 'Recovery readiness (Noakes Central Governor)'}, 'StressTolerance': {'value': 2.0, 'status': 'optimal', 'icon': '🟢', 'desc': 'Sustainable training tolerance'}}, 'phases': [{'phase': 'No Data', 'start': None, 'end': None, 'delta': 0.0}], 'metric_contexts': ['✅ Monotony (1.25) — If Monotony > 2.5, introduce more variation in training or implement a deload week to reduce repetitive stress.', '✅ Strain (70.7) — If Strain > 3000, monitor for signs of overreach and consider more rest or deloading. If Strain > 3500, consider reducing volume or intensity temporarily.', '✅ FatOxEfficiency (0.613) — If FatOxEfficiency is low (<0.6), focus on improving aerobic base with longer, low-intensity efforts.', '✅ CUR (38.7) — If CUR is outside the green zone (30-70), adjust carbohydrate intake and fueling strategy to ensure balanced metabolic use during long sessions.', '✅ GR (1.63) — If GR exceeds 2.0, focus on reducing glycolytic intensity and increase aerobic work. Ensure sufficient recovery to avoid over-reliance on carbs.', '✅ MES (22.6) — If MES is below 20, work on improving metabolic efficiency by increasing endurance training with a focus on aerobic base and fat metabolism.', "✅ StressTolerance (2.0) — If StressTolerance is high (>8), reduce overall load and increase recovery time. If it's low (<2), ensure proper training load progression."], 'ui_flag': '🟠 Fatigued', 'LoadIntensityRatio': 2.0, 'actions': ['✅ Maintain ≥70 % Z1–Z2 volume (Seiler 80/20).', '⚠ Improve Zone 2 efficiency: extend duration or adjust IF.', '⚠ FatigueTrend (-14.7%) — Recovery phase detected. Maintain steady training load and prioritize recovery.', '✅ Durability improving (1.00) — maintain current long-ride structure.', '⚠ Load intensity too high (LIR=2.00) — reduce intensity or monitor recovery.', '✅ Efficiency drift stable (0.00%).', '✅ Polarisation optimal (90%).', '✅ Recovery Index healthy (0.75).', '---', '📊 Metric-based Feedback:', '✅ Monotony (1.25) — If Monotony > 2.5, introduce more variation in training or implement a deload week to reduce repetitive stress.', '✅ Strain (70.7) — If Strain > 3000, monitor for signs of overreach and consider more rest or deloading. If Strain > 3500, consider reducing volume or intensity temporarily.', '✅ FatOxEfficiency (0.613) — If FatOxEfficiency is low (<0.6), focus on improving aerobic base with longer, low-intensity efforts.', '✅ CUR (38.7) — If CUR is outside the green zone (30-70), adjust carbohydrate intake and fueling strategy to ensure balanced metabolic use during long sessions.', '✅ GR (1.63) — If GR exceeds 2.0, focus on reducing glycolytic intensity and increase aerobic work. Ensure sufficient recovery to avoid over-reliance on carbs.', '✅ MES (22.6) — If MES is below 20, work on improving metabolic efficiency by increasing endurance training with a focus on aerobic base and fat metabolism.', "✅ StressTolerance (2.0) — If StressTolerance is high (>8), reduce overall load and increase recovery time. If it's low (<2), ensure proper training load progression."], '_locked_load_metrics': {'CTL': {'value': 86.78, 'status': 'ok'}, 'ATL': {'value': 76.63, 'status': 'ok'}, 'TSB': {'value': 10.15, 'status': 'ok'}}, 'render_mode': 'full+metrics', 'totalDistance': np.float64(285.4), 'FINALIZER_LOCKED_GLOBAL': True, 'summary_all': {'hours': np.float64(8.419444444444444), 'distance': np.float64(285.43164), 'tss': np.int64(396), 'sessions': 7}, 'summary_cycling': {'hours': np.float64(7.660833333333334), 'distance': np.float64(281.50927), 'tss': np.int64(377), 'sessions': 6}, 'enforce_render_source': 'tier2_enforced_totals', 'allow_intent_inference': False}
+[10:22:10] [TRACE-RUNTIME] entering finalize_and_validate_render()
+[10:22:10] [TRACE-RUNTIME] context type = <class 'dict'>
+[10:22:10] [TRACE-RUNTIME] df_events type = <class 'pandas.core.frame.DataFrame'>
+[10:22:10] [TRACE-RUNTIME] df_events.shape = (7, 10)
+[10:22:10] [TRACE-RUNTIME] Σ moving_time/3600 = 8.42 h
+[10:22:10] [TRACE-RUNTIME] Σ icu_training_load = 396
+[10:22:10] [DEBUG-FINALIZER-ENTRY] load_metrics: {'CTL': {'value': 86.78, 'status': 'ok'}, 'ATL': {'value': 76.63, 'status': 'ok'}, 'TSB': {'value': 10.15, 'status': 'ok'}}
+[10:22:10] ⚠️ Renderer: enforcement layer not set — proceeding with full Tier-2 render.
+[10:22:10] ✅ Loaded ICON_CARDS from UIcomponents.icon_pack
+[10:22:10] 🔎 Render pre-flight — totals by source:
+[10:22:10]    df_events Σmoving_time = 8.42h
+[10:22:10]    df_events Σicu_training_load = 396.0
+[10:22:10]    eventTotals(hours) = 8.42
+[10:22:10] 
+[Tier-2 context diagnostic]
+[10:22:10] derived_metrics: True
+[10:22:10] load_metrics: True
+[10:22:10] adaptation_metrics: False
+[10:22:10] trend_metrics: False
+[10:22:10] correlation_metrics: False
+[10:22:10] [DEBUG] report_header injected: {'athlete': 'Clive King', 'discipline': 'cycling', 'report_type': 'wellness', 'framework': 'Unified_Reporting_Framework_v5.1', 'timezone': 'Europe/Zurich', 'date_range': '2025-12-06 → 2025-12-12'}
+[10:22:10] [DEBUG-FINALIZER] pre-render load_metrics: {'CTL': {'value': 86.78, 'status': 'ok'}, 'ATL': {'value': 76.63, 'status': 'ok'}, 'TSB': {'value': 10.15, 'status': 'ok'}}
+[10:22:10] [STATE-GUARD] _locked_load_metrics set (prevents recomputation)
+[10:22:10] [T2] summary_all canonical override applied
+[10:22:10] [T2] Preserving summary_cycling (subset from report_controller)
+[10:22:10] [CANONICAL PROPAGATION] hours=8.42, tss=396, dist=285.4
+[10:22:10] [LOCK] Tier-2 canonical totals re-locked before render
+[10:22:10] [TRACE-DF] Σ df_events(moving_time)/3600 = 8.42 h
+[10:22:10] [TRACE-DF] Σ df_events(icu_training_load) = 396
+[10:22:10] [TRACE-CONTEXT] totalHours (context) = 8.42
+[10:22:10] [TRACE-CONTEXT] totalTss (context) = 396
+[10:22:10] [TRACE-CONTEXT] eventTotals(hours,tss) = 8.42, 396
+[10:22:10] [ZONE-PATCH] missing zone_dist, using empty dict
+[10:22:10] [Renderer shim] Delegating to render_report() in render_unified_report.py
+[10:22:10] 
+[DEBUG-TEMPLATE: PRE-CALL]
+[10:22:10] Keys in context: ['render_summary', 'include_coaching_metrics', 'postRenderAudit', 'debug_mode', 'cloudflare_mode', 'reportMode', 'debug_trace', 'range', 'report_type', 'prefetch_done', 'df_light_full', 'tier0_snapshotTotals_7d', 'snapshot_7d_json', 'timezone', 'athleteProfile', 'athlete', 'report_mode', 'window_start', 'window_end', 'fetch_mode', 'data_source', 'wellness', 'auditPartial', 'auditFinal', 'window_summary', 'df_light', 'activities_light', 'df_light_slice', 'df_master', 'light_range', 'df_raw_activities', 'df_full_slice', 'activities_full', 'chunk_mode', 'light_days', 'full_days', 'knowledge', 'tier1_visibleTotals', 'weeklyEventLogBlock', 'df_events', 'wellness_metrics', 'wellness_summary', 'dailyMerged', 'ctl', 'atl', 'tsb', 'load_metrics', 'zone_dist_power', 'zone_dist_hr', 'zone_dist_pace', 'outliers', 'ACWR', 'Monotony', 'Strain', 'Polarisation', 'tier2_enforced_totals', 'eventTotals', 'df_event_only_preview', 'event_count', 'trace', 'locked_totalHours', 'locked_totalTss', 'locked_totalDistance', 'totalHours', 'totalTss', 'tier2_eventTotals_eventOnly', 'auditPrecision', 'fetch_status', 'df_daily', 'FatigueTrend', 'ZQI', 'FatOxEfficiency', 'FOxI', 'CUR', 'GR', 'MES', 'RecoveryIndex', 'StressTolerance', 'derived_metrics', 'phases', 'metric_contexts', 'ui_flag', 'LoadIntensityRatio', 'actions', '_locked_load_metrics', 'render_mode', 'totalDistance', 'FINALIZER_LOCKED_GLOBAL', 'summary_all', 'summary_cycling', 'enforce_render_source', 'allow_intent_inference', 'allowSyntheticRender', 'Duration_total', 'icon_pack', 'force_icon_pack', 'event_log_text', 'df_event_only', 'report_header', 'summary_patch', 'zone_dist']
+[10:22:10] load_metrics pre-pass: {'CTL': {'value': 86.78, 'status': 'ok'}, 'ATL': {'value': 76.63, 'status': 'ok'}, 'TSB': {'value': 10.15, 'status': 'ok'}, 'totalHours': np.float64(8.42), 'totalTss': 396, 'totalDistance': np.float64(285.4)}
+[10:22:10] _locked_load_metrics pre-pass: {'totalHours': np.float64(8.42), 'totalTss': 396, 'totalDistance': np.float64(285.4), 'source': 'tier2_final_lock'}
+[10:22:10] Report type: wellness
+[10:22:10] ------------------------------------------------------------
+[10:22:10] [RENDER] Starting unified render for wellness
+[10:22:10] [RENDER] Early cleanup — removed trace/debug artifacts before markdown assembly
+[10:22:10] [SYNC] Renderer using Tier-2 enforced totals (canonical).
+[10:22:10] [RENDER] Totals unified from tier2_enforced_totals → 8.42 h | 285.4 km | 396 TSS
+[10:22:10] [TRACE-RENDER-ENTRY] totalHours = 8.42
+[10:22:10] [TRACE-RENDER-ENTRY] totalTss   = 396
+[10:22:10] [DEBUG-RENDER] incoming load_metrics: {
+  "CTL": {
+    "value": 86.78,
+    "status": "ok"
+  },
+  "ATL": {
+    "value": 76.63,
+    "status": "ok"
+  },
+  "TSB": {
+    "value": 10.15,
+    "status": "ok"
+  },
+  "totalHours": 8.42,
+  "totalTss": 396,
+  "totalDistance": 285.4
+}
+[10:22:10] [TRACE-HEADER] ctx.totalHours = 8.42
+[10:22:10] [TRACE-HEADER] ctx.totalTss   = 396
+[10:22:10] [SYNC] Derived metrics updated from Tier-2 context before render.
+[10:22:10] [Tier-2] Skipping Efficiency & Adaptation section for weekly mode.
+[10:22:10] [RENDER-PHASE] Entering phase summary logic — report_type='wellness'
+[10:22:10] [RENDER-SECTIONS] md_text len=4698
+[10:22:10] [TRACE-MD] Markdown length = 4698
+[10:22:10] [TRACE-MD] ❌ Adaptation section missing before normalization.
+[10:22:10] [Tier-2] Using canonical summary_patch from Tier-2 validator
+[10:22:10] [TRACE-DESERIALIZE] wrapped.context totals=8.42, 396
+[10:22:10] 
+[DEBUG-TEMPLATE: POST-CALL]
+[10:22:10] Renderer function executed: render_report
+[10:22:10] Result type: dict
+[10:22:10] Result keys: ['markdown', 'context', 'header', 'summary', 'actions', 'metrics', 'phases']
+[10:22:10] load_metrics still in context: True
+[10:22:10] load_metrics post-render: {'CTL': {'value': 86.78, 'status': 'ok'}, 'ATL': {'value': 76.63, 'status': 'ok'}, 'TSB': {'value': 10.15, 'status': 'ok'}, 'totalHours': 8.42, 'totalTss': 396, 'totalDistance': 285.4}
+[10:22:10] ------------------------------------------------------------
+[10:22:10] [DEBUG-TEMPLATE] Renderer returned dict — updating report.
+[10:22:10] 
+[DEBUG-TEMPLATE: FINAL]
+[10:22:10] Final report keys: ['markdown', 'context', 'header', 'summary', 'actions', 'metrics', 'phases', 'lines']
+[10:22:10] Final context load_metrics: {'CTL': {'value': 86.78, 'status': 'ok'}, 'ATL': {'value': 76.63, 'status': 'ok'}, 'TSB': {'value': 10.15, 'status': 'ok'}, 'totalHours': 8.42, 'totalTss': 396, 'totalDistance': 285.4}
+[10:22:10] ================================================================================
+[10:22:10] [TRACE-POST-RENDER-CHECK] header={'title': 'Wellness Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Clive King', 'period': '2025-12-06 → 2025-12-12', 'timestamp': '2025-12-12T09:22:10.534371', 'discipline': 'cycling'}
+[10:22:10] [TRACE-POST-RENDER-CHECK] summary={'totalHours': np.float64(8.42), 'totalTss': 396, 'totalDist': np.float64(285.4), 'eventCount': 7, 'period': '2025-12-06 → 2025-12-12'}
+[10:22:10] [POST-RENDER] Canonical event-only totals enforced → summary(+dual summaries) synced
+[10:22:10] [PATCH] header rebuilt for schema compliance: {'title': 'Wellness Training Report', 'framework': 'Unified_Reporting_Framework_v5.1', 'athlete': 'Clive King', 'period': '2025-12-06 → 2025-12-12', 'timestamp': '2025-12-12T09:22:10.534371', 'discipline': 'cycling'}
+[10:22:10] [PATCH] summary rebuilt for schema compliance: {'totalHours': np.float64(8.42), 'totalTss': 396, 'totalDist': np.float64(285.4), 'eventCount': 7, 'period': '2025-12-06 → 2025-12-12', 'totalDistance': np.float64(285.4), 'variance': 0.0, 'zones': {}}
+[10:22:10] [PATCH] Tier-2 summary override applied → canonical event-only totals enforced
+[10:22:10] [PATCH] actions dual-structure applied → 17 items
+[10:22:10] ✅ Loaded ICON_CARDS from UIcomponents.icon_pack
+[10:22:10] ✅ Report validated — framework compliant.
+[10:22:10] 
+[DEBUG] Context keys available before finalize_and_validate_render() return:
+[10:22:10]   - ACWR
+[10:22:10]   - CUR
+[10:22:10]   - Duration_total
+[10:22:10]   - FINALIZER_LOCKED_GLOBAL
+[10:22:10]   - FOxI
+[10:22:10]   - FatOxEfficiency
+[10:22:10]   - FatigueTrend
+[10:22:10]   - GR
+[10:22:10]   - ICON_CARDS
+[10:22:10]   - LoadIntensityRatio
+[10:22:10]   - MES
+[10:22:10]   - Monotony
+[10:22:10]   - Polarisation
+[10:22:10]   - RecoveryIndex
+[10:22:10]   - Strain
+[10:22:10]   - StressTolerance
+[10:22:10]   - ZQI
+[10:22:10]   - _locked_load_metrics
+[10:22:10]   - actions
+[10:22:10]   - activities_full
+[10:22:10]   - activities_light
+[10:22:10]   - allowSyntheticRender
+[10:22:10]   - allow_intent_inference
+[10:22:10]   - athlete
+[10:22:10]   - athleteProfile
+[10:22:10]   - atl
+[10:22:10]   - auditFinal
+[10:22:10]   - auditPartial
+[10:22:10]   - auditPrecision
+[10:22:10]   - chunk_mode
+[10:22:10]   - cloudflare_mode
+[10:22:10]   - ctl
+[10:22:10]   - dailyMerged
+[10:22:10]   - data_source
+[10:22:10]   - debug_mode
+[10:22:10]   - debug_trace
+[10:22:10]   - derived_metrics
+[10:22:10]   - df_daily
+[10:22:10]   - df_event_only
+[10:22:10]   - df_event_only_preview
+[10:22:10]   - df_events
+[10:22:10]   - df_full_slice
+[10:22:10]   - df_light
+[10:22:10]   - df_light_full
+[10:22:10]   - df_master
+[10:22:10]   - df_raw_activities
+[10:22:10]   - enforce_render_source
+[10:22:10]   - eventTotals
+[10:22:10]   - event_count
+[10:22:10]   - fetch_mode
+[10:22:10]   - fetch_status
+[10:22:10]   - force_icon_pack
+[10:22:10]   - full_days
+[10:22:10]   - header
+[10:22:10]   - icon_pack
+[10:22:10]   - include_coaching_metrics
+[10:22:10]   - knowledge
+[10:22:10]   - light_days
+[10:22:10]   - light_range
+[10:22:10]   - load_metrics
+[10:22:10]   - locked_totalDistance
+[10:22:10]   - locked_totalHours
+[10:22:10]   - locked_totalTss
+[10:22:10]   - metric_contexts
+[10:22:10]   - metrics
+[10:22:10]   - outliers
+[10:22:10]   - phases
+[10:22:10]   - postRenderAudit
+[10:22:10]   - prefetch_done
+[10:22:10]   - range
+[10:22:10]   - render_mode
+[10:22:10]   - render_summary
+[10:22:10]   - reportMode
+[10:22:10]   - report_header
+[10:22:10]   - report_mode
+[10:22:10]   - report_type
+[10:22:10]   - summary_all
+[10:22:10]   - summary_cycling
+[10:22:10]   - summary_patch
+[10:22:10]   - tier0_snapshotTotals_7d
+[10:22:10]   - tier1_visibleTotals
+[10:22:10]   - tier2_derived_metrics
+[10:22:10]   - tier2_enforced_totals
+[10:22:10]   - tier2_eventTotals_eventOnly
+[10:22:10]   - timezone
+[10:22:10]   - totalDistance
+[10:22:10]   - totalHours
+[10:22:10]   - totalTss
+[10:22:10]   - totals_source
+[10:22:10]   - totals_verified
+[10:22:10]   - tsb
+[10:22:10]   - ui_flag
+[10:22:10]   - weeklyEventLogBlock
+[10:22:10]   - wellness
+[10:22:10]   - wellness_metrics
+[10:22:10]   - wellness_summary
+[10:22:10]   - window_end
+[10:22:10]   - window_start
+[10:22:10]   - window_summary
+[10:22:10]   - zone_dist
+[10:22:10]   - zone_dist_hr
+[10:22:10]   - zone_dist_pace
+[10:22:10]   - zone_dist_power
+[10:22:10] [DEBUG] End of context key list
+
+[10:22:10] [WARN] ⚠️ Missing or empty section in context: adaptation_metrics
+[10:22:10] [WARN] ⚠️ Missing or empty section in context: trend_metrics
+[10:22:10] ✅ Report passed framework + schema validation (event-only, markdown).
+[10:22:10] [TRACE-FINAL] totalHours = 8.42
+[10:22:10] [TRACE-FINAL] totalTss   = 396
+[10:22:10] [TRACE-FINAL] eventTotals(hours,tss) = 8.42 396
+[10:22:10] [TRACE-FINAL] summary_patch = {'totalHours': np.float64(8.42), 'totalTss': 396, 'totalDist': np.float64(285.4), 'eventCount': 7, 'period': '2025-12-06 → 2025-12-12', 'totalDistance': np.float64(285.4), 'variance': 0.0, 'zones': {}}
+[10:22:10] [FINALIZER] Reusing validated report structure.
+[10:22:10] [RENDER-GUARD] Normal precision → full_7d dataset present or validated Tier-2 slice. data_source=full_7d variance_ok=False validated_t2=True
+[10:22:10] [RENDER] Starting unified render for wellness
+[10:22:10] [RENDER] Early cleanup — removed trace/debug artifacts before markdown assembly
+[10:22:10] [SYNC] Renderer using Tier-2 enforced totals (canonical).
+[10:22:10] [RENDER] Totals unified from tier2_enforced_totals → 8.42 h | 285.4 km | 396 TSS
+[10:22:10] [TRACE-RENDER-ENTRY] totalHours = 8.42
+[10:22:10] [TRACE-RENDER-ENTRY] totalTss   = 396
+[10:22:10] [DEBUG-RENDER] incoming load_metrics: {
+  "CTL": {
+    "value": 86.78,
+    "status": "ok"
+  },
+  "ATL": {
+    "value": 76.63,
+    "status": "ok"
+  },
+  "TSB": {
+    "value": 10.15,
+    "status": "ok"
+  },
+  "totalHours": 8.42,
+  "totalTss": 396,
+  "totalDistance": 285.4
+}
+[10:22:10] [TRACE-HEADER] ctx.totalHours = 8.42
+[10:22:10] [TRACE-HEADER] ctx.totalTss   = 396
+[10:22:10] [SYNC] Derived metrics updated from Tier-2 context before render.
+[10:22:10] [Tier-2] Injected 📊 Key Stats section for weekly mode.
+[10:22:10] [Tier-2] Skipping Efficiency & Adaptation section for weekly mode.
+[10:22:10] [RENDER-PHASE] Entering phase summary logic — report_type='Weekly'
+[10:22:10] [Tier-2] Using enforced df_event_only preview (no rebuild).
+[10:22:10] [Tier-2] Rendered Weekly Events Summary (7 rows)
+[10:22:10] [RENDER] Dual totals rendered (Cycling + All)
+[10:22:10] [RENDER-SECTIONS] md_text len=5719
+[10:22:10] [TRACE-MD] Markdown length = 5719
+[10:22:10] [TRACE-MD] ❌ Adaptation section missing before normalization.
+[10:22:10] [Tier-2] Using canonical summary_patch from Tier-2 validator
+[10:22:10] [FINALIZER] Markdown render succeeded (len=5717)
+[10:22:10] ✅ Render + validation completed for wellness
+[10:22:10] Context before generating semantic graph: {}

@@ -79,7 +79,7 @@ def orchestrate_fetch_context(report_type: str = "weekly", today: date | None = 
     if rtype in ("weekly", "summary"):
         light_days, full_days, wellness_days = 90, 7, 42
     elif rtype in ("season", "season_phases", "season_summary"):
-        light_days, full_days, wellness_days = 90, 42, 42
+        light_days, full_days, wellness_days = 90, 0, 42
     elif rtype == "wellness":
         light_days, full_days, wellness_days = 42, 0, 42
     else:
@@ -285,20 +285,52 @@ def run_report(
     except Exception as e:
         debug(context, f"[INTENT] Validation warning: {e}")
 
-    # --- Tier-0 Range Configuration (aligned with worker) ---
+    # --- Tier-0 Range Configuration (MUST mirror Cloudflare worker) ---
     today = datetime.now().date()
 
-    if reportType.lower() == "season":
-        context["range"] = {"lightDays": 90, "fullDays": 42, "wellnessDays": 90, "chunk": True}
-    else:  # weekly / wellness / summary
-        context["range"] = {"lightDays": 90, "fullDays": 7, "wellnessDays": 42, "chunk": False}
+    rtype = reportType.lower()
 
-    # Local variable bindings for convenience
+    if rtype in ("weekly", "summary"):
+        # Weekly-style reports
+        context["range"] = {
+            "lightDays": 90,
+            "fullDays": 7,
+            "wellnessDays": 42,
+            "chunk": False,
+        }
+
+    elif rtype in ("season", "season_phases", "season_summary"):
+        # Season NEVER uses full
+        context["range"] = {
+            "lightDays": 90,
+            "fullDays": 0,
+            "wellnessDays": 42,
+            "chunk": False,
+        }
+
+    elif rtype == "wellness":
+        # Wellness-only report
+        context["range"] = {
+            "lightDays": 42,
+            "fullDays": 0,
+            "wellnessDays": 42,
+            "chunk": False,
+        }
+
+    else:
+        raise ValueError(f"Unknown report type '{reportType}'")
+
+    # Local variable bindings
     light_days = context["range"]["lightDays"]
     full_days = context["range"]["fullDays"]
     chunk = context["range"]["chunk"]
 
-    debug(context, f"[T0] Config → light={light_days}d full={full_days}d chunk={chunk}")
+    debug(
+        context,
+        f"[T0] Config → light={light_days}d full={full_days}d "
+        f"wellness={context['range']['wellnessDays']}d chunk={chunk}"
+    )
+
 
     # --- Tier-0 Lightweight Prefetch ---
     context["report_type"] = reportType.lower() if isinstance(reportType, str) else "weekly"
@@ -473,6 +505,28 @@ def run_report(
             debug(context, f"⚙️ Normalization: converted moving_time hours→seconds (max={max_val})")
         else:
             debug(context, f"⚙️ Normalization: seconds detected, no conversion (max={max_val})")
+
+
+    # ------------------------------------------------------------
+    # T0 → T1 HARD CONTRACT ENFORCEMENT
+    # df_master must ALWAYS be a DataFrame
+    # ------------------------------------------------------------
+    if df_master is None or not isinstance(df_master, pd.DataFrame):
+        if isinstance(context.get("df_light"), pd.DataFrame) and not context["df_light"].empty:
+            df_master = context["df_light"].copy()
+            context["df_master"] = df_master
+            debug(
+                context,
+                f"[T0→T1 FIX] df_master promoted from df_light ({len(df_master)} rows)"
+            )
+        else:
+            # Absolute safety net — Tier-1 must never receive None
+            df_master = pd.DataFrame()
+            context["df_master"] = df_master
+            debug(
+                context,
+                "[T0→T1 FIX] df_master forced to empty DataFrame (emergency fallback)"
+            )
 
     # --- Tier-1 Audit ---
     debug(context, f"[T1] Running Tier-1 controller ({reportType} mode)")

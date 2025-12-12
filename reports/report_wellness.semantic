@@ -1,12 +1,12 @@
 {
   "status": "ok",
-  "message": "Weekly report generated",
+  "message": "Wellness report generated",
   "semantic_graph": {
     "meta": {
       "framework": "Unified Reporting Framework v5.1",
       "version": "v16.17",
-      "generated_at": "2025-12-12T09:20:12.716606",
-      "report_type": "weekly",
+      "generated_at": "2025-12-12T09:20:35.770499",
+      "report_type": "wellness",
       "period": {
         "start": "2025-12-06",
         "end": "2025-12-12"
@@ -56,7 +56,7 @@
       },
       "FatigueTrend": {
         "name": "FatigueTrend",
-        "value": 13.4,
+        "value": -14.7,
         "classification": "unknown",
         "interpretation": "",
         "coaching_implication": "",
@@ -64,7 +64,7 @@
       },
       "ZQI": {
         "name": "ZQI",
-        "value": 4.2,
+        "value": 0.0,
         "classification": "unknown",
         "interpretation": "",
         "coaching_implication": "",
@@ -197,49 +197,49 @@
     ],
     "events": [
       {
-        "start_date_local": 1765471429000,
+        "start_date_local": null,
         "name": "Zwift - AT Base",
         "icu_training_load": 75,
         "moving_time": 4849,
         "distance": 54733.44
       },
       {
-        "start_date_local": 1765387770000,
+        "start_date_local": null,
         "name": "Zwift - Group Workout: RAD RACE VO2 max Booster Plan - Week 6 - 3x10x40/20 VO2 max Intervalle With Freddy Ovett",
         "icu_training_load": 82,
         "moving_time": 4236,
         "distance": 41037.59
       },
       {
-        "start_date_local": 1765386982000,
+        "start_date_local": null,
         "name": "Zwift - Tick Tock in Watopia",
         "icu_training_load": 4,
         "moving_time": 608,
         "distance": 5626.88
       },
       {
-        "start_date_local": 1765300085000,
+        "start_date_local": null,
         "name": "Zwift - Group Workout: BaseCamp Aerobic Endurance with Cadence Builds",
         "icu_training_load": 59,
         "moving_time": 3649,
         "distance": 32474.04
       },
       {
-        "start_date_local": 1765212772000,
+        "start_date_local": null,
         "name": "Zwift - nope",
         "icu_training_load": 39,
         "moving_time": 3341,
         "distance": 36408.29
       },
       {
-        "start_date_local": 1765111566000,
+        "start_date_local": null,
         "name": "Otto walk",
         "icu_training_load": 19,
         "moving_time": 2731,
         "distance": 3922.37
       },
       {
-        "start_date_local": 1765096884000,
+        "start_date_local": null,
         "name": "Zwift - Group Ride: Flanders Coffee Ride en France",
         "icu_training_load": 118,
         "moving_time": 10896,
@@ -257,7 +257,7 @@
     "actions": [
       "\u2705 Maintain \u226570 % Z1\u2013Z2 volume (Seiler 80/20).",
       "\u26a0 Improve Zone 2 efficiency: extend duration or adjust IF.",
-      "\u2705 FatigueTrend (13.4%) \u2014 Increasing fatigue trend. Consider adjusting intensity or recovery.",
+      "\u26a0 FatigueTrend (-14.7%) \u2014 Recovery phase detected. Maintain steady training load and prioritize recovery.",
       "\u2705 Durability improving (1.00) \u2014 maintain current long-ride structure.",
       "\u26a0 Load intensity too high (LIR=2.00) \u2014 reduce intensity or monitor recovery.",
       "\u2705 Efficiency drift stable (0.00%).",
@@ -307,5 +307,5 @@
       }
     }
   },
-  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=5691, ctx_keys=85\n\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=5691, ctx_keys=85"
+  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4698, ctx_keys=85\n\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=5719, ctx_keys=85"
 }
