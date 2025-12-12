@@ -367,65 +367,44 @@ def fetch_athlete_profile(headers, context=None):
 def run_tier0_pre_audit(start: str, end: str, context: dict):
     """Tier-0: OAuth-only Pre-audit fetch chain with adaptive chunking and meta-retry."""
 
-    # =======================================================
-    # CLOUDFLARE MODE → SKIP FETCHES ONLY
-    # but still run:
-    # - slicing
-    # - dedupe
-    # - totals
-    # - range alignment
-    # - df_master construction
-    # - wellness clipping
-    # - snapshot creation
-    # =======================================================
     # ============================================================
-    # CLOUD-FLARE MODE → Skip fetches but still build full Tier-0
+    # CLOUD-FLARE MODE → Worker already supplied all datasets
     # ============================================================
     if context.get("cloudflare_mode"):
-        debug(context, "[T0] Cloudflare mode → using injected datasets (no API calls)")
+        debug(context, "[T0] Cloudflare mode detected → using worker datasets")
 
-        df_light = pd.DataFrame(context.get("cf_light", []))
-        df_full = pd.DataFrame(context.get("cf_full", []))
-        wellness = pd.DataFrame(context.get("cf_wellness", []))
+        # Convert light dataset to DataFrame
+        df_light_full = pd.DataFrame(context.get("cf_light", []))
+        context["df_light_full"] = df_light_full
+        context["df_light"] = df_light_full.copy()
 
-        # Parse dates for slicing
-        if "start_date_local" in df_light.columns:
-            df_light["start_date_local"] = pd.to_datetime(df_light["start_date_local"], errors="coerce")
+        # Convert wellness if available
+        df_wellness = pd.DataFrame(context.get("cf_wellness", []))
+        context["wellness"] = df_wellness
 
-            end_dt = pd.to_datetime(end)
-            start_dt = end_dt - pd.Timedelta(days=6)
+        rtype = reportType.lower()
 
-            df_light_slice = df_light[
-                (df_light["start_date_local"] >= start_dt)
-                & (df_light["start_date_local"] <= end_dt)
-            ].copy()
-        else:
-            df_light_slice = df_light.copy()
+        # --------------------------------------------------------
+        # A) NON-WEEKLY REPORTS → ALWAYS PROMOTE LIGHT AS MASTER
+        # --------------------------------------------------------
+        if rtype in ("season", "season_summary", "season_phases", "summary", "wellness"):
+            df_master = df_light_full.copy()
+            context["df_master"] = df_master
 
-        # df_master = df_full or fallback to 7-day light slice
-        if not df_full.empty:
-            df_master = df_full.copy()
-        else:
-            df_master = df_light_slice.copy()
+            debug(context, f"[T0] Cloudflare non-weekly → df_master={len(df_master)} rows")
 
-        # Inject back into context
-        context["df_light"] = df_light
-        context["df_light_slice"] = df_light_slice
-        context["df_master"] = df_master
-        context["wellness"] = wellness
-        context["athlete"] = context.get("cf_athlete", {})
+            # RETURN EARLY → skip full audit logic
+            return df_master, df_wellness, context, False, True
 
-        # Create Tier-0 snapshot
-        context["snapshot_7d_json"] = df_master.to_json(orient="records")
-        context["tier0_snapshotTotals_7d"] = {
-            "hours": df_master["moving_time"].sum() / 3600 if "moving_time" in df_master else 0,
-            "tss": df_master["icu_training_load"].sum() if "icu_training_load" in df_master else 0,
-            "sessions": len(df_master)
-        }
+        # --------------------------------------------------------
+        # B) WEEKLY REPORT → DO NOT BUILD MASTER YET
+        # T0-FULL or fallback path will populate df_master
+        # --------------------------------------------------------
+        elif rtype == "weekly":
+            debug(context, "[T0] Cloudflare weekly → defer df_master creation to T0-FULL")
 
-        # Return directly into Tier-1
-        return df_master, wellness, context, False, False
-
+            # Leave df_master unset → triggers correct weekly full logic
+            return None, df_wellness, context, False, False
 
 
     if not ICU_TOKEN:

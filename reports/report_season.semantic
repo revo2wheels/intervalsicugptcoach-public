@@ -5,11 +5,11 @@
     "meta": {
       "framework": "Unified Reporting Framework v5.1",
       "version": "v16.17",
-      "generated_at": "2025-12-08T10:11:43.097695",
+      "generated_at": "2025-12-12T08:05:46.280351",
       "report_type": "season",
       "period": {
-        "start": "2025-09-09T11:11:41.535676",
-        "end": "2025-12-08T11:11:41.535742"
+        "start": "2025-09-13T09:05:44.778279",
+        "end": "2025-12-12T09:05:44.778337"
       },
       "timezone": "Europe/Zurich",
       "athlete": {
@@ -26,13 +26,13 @@
         "email": null
       }
     },
-    "hours": 159.4,
-    "tss": 7394,
-    "distance_km": 3742.1,
+    "hours": 158.86,
+    "tss": 7409,
+    "distance_km": 3809.9,
     "metrics": {
       "ACWR": {
         "name": "ACWR",
-        "value": 0.97,
+        "value": 0.91,
         "classification": "unknown",
         "interpretation": "",
         "coaching_implication": "",
@@ -40,7 +40,7 @@
       },
       "Monotony": {
         "name": "Monotony",
-        "value": 0.58,
+        "value": 1.25,
         "classification": "unknown",
         "interpretation": "",
         "coaching_implication": "",
@@ -48,7 +48,7 @@
       },
       "Strain": {
         "name": "Strain",
-        "value": 16.6,
+        "value": 70.7,
         "classification": "unknown",
         "interpretation": "",
         "coaching_implication": "",
@@ -56,7 +56,7 @@
       },
       "FatigueTrend": {
         "name": "FatigueTrend",
-        "value": 16.1,
+        "value": 13.4,
         "classification": "unknown",
         "interpretation": "",
         "coaching_implication": "",
@@ -120,7 +120,7 @@
       },
       "RecoveryIndex": {
         "name": "RecoveryIndex",
-        "value": 0.884,
+        "value": 0.75,
         "classification": "unknown",
         "interpretation": "",
         "coaching_implication": "",
@@ -137,15 +137,15 @@
     },
     "extended_metrics": {
       "CTL": {
-        "value": 88.31,
+        "value": 86.9,
         "status": "ok"
       },
       "ATL": {
-        "value": 80.38,
+        "value": 76.97,
         "status": "ok"
       },
       "TSB": {
-        "value": 7.94,
+        "value": 9.93,
         "status": "ok"
       }
     },
@@ -157,14 +157,6 @@
       "hr": {}
     },
     "daily_load": [
-      {
-        "date": "2025-09-10 00:00:00",
-        "tss": 139.0
-      },
-      {
-        "date": "2025-09-11 00:00:00",
-        "tss": 105.0
-      },
       {
         "date": "2025-09-13 00:00:00",
         "tss": 224.0
@@ -428,37 +420,25 @@
       {
         "date": "2025-12-07 00:00:00",
         "tss": 137.0
+      },
+      {
+        "date": "2025-12-08 00:00:00",
+        "tss": 39.0
+      },
+      {
+        "date": "2025-12-09 00:00:00",
+        "tss": 59.0
+      },
+      {
+        "date": "2025-12-10 00:00:00",
+        "tss": 86.0
+      },
+      {
+        "date": "2025-12-11 00:00:00",
+        "tss": 75.0
       }
     ],
     "events": [
-      {
-        "start_date_local": "2025-09-10T14:32:10",
-        "name": "Mt Pel-le Cr\u00e9t-Paccots",
-        "icu_training_load": 120,
-        "moving_time": 7539,
-        "distance": 57557.74
-      },
-      {
-        "start_date_local": "2025-09-10T17:10:12",
-        "name": "Otto walk",
-        "icu_training_load": 19,
-        "moving_time": 4027,
-        "distance": 5840.27
-      },
-      {
-        "start_date_local": "2025-09-11T18:08:33",
-        "name": "Evening Pal-Eco-Mar",
-        "icu_training_load": 77,
-        "moving_time": 4001,
-        "distance": 33955.36
-      },
-      {
-        "start_date_local": "2025-09-11T19:25:25",
-        "name": "Otto walk",
-        "icu_training_load": 28,
-        "moving_time": 3040,
-        "distance": 5125.19
-      },
       {
         "start_date_local": "2025-09-13T10:08:51",
         "name": "Moudon et retour via paccots",
@@ -1207,14 +1187,49 @@
         "icu_training_load": 19,
         "moving_time": 2731,
         "distance": 3922.37
+      },
+      {
+        "start_date_local": "2025-12-08T17:52:52",
+        "name": "Zwift - nope",
+        "icu_training_load": 39,
+        "moving_time": 3341,
+        "distance": 36408.29
+      },
+      {
+        "start_date_local": "2025-12-09T18:08:05",
+        "name": "Zwift - Group Workout: BaseCamp Aerobic Endurance with Cadence Builds",
+        "icu_training_load": 59,
+        "moving_time": 3649,
+        "distance": 32474.04
+      },
+      {
+        "start_date_local": "2025-12-10T18:16:22",
+        "name": "Zwift - Tick Tock in Watopia",
+        "icu_training_load": 4,
+        "moving_time": 608,
+        "distance": 5626.88
+      },
+      {
+        "start_date_local": "2025-12-10T18:29:30",
+        "name": "Zwift - Group Workout: RAD RACE VO2 max Booster Plan - Week 6 - 3x10x40/20 VO2 max Intervalle With Freddy Ovett",
+        "icu_training_load": 82,
+        "moving_time": 4236,
+        "distance": 41037.59
+      },
+      {
+        "start_date_local": "2025-12-11T17:43:49",
+        "name": "Zwift - AT Base",
+        "icu_training_load": 75,
+        "moving_time": 4849,
+        "distance": 54733.44
       }
     ],
     "phases": [
       {
         "phase": "Week 37",
-        "distance_km": 265.05296999999996,
-        "hours": 13.991944444444444,
-        "tss": 588.0
+        "distance_km": 162.57441,
+        "hours": 8.823333333333334,
+        "tss": 344.0
       },
       {
         "phase": "Week 38",
@@ -1287,17 +1302,23 @@
         "distance_km": 167.52785999999998,
         "hours": 5.075833333333334,
         "tss": 200.0
+      },
+      {
+        "phase": "Week 50",
+        "distance_km": 170.28024,
+        "hours": 4.634166666666666,
+        "tss": 259.0
       }
     ],
     "actions": [
       "\u2705 Maintain \u226570 % Z1\u2013Z2 volume (Seiler 80/20).",
       "\u26a0 Improve Zone 2 efficiency: extend duration or adjust IF.",
-      "\u2705 FatigueTrend (16.1%) \u2014 Increasing fatigue trend. Consider adjusting intensity or recovery.",
+      "\u2705 FatigueTrend (13.4%) \u2014 Increasing fatigue trend. Consider adjusting intensity or recovery.",
       "\u2705 Durability improving (1.00) \u2014 maintain current long-ride structure.",
       "\u26a0 Load intensity too high (LIR=2.00) \u2014 reduce intensity or monitor recovery.",
       "\u2705 Efficiency drift stable (0.00%).",
       "\u2705 Polarisation optimal (90%).",
-      "\u2705 Recovery Index healthy (0.88).",
+      "\u2705 Recovery Index healthy (0.75).",
       "---",
       "\ud83e\ude9c **Seasonal Phase Analysis**",
       "\ud83d\udd01 **Continuous Load** (None \u2192 None) \u2014 steady training; insert variation if fatigue rises.",
@@ -1307,29 +1328,28 @@
       "\u2705 Reference: Coaching Cheat Sheet \u2014 Periodisation & Load Ratios (Section 9\u201311)",
       "---",
       "\ud83d\udcca Metric-based Feedback:",
-      "\u2705 Monotony (0.58) \u2014 If Monotony > 2.5, introduce more variation in training or implement a deload week to reduce repetitive stress.",
-      "\u2705 Strain (16.6) \u2014 If Strain > 3000, monitor for signs of overreach and consider more rest or deloading. If Strain > 3500, consider reducing volume or intensity temporarily.",
+      "\u2705 Monotony (1.25) \u2014 If Monotony > 2.5, introduce more variation in training or implement a deload week to reduce repetitive stress.",
+      "\u2705 Strain (70.7) \u2014 If Strain > 3000, monitor for signs of overreach and consider more rest or deloading. If Strain > 3500, consider reducing volume or intensity temporarily.",
       "\u2705 FatOxEfficiency (0.624) \u2014 If FatOxEfficiency is low (<0.6), focus on improving aerobic base with longer, low-intensity efforts.",
       "\u2705 CUR (37.6) \u2014 If CUR is outside the green zone (30-70), adjust carbohydrate intake and fueling strategy to ensure balanced metabolic use during long sessions.",
       "\u2705 GR (1.66) \u2014 If GR exceeds 2.0, focus on reducing glycolytic intensity and increase aerobic work. Ensure sufficient recovery to avoid over-reliance on carbs.",
       "\u2705 MES (22.6) \u2014 If MES is below 20, work on improving metabolic efficiency by increasing endurance training with a focus on aerobic base and fat metabolism.",
-      "\u2705 RecoveryIndex (0.884) \u2014 If RecoveryIndex is low (<0.7), ensure adequate rest and recovery, and avoid heavy training loads.",
       "\u2705 StressTolerance (2.0) \u2014 If StressTolerance is high (>8), reduce overall load and increase recovery time. If it's low (<2), ensure proper training load progression."
     ],
     "wellness": {
-      "rest_hr": 42.2,
-      "hrv_trend": 0.0,
-      "rest_days": 22,
-      "fatigue": 1.4,
-      "stress": 1.7,
+      "rest_hr": 43.6,
+      "hrv_trend": -1.0,
+      "rest_days": 20,
+      "fatigue": 1.5,
+      "stress": 1.6,
       "readiness": null,
-      "CTL": 88.31,
-      "ATL": 80.38,
-      "TSB": 7.94
+      "CTL": 86.9,
+      "ATL": 76.97,
+      "TSB": 9.93
     },
     "insights": {
       "fatigue_trend": {
-        "value": -0.09,
+        "value": -0.114,
         "interpretation": "Positive = accumulating fatigue, negative = recovering, near zero = stable"
       },
       "load_distribution": {
@@ -1350,5 +1370,5 @@
       }
     }
   },
-  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=6298, ctx_keys=84"
+  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=6194, ctx_keys=81"
 }
