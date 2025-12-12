@@ -79,9 +79,9 @@ def orchestrate_fetch_context(report_type: str = "weekly", today: date | None = 
     if rtype in ("weekly", "summary"):
         light_days, full_days, wellness_days = 90, 7, 42
     elif rtype in ("season", "season_phases", "season_summary"):
-        light_days, full_days, wellness_days = 90, 0, 42
+        light_days, full_days, wellness_days = 90, 7, 42
     elif rtype == "wellness":
-        light_days, full_days, wellness_days = 42, 0, 42
+        light_days, full_days, wellness_days = 90, 7, 42
     else:
         raise ValueError(f"Unknown report type '{report_type}'")
 
@@ -303,7 +303,7 @@ def run_report(
         # Season NEVER uses full
         context["range"] = {
             "lightDays": 90,
-            "fullDays": 0,
+            "fullDays": 7,
             "wellnessDays": 42,
             "chunk": False,
         }
@@ -312,7 +312,7 @@ def run_report(
         # Wellness-only report
         context["range"] = {
             "lightDays": 42,
-            "fullDays": 0,
+            "fullDays": 7,
             "wellnessDays": 42,
             "chunk": False,
         }

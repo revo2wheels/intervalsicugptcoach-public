@@ -313,13 +313,20 @@ export default {
 
       const { oldest: lightOldest, newest: lightNewest } =
         normaliseDateParams(url.searchParams, 90);
+      const { oldest: fullOldest, newest: fullNewest } =
+        normaliseDateParams(url.searchParams, 7);
       const { oldest: wellOldest, newest: wellNewest } =
         normaliseDateParams(url.searchParams, 42);
 
-      const [lightTxt, wellTxt, profTxt] = await Promise.all([
+      const [lightTxt, fullTxt, wellTxt, profTxt] = await Promise.all([
         fetch(
           `${INTERVALS_API_BASE}/athlete/0/activities?oldest=${lightOldest}&newest=${lightNewest}` +
             `&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin`,
+          { headers: buildAuthHeaders() }
+        ).then((r) => r.text()),
+
+        fetch(
+          `${INTERVALS_API_BASE}/athlete/0/activities?oldest=${fullOldest}&newest=${fullNewest}`,
           { headers: buildAuthHeaders() }
         ).then((r) => r.text()),
 
@@ -337,7 +344,7 @@ export default {
         range: "season",
         format: url.searchParams.get("format") || "semantic",
         activities_light: safeParse(lightTxt, "array"),
-        activities_full: [],
+        activities_full: safeParse(fullTxt, "array"),
         wellness: safeParse(wellTxt, "array"),
         athlete: (safeParse(profTxt, "object").athlete || {})
       };
@@ -349,11 +356,27 @@ export default {
     if (pathname === "/run_wellness" && request.method === "GET") {
       console.log("[RUN_WELLNESS] Fetching datasets…");
 
-      const { oldest, newest } = normaliseDateParams(url.searchParams, 42);
+      const { oldest: lightOldest, newest: lightNewest } =
+        normaliseDateParams(url.searchParams, 90);
+      const { oldest: fullOldest, newest: fullNewest } =
+        normaliseDateParams(url.searchParams, 7);
+      const { oldest: wellOldest, newest: wellNewest } =
+        normaliseDateParams(url.searchParams, 42);
 
-      const [wellTxt, profTxt] = await Promise.all([
+      const [lightTxt, fullTxt, wellTxt, profTxt] = await Promise.all([
         fetch(
-          `${INTERVALS_API_BASE}/athlete/0/wellness?oldest=${oldest}&newest=${newest}`,
+          `${INTERVALS_API_BASE}/athlete/0/activities?oldest=${lightOldest}&newest=${lightNewest}` +
+            `&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin`,
+          { headers: buildAuthHeaders() }
+        ).then((r) => r.text()),
+
+        fetch(
+          `${INTERVALS_API_BASE}/athlete/0/activities?oldest=${fullOldest}&newest=${fullNewest}`,
+          { headers: buildAuthHeaders() }
+        ).then((r) => r.text()),
+
+        fetch(
+          `${INTERVALS_API_BASE}/athlete/0/wellness?oldest=${wellOldest}&newest=${wellNewest}`,
           { headers: buildAuthHeaders() }
         ).then((r) => r.text()),
 
@@ -365,8 +388,8 @@ export default {
       const payload = {
         range: "wellness",
         format: url.searchParams.get("format") || "semantic",
-        activities_light: [],
-        activities_full: [],
+        activities_light: safeParse(lightTxt, "array"),
+        activities_full: safeParse(fullTxt, "array"),
         wellness: safeParse(wellTxt, "array"),
         athlete: (safeParse(profTxt, "object").athlete || {})
       };

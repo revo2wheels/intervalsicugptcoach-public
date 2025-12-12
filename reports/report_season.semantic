@@ -5,11 +5,11 @@
     "meta": {
       "framework": "Unified Reporting Framework v5.1",
       "version": "v16.17",
-      "generated_at": "2025-12-12T09:20:25.528189",
+      "generated_at": "2025-12-12T09:45:08.654208",
       "report_type": "season",
       "period": {
-        "start": "2025-09-13T10:20:24.311407",
-        "end": "2025-12-12T10:20:24.311467"
+        "start": "2025-09-13T10:45:07.344906",
+        "end": "2025-12-12T10:45:07.344965"
       },
       "timezone": "Europe/Zurich",
       "athlete": {
