@@ -75,19 +75,13 @@ def orchestrate_fetch_context(report_type: str = "weekly", today: date | None = 
     # --- Profile always first ---
     ctx["profile"] = getAthleteProfile()
 
-    # --- Date range config (MUST mirror Cloudflare behaviour) ---
+    # --- Date range config ---
     if rtype in ("weekly", "summary"):
-        # Weekly uses 90d light + 7d full + 42d wellness
         light_days, full_days, wellness_days = 90, 7, 42
-
     elif rtype in ("season", "season_phases", "season_summary"):
-        # Season NEVER uses full dataset; only 90d light + 42d wellness
-        light_days, full_days, wellness_days = 90, 0, 42
-
+        light_days, full_days, wellness_days = 90, 42, 42
     elif rtype == "wellness":
-        # Wellness uses 42d light only + 42d wellness
         light_days, full_days, wellness_days = 42, 0, 42
-
     else:
         raise ValueError(f"Unknown report type '{report_type}'")
 

@@ -1,0 +1,13 @@
+[10:08:55] 🧭 Generating Season Report
+[10:08:55] 🧭 Running Season Report (auditFinal=True, render_mode=full+metrics)
+[10:08:55] [INTENT] Validation warning: Expecting value: line 1 column 1 (char 0)
+[10:08:55] [T0] Config → light=90d full=7d chunk=False
+[10:08:55] [T0-LIGHT] Prefetch failed (non-fatal): name 'today' is not defined
+[10:08:55] [T0-FULL] Full audit failed: name 'today' is not defined
+[10:08:55] [T0-FULL] No df_master returned — using pre-audit lightweight dataset as fallback.
+[10:08:55] [T0-FULL] WARNING: no valid fallback dataset — initializing empty DataFrame.
+[10:08:55] [T0-FULL] Context synced for Tier-1 — df_master=0 rows, snapshot_7d_json=ok
+[10:08:55] [T0] Completed range alignment → chunk_mode=False
+[10:08:55] [T1] Running Tier-1 controller (season mode)
+[10:08:55] [T1] Running Tier-1 controller (weekly mode)
+[10:08:55] [T1] No df_raw_activities in context — using direct df_master from Tier-0.
