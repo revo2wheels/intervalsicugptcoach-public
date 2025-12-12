@@ -533,8 +533,11 @@ def run_report(
                 "[T0→T1 FIX] df_master forced to empty DataFrame (emergency fallback)"
             )
 
-    # --- wellness invariant ---
-    if wellness is None or not isinstance(wellness, pd.DataFrame):
+    # ------------------------------------------------------------
+    # T0 → T1 HARD CONTRACT ENFORCEMENT (wellness)
+    # wellness MUST be a DataFrame before Tier-1
+    # ------------------------------------------------------------
+    if not isinstance(wellness, pd.DataFrame):
         if isinstance(context.get("wellness"), pd.DataFrame):
             wellness = context["wellness"].copy()
             debug(context, "[T0→T1 FIX] wellness rehydrated from context DataFrame")
@@ -545,7 +548,8 @@ def run_report(
             wellness = pd.DataFrame()
             debug(context, "[T0→T1 FIX] wellness forced to empty DataFrame")
 
-        context["wellness"] = wellness
+    # 🔒 HARD LOCK — Tier-1 must never see non-DF wellness
+    context["wellness"] = wellness
 
 
     # --- Tier-1 Audit ---
