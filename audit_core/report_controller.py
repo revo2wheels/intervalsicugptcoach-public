@@ -513,8 +513,10 @@ def run_report(
 
     # ------------------------------------------------------------
     # T0 → T1 HARD CONTRACT ENFORCEMENT
-    # df_master must ALWAYS be a DataFrame
+    # df_master AND wellness must ALWAYS be DataFrames
     # ------------------------------------------------------------
+
+    # --- df_master invariant ---
     if df_master is None or not isinstance(df_master, pd.DataFrame):
         if isinstance(context.get("df_light"), pd.DataFrame) and not context["df_light"].empty:
             df_master = context["df_light"].copy()
@@ -524,13 +526,27 @@ def run_report(
                 f"[T0→T1 FIX] df_master promoted from df_light ({len(df_master)} rows)"
             )
         else:
-            # Absolute safety net — Tier-1 must never receive None
             df_master = pd.DataFrame()
             context["df_master"] = df_master
             debug(
                 context,
                 "[T0→T1 FIX] df_master forced to empty DataFrame (emergency fallback)"
             )
+
+    # --- wellness invariant ---
+    if wellness is None or not isinstance(wellness, pd.DataFrame):
+        if isinstance(context.get("wellness"), pd.DataFrame):
+            wellness = context["wellness"].copy()
+            debug(context, "[T0→T1 FIX] wellness rehydrated from context DataFrame")
+        elif isinstance(context.get("wellness"), list):
+            wellness = pd.DataFrame(context["wellness"])
+            debug(context, "[T0→T1 FIX] wellness rehydrated from context list")
+        else:
+            wellness = pd.DataFrame()
+            debug(context, "[T0→T1 FIX] wellness forced to empty DataFrame")
+
+        context["wellness"] = wellness
+
 
     # --- Tier-1 Audit ---
     debug(context, f"[T1] Running Tier-1 controller ({reportType} mode)")
