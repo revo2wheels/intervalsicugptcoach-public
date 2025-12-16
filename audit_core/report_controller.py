@@ -229,7 +229,6 @@ def run_report(
     if isinstance(context.get("wellness"), list):
         context["prefetched"]["wellness"] = context["wellness"]
 
-    # 🔑 FIX: athlete cache MUST be wrapped
     if isinstance(context.get("athlete"), dict):
         context["prefetched"]["athlete"] = {
             "athlete": context["athlete"]
