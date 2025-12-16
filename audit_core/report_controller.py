@@ -220,7 +220,6 @@ def run_report(
 
     # 1) If caller already supplied a prefetched contract, DO NOT overwrite it.
     if isinstance(context.get("prefetched"), dict) and context["prefetched"]:
-        # normalize athlete shape if needed
         a = context["prefetched"].get("athlete")
         if isinstance(a, dict) and "athlete" not in a:
             context["prefetched"]["athlete"] = {"athlete": a}
@@ -236,15 +235,23 @@ def run_report(
         if isinstance(context.get("wellness"), list):
             context["prefetched"]["wellness"] = context["wellness"]
 
-        raw_athlete = context.get("athlete")
-
-        # Guard: must look like ICU athlete
         if isinstance(context.get("athlete"), dict):
             context["prefetched"]["athlete"] = {
                 "athlete": context["athlete"]
             }
         else:
-            debug(context, "[ORCH-WARN] Invalid athlete cache payload, forcing Tier-0 fetch")
+            debug(context, "[ORCH-WARN] Invalid athlete cache payload")
+
+    # ============================================================
+    # 🔑 AUTHORITATIVE BIND — THIS IS THE FIX
+    # ============================================================
+    if (
+        isinstance(context.get("prefetched"), dict)
+        and isinstance(context["prefetched"].get("athlete"), dict)
+        and isinstance(context["prefetched"]["athlete"].get("athlete"), dict)
+    ):
+        context["athleteProfile"] = context["prefetched"]["athlete"]["athlete"]
+        debug(context, "[ORCH] Bound prefetched athlete → athleteProfile")
 
     # 🔑 CRITICAL: Flatten athlete for Tier-0
     if (
