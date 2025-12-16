@@ -180,16 +180,19 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
         if prefetch_context:
 
             # 🔑 Build Tier-0 prefetch contract
-            prefetch_context["prefetched"] = {
-                "light": prefetch_context.get("activities_light", []),
-                "full": prefetch_context.get("activities_full", []),
-                "wellness": prefetch_context.get("wellness", []),
+            raw_athlete = data.get("athlete", {})
 
-                # Tier-0 expects {"athlete": {...}}
-                "athlete": {
-                    "athlete": prefetch_context.get("athlete", {})
-                }
+            # 🔒 FLATTEN HERE — BEFORE run_report
+            if isinstance(raw_athlete, dict) and "athlete" in raw_athlete:
+                raw_athlete = raw_athlete["athlete"]
+
+            prefetch_context = {
+                "activities_light": ...,
+                "activities_full": ...,
+                "wellness": ...,
+                "athlete": raw_athlete,   # flat ICU athlete
             }
+
 
             report, compliance = run_report(
                 reportType=range,
