@@ -506,6 +506,7 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         or os.environ.get("REPORT_TYPE")
         or "weekly"
     ).lower()
+    debug(context, f"[T0] report_type resolved → {report_type}")
     headers = {}
     # If Railway has a token, send it; otherwise rely on Worker env.ICU_OAUTH
     if ICU_TOKEN and ICU_TOKEN.strip():
