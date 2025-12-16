@@ -218,21 +218,27 @@ def run_report(
     # PREFETCH REGISTRATION (Cloudflare → Railway)
     # ============================================================
 
-    context["prefetched"] = {}
+    # 1) If caller already supplied a prefetched contract, DO NOT overwrite it.
+    if isinstance(context.get("prefetched"), dict) and context["prefetched"]:
+        # normalize athlete shape if needed
+        a = context["prefetched"].get("athlete")
+        if isinstance(a, dict) and "athlete" not in a:
+            context["prefetched"]["athlete"] = {"athlete": a}
+    else:
+        context["prefetched"] = {}
 
-    if isinstance(context.get("activities_light"), list):
-        context["prefetched"]["light"] = context["activities_light"]
+        if isinstance(context.get("activities_light"), list):
+            context["prefetched"]["light"] = context["activities_light"]
 
-    if isinstance(context.get("activities_full"), list):
-        context["prefetched"]["full"] = context["activities_full"]
+        if isinstance(context.get("activities_full"), list):
+            context["prefetched"]["full"] = context["activities_full"]
 
-    if isinstance(context.get("wellness"), list):
-        context["prefetched"]["wellness"] = context["wellness"]
+        if isinstance(context.get("wellness"), list):
+            context["prefetched"]["wellness"] = context["wellness"]
 
-    if isinstance(context.get("athlete"), dict):
-        context["prefetched"]["athlete"] = {
-            "athlete": context["athlete"]
-        }
+        # ✅ CRITICAL: wrap athlete to match Tier-0 cache contract
+        if isinstance(context.get("athlete"), dict):
+            context["prefetched"]["athlete"] = {"athlete": context["athlete"]}
 
     if context["prefetched"]:
         debug(context, f"[ORCH] Registered prefetched datasets: {list(context['prefetched'].keys())}")
