@@ -243,7 +243,7 @@ def run_report(
             debug(context, "[ORCH-WARN] Invalid athlete cache payload")
 
     # ============================================================
-    # 🔑 AUTHORITATIVE BIND — THIS IS THE FIX
+    # 🔑 AUTHORITATIVE BIND — PREFETCHED ATHLETE
     # ============================================================
     if (
         isinstance(context.get("prefetched"), dict)
@@ -253,18 +253,30 @@ def run_report(
         context["athleteProfile"] = context["prefetched"]["athlete"]["athlete"]
         debug(context, "[ORCH] Bound prefetched athlete → athleteProfile")
 
-    # 🔑 CRITICAL: Flatten athlete for Tier-0
-    if (
-        isinstance(context.get("prefetched"), dict)
-        and isinstance(context["prefetched"].get("athlete"), dict)
-        and isinstance(context["prefetched"]["athlete"].get("athlete"), dict)
-    ):
+        # 🔑 CRITICAL: Flatten athlete for Tier-0
         context["athlete"] = context["prefetched"]["athlete"]["athlete"]
         debug(context, "[ORCH] Flattened prefetched athlete for Tier-0")
 
+        # ============================================================
+        # 🔧 HARD GUARD — Tier-0 REQUIRES timezone
+        # ============================================================
+        if not context["athlete"].get("timezone"):
+            context["athlete"]["timezone"] = (
+                context["athleteProfile"].get("timezone") or "UTC"
+            )
+            debug(
+                context,
+                f"[ORCH-FIX] Injected missing athlete.timezone = {context['athlete']['timezone']}"
+            )
 
-    if context["prefetched"]:
-        debug(context, f"[ORCH] Registered prefetched datasets: {list(context['prefetched'].keys())}")
+    # ------------------------------------------------------------
+    # Prefetch bookkeeping
+    # ------------------------------------------------------------
+    if context.get("prefetched"):
+        debug(
+            context,
+            f"[ORCH] Registered prefetched datasets: {list(context['prefetched'].keys())}"
+        )
 
     # 🔒 Prefetch is authoritative
     if context.get("prefetched", {}).get("full"):
