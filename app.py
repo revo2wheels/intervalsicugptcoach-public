@@ -178,13 +178,26 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
 
     with redirect_stdout(buffer):
         if prefetch_context:
-            # Unpack Cloudflare payload directly into context
+
+            # 🔑 Build Tier-0 prefetch contract
+            prefetch_context["prefetched"] = {
+                "light": prefetch_context.get("activities_light", []),
+                "full": prefetch_context.get("activities_full", []),
+                "wellness": prefetch_context.get("wellness", []),
+
+                # Tier-0 expects {"athlete": {...}}
+                "athlete": {
+                    "athlete": prefetch_context.get("athlete", {})
+                }
+            }
+
             report, compliance = run_report(
                 reportType=range,
                 output_format=output_format,
                 include_coaching_metrics=True,
                 **prefetch_context
             )
+
         else:
             report, compliance = run_report(
                 reportType=range,
