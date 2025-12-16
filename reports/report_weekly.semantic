@@ -5,187 +5,270 @@
     "meta": {
       "framework": "Unified Reporting Framework v5.1",
       "version": "v16.17",
-      "generated_at": "2025-12-12T09:20:12.716606",
+      "generated_at": "2025-12-16T00:00:00Z",
       "report_type": "weekly",
       "period": {
-        "start": "2025-12-06",
-        "end": "2025-12-12"
+        "start": null,
+        "end": null
       },
       "timezone": "Europe/Zurich",
       "athlete": {
-        "id": "1914741",
-        "name": "Clive King",
-        "profile_medium": "https://storage.googleapis.com/intervals-icu-images/profile_pics/2eaed503-0e10-40a4-b7dc-b63768fecbef",
-        "city": "Jongny",
-        "state": "Vaud",
-        "country": "Switzerland",
-        "timezone": "Europe/Zurich",
-        "sex": "M",
-        "bio": null,
-        "website": "https://www.cliveking.net",
-        "email": null
+        "identity": {
+          "id": "1914741",
+          "name": "Clive King",
+          "profile_medium": "https://storage.googleapis.com/intervals-icu-images/profile_pics/2eaed503-0e10-40a4-b7dc-b63768fecbef",
+          "city": "Jongny",
+          "state": "Vaud",
+          "country": "Switzerland",
+          "timezone": "Europe/Zurich",
+          "sex": "M",
+          "bio": null,
+          "website": "https://www.cliveking.net",
+          "email": "clive@cliveking.com"
+        },
+        "profile": {
+          "athlete_id": "1914741",
+          "name": "Clive King",
+          "discipline": "cycling",
+          "timezone": "Europe/Zurich",
+          "updated": "2025-12-16T18:31:37.715+00:00",
+          "ftp": 300,
+          "indoor_ftp": 306,
+          "weight": 72.9,
+          "hr_rest": 42,
+          "hr_max": 177,
+          "ftp_wkg": 4.12,
+          "hr_reserve": 135,
+          "zone_model": {
+            "type": "power_zones",
+            "schema": "Coggan_7Z",
+            "zones": [
+              55,
+              75,
+              90,
+              105,
+              120,
+              150
+            ],
+            "names": [
+              "Active Recovery",
+              "Endurance",
+              "Tempo",
+              "Threshold",
+              "VO2 Max",
+              "Anaerobic",
+              "Neuromuscular"
+            ]
+          },
+          "training_age_years": null,
+          "preferred_units": "metric"
+        }
+      },
+      "report_header": {
+        "title": "Weekly Training Report",
+        "scope": "Detailed analysis of the last 7 days of training activity",
+        "data_sources": "7-day full activities, 42-day wellness, zone distributions",
+        "intended_use": "Day-to-day coaching decisions, intensity balance, short-term fatigue and recovery management"
+      },
+      "resolution": {
+        "CTL": "authoritative",
+        "ATL": "authoritative",
+        "TSB": "authoritative",
+        "zones": "authoritative",
+        "derived_metrics": "full",
+        "extended_metrics": "limited",
+        "insights": "tactical"
       }
     },
-    "hours": 8.42,
-    "tss": 396,
-    "distance_km": 285.4,
+    "hours": 10.59,
+    "tss": 474,
+    "distance_km": 256.7,
     "metrics": {
       "ACWR": {
         "name": "ACWR",
         "value": 0.97,
-        "classification": "unknown",
-        "interpretation": "",
-        "coaching_implication": "",
+        "classification": "productive",
+        "interpretation": "EWMA Acute:Chronic Load Ratio \u2014 compares 7-day vs 28-day weighted loads. 0.8\u20131.3 = productive training, <0.8 = recovery or detraining, >1.5 = overload/injury risk.",
+        "coaching_implication": "If ACWR > 1.5, reduce intensity and focus on recovery to avoid overload. If ACWR < 0.8, gradually increase training load with controlled progression to build endurance.",
         "related_metrics": {}
       },
       "Monotony": {
         "name": "Monotony",
-        "value": 1.25,
-        "classification": "unknown",
-        "interpretation": "",
-        "coaching_implication": "",
+        "value": 1.53,
+        "classification": "optimal",
+        "interpretation": "1\u20132 shows healthy variation; >2.5 means repetitive stress pattern.",
+        "coaching_implication": "If Monotony > 2.5, introduce more variation in training or implement a deload week to reduce repetitive stress.",
         "related_metrics": {}
       },
       "Strain": {
         "name": "Strain",
-        "value": 70.7,
-        "classification": "unknown",
-        "interpretation": "",
-        "coaching_implication": "",
+        "value": 103.6,
+        "classification": "optimal",
+        "interpretation": "Product of load \u00d7 monotony; >3500 signals potential overreach.",
+        "coaching_implication": "If Strain > 3000, monitor for signs of overreach and consider more rest or deloading. If Strain > 3500, consider reducing volume or intensity temporarily.",
         "related_metrics": {}
       },
       "FatigueTrend": {
         "name": "FatigueTrend",
-        "value": 13.4,
-        "classification": "unknown",
-        "interpretation": "",
-        "coaching_implication": "",
+        "value": 0,
+        "classification": "undefined",
+        "interpretation": "FatigueTrend is calculated as the percentage change between the 7-day and 28-day moving averages. A 0% change indicates balance, while a positive percentage change indicates accumulating fatigue, and a negative percentage change indicates recovery.",
+        "coaching_implication": "If FatigueTrend is negative (e.g., below -0.2), this indicates a recovering state. Continue with controlled training load and focus on recovery to ensure sustained progress. Avoid aggressive increases in load.",
         "related_metrics": {}
       },
       "ZQI": {
         "name": "ZQI",
-        "value": 4.2,
-        "classification": "unknown",
-        "interpretation": "",
-        "coaching_implication": "",
+        "value": 4.8,
+        "classification": "low",
+        "interpretation": "Zone Quality Index (%) 5-15 high-intensity time is normal <3% too easy, >20% too intense or erratic pacing.",
+        "coaching_implication": "If ZQI > 20%, review pacing strategy; excessive high-intensity time could indicate erratic pacing or overtraining. Aim for 5-15% ZQI for balanced training.",
         "related_metrics": {}
       },
       "FatOxEfficiency": {
         "name": "FatOxEfficiency",
-        "value": 0.613,
-        "classification": "unknown",
-        "interpretation": "",
-        "coaching_implication": "",
-        "related_metrics": {}
-      },
-      "Polarisation": {
-        "name": "Polarisation",
-        "value": 0.9,
-        "classification": "unknown",
-        "interpretation": "",
-        "coaching_implication": "",
+        "value": 0.62,
+        "classification": "optimal",
+        "interpretation": "0.4\u20130.8 means balanced fat oxidation; lower = carb dependence.",
+        "coaching_implication": "If FatOxEfficiency is low (<0.6), focus on improving aerobic base with longer, low-intensity efforts.",
         "related_metrics": {}
       },
       "FOxI": {
         "name": "FOxI",
-        "value": 61.3,
-        "classification": "unknown",
-        "interpretation": "",
-        "coaching_implication": "",
+        "value": 62.0,
+        "classification": "moderate",
+        "interpretation": "FatOx index %; higher values mean more efficient aerobic base.",
+        "coaching_implication": "If FOxI is increasing, continue to prioritize low-intensity work to enhance fat metabolism. If it decreases, consider increasing your Zone 2 training duration.",
         "related_metrics": {}
       },
       "CUR": {
         "name": "CUR",
-        "value": 38.7,
-        "classification": "unknown",
-        "interpretation": "",
-        "coaching_implication": "",
+        "value": 38.0,
+        "classification": "optimal",
+        "interpretation": "Carbohydrate Utilisation Ratio; 30-80 balanced metabolic use.",
+        "coaching_implication": "If CUR is outside the green zone (30-70), adjust carbohydrate intake and fueling strategy to ensure balanced metabolic use during long sessions.",
         "related_metrics": {}
       },
       "GR": {
         "name": "GR",
-        "value": 1.63,
-        "classification": "unknown",
-        "interpretation": "",
-        "coaching_implication": "",
+        "value": 1.65,
+        "classification": "optimal",
+        "interpretation": "Glucose Ratio; >2 indicates excess glycolytic bias.",
+        "coaching_implication": "If GR exceeds 2.0, focus on reducing glycolytic intensity and increase aerobic work. Ensure sufficient recovery to avoid over-reliance on carbs.",
         "related_metrics": {}
       },
       "MES": {
         "name": "MES",
-        "value": 22.6,
-        "classification": "unknown",
-        "interpretation": "",
-        "coaching_implication": "",
+        "value": 22.5,
+        "classification": "optimal",
+        "interpretation": "Metabolic Efficiency Score; >20 is good endurance economy.",
+        "coaching_implication": "If MES is below 20, work on improving metabolic efficiency by increasing endurance training with a focus on aerobic base and fat metabolism.",
         "related_metrics": {}
       },
       "RecoveryIndex": {
         "name": "RecoveryIndex",
-        "value": 0.75,
-        "classification": "unknown",
-        "interpretation": "",
-        "coaching_implication": "",
+        "value": 0.694,
+        "classification": "low",
+        "interpretation": "0.6\u20131.0 means recovered; <0.5 = heavy fatigue.",
+        "coaching_implication": "If RecoveryIndex is low (<0.7), ensure adequate rest and recovery, and avoid heavy training loads.",
         "related_metrics": {}
       },
       "StressTolerance": {
         "name": "StressTolerance",
         "value": 2.0,
-        "classification": "unknown",
-        "interpretation": "",
-        "coaching_implication": "",
+        "classification": "low",
+        "interpretation": "2\u20138 indicates sustainable training strain capacity.",
+        "coaching_implication": "If StressTolerance is high (>8), reduce overall load and increase recovery time. If it's low (<2), ensure proper training load progression.",
         "related_metrics": {}
+      },
+      "Polarisation": {
+        "name": "Polarisation",
+        "value": 0.573,
+        "framework": "Seiler 80/20 Model",
+        "formula": "Time-in-zone distribution using Seiler 3-zone model (LT1/LT2). Polarisation determined by proportion of low- and high-intensity time with minimal moderate-intensity time.",
+        "thresholds": {
+          "green": [
+            0.75,
+            0.9
+          ],
+          "amber": [
+            0.65,
+            0.95
+          ]
+        },
+        "classification": "red",
+        "interpretation": "Seiler Polarisation Index based on zone distribution. \u22650.75 indicates a polarised (80/20) intensity structure. 0.60\u20130.74 indicates a pyramidal or mixed distribution. <0.60 indicates insufficient polarisation or excessive threshold dominance.",
+        "coaching_implication": "If PolarisationIndex <0.60, rebalance training toward greater Z1 volume and clearer separation between low-intensity and high-intensity sessions. Avoid excessive Z2/threshold dominance.",
+        "related_metrics": {
+          "polarised": "Z1 \u2265 75% AND Z3 \u2265 15% AND Z2 \u2264 10\u201315%",
+          "balanced": "Z1 60\u201374% with moderate Z2",
+          "threshold": "High Z2 proportion"
+        }
       }
     },
     "extended_metrics": {
       "CTL": {
-        "value": 86.78,
-        "status": "ok"
+        "value": 75.29384,
+        "status": "icu"
       },
       "ATL": {
-        "value": 76.63,
-        "status": "ok"
+        "value": 61.455624,
+        "status": "icu"
       },
       "TSB": {
-        "value": 10.15,
-        "status": "ok"
-      }
+        "value": 13.838216000000003,
+        "status": "icu"
+      },
+      "EfficiencyFactor": 1.9,
+      "FatigueResistance": 0.95,
+      "EnduranceDecay": 0.02,
+      "Z2Stability": 0.04,
+      "AerobicDecay": 0.02,
+      "LoadTrend": "\u2014",
+      "FitnessTrend": "\u2014",
+      "FatigueTrend": "\u2014",
+      "PowerHRCorr": "\u2014",
+      "EfficiencyFactorChange": "\u2014",
+      "FatigueVsLoad": NaN
     },
-    "adaptation_metrics": {},
-    "trend_metrics": {},
-    "correlation_metrics": {},
+    "adaptation_metrics": {
+      "Efficiency Factor": 1.9,
+      "Fatigue Resistance": 0.95,
+      "Endurance Decay": 0.02,
+      "Z2 Stability": 0.04,
+      "Aerobic Decay": 0.02
+    },
+    "trend_metrics": {
+      "load_trend": "\u2014",
+      "fitness_trend": "\u2014",
+      "fatigue_trend": "\u2014"
+    },
+    "correlation_metrics": {
+      "power_hr_correlation": "\u2014",
+      "efficiency_factor_change": "\u2014",
+      "fatigue_vs_load": NaN
+    },
     "zones": {
       "power": {
-        "power_z1": 19.2,
-        "power_z2": 54.4,
-        "power_z3": 17.7,
-        "power_z4": 1.9,
-        "power_z5": 2.3,
-        "power_z6": 1.6,
+        "power_z1": 19.0,
+        "power_z2": 38.3,
+        "power_z3": 29.3,
+        "power_z4": 2.7,
+        "power_z5": 3.4,
+        "power_z6": 1.9,
         "power_z7": 0.0,
-        "power_z8": 3.0
+        "power_z8": 5.4
       },
       "hr": {
-        "hr_z1": 69.1,
-        "hr_z2": 20.2,
-        "hr_z3": 3.3,
-        "hr_z4": 3.0,
-        "hr_z5": 2.2,
-        "hr_z6": 2.2,
-        "hr_z7": 0.0
+        "hr_z1": 75.8,
+        "hr_z2": 16.1,
+        "hr_z3": 1.3,
+        "hr_z4": 2.4,
+        "hr_z5": 1.9,
+        "hr_z6": 1.9,
+        "hr_z7": 0.6
       }
     },
     "daily_load": [
-      {
-        "date": "2025-12-07 00:00:00",
-        "tss": 137.0
-      },
-      {
-        "date": "2025-12-08 00:00:00",
-        "tss": 39.0
-      },
-      {
-        "date": "2025-12-09 00:00:00",
-        "tss": 59.0
-      },
       {
         "date": "2025-12-10 00:00:00",
         "tss": 86.0
@@ -193,57 +276,94 @@
       {
         "date": "2025-12-11 00:00:00",
         "tss": 75.0
+      },
+      {
+        "date": "2025-12-13 00:00:00",
+        "tss": 142.0
+      },
+      {
+        "date": "2025-12-14 00:00:00",
+        "tss": 13.0
+      },
+      {
+        "date": "2025-12-15 00:00:00",
+        "tss": 84.0
+      },
+      {
+        "date": "2025-12-16 00:00:00",
+        "tss": 74.0
       }
     ],
     "events": [
       {
-        "start_date_local": 1765471429000,
-        "name": "Zwift - AT Base",
-        "icu_training_load": 75,
-        "moving_time": 4849,
-        "distance": 54733.44
-      },
-      {
-        "start_date_local": 1765387770000,
-        "name": "Zwift - Group Workout: RAD RACE VO2 max Booster Plan - Week 6 - 3x10x40/20 VO2 max Intervalle With Freddy Ovett",
-        "icu_training_load": 82,
-        "moving_time": 4236,
-        "distance": 41037.59
-      },
-      {
-        "start_date_local": 1765386982000,
+        "start_date_local": "2025-12-10T18:16:22+01:00",
         "name": "Zwift - Tick Tock in Watopia",
         "icu_training_load": 4,
         "moving_time": 608,
         "distance": 5626.88
       },
       {
-        "start_date_local": 1765300085000,
-        "name": "Zwift - Group Workout: BaseCamp Aerobic Endurance with Cadence Builds",
-        "icu_training_load": 59,
-        "moving_time": 3649,
-        "distance": 32474.04
+        "start_date_local": "2025-12-10T18:29:30+01:00",
+        "name": "Zwift - Group Workout: RAD RACE VO2 max Booster Plan - Week 6 - 3x10x40/20 VO2 max Intervalle With Freddy Ovett",
+        "icu_training_load": 82,
+        "moving_time": 4236,
+        "distance": 41037.59
       },
       {
-        "start_date_local": 1765212772000,
-        "name": "Zwift - nope",
-        "icu_training_load": 39,
-        "moving_time": 3341,
-        "distance": 36408.29
+        "start_date_local": "2025-12-11T17:43:49+01:00",
+        "name": "Zwift - AT Base",
+        "icu_training_load": 75,
+        "moving_time": 4849,
+        "distance": 54733.44
       },
       {
-        "start_date_local": 1765111566000,
+        "start_date_local": "2025-12-13T12:33:00+01:00",
         "name": "Otto walk",
-        "icu_training_load": 19,
-        "moving_time": 2731,
-        "distance": 3922.37
+        "icu_training_load": 16,
+        "moving_time": 4252,
+        "distance": 6256.26
       },
       {
-        "start_date_local": 1765096884000,
-        "name": "Zwift - Group Ride: Flanders Coffee Ride en France",
-        "icu_training_load": 118,
-        "moving_time": 10896,
-        "distance": 111229.03
+        "start_date_local": "2025-12-13T17:05:30+01:00",
+        "name": "Zwift - Duex zAlpe ATbase",
+        "icu_training_load": 126,
+        "moving_time": 9268,
+        "distance": 54681.6
+      },
+      {
+        "start_date_local": "2025-12-14T12:28:12+01:00",
+        "name": "Otto walk",
+        "icu_training_load": 13,
+        "moving_time": 3409,
+        "distance": 5518.51
+      },
+      {
+        "start_date_local": "2025-12-15T18:00:03+01:00",
+        "name": "Zwift - Flat Route in Watopia",
+        "icu_training_load": 4,
+        "moving_time": 527,
+        "distance": 4886.32
+      },
+      {
+        "start_date_local": "2025-12-15T18:09:52+01:00",
+        "name": "Zwift - Race: Stage 3: Fresh Outta '25: Hell of the North (A) on Hell of the North in France",
+        "icu_training_load": 80,
+        "moving_time": 4016,
+        "distance": 42528.53
+      },
+      {
+        "start_date_local": "2025-12-16T08:51:23+01:00",
+        "name": "Pea soup Otto walk",
+        "icu_training_load": 11,
+        "moving_time": 2671,
+        "distance": 4328.99
+      },
+      {
+        "start_date_local": "2025-12-16T17:59:28+01:00",
+        "name": "Zwift - Group Workout: BaseCamp Aerobic Endurance with Cadence 30-30 Intervals and Tempo",
+        "icu_training_load": 63,
+        "moving_time": 4285,
+        "distance": 37097.23
       }
     ],
     "phases": [
@@ -255,57 +375,69 @@
       }
     ],
     "actions": [
-      "\u2705 Maintain \u226570 % Z1\u2013Z2 volume (Seiler 80/20).",
+      "\u26a0 Increase Z1\u2013Z2 share to \u226570 % (Seiler 80/20).",
       "\u26a0 Improve Zone 2 efficiency: extend duration or adjust IF.",
-      "\u2705 FatigueTrend (13.4%) \u2014 Increasing fatigue trend. Consider adjusting intensity or recovery.",
       "\u2705 Durability improving (1.00) \u2014 maintain current long-ride structure.",
       "\u26a0 Load intensity too high (LIR=2.00) \u2014 reduce intensity or monitor recovery.",
       "\u2705 Efficiency drift stable (0.00%).",
-      "\u2705 Polarisation optimal (90%).",
-      "\u2705 Recovery Index healthy (0.75).",
-      "---",
-      "\ud83d\udcca Metric-based Feedback:",
-      "\u2705 Monotony (1.25) \u2014 If Monotony > 2.5, introduce more variation in training or implement a deload week to reduce repetitive stress.",
-      "\u2705 Strain (70.7) \u2014 If Strain > 3000, monitor for signs of overreach and consider more rest or deloading. If Strain > 3500, consider reducing volume or intensity temporarily.",
-      "\u2705 FatOxEfficiency (0.613) \u2014 If FatOxEfficiency is low (<0.6), focus on improving aerobic base with longer, low-intensity efforts.",
-      "\u2705 CUR (38.7) \u2014 If CUR is outside the green zone (30-70), adjust carbohydrate intake and fueling strategy to ensure balanced metabolic use during long sessions.",
-      "\u2705 GR (1.63) \u2014 If GR exceeds 2.0, focus on reducing glycolytic intensity and increase aerobic work. Ensure sufficient recovery to avoid over-reliance on carbs.",
-      "\u2705 MES (22.6) \u2014 If MES is below 20, work on improving metabolic efficiency by increasing endurance training with a focus on aerobic base and fat metabolism.",
-      "\u2705 StressTolerance (2.0) \u2014 If StressTolerance is high (>8), reduce overall load and increase recovery time. If it's low (<2), ensure proper training load progression."
+      "\u26a0 Polarisation low (57%) \u2014 increase Z1\u2013Z2 share toward \u226570 %. ",
+      "\u2705 Recovery Index healthy (0.69)."
     ],
     "wellness": {
-      "rest_hr": 43.6,
-      "hrv_trend": -1.0,
-      "rest_days": 1,
-      "fatigue": 1.5,
-      "stress": 1.6,
-      "readiness": null,
-      "CTL": 86.78,
-      "ATL": 76.63,
-      "TSB": 10.15
+      "ctl": 75.29384,
+      "atl": 61.455624,
+      "tsb": 13.838216000000003,
+      "recovery": null,
+      "fatigue": null,
+      "fitness": null,
+      "form": null,
+      "CTL": 75.29384,
+      "ATL": 61.455624,
+      "TSB": 13.838216000000003
     },
     "insights": {
       "fatigue_trend": {
-        "value": -0.117,
-        "interpretation": "Positive = accumulating fatigue, negative = recovering, near zero = stable"
+        "value_pct": -18.4,
+        "window": "7d",
+        "basis": "ATL vs CTL",
+        "classification": "amber",
+        "thresholds": {
+          "green": [
+            -10,
+            10
+          ],
+          "amber": [
+            -20,
+            20
+          ]
+        },
+        "interpretation": "FatigueTrend is calculated as the percentage change between the 7-day and 28-day moving averages. A 0% change indicates balance, while a positive percentage change indicates accumulating fatigue, and a negative percentage change indicates recovery.",
+        "coaching_implication": "If FatigueTrend is negative (e.g., below -0.2), this indicates a recovering state. Continue with controlled training load and focus on recovery to ensure sustained progress. Avoid aggressive increases in load."
       },
       "load_distribution": {
-        "zones": {
-          "z1_z2": 73.6,
-          "z3_plus": 26.5
+        "zones_pct": {
+          "z1_z2": 57.3,
+          "z3_plus": 42.7
         },
-        "classification": "endurance-focused",
-        "interpretation": "Distribution indicates focus on aerobic base"
+        "window": "7d",
+        "basis": "time-in-zone (%)",
+        "classification": "threshold-heavy",
+        "interpretation": "Seiler Polarisation Index based on zone distribution. \u22650.75 indicates a polarised (80/20) intensity structure. 0.60\u20130.74 indicates a pyramidal or mixed distribution. <0.60 indicates insufficient polarisation or excessive threshold dominance."
       },
       "metabolic_drift": {
-        "value": 0.124,
-        "interpretation": "Lower values indicate good aerobic durability"
+        "value": 0.114,
+        "window": "7d",
+        "basis": "FOxI proxy",
+        "interpretation": "Proxy derived from fat oxidation efficiency. Interpret trend direction only, not absolute magnitude."
       },
       "fitness_phase": {
         "phase": "productive/loading",
-        "interpretation": "Athlete is absorbing training well"
+        "basis": "ACWR",
+        "window": "rolling",
+        "interpretation": "EWMA Acute:Chronic Load Ratio \u2014 compares 7-day vs 28-day weighted loads. 0.8\u20131.3 = productive training, <0.8 = recovery or detraining, >1.5 = overload/injury risk.",
+        "coaching_implication": "If ACWR > 1.5, reduce intensity and focus on recovery to avoid overload. If ACWR < 0.8, gradually increase training load with controlled progression to build endurance."
       }
     }
   },
-  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=5691, ctx_keys=85\n\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=5691, ctx_keys=85"
+  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4622, ctx_keys=84\n\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4622, ctx_keys=84"
 }

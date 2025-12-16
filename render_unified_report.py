@@ -165,9 +165,17 @@ def render_report(data):
     ctx["totals_verified"] = True
 
     # Continue normal render logic...
-    athlete = ctx.get("athlete", {})
+    athlete_raw = ctx.get("athlete", {})
+    athlete_profile = ctx.get("athleteProfile", {})
+
+    # Merge for local render
+    athlete = {}
+    athlete.update(athlete_raw)
+    athlete.update(athlete_profile)
+
     name = athlete.get("name", "Unknown Athlete")
-    tz = ctx.get("timezone", "n/a")
+    tz = athlete.get("timezone", ctx.get("timezone", "n/a"))
+
     start = ctx.get("window_start", "?")
     end = ctx.get("window_end", "?")
     report_type = data.get("type", "Weekly")
@@ -179,6 +187,11 @@ def render_report(data):
     # === 1️⃣ HEADER / META ===
     md.append(f"# 🧭 {report_type} Training Report — URF v5.1")
     md.append(f"**Athlete:** {name}")
+    md.append(f"**FTP:** {athlete.get('ftp', '—')} W · "
+            f"**Weight:** {athlete.get('weight', '—')} kg · "
+            f"**FTP/kg:** {athlete.get('ftp_wkg', '—')}")
+    md.append(f"**HR:** rest {athlete.get('hr_rest', '—')} / "
+            f"max {athlete.get('hr_max', '—')}")
     md.append(f"**Period:** {start} → {end}")
     md.append(f"**Timezone:** {tz}")
     md.append(f"**Generated:** {ctx.get('timestamp', datetime.utcnow().isoformat())}")

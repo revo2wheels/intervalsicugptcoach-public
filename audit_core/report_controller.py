@@ -10,9 +10,12 @@ print(f"[DEBUG] Added ROOT_DIR to sys.path: {ROOT_DIR}")
 # --- Optional: show current working directory ---
 print(f"[DEBUG] CWD: {os.getcwd()}")
 
+import pandas as pd
+from datetime import timedelta, datetime, date
 
 import pandas as pd
 from datetime import timedelta, datetime, date
+from audit_core.errors import AuditHalt
 
 from audit_core.utils import debug
 from api_github_com__jit_plugin import loadAllRules
@@ -79,9 +82,9 @@ def orchestrate_fetch_context(report_type: str = "weekly", today: date | None = 
     if rtype in ("weekly", "summary"):
         light_days, full_days, wellness_days = 90, 7, 42
     elif rtype in ("season", "season_phases", "season_summary"):
-        light_days, full_days, wellness_days = 90, 7, 42
+        light_days, full_days, wellness_days = 90, 42, 42
     elif rtype == "wellness":
-        light_days, full_days, wellness_days = 90, 7, 42
+        light_days, full_days, wellness_days = 42, 0, 42
     else:
         raise ValueError(f"Unknown report type '{report_type}'")
 
@@ -212,197 +215,82 @@ def run_report(
         context["semantic_mode"] = True   # marker for downstream render stage
 
     # ============================================================
-    # CLOUD-FLARE MODE (Worker supplied 4 datasets)
-    # → DO NOT BYPASS TIER-0
-    # → JUST PASS PAYLOAD INTO CONTEXT
+    # PREFETCH REGISTRATION (Cloudflare → Railway)
     # ============================================================
 
-    cloudflare_mode = (
-        isinstance(context.get("activities_light"), list)
-        and isinstance(context.get("activities_full"), list)
-        and isinstance(context.get("wellness"), list)
-        and isinstance(context.get("athlete"), dict)
-    )
+    context["prefetched"] = {}
 
-    if cloudflare_mode:
-        debug(context, "[ORCH] Cloudflare payload detected → forwarding datasets into Tier-0")
+    if isinstance(context.get("activities_light"), list):
+        context["prefetched"]["light"] = context["activities_light"]
 
-        # Mark mode
-        context["cloudflare_mode"] = True
+    if isinstance(context.get("activities_full"), list):
+        context["prefetched"]["full"] = context["activities_full"]
 
-        # Pass payload through exactly
-        context["cf_light"] = context.get("activities_light", [])
-        context["cf_full"] = context.get("activities_full", [])
-        context["cf_wellness"] = context.get("wellness", [])
-        context["cf_athlete"] = context.get("athlete", {})
+    if isinstance(context.get("wellness"), list):
+        context["prefetched"]["wellness"] = context["wellness"]
 
-    else:
-        context["cloudflare_mode"] = False
+    if isinstance(context.get("athlete"), dict):
+        context["prefetched"]["athlete"] = context["athlete"]
 
-
-
-
-
+    if context["prefetched"]:
+        debug(context, f"[ORCH] Registered prefetched datasets: {list(context['prefetched'].keys())}")
 
     # --- NEW: Bind reportMode for schema-based orchestration ---
     context["reportMode"] = reportType.lower() if isinstance(reportType, str) else "weekly"
 
     debug(context, f"🧭 Running {reportType.title()} Report (auditFinal={auditFinal}, render_mode={render_mode})")
 
-    # --- Load validation and rule base ---
-    ruleset = loadAllRules()
-
-    # --- NEW: Enforce schema x-intent lock if available ---
-    try:
-        import json, base64
-        # Decode content payload returned by loadAllRules()
-        content = json.loads(base64.b64decode(ruleset["content"]).decode("utf-8"))
-
-        # Locate the intent block matching current report type
-        intents = content.get("x-intents", [])
-        matched = next(
-            (i for i in intents if reportType.lower() in [t.lower() for t in i.get("trigger", [])]), None
-        )
-
-        if matched and "x-intent" in matched:
-            xi = matched["x-intent"]
-
-            # Validate intent lock
-            if xi.get("enforce_gate", True) and not auditFinal and preRenderAudit:
-                raise RuntimeError(
-                    f"RenderGateViolation: preRenderAudit blocked under x-intent lock ({xi['x-intent']})"
-                )
-
-            if xi.get("x-intent") != reportType.lower():
-                raise RuntimeError(
-                    f"IntentMismatchError: schema locked for {xi['x-intent']} but got {reportType.lower()}"
-                )
-
-            debug(context, f"[INTENT] Schema lock verified → {xi['x-intent']} (gate={xi['enforce_gate']})")
-        else:
-            debug(context, "[INTENT] No schema-level lock matched — proceeding with default routing.")
-
-    except Exception as e:
-        debug(context, f"[INTENT] Validation warning: {e}")
-
-    # --- Tier-0 Range Configuration (MUST mirror Cloudflare worker) ---
+    # --- Tier-0 Range Configuration (aligned with worker) ---
     today = datetime.now().date()
 
-    rtype = reportType.lower()
+    if reportType.lower() == "season":
+        context["range"] = {"lightDays": 90, "fullDays": 42, "wellnessDays": 90, "chunk": True}
+    else:  # weekly / wellness / summary
+        context["range"] = {"lightDays": 90, "fullDays": 7, "wellnessDays": 42, "chunk": False}
 
-    if rtype in ("weekly", "summary"):
-        # Weekly-style reports
-        context["range"] = {
-            "lightDays": 90,
-            "fullDays": 7,
-            "wellnessDays": 42,
-            "chunk": False,
-        }
-
-    elif rtype in ("season", "season_phases", "season_summary"):
-        # Season NEVER uses full
-        context["range"] = {
-            "lightDays": 90,
-            "fullDays": 7,
-            "wellnessDays": 42,
-            "chunk": False,
-        }
-
-    elif rtype == "wellness":
-        # Wellness-only report
-        context["range"] = {
-            "lightDays": 42,
-            "fullDays": 7,
-            "wellnessDays": 42,
-            "chunk": False,
-        }
-
-    else:
-        raise ValueError(f"Unknown report type '{reportType}'")
-
-    # Local variable bindings
+    # Local variable bindings for convenience
     light_days = context["range"]["lightDays"]
     full_days = context["range"]["fullDays"]
     chunk = context["range"]["chunk"]
 
-    debug(
-        context,
-        f"[T0] Config → light={light_days}d full={full_days}d "
-        f"wellness={context['range']['wellnessDays']}d chunk={chunk}"
-    )
+    debug(context, f"[T0] Config → light={light_days}d full={full_days}d chunk={chunk}")
 
-
-    # --- Tier-0 Lightweight Prefetch ---
-    context["report_type"] = reportType.lower() if isinstance(reportType, str) else "weekly"
-    try:
-        light_start = today - timedelta(days=light_days)
-        light_end = today
-        debug(context, f"[T0-LIGHT] Running lightweight prefetch → {light_start} → {light_end}")
-        # Inject into context only, not as argument
-        context["light_range"] = run_tier0_pre_audit(
-            str(light_start),
-            str(light_end),
-            context,
-        )
-    except Exception as e:
-        debug(context, f"[T0-LIGHT] Prefetch failed (non-fatal): {e}")
-
-    # ------------------------------------------------------------
-    # --- Tier-0 Full Audit (short detailed window only) ---
-    # ------------------------------------------------------------
-    #import pandas as pd
-
-    # Only initialize data outputs here
-    df_master = None
-    wellness = None
+    # --- Tier-0 Full Audit (canonical, single execution) ---
+    import pandas as pd
 
     try:
         full_start = today - timedelta(days=full_days)
         full_end = today
 
-        # --- Mode-aware control ---
-        if reportType.lower() in ("weekly", "season", "summary", "wellness"):
-            debug(context, f"[T0-FULL] Running 7-day detailed audit → {full_start} → {full_end}")
-            df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
-                str(full_start),
-                str(full_end),
-                context,
-            )
-        elif reportType.lower() == "weekly":
-            debug(context, f"[T0-FULL] Running 7-day detailed audit for weekly mode → {full_start} → {full_end}")
+        debug(
+            context,
+            f"[T0-FULL] Executing Tier-0 canonical path → {full_start} → {full_end}"
+        )
 
-            # --- Prevent double counting ---
-            if "activities_light" in context and "activities_full" in context:
-                light_df = pd.DataFrame(context["activities_light"])
-                full_df = pd.DataFrame(context["activities_full"])
+        df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
+            str(full_start),
+            str(full_end),
+            context,
+        )
 
-                if "id" in light_df.columns and "id" in full_df.columns:
-                    before = len(light_df)
-                    light_df = light_df[~light_df["id"].isin(full_df["id"])]
-                    debug(context, f"[DEDUPE] Removed {before - len(light_df)} duplicates")
-
-                context["activities_light"] = light_df.to_dict(orient="records")
-
-            # Skip redundant re-fetch
-            if context.get("prefetch_done") and context.get("snapshot_7d_json"):
-                debug(context, "[T0-FULL] Prefetch contained full window — skipping redundant re-fetch.")
-            else:
-                df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
-                    str(full_start), str(full_end), context
-                )
-
-        else:
-            debug(context, f"[T0-FULL] Running standard audit window → {full_start} → {full_end}")
-            df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
-                str(full_start), str(full_end), context
-            )
-
+    except AuditHalt:
+        raise
     except Exception as e:
-        debug(context, f"[T0-FULL] Full audit failed: {e}")
-        # Only reset real data outputs
-        df_master = None
-        wellness = None
+        debug(context, f"[T0-FULL] Tier-0 execution failed: {e}")
+        raise
 
+    # ============================================================
+    # 🔒 LOCK Tier-0 90-day dataset (authoritative for Tier-3)
+    # ============================================================
+    if "df_light_full" in context and isinstance(context["df_light_full"], pd.DataFrame):
+        context["_df_light_90d"] = context["df_light_full"].copy()
+        debug(context, "[LOCK] Stored df_light_full as canonical 90-day dataset")
+    elif "df_light" in context and isinstance(context["df_light"], pd.DataFrame):
+        context["_df_light_90d"] = context["df_light"].copy()
+        debug(context, "[LOCK] Stored df_light as canonical 90-day dataset")
+    else:
+        context["_df_light_90d"] = pd.DataFrame()
+        debug(context, "[LOCK-WARN] No 90-day dataset available to lock")
 
     # --- Preserve existing full fetch if prefetch already covered it ---
     if context.get("prefetch_done") and context.get("snapshot_7d_json"):
@@ -485,23 +373,16 @@ def run_report(
         "cheatsheet": CHEAT_SHEET,
     }
 
-    # --- Normalize athlete profile ---
-    athlete = context.get("athlete", {})
-    profile_ref = ATHLETE_PROFILE.copy()
-    profile_ref.update({
-        "athlete_id": athlete.get("id"),
-        "name": athlete.get("name"),
-        "discipline": athlete.get("sport", "cycling"),
-        "ftp": athlete.get("ftp"),
-        "weight": athlete.get("weight"),
-        "hr_rest": athlete.get("resting_hr"),
-        "hr_max": athlete.get("max_hr"),
-        "timezone": context.get("timezone"),
-        "updated": athlete.get("updated"),
-    })
-    context["athleteProfile"] = profile_ref
+    # --- Athlete profile (preserve Tier-0 mapping) ---
+    if not isinstance(context.get("athleteProfile"), dict) or not context["athleteProfile"]:
+        from athlete_profile import map_icu_athlete_to_profile
+        context["athleteProfile"] = map_icu_athlete_to_profile(context.get("athlete", {}))
+        debug(context, "[ORCH] athleteProfile missing → rebuilt from athlete")
+    else:
+        debug(context, "[ORCH] athleteProfile present → preserved")
 
-    # --- Normalize moving_time units ---
+
+        # --- Normalize moving_time units ---
     if "moving_time" in df_master.columns:
         max_val = df_master["moving_time"].max()
         if max_val < 25:
@@ -509,48 +390,6 @@ def run_report(
             debug(context, f"⚙️ Normalization: converted moving_time hours→seconds (max={max_val})")
         else:
             debug(context, f"⚙️ Normalization: seconds detected, no conversion (max={max_val})")
-
-
-    # ------------------------------------------------------------
-    # T0 → T1 HARD CONTRACT ENFORCEMENT
-    # df_master AND wellness must ALWAYS be DataFrames
-    # ------------------------------------------------------------
-
-    # --- df_master invariant ---
-    if df_master is None or not isinstance(df_master, pd.DataFrame):
-        if isinstance(context.get("df_light"), pd.DataFrame) and not context["df_light"].empty:
-            df_master = context["df_light"].copy()
-            context["df_master"] = df_master
-            debug(
-                context,
-                f"[T0→T1 FIX] df_master promoted from df_light ({len(df_master)} rows)"
-            )
-        else:
-            df_master = pd.DataFrame()
-            context["df_master"] = df_master
-            debug(
-                context,
-                "[T0→T1 FIX] df_master forced to empty DataFrame (emergency fallback)"
-            )
-
-    # ------------------------------------------------------------
-    # T0 → T1 HARD CONTRACT ENFORCEMENT (wellness)
-    # wellness MUST be a DataFrame before Tier-1
-    # ------------------------------------------------------------
-    if not isinstance(wellness, pd.DataFrame):
-        if isinstance(context.get("wellness"), pd.DataFrame):
-            wellness = context["wellness"].copy()
-            debug(context, "[T0→T1 FIX] wellness rehydrated from context DataFrame")
-        elif isinstance(context.get("wellness"), list):
-            wellness = pd.DataFrame(context["wellness"])
-            debug(context, "[T0→T1 FIX] wellness rehydrated from context list")
-        else:
-            wellness = pd.DataFrame()
-            debug(context, "[T0→T1 FIX] wellness forced to empty DataFrame")
-
-    # 🔒 HARD LOCK — Tier-1 must never see non-DF wellness
-    context["wellness"] = wellness
-
 
     # --- Tier-1 Audit ---
     debug(context, f"[T1] Running Tier-1 controller ({reportType} mode)")
@@ -611,17 +450,44 @@ def run_report(
     # --- Tier-2 Enforcement Chain ---
     df_master, _ = validate_event_completeness(df_master)
 
-    # --- Align Tier-2 scope to Tier-1 snapshot if available ---
-    if "snapshot_7d_json" in context:
-        from io import StringIO
+    # ============================================================
+    # Tier-2 ANALYSIS SCOPE (authoritative switch)
+    # Weekly  → 7-day snapshot
+    # Season  → 90-day light dataset
+    # ============================================================
+
+    from io import StringIO
+
+    full_days = context.get("range", {}).get("fullDays", 7)
+
+    if full_days == 7:
+        # WEEKLY analysis → strict 7-day scope
         try:
             df_scope = pd.read_json(StringIO(context["snapshot_7d_json"]))
-            debug(context, f"[ALIGN] Using Tier-1 7-day snapshot for Tier-2 enforcement ({len(df_scope)} rows)")
+            debug(
+                context,
+                f"[SCOPE] Weekly analysis → snapshot_7d "
+                f"({len(df_scope)} rows)"
+            )
         except Exception as e:
-            debug(context, f"[WARN] Could not parse snapshot_7d_json for enforcement: {e}")
+            debug(context, f"[WARN] Weekly snapshot parse failed → fallback to df_master: {e}")
             df_scope = df_master
+
     else:
-        df_scope = df_master
+        # SEASON / LONG-RANGE analysis → 90-day light dataset
+        df_scope = context.get("df_light")
+        debug(
+            context,
+            f"[SCOPE] Season analysis → df_light "
+            f"({len(df_scope)} rows)"
+        )
+
+        if df_scope is None or not isinstance(df_scope, pd.DataFrame) or df_scope.empty:
+            debug(context, "[SCOPE-WARN] df_light missing/empty → falling back to df_master")
+            df_scope = df_master
+
+    if full_days > 7:
+        assert len(df_scope) > 14, "Season analysis incorrectly scoped to short window"
 
     # --- Enforce totals and sync df_events for validator ---
     context = enforce_event_only_totals(df_scope, context)
@@ -679,21 +545,64 @@ def run_report(
     context = compute_derived_metrics(df_scope, context)
     context = evaluate_actions(context)
 
-    # --- Ensure df_light exists (must be full 90-day dataset) ---
-    if "df_light" not in context or not isinstance(context["df_light"], pd.DataFrame):
-        if "df_light_full" in context and isinstance(context["df_light_full"], pd.DataFrame):
-            context["df_light"] = context["df_light_full"].copy()
-            debug(context, f"[T1] Restored df_light from df_light_full ({len(context['df_light'])} rows).")
-        else:
-            context["df_light"] = pd.DataFrame()
-            debug(context, "[T1] WARNING: df_light missing and df_light_full unavailable.")
+    # ============================================================
+    # RESTORE canonical 90-day dataset (AUTHORITATIVE)
+    # ============================================================
+    if "_df_light_90d" not in context or not isinstance(context["_df_light_90d"], pd.DataFrame):
+        raise RuntimeError("FATAL: _df_light_90d missing — Tier-2 pipeline corrupted")
 
-    # --- Tier-2 EXTENDED METRICS ---
-    try:
-        context = compute_extended_metrics(context)
-        debug(context, "[T2] Extended metrics computed.")
-    except Exception as e:
-        debug(context, f"[T2-ERROR] Extended metrics failed: {e}")
+    context["df_light"] = context["_df_light_90d"]
+    debug(context, f"[EXT-PRE] df_light rows={len(context['df_light'])}")
+
+    debug(
+        context,
+        "[SMOKING-GUN] df_light rows=%s load_sum=%s cols=%s"
+        % (
+            0 if context.get("df_light") is None else len(context["df_light"]),
+            context["df_light"]["icu_training_load"].sum()
+            if isinstance(context.get("df_light"), pd.DataFrame)
+            and "icu_training_load" in context["df_light"]
+            else "MISSING",
+            list(context["df_light"].columns)
+            if isinstance(context.get("df_light"), pd.DataFrame)
+            else type(context.get("df_light")),
+        )
+    )
+
+    # ============================================================
+    # AUTHORITATIVE CTL / ATL / TSB (Intervals ICU)
+    # ============================================================
+
+    ws = context.get("wellness_summary", {})
+
+    context["load_metrics"] = {
+        "CTL": {"value": ws.get("ctl"), "status": "icu"},
+        "ATL": {"value": ws.get("atl"), "status": "icu"},
+        "TSB": {"value": ws.get("tsb"), "status": "icu"},
+    }
+
+    debug(
+        context,
+        f"[LOAD-ICU] CTL={ws.get('ctl')} ATL={ws.get('atl')} TSB={ws.get('tsb')}"
+    )
+
+    # ============================================================
+    # Tier-2 EXTENDED METRICS — SINGLE AUTHORITATIVE CALL
+    # ============================================================
+
+    context = compute_extended_metrics(context)
+
+    debug(
+        context,
+        "[EXT-POST] extended=%s adaptation=%s trend=%s corr=%s"
+        % (
+            bool(context.get("extended_metrics")),
+            bool(context.get("adaptation_metrics")),
+            bool(context.get("trend_metrics")),
+            bool(context.get("correlation_metrics")),
+        )
+    )
+
 
 
     # --- Ensure minimum required context keys for validator ---
@@ -745,7 +654,7 @@ def run_report(
 
     # --- Inject full Tier-0 dataset for proper ACWR (acute/chronic load ratio) ---
     if "activities_light" in context and isinstance(context["activities_light"], list):
-        #import pandas as pd
+        import pandas as pd
         context["df_event_only_full"] = pd.DataFrame(context["activities_light"])
         debug(context, f"[TIER-2 INIT] Injected Tier-0 full dataset ({len(context['activities_light'])} activities)")
 
@@ -847,15 +756,12 @@ def run_report(
     except Exception as e:
         debug(context, f"[T2 WARN] Dual totals injection failed: {e}")
 
-
     # --- Force full unified render ---
     context["auditFinal"] = True                    # ✅ tell renderer audit is finalized
     context["render_mode"] = "full+metrics"
     context["enforce_render_source"] = "tier2_enforced_totals"  # ✅ use canonical source
     context["allow_intent_inference"] = False
 
-    # --- Log context after updates ---
-    debug(context, f"[DEBUG] Final context before rendering: {context}")
 
     # --- Final render ---
     final_output, compliance = finalize_and_validate_render(context, reportType=reportType)
@@ -863,6 +769,13 @@ def run_report(
     # Check if the requested format is "semantic" or "markdown"
     if output_format == "semantic":
         # Generate the semantic graph
+        debug(context, "[PRE-SEMANTIC] extended=%s adaptation=%s trend=%s corr=%s" % (
+            bool(context.get("extended_metrics")),
+            bool(context.get("adaptation_metrics")),
+            bool(context.get("trend_metrics")),
+            bool(context.get("correlation_metrics")),
+        ))
+
         semantic_output = build_semantic_json(context)  # Ensure semantic_output is generated
 
         # If the output format is "semantic", return the semantic graph

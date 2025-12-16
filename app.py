@@ -388,40 +388,12 @@ def compare_periods(range: str = Query("weekly", enum=["weekly", "season", "well
 def get_insights(range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"])):
     _, compliance, logs, _, sg, _ = _run_full_audit(range=range)
 
-    metrics = sg.get("metrics", {})
-    actions = sg.get("actions", [])
-    phases = sg.get("phases", [])
-
-    red, amber, green = [], [], []
-
-    for name, m in metrics.items():
-        cls = m.get("classification")
-        entry = sanitize({
-            "name": name,
-            "value": m.get("value"),
-            "framework": m.get("framework"),
-            "interpretation": m.get("interpretation"),
-            "coaching_implication": m.get("coaching_implication")
-        })
-
-        if cls == "red":
-            red.append(entry)
-        elif cls == "amber":
-            amber.append(entry)
-        elif cls == "green":
-            green.append(entry)
-
     return JSONResponse(content={
         "status": "ok",
         "report_type": range,
-        "insights": {
-            "critical": red,
-            "watch": amber,
-            "positive": green,
-            "actions": sanitize(actions),
-            "phases": sanitize(phases),
-        },
+        "insights": sanitize(sg.get("insight_view", {})),
         "compliance": compliance,
         "logs": logs[:20000]
     })
+
 

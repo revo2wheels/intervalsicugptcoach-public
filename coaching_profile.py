@@ -15,6 +15,92 @@ def get_profile_metrics(context):
         "aerobic_decay": context.get("aerobic_decay", 0.02),
     }
 
+# coaching_profile.py
+
+REPORT_RESOLUTION = {
+    "weekly": {
+        "CTL": "authoritative",
+        "ATL": "authoritative",
+        "TSB": "authoritative",
+        "zones": "authoritative",
+        "derived_metrics": "full",
+        "extended_metrics": "limited",
+        "insights": "tactical",
+    },
+
+    "season": {
+        "CTL": "authoritative",
+        "ATL": "authoritative",
+        "TSB": "authoritative",
+        "zones": "not_available",
+        "derived_metrics": "trend_only",
+        "extended_metrics": "full",
+        "insights": "strategic",
+    },
+
+    "wellness": {
+        "CTL": "icu_only",
+        "ATL": "icu_only",
+        "TSB": "icu_only",
+        "zones": "not_applicable",
+        "derived_metrics": "wellness_only",
+        "extended_metrics": "none",
+        "insights": "recovery",
+    },
+
+    "summary": {
+        "CTL": "icu_only",
+        "ATL": "icu_only",
+        "TSB": "icu_only",
+        "zones": "suppressed",
+        "derived_metrics": "suppressed",
+        "extended_metrics": "suppressed",
+        "insights": "executive",
+    },
+}
+
+REPORT_HEADERS = {
+    "weekly": {
+        "title": "Weekly Training Report",
+        "scope": "Detailed analysis of the last 7 days of training activity",
+        "data_sources": "7-day full activities, 42-day wellness, zone distributions",
+        "intended_use": (
+            "Day-to-day coaching decisions, intensity balance, "
+            "short-term fatigue and recovery management"
+        ),
+    },
+
+    "season": {
+        "title": "Season Training Overview",
+        "scope": "Medium-term fitness, fatigue and progression trends",
+        "data_sources": "90-day light activities, 42-day wellness, weekly aggregates",
+        "intended_use": (
+            "Strategic assessment of training progression, "
+            "load management and phase direction"
+        ),
+    },
+
+    "wellness": {
+        "title": "Wellness & Recovery Status",
+        "scope": "Physiological and subjective recovery indicators",
+        "data_sources": "42-day wellness records (Intervals native)",
+        "intended_use": (
+            "Monitoring readiness, recovery balance "
+            "and non-training stress"
+        ),
+    },
+
+    "summary": {
+        "title": "Training Summary",
+        "scope": "High-level overview of current training state",
+        "data_sources": "Authoritative totals, wellness indicators, derived insights",
+        "intended_use": (
+            "Executive summary and coaching narrative synthesis"
+        ),
+    },
+}
+
+
 
 COACH_PROFILE = {
     "version": "v16.1",
@@ -90,10 +176,10 @@ COACH_PROFILE = {
             "framework": "Adaptive Load Tolerance",
             "formula": "(strain / monotony) / 100",
             "criteria": {
-                "optimal": "2–8",
-                "low": "<2",
-                "high": ">8"
-            },
+                "low": "<3",
+                "optimal": "3–6",
+                "high": ">6"
+            }
         },
         "RecoveryIndex": {
             "framework": "Noakes Central Governor",
@@ -165,11 +251,11 @@ COACH_PROFILE = {
         },
         "ZQI": {
             "framework": "Seiler Intensity Distribution",
-            "formula": "100 × (Z5 + Z6 + Z7) / (Z1–Z7 total)",
+            "formula": "High-intensity time (%)",
             "criteria": {
                 "optimal": "5–15",
-                "moderate": "3–20",
-                "low": "<3 or >20"
+                "moderate": "15–25",
+                "low": "<5"
             },
             "placement": "Training Quality section",
         },
@@ -177,14 +263,24 @@ COACH_PROFILE = {
             "framework": "Sandbakk Durability",
             "formula": "1 - (PowerDrop% / 100)",
         },
+        "Polarisation": {
+            "framework": "Seiler 80/20 Model",
+            "formula": "Time-in-zone distribution using Seiler 3-zone model (LT1/LT2). Polarisation determined by proportion of low- and high-intensity time with minimal moderate-intensity time.",
+            "criteria": {
+                "polarised": "Z1 ≥ 75% AND Z3 ≥ 15% AND Z2 ≤ 10–15%",
+                "balanced": "Z1 60–74% with moderate Z2",
+                "threshold": "High Z2 proportion"
+            }
+
+        },
         "PolarisationIndex": {
             "framework": "Seiler 80/20 Model",
-            "formula": "((Z1% + Z3%) - Z2%) / 100",
+            "formula": "Time-in-zone distribution using Seiler 3-zone model (LT1/LT2). Polarisation determined by proportion of low- and high-intensity time with minimal moderate-intensity time.",
             "criteria": {
-                "polarised": ">0.5",
-                "mixed": "0.3–0.49",
-                "threshold": "<0.3"
-            },
+                "polarised": "Z1 ≥ 75% AND Z3 ≥ 15% AND Z2 ≤ 10–15%",
+                "balanced": "Z1 60–74% with moderate Z2",
+                "threshold": "High Z2 proportion"
+            }
         },
         "TRIMP": {
             "framework": "Banister Load Model",

@@ -231,27 +231,9 @@ def enforce_event_only_totals(df_events, context):
     except Exception as e:
         debug(context, f"[T2 WARN] Failed to recompute derived metrics: {e}")
 
-    # --- Step 10: Final load_metrics sync -----------------------------------
-    if all(k in context for k in ["ctl", "atl", "tsb"]):
-        context["load_metrics"] = {
-            "CTL": {"value": round(context.get("ctl", 0), 2), "status": "ok"},
-            "ATL": {"value": round(context.get("atl", 0), 2), "status": "ok"},
-            "TSB": {"value": round(context.get("tsb", 0), 2), "status": "ok"},
-        }
-        debug(context, "[DEBUG-T2] enforced load_metrics sync in context:", context["load_metrics"])
+    # --- Step 10: removced load_metrics sync - set at T1 -----------------------------------
 
-    # --- Step 11: Propagate enriched derived metrics to renderer ------------
-    if "derived_metrics" in context:
-        context.setdefault("load_metrics", {})
-        for metric, meta in context["derived_metrics"].items():
-            if isinstance(meta, dict):
-                context["load_metrics"][metric] = {
-                    "value": meta.get("value"),
-                    "status": meta.get("status"),
-                    "icon": meta.get("icon"),
-                }
-
-    debug(context, "[T2] Enriched load_metrics propagated to renderer")
+    # --- Step 11: Propagate enriched derived metrics to renderer - removed ------------
 
     # --- Step 12: Lock canonical totals (safe) ---
     canonical_totals = context.get("tier2_enforced_totals") or context.get("eventTotals") or {}

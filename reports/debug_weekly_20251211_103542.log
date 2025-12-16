@@ -1,4 +1,0 @@
-[10:35:42] 🧭 Generating Weekly Report
-[10:35:42] 🧭 Running Weekly Report (auditFinal=True, render_mode=full+metrics)
-[10:35:42] [INTENT] Validation warning: Expecting value: line 1 column 1 (char 0)
-[10:35:42] [T0] Config → light=90d full=7d chunk=False

@@ -414,34 +414,66 @@ def run_tier1_controller(df_master, wellness, context):
        # --- Determine rest days based on *no training load* days before today ---
         debug(context, "[T1-REST] Starting rest day calculation from df_master.")
 
-        # Normalize all timestamps to naive local midnight (no tz offset)
-        df_master["date"] = (
-            pd.to_datetime(df_master["start_date_local"], errors="coerce")
+        # ------------------------------------------------------------
+        # Rest-day base dataset (authoritative)
+        # Weekly  → df_master (7d full)
+        # Season  → df_light   (90d light)
+        # ------------------------------------------------------------
+        if context.get("report_type") == "season" and isinstance(context.get("df_light"), pd.DataFrame):
+            rest_df = context["df_light"].copy()
+            debug(context, "[T1-REST] Season mode → using df_light for rest-day calculation")
+        else:
+            rest_df = df_master.copy()
+            debug(context, "[T1-REST] Weekly mode → using df_master for rest-day calculation")
+
+        # Normalize dates
+        rest_df["date"] = (
+            pd.to_datetime(rest_df["start_date_local"], errors="coerce")
             .dt.tz_localize(None)
             .dt.normalize()
         )
 
-        min_date = df_master["date"].min()
-        today = pd.Timestamp.now().normalize()
-
-        debug(context, f"[T1-REST] Normalized date range base → {min_date} to {today}")
-
-        window_start = pd.to_datetime(context.get("window_start", df_master["date"].min())).normalize()
+        window_start = rest_df["date"].min()
         today = pd.Timestamp.now().normalize()
         date_range = pd.date_range(window_start, today, freq="D")
 
-        # --- Aggregate daily load correctly ---
-        if "icu_training_load" in df_master.columns:
+
+        # ------------------------------------------------------------
+        # Aggregate daily load correctly (scope-aware)
+        # Weekly  → df_master (7-day full)
+        # Season  → df_light  (90-day light)
+        # ------------------------------------------------------------
+
+        if context.get("report_type") == "season" and isinstance(context.get("df_light"), pd.DataFrame):
+            rest_df = context["df_light"].copy()
+            debug(context, "[T1-REST] Season mode → using df_light for rest-day calculation")
+        else:
+            rest_df = df_master.copy()
+            debug(context, "[T1-REST] Weekly mode → using df_master for rest-day calculation")
+
+        # Normalize dates
+        rest_df["date"] = (
+            pd.to_datetime(rest_df["start_date_local"], errors="coerce")
+            .dt.tz_localize(None)
+            .dt.normalize()
+        )
+
+        window_start = rest_df["date"].min()
+        today = pd.Timestamp.now().normalize()
+        date_range = pd.date_range(window_start, today, freq="D")
+
+        # --- Aggregate daily load ---
+        if "icu_training_load" in rest_df.columns:
             debug(context, "[T1-REST] Using icu_training_load as primary load source.")
             daily_load = (
-                df_master.groupby("date")["icu_training_load"]
+                rest_df.groupby("date")["icu_training_load"]
                 .sum(min_count=1)
                 .reindex(date_range, fill_value=0)
             )
-        elif "tss" in df_master.columns:
+        elif "tss" in rest_df.columns:
             debug(context, "[T1-REST] Fallback: using TSS as load source.")
             daily_load = (
-                df_master.groupby("date")["tss"]
+                rest_df.groupby("date")["tss"]
                 .sum(min_count=1)
                 .reindex(date_range, fill_value=0)
             )
@@ -453,7 +485,11 @@ def run_tier1_controller(df_master, wellness, context):
 
         mask_past = daily_load.index < today
         rest_days = int((daily_load.loc[mask_past] < 1).sum())
-        rest_dates = [d.strftime("%Y-%m-%d") for d, v in daily_load.loc[mask_past].items() if v < 1]
+        rest_dates = [
+            d.strftime("%Y-%m-%d")
+            for d, v in daily_load.loc[mask_past].items()
+            if v < 1
+        ]
 
         debug(context, f"[T1-REST] Counted rest days: {rest_days} → Dates: {rest_dates}")
 
@@ -489,72 +525,112 @@ def run_tier1_controller(df_master, wellness, context):
 
     context["dailyMerged"] = daily_summary
 
-    # --- Step 6a: Extract training load metrics (CTL / ATL / TSB) directly from wellness ---
+    # --- Step 6a: Extract CTL / ATL / TSB from *latest* wellness record only (AUTHORITATIVE) ---
     if isinstance(wellness, pd.DataFrame) and not wellness.empty:
         df_well = wellness.copy()
         df_well.columns = [c.strip().lower() for c in df_well.columns]
-        load_cols = [c for c in ["ctl", "atl", "tsb"] if c in df_well.columns]
 
-        if load_cols:
-            debug(context, f"[T1] Using wellness-derived load metrics: {load_cols}")
+        # Identify date column
+        date_col = next(
+            (c for c in ("date", "day", "start_date_local", "start_date") if c in df_well.columns),
+            None
+        )
 
-            # Convert numeric safely
-            for col in load_cols:
-                try:
-                    df_well[col] = pd.to_numeric(df_well[col], errors="coerce")
-                except Exception as e:
-                    debug(context, f"[T1-WELLNESS] numeric coercion failed for {col}: {e}")
+        if date_col:
+            df_well[date_col] = pd.to_datetime(df_well[date_col], errors="coerce")
+            df_well = df_well.sort_values(date_col)
 
-            # Derive TSB if missing
-            if "tsb" not in df_well.columns and all(c in df_well.columns for c in ["ctl", "atl"]):
-                df_well["tsb"] = (df_well["ctl"] - df_well["atl"]).round(2)
-                debug(context, "[T1] Derived TSB column added from CTL–ATL")
+        last = df_well.iloc[-1]
 
-            # Compute means over the window
-            ctl_mean = df_well["ctl"].mean(skipna=True) if "ctl" in df_well.columns else np.nan
-            atl_mean = df_well["atl"].mean(skipna=True) if "atl" in df_well.columns else np.nan
-            tsb_mean = df_well["tsb"].mean(skipna=True) if "tsb" in df_well.columns else np.nan
+        ctl = pd.to_numeric(last.get("ctl"), errors="coerce")
+        atl = pd.to_numeric(last.get("atl"), errors="coerce")
+        tsb = pd.to_numeric(last.get("tsb"), errors="coerce") if "tsb" in df_well.columns else None
 
-            context["ctl"] = round(float(ctl_mean), 2) if pd.notna(ctl_mean) else np.nan
-            context["atl"] = round(float(atl_mean), 2) if pd.notna(atl_mean) else np.nan
-            context["tsb"] = round(float(tsb_mean), 2) if pd.notna(tsb_mean) else np.nan
+        if pd.isna(tsb) and pd.notna(ctl) and pd.notna(atl):
+            tsb = ctl - atl
 
-            debug(context, f"[T1] Promoted CTL={context['ctl']} ATL={context['atl']} TSB={context['tsb']} to context")
+        context["ctl"] = float(ctl) if pd.notna(ctl) else None
+        context["atl"] = float(atl) if pd.notna(atl) else None
+        context["tsb"] = float(tsb) if pd.notna(tsb) else None
 
-            # Inject simple load_metrics block for downstream use
-            context["load_metrics"] = {
-                "CTL": {"value": context["ctl"], "status": "ok"},
-                "ATL": {"value": context["atl"], "status": "ok"},
-                "TSB": {"value": context["tsb"], "status": "ok"},
-            }
-        else:
-            debug(context, "[T1] No ctl/atl/tsb columns found in wellness data")
+        # 🔒 AUTHORITATIVE wellness snapshot ONLY
+        context["wellness_summary"] = {
+            "ctl": context["ctl"],
+            "atl": context["atl"],
+            "tsb": context["tsb"],
+            "recovery": last.get("recovery"),
+            "fatigue": last.get("fatigue"),
+            "fitness": last.get("fitness"),
+            "form": last.get("form"),
+        }
+
+        # For renderer / UI only — Tier-2 must stay source of truth
+        context["load_metrics"] = {
+            "CTL": {"value": context["ctl"], "status": "icu"},
+            "ATL": {"value": context["atl"], "status": "icu"},
+            "TSB": {"value": context["tsb"], "status": "icu"},
+        }
+
+        debug(
+            context,
+            f"[T1-WELLNESS-LATEST] CTL={context['ctl']} ATL={context['atl']} TSB={context['tsb']}"
+        )
     else:
-        debug(context, "[T1] No valid wellness DataFrame — skipping load metric extraction")
+        debug(context, "[T1] No valid wellness DataFrame — skipping wellness hydration")
 
 
     # --- Step 6b: Build HR / Power / Pace zone distributions ---
 
-    debug(context,"[DEBUG-T1] sanity check before Step 6b — rows in df_master:", len(df_master))
-    debug(context,"[DEBUG-T1] athleteProfile present:", "athleteProfile" in context)
-    if "athleteProfile" in context:
-        debug(context,"[DEBUG-T1] athleteProfile keys:", list(context["athleteProfile"].keys()))
+    debug(context, f"[DEBUG-T1] sanity check before Step 6b — rows in df_master: {len(df_master)}")
+    athleteProfile = context.get("athleteProfile", {}) or {}
 
     try:
-        debug(context,"[DEBUG-T1] Starting zone distribution extraction...")
-        debug(context,"[DEBUG-T1] Activity columns sample:", df_master.columns.tolist()[:40])
+        debug(context, "[DEBUG-T1] Starting zone distribution extraction...")
 
-        context = collect_zone_distributions(df_master, context.get("athleteProfile", {}), context)
+        report_type = str(context.get("report_type", "")).lower()
+        zone_df = df_master
+        scope = "7d"
 
-        debug(context,"[DEBUG-T1] Completed zone distribution extraction.")
-        debug(context,"[DEBUG-T1] Zone distributions now in context:")
-        for k in ["zone_dist_power", "zone_dist_hr", "zone_dist_pace"]:
-            debug(context,f"  {k}: {context.get(k, {})}")
+        if report_type == "season" and isinstance(context.get("df_light"), pd.DataFrame):
+            candidate = context["df_light"]
+
+            zone_cols = [
+                c for c in candidate.columns
+                if c.lower().startswith(("power_z", "icu_power_z", "icu_zone_times", "hr_z", "icu_hr_zone_times"))
+            ]
+
+            if zone_cols:
+                zone_df = candidate
+                scope = "90d"
+                debug(context, "[T1-ZONE] Season mode → using df_light for zone distributions")
+            else:
+                debug(context, "[T1-ZONE] df_light has no zone cols → fallback to df_master")
+
+        # --- Compute into temp context ---
+        tmp = {}
+        tmp = collect_zone_distributions(zone_df, athleteProfile, tmp)
+
+        # 🔒 CANONICAL KEYS (Tier-2 depends on these)
+        context["zone_dist_power"] = tmp.get("zone_dist_power") or {}
+        context["zone_dist_hr"]    = tmp.get("zone_dist_hr") or {}
+        context["zone_dist_pace"]  = tmp.get("zone_dist_pace") or {}
+
+        # 🧭 Scoped copies for debugging / UI
+        context[f"zone_dist_power_{scope}"] = context["zone_dist_power"]
+        context[f"zone_dist_hr_{scope}"]    = context["zone_dist_hr"]
+        context[f"zone_dist_pace_{scope}"]  = context["zone_dist_pace"]
+        context["zone_scope"] = scope
+
+        debug(context, f"[T1-ZONE] Completed zone dist extraction (scope={scope})")
+        debug(context, f"  power: {context['zone_dist_power']}")
+        debug(context, f"  hr:    {context['zone_dist_hr']}")
+
     except Exception as e:
-        debug(context,f"⚠ Zone distribution collection failed: {e}")
+        debug(context, f"⚠ Zone distribution collection failed: {e}")
         context["zone_dist_power"] = {}
         context["zone_dist_hr"] = {}
         context["zone_dist_pace"] = {}
+        context["zone_scope"] = "none"
 
     # --- Step 6c: Outlier Detection ---
     try:

@@ -1,59 +1,39 @@
+# audit_core/tier2_extended_metrics.py
+
+from audit_core.utils import debug
+
+
 def compute_extended_metrics(context):
     """
-    Tier-3 Extended Metrics for URF v5.1
+    Tier-2 Extended Metrics for URF v5.1
     ------------------------------------
-    MUST use df_light (90-day dataset), not df_events (7-day),
-    otherwise adaptation / trends / correlations all collapse to {}.
-
-    Produces:
-      • CTL / ATL / TSB
-      • Adaptation metrics
-      • Trend metrics
-      • Correlation metrics
+    CONSUMES authoritative CTL / ATL / TSB from context["load_metrics"]
+    DOES NOT calculate training load.
     """
 
     # ---------------------------------------------------------
-    # 1️⃣ SOURCE DATA: must use df_light (long horizon)
+    # 0️⃣ REQUIRE authoritative load_metrics
     # ---------------------------------------------------------
-    df_light = context.get("df_light")
-    if df_light is None or isinstance(df_light, list):
-        try:
-            df_light = pd.DataFrame(df_light)
-        except Exception:
-            df_light = pd.DataFrame()
+    lm = context.get("load_metrics", {})
 
-    if df_light is None or df_light.empty:
-        debug(context, "[EXT] ERROR: df_light missing — extended metrics unavailable.")
-        context["extended_metrics"] = {}
+    if not all(k in lm for k in ("CTL", "ATL", "TSB")):
+        debug(context, "[EXT-FATAL] load_metrics missing CTL/ATL/TSB — upstream injection failed")
+        context.setdefault("extended_metrics", {})
+        context.setdefault("adaptation_metrics", {})
+        context.setdefault("trend_metrics", {})
+        context.setdefault("correlation_metrics", {})
         return context
 
-    # ---------------------------------------------------------
-    # 2️⃣ Build DAILY LOAD TABLE required for CTL/ATL
-    # ---------------------------------------------------------
-    df_daily = (
-        df_light[["start_date_local", "icu_training_load"]]
-        .rename(columns={"start_date_local": "date"})
-        .copy()
+    debug(
+        context,
+        f"[EXT-LOAD] Using injected load_metrics "
+        f"CTL={lm['CTL'].get('value')} "
+        f"ATL={lm['ATL'].get('value')} "
+        f"TSB={lm['TSB'].get('value')}"
     )
 
-    df_daily["date"] = pd.to_datetime(df_daily["date"]).dt.date
-    df_daily = df_daily.groupby("date")["icu_training_load"].sum().reset_index()
-    context["df_daily"] = df_daily
-
     # ---------------------------------------------------------
-    # 3️⃣ LOAD METRICS: CTL / ATL / TSB
-    # ---------------------------------------------------------
-    from coaching_cheat_sheet import summarize_load_block
-    load = summarize_load_block(context)
-
-    context["load_metrics"] = {
-        "CTL": {"value": load.get("ctl", 0), "status": "ok"},
-        "ATL": {"value": load.get("atl", 0), "status": "ok"},
-        "TSB": {"value": load.get("tsb", 0), "status": "ok"},
-    }
-
-    # ---------------------------------------------------------
-    # 4️⃣ ADAPTATION METRICS (profile-based)
+    # 1️⃣ ADAPTATION METRICS
     # ---------------------------------------------------------
     from coaching_profile import get_profile_metrics
     profile = get_profile_metrics(context)
@@ -67,7 +47,7 @@ def compute_extended_metrics(context):
     }
 
     # ---------------------------------------------------------
-    # 5️⃣ TREND METRICS (42-day behaviour)
+    # 2️⃣ TREND METRICS
     # ---------------------------------------------------------
     from coaching_heuristics import derive_trends
     trend = derive_trends(context)
@@ -79,7 +59,7 @@ def compute_extended_metrics(context):
     }
 
     # ---------------------------------------------------------
-    # 6️⃣ CORRELATION METRICS
+    # 3️⃣ CORRELATION METRICS
     # ---------------------------------------------------------
     from coaching_heuristics import derive_correlations
     corr = derive_correlations(context)
@@ -91,13 +71,13 @@ def compute_extended_metrics(context):
     }
 
     # ---------------------------------------------------------
-    # 7️⃣ EXTENDED METRIC OUTPUT (no duplication)
+    # 4️⃣ EXTENDED METRICS (authoritative assembly)
     # ---------------------------------------------------------
     context["extended_metrics"] = {
-        # Load block
-        "CTL": context["load_metrics"]["CTL"],
-        "ATL": context["load_metrics"]["ATL"],
-        "TSB": context["load_metrics"]["TSB"],
+        # Load (from ICU)
+        "CTL": lm["CTL"],
+        "ATL": lm["ATL"],
+        "TSB": lm["TSB"],
 
         # Adaptation
         "EfficiencyFactor": context["adaptation_metrics"]["Efficiency Factor"],
@@ -117,5 +97,5 @@ def compute_extended_metrics(context):
         "FatigueVsLoad": context["correlation_metrics"]["fatigue_vs_load"],
     }
 
-    debug(context, "[EXT] Extended metrics computed successfully (90-day horizon).")
+    debug(context, "[EXT] Extended metrics assembled (ICU authoritative load)")
     return context

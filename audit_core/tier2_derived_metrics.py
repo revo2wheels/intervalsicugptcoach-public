@@ -8,9 +8,7 @@ Includes robust handling for missing zone or load columns.
 
 import numpy as np
 import pandas as pd
-import math
 from audit_core.utils import debug
-from datetime import timedelta
 
 from coaching_profile import COACH_PROFILE
 from coaching_heuristics import HEURISTICS
@@ -61,12 +59,110 @@ def compute_zone_intensity(df, context=None):
 
     return zqi_percent
 
+def compute_polarisation_index(context):
+    """
+    Polarisation Index (0.0–1.0)
+
+    Primary:
+      (Z1 + Z2) / Total from zone distributions
+      (power preferred, else HR)
+
+    Fallback:
+      IF-based proxy weighted by moving_time
+      (low intensity defined as IF < 0.85)
+
+    Always returns a numeric float (validator-safe).
+    """
+
+    debug_fn = context.get("debug", lambda *a, **kw: None)
+
+    # =========================================================
+    # 1. PRIMARY — zone distributions
+    # =========================================================
+    zones = context.get("zone_dist_power") or {}
+    src = "power"
+
+    if not zones:
+        zones = context.get("zone_dist_hr") or {}
+        src = "hr"
+
+    if zones:
+        try:
+            z1 = float(zones.get("power_z1", zones.get("hr_z1", 0.0)))
+            z2 = float(zones.get("power_z2", zones.get("hr_z2", 0.0)))
+            total = sum(float(v) for v in zones.values())
+
+            if total > 0:
+                pol = round((z1 + z2) / total, 3)
+                debug_fn(
+                    context,
+                    f"[POL] ({src}) Z1={z1:.1f} Z2={z2:.1f} "
+                    f"Total={total:.1f} → PolarisationIndex={pol}"
+                )
+                return float(pol)
+
+            debug_fn(context, f"[POL] ({src}) total zone time = 0 → fallback")
+
+        except Exception as e:
+            debug_fn(context, f"[POL] ({src}) zone calc failed → fallback ({e})")
+
+    # =========================================================
+    # 2. FALLBACK — IF proxy (weighted by moving_time)
+    # =========================================================
+    df = context.get("df_events")
+    if df is None or getattr(df, "empty", True):
+        debug_fn(context, "[POL] ⚠ No df_events for IF fallback → 0.0")
+        return 0.0
+
+    if "IF" not in df.columns or "moving_time" not in df.columns:
+        debug_fn(context, "[POL] ⚠ Missing IF or moving_time → 0.0")
+        return 0.0
+
+    try:
+        tmp = df[["IF", "moving_time"]].copy()
+
+        tmp["IF"] = pd.to_numeric(tmp["IF"], errors="coerce")
+        tmp["moving_time"] = pd.to_numeric(tmp["moving_time"], errors="coerce").fillna(0)
+
+        tmp = tmp.dropna(subset=["IF"])
+        tmp = tmp[tmp["moving_time"] > 0]
+
+        if tmp.empty:
+            debug_fn(context, "[POL] ⚠ IF fallback has no valid rows → 0.0")
+            return 0.0
+
+        # Normalise IF if stored as 70 instead of 0.70
+        tmp.loc[tmp["IF"] > 10, "IF"] = tmp["IF"] / 100.0
+
+        total_time = float(tmp["moving_time"].sum())
+        if total_time <= 0:
+            return 0.0
+
+        # Low-intensity proxy: IF < 0.85
+        low_time = float(tmp.loc[tmp["IF"] < 0.85, "moving_time"].sum())
+
+        pol = round(low_time / total_time, 3)
+        debug_fn(
+            context,
+            f"[POL] (IF-fallback) low_time={low_time:.1f}s "
+            f"total={total_time:.1f}s → PolarisationIndex={pol}"
+        )
+        return float(pol)
+
+    except Exception as e:
+        debug_fn(context, f"[POL] ⚠ IF fallback failed ({e}) → 0.0")
+        return 0.0
+
+
+
+
+
 
 def classify_marker(value, marker, context=None):
-    """Universal classifier: supports full range syntax, inequality logic, and aliases."""
+    """Universal classifier: supports range syntax, inequalities, and aliases."""
     debug = context.get("debug", lambda *a, **kw: None) if isinstance(context, dict) else (lambda *a, **kw: None)
 
-    # Handle missing or invalid
+    # --- Guard rails ---
     if value is None or (isinstance(value, float) and np.isnan(value)):
         debug(context, f"[CLASSIFY] {marker}: no data")
         return "⚪", "undefined"
@@ -77,59 +173,77 @@ def classify_marker(value, marker, context=None):
         debug(context, f"[CLASSIFY] {marker}: non-numeric value={value}")
         return "⚪", "undefined"
 
-    # Aliases
+    # --- Canonical aliases ---
     marker_aliases = {
         "Polarisation": "PolarisationIndex",
         "FatOx": "FatOxEfficiency",
         "FatOxidation": "FatOxEfficiency",
         "Recovery": "RecoveryIndex",
     }
-    if marker in marker_aliases:
-        marker = marker_aliases[marker]
+    marker = marker_aliases.get(marker, marker)
 
-    m = COACH_PROFILE["markers"].get(marker, {})
-    crit = m.get("criteria", {})
-    if not crit:
-        debug(context, f"[CLASSIFY] {marker}: no criteria found")
+    # --- HARD EXCLUSION: multi-dimensional markers ---
+    MULTI_DIMENSIONAL = {"Polarisation", "PolarisationIndex"}
+
+    if marker in MULTI_DIMENSIONAL:
+        debug(context, f"[CLASSIFY] {marker}: skipped (multi-dimensional metric)")
+        return "—", "computed"
+
+    # --- Marker definition ---
+    marker_def = COACH_PROFILE.get("markers", {}).get(marker, {})
+    criteria = marker_def.get("criteria")
+
+    if not criteria:
+        debug(context, f"[CLASSIFY] {marker}: no criteria defined")
         return "⚪", "undefined"
 
-    def parse_range(rule):
-        """Helper for parsing '1–2' or inequalities."""
+    # --- Rule parsing ---
+    def parse_rule(rule):
         rule = str(rule).replace(" ", "")
+
         if "–" in rule:
-            try:
-                a, b = [float(x.strip("<>=")) for x in rule.split("–")]
-                return lambda x: a <= x <= b
-            except Exception:
-                return lambda x: False
+            lo, hi = map(float, rule.split("–"))
+            return lambda x: lo <= x <= hi
+
         if "or" in rule:
             parts = rule.split("or")
-            conds = []
-            for p in parts:
-                if p.startswith("<"): conds.append(lambda x, t=float(p[1:]): x < t)
-                elif p.startswith(">"): conds.append(lambda x, t=float(p[1:]): x > t)
-            return lambda x: any(fn(x) for fn in conds)
-        if rule.startswith(">="): return lambda x, t=float(rule[2:]): x >= t
-        if rule.startswith("<="): return lambda x, t=float(rule[2:]): x <= t
-        if rule.startswith(">"): return lambda x, t=float(rule[1:]): x > t
-        if rule.startswith("<"): return lambda x, t=float(rule[1:]): x < t
+            funcs = [parse_rule(p) for p in parts]
+            return lambda x: any(f(x) for f in funcs)
+
+        if rule.startswith(">="): return lambda x: x >= float(rule[2:])
+        if rule.startswith("<="): return lambda x: x <= float(rule[2:])
+        if rule.startswith(">"):  return lambda x: x > float(rule[1:])
+        if rule.startswith("<"):  return lambda x: x < float(rule[1:])
+
         return lambda x: False
 
-    # Evaluate in logical order
-    for key, rule in crit.items():
-        fn = parse_range(rule)
-        if fn(v):
-            icon_map = {
-                "optimal": "🟢", "productive": "🟢", "balanced": "🟢", "polarised": "🟢",
-                "moderate": "🟠", "borderline": "🟠", "mixed": "🟠", "recovering": "🟠",
-                "low": "🔴", "overload": "🔴", "high": "🔴", "accumulating": "🔴", "threshold": "🔴"
-            }
-            icon = icon_map.get(key, "⚪")
-            debug(context, f"[CLASSIFY] {marker}: {v} matches '{rule}' ({key}) → {icon}")
-            return icon, key
+    # --- Icon mapping ---
+    icon_map = {
+        "optimal": "🟢",
+        "productive": "🟢",
+        "balanced": "🟢",
+        "polarised": "🟢",
+        "moderate": "🟠",
+        "borderline": "🟠",
+        "mixed": "🟠",
+        "recovering": "🟠",
+        "low": "🔴",
+        "high": "🔴",
+        "overload": "🔴",
+        "accumulating": "🔴",
+        "threshold": "🔴",
+    }
+
+    # --- Evaluation (ordered) ---
+    for state, rule in criteria.items():
+        if parse_rule(rule)(v):
+            icon = icon_map.get(state, "⚪")
+            debug(context, f"[CLASSIFY] {marker}: {v} → {state}")
+            return icon, state
 
     debug(context, f"[CLASSIFY] {marker}: {v} no rule matched")
     return "⚪", "undefined"
+
 
 
 
@@ -317,16 +431,15 @@ def compute_derived_metrics(df_events, context):
         if_proxy = 0.7  # assume aerobic bias if missing
 
     fat_ox_eff = round(np.clip((if_proxy or 0.5) * 0.9, 0.3, 0.8), 3)
-    polarisation = round(np.clip((if_proxy or 0.5) * 1.4, 0.5, 0.9), 3)
+    polarisation_index = compute_polarisation_index(context)
+    polarisation = polarisation_index
     foxi = round(fat_ox_eff * 100, 1)
     cur = round(100 - foxi, 1)
     gr = round(if_proxy * 2.4, 2)
     mes = round((fat_ox_eff * 60) / (gr + 1e-6), 1)
     rec_index = round(np.clip(1 - (monotony / 5), 0, 1), 3)
 
-    debug(context, f"[DERIVED] IF_proxy={if_proxy:.3f}, FatOxEff={fat_ox_eff}, Polarisation={polarisation}, MES={mes}, RecIndex={rec_index}")
-
-    # --- ✅ 10. Classification (via COACH_PROFILE markers) ---
+    debug(context, f"[DERIVED] IF_proxy={if_proxy:.3f}, FatOxEff={fat_ox_eff}, PolarisationIndex={polarisation_index}, MES={mes}, RecIndex={rec_index}")
 
     # --- ✅ 10. Classification (via COACH_PROFILE markers) ---
     # Apply classification to all metrics that have criteria
@@ -338,6 +451,7 @@ def compute_derived_metrics(df_events, context):
         "ZQI": zqi,
         "FatOxEfficiency": fat_ox_eff,
         "Polarisation": polarisation,
+        "PolarisationIndex": polarisation_index,
         "RecoveryIndex": rec_index,
         "StressTolerance": stress_tolerance,
         "FOxI": foxi,
@@ -355,24 +469,93 @@ def compute_derived_metrics(df_events, context):
 
 
     derived = {
-        "ACWR": {"value": acwr, "status": classified["ACWR"]["state"], "icon": classified["ACWR"]["icon"], "desc": "EWMA Acute:Chronic Load Ratio"},
-        "Monotony": {"value": monotony, "status": classified["Monotony"]["state"], "icon": classified["Monotony"]["icon"], "desc": "Foster Load Variability"},
-        "Strain": {"value": strain, "status": classified["Strain"]["state"], "icon": classified["Strain"]["icon"], "desc": "Foster Load × Monotony"},
-        "FatigueTrend": {"value": fatigue_trend, "status": classified["FatigueTrend"]["state"], "icon": classified["FatigueTrend"]["icon"], "desc": "7d vs 28d load delta"},
-        "ZQI": {"value": zqi, "status": classified["ZQI"]["state"], "icon": classified["ZQI"]["icon"], "desc": "Zone Quality Index"},
-        "FatOxEfficiency": {"value": fat_ox_eff, "status": classified["FatOxEfficiency"]["state"], "icon": classified["FatOxEfficiency"]["icon"], "desc": "Fat oxidation efficiency"},
-        "Polarisation": {"value": polarisation, "status": classified["Polarisation"]["state"], "icon": classified["Polarisation"]["icon"], "desc": "Intensity distribution (Seiler 80/20)"},
-        "FOxI": {"value": foxi, "status": classified["FOxI"]["state"], "icon": classified["FOxI"]["icon"], "desc": "Fat oxidation index"},
-        "CUR": {"value": cur, "status": classified["CUR"]["state"], "icon": classified["CUR"]["icon"], "desc": "Carbohydrate utilisation ratio"},
-        "GR": {"value": gr, "status": classified["GR"]["state"], "icon": classified["GR"]["icon"], "desc": "Glucose ratio"},
-        "MES": {"value": mes, "status": classified["MES"]["state"], "icon": classified["MES"]["icon"], "desc": "Metabolic efficiency score"},
-        "RecoveryIndex": {"value": rec_index, "status": classified["RecoveryIndex"]["state"], "icon": classified["RecoveryIndex"]["icon"], "desc": "Recovery readiness (Noakes Central Governor)"},
-        "StressTolerance": {"value": stress_tolerance, "status": classified["StressTolerance"]["state"], "icon": classified["StressTolerance"]["icon"], "desc": "Sustainable training tolerance"},
-    }
+        "ACWR": {
+            "value": acwr,
+            "classification": classified["ACWR"]["state"],
+            "icon": classified["ACWR"]["icon"],
+            "desc": "EWMA Acute:Chronic Load Ratio",
+        },
+        "Monotony": {
+            "value": monotony,
+            "classification": classified["Monotony"]["state"],
+            "icon": classified["Monotony"]["icon"],
+            "desc": "Foster Load Variability",
+        },
+        "Strain": {
+            "value": strain,
+            "classification": classified["Strain"]["state"],
+            "icon": classified["Strain"]["icon"],
+            "desc": "Foster Load × Monotony",
+        },
+        "FatigueTrend": {
+            "value": fatigue_trend,
+            "classification": classified["FatigueTrend"]["state"],
+            "icon": classified["FatigueTrend"]["icon"],
+            "desc": "7d vs 28d load delta",
+        },
+        "ZQI": {
+            "value": zqi,
+            "classification": classified["ZQI"]["state"],
+            "icon": classified["ZQI"]["icon"],
+            "desc": "Zone Quality Index",
+        },
+        "FatOxEfficiency": {
+            "value": fat_ox_eff,
+            "classification": classified["FatOxEfficiency"]["state"],
+            "icon": classified["FatOxEfficiency"]["icon"],
+            "desc": "Fat oxidation efficiency",
+        },
+        "PolarisationIndex": {
+            "value": polarisation_index,
+            "classification": classified["PolarisationIndex"]["state"],
+            "icon": classified["PolarisationIndex"]["icon"],
+            "desc": "Seiler 80/20 intensity distribution compliance",
+        },
+        "FOxI": {
+            "value": foxi,
+            "classification": classified["FOxI"]["state"],
+            "icon": classified["FOxI"]["icon"],
+            "desc": "Fat oxidation index",
+        },
+        "CUR": {
+            "value": cur,
+            "classification": classified["CUR"]["state"],
+            "icon": classified["CUR"]["icon"],
+            "desc": "Carbohydrate utilisation ratio",
+        },
+        "GR": {
+            "value": gr,
+            "classification": classified["GR"]["state"],
+            "icon": classified["GR"]["icon"],
+            "desc": "Glucose ratio",
+        },
+        "MES": {
+            "value": mes,
+            "classification": classified["MES"]["state"],
+            "icon": classified["MES"]["icon"],
+            "desc": "Metabolic efficiency score",
+        },
+        "RecoveryIndex": {
+            "value": rec_index,
+            "classification": classified["RecoveryIndex"]["state"],
+            "icon": classified["RecoveryIndex"]["icon"],
+            "desc": "Recovery readiness (Noakes Central Governor)",
+        },
+        "StressTolerance": {
+            "value": stress_tolerance,
+            "classification": classified["StressTolerance"]["state"],
+            "icon": classified["StressTolerance"]["icon"],
+            "desc": "Sustainable training tolerance",
+        },
+}
+
 
     # --- ✅ 12. Flatten for validator ---
     for k, v in derived.items():
         context[k] = v.get("value", np.nan)
+
+    context["PolarisationIndex"] = polarisation_index
+    context["Polarisation"] = polarisation
 
     context["derived_metrics"] = derived
 

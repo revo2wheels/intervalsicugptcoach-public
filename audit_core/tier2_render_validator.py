@@ -23,9 +23,12 @@ from audit_core.report_validator import validate_report_output
 from audit_core.report_schema_guard import enforce_report_schema
 from audit_core.tier2_enforce_event_only_totals import enforce_event_only_totals
 from audit_core.template_renderer import render_template
+from coaching_cheat_sheet import CHEAT_SHEET
+
 
 def finalize_and_validate_render(context, reportType="weekly"):
     from audit_core.utils import debug
+
     # --- STRICT AUDIT-MODE RENDER GATE ---
     if context.get("audit_mode", False):
         if not context.get("auditFinal", False):
@@ -344,6 +347,33 @@ def finalize_and_validate_render(context, reportType="weekly"):
 
         debug(context, "[T2] summary_all canonical override applied")
 
+        # ------------------------------------------------------------
+        # 🔗 ENRICH DERIVED METRICS WITH COACHING CHEAT SHEET
+        # ------------------------------------------------------------
+        from coaching_cheat_sheet import CHEAT_SHEET
+
+        derived = context.get("derived_metrics")
+
+        if isinstance(derived, dict):
+            for metric, payload in derived.items():
+                if not isinstance(payload, dict):
+                    continue
+
+                context_text = CHEAT_SHEET.get("context", {}).get(metric)
+                coaching_text = CHEAT_SHEET.get("coaching_links", {}).get(metric)
+
+                if context_text:
+                    payload.setdefault("interpretation", context_text)
+
+                if coaching_text:
+                    payload.setdefault("coaching_implication", coaching_text)
+
+                payload.setdefault("related_metrics", {})
+
+        # Hide raw PolarisationIndex from rendered metrics
+        if isinstance(derived, dict):
+            derived.pop("PolarisationIndex", None)
+
         # --- DO NOT override summary_cycling (true subset computed in Tier-1) ---
         if "summary_cycling" in context:
             debug(context, "[T2] Preserving summary_cycling (subset from report_controller)")
@@ -490,12 +520,19 @@ def finalize_and_validate_render(context, reportType="weekly"):
     if "derived" not in metrics_block:
         metrics_block["derived"] = context.get("metrics", {}).get("derived_metrics", {})
 
-    # Normalize all Tier-2 metric groups (safe empty defaults)
-    for key in ["load", "adaptation", "trend", "correlation"]:
-        if key not in metrics_block:
-            metrics_block[key] = context.get(f"{key}_metrics", {})
+    # Normalize all Tier-2 metric groups (CORRECT KEYS)
+    mapping = {
+        "load": "load_metrics",
+        "adaptation": "adaptation_metrics",
+        "trend": "trend_metrics",
+        "correlation": "correlation_metrics",
+         "extended": "extended_metrics",
+    }
 
-    report["metrics"] = metrics_block
+    for report_key, ctx_key in mapping.items():
+        if report_key not in metrics_block:
+            metrics_block[report_key] = context.get(ctx_key, {})
+
 
     # --- Ensure core report structure exists before validation ---
     required_sections = [

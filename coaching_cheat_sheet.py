@@ -3,6 +3,7 @@
 coaching_cheat_sheet.py — Unified v16.17 Coaching Reference
 Contains static thresholds, labels, and helper summaries for derived metrics.
 """
+import pandas as pd
 
 # --- Global Coaching Cheat Sheet Dictionary ---
 CHEAT_SHEET = {}
@@ -40,7 +41,12 @@ CHEAT_SHEET["context"] = {
     "FatigueTrend": "FatigueTrend is calculated as the percentage change between the 7-day and 28-day moving averages. A 0% change indicates balance, while a positive percentage change indicates accumulating fatigue, and a negative percentage change indicates recovery.",
     "ZQI": "Zone Quality Index (%) 5-15 high-intensity time is normal <3% too easy, >20% too intense or erratic pacing.",
     "FatOxEfficiency": "0.4–0.8 means balanced fat oxidation; lower = carb dependence.",
-    "Polarisation": "0.75–0.9 matches Seiler 80/20 distribution; <0.7 = too intense.",
+    "Polarisation": (
+        "Seiler Polarisation Index based on zone distribution. "
+        "≥0.75 indicates a polarised (80/20) intensity structure. "
+        "0.60–0.74 indicates a pyramidal or mixed distribution. "
+        "<0.60 indicates insufficient polarisation or excessive threshold dominance."
+    ),
     "FOxI": "FatOx index %; higher values mean more efficient aerobic base.",
     "CUR": "Carbohydrate Utilisation Ratio; 30-80 balanced metabolic use.",
     "GR": "Glucose Ratio; >2 indicates excess glycolytic bias.",
@@ -62,7 +68,11 @@ CHEAT_SHEET["coaching_links"] = {
     "RecoveryIndex": "If RecoveryIndex is low (<0.7), ensure adequate rest and recovery, and avoid heavy training loads.",
     "FatigueTrend": "If FatigueTrend is negative (e.g., below -0.2), this indicates a recovering state. Continue with controlled training load and focus on recovery to ensure sustained progress. Avoid aggressive increases in load.",
     "FatOxEfficiency": "If FatOxEfficiency is low (<0.6), focus on improving aerobic base with longer, low-intensity efforts.",
-    "Polarisation": "If Polarisation < 0.7, adjust training to increase low-intensity (Z1/Z2) work and reduce high-intensity work (Z5/Z6).",
+    "Polarisation": (
+        "If PolarisationIndex <0.60, rebalance training toward greater Z1 volume "
+        "and clearer separation between low-intensity and high-intensity sessions. "
+        "Avoid excessive Z2/threshold dominance."
+    ),
     "ZQI": "If ZQI > 20%, review pacing strategy; excessive high-intensity time could indicate erratic pacing or overtraining. Aim for 5-15% ZQI for balanced training.",
     "FOxI": "If FOxI is increasing, continue to prioritize low-intensity work to enhance fat metabolism. If it decreases, consider increasing your Zone 2 training duration.",
     "CUR": "If CUR is outside the green zone (30-70), adjust carbohydrate intake and fueling strategy to ensure balanced metabolic use during long sessions.",

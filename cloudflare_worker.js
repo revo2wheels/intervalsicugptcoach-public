@@ -241,7 +241,7 @@ export default {
       });
     }
 
-    if (pathname.startsWith(`/athlete/${athleteId}/profile`)) {
+    if (pathname.startsWith(`/athlete/${athleteId}`)) {
       const target = `${INTERVALS_API_BASE}${pathname}`;
       console.log(`[PROFILE] → ${target}`);
 
@@ -286,7 +286,7 @@ export default {
         ).then((r) => r.text()),
 
         // profile
-        fetch(`${INTERVALS_API_BASE}/athlete/0/profile`, {
+        fetch(`${INTERVALS_API_BASE}/athlete/0`, {
           headers: buildAuthHeaders()
         }).then((r) => r.text())
       ]);
@@ -335,7 +335,7 @@ export default {
           { headers: buildAuthHeaders() }
         ).then((r) => r.text()),
 
-        fetch(`${INTERVALS_API_BASE}/athlete/0/profile`, {
+        fetch(`${INTERVALS_API_BASE}/athlete/0`, {
           headers: buildAuthHeaders()
         }).then((r) => r.text())
       ]);
@@ -380,7 +380,7 @@ export default {
           { headers: buildAuthHeaders() }
         ).then((r) => r.text()),
 
-        fetch(`${INTERVALS_API_BASE}/athlete/0/profile`, {
+        fetch(`${INTERVALS_API_BASE}/athlete/0`, {
           headers: buildAuthHeaders()
         }).then((r) => r.text())
       ]);
@@ -425,7 +425,7 @@ export default {
           { headers: buildAuthHeaders() }
         ).then((r) => r.text()),
 
-        fetch(`${INTERVALS_API_BASE}/athlete/0/profile`, {
+        fetch(`${INTERVALS_API_BASE}/athlete/0`, {
           headers: buildAuthHeaders()
         }).then((r) => r.text())
       ]);
