@@ -1,0 +1,97 @@
+{
+  "status": "ok",
+  "message": "Wellness report generated",
+  "semantic_graph": {
+    "meta": {
+      "framework": "Unified Reporting Framework v5.1",
+      "version": "v16.17",
+      "generated_at": "2025-12-16T00:00:00Z",
+      "report_type": "wellness",
+      "period": {
+        "start": null,
+        "end": null
+      },
+      "timezone": "Europe/Zurich",
+      "athlete": {
+        "identity": {
+          "id": "1914741",
+          "name": "Clive King",
+          "profile_medium": "https://storage.googleapis.com/intervals-icu-images/profile_pics/2eaed503-0e10-40a4-b7dc-b63768fecbef",
+          "city": "Jongny",
+          "state": "Vaud",
+          "country": "Switzerland",
+          "timezone": "Europe/Zurich",
+          "sex": "M",
+          "bio": null,
+          "website": "https://www.cliveking.net",
+          "email": "clive@cliveking.com"
+        },
+        "profile": {
+          "athlete_id": "1914741",
+          "name": "Clive King",
+          "discipline": "cycling",
+          "timezone": "Europe/Zurich",
+          "updated": "2025-12-16T18:31:37.715+00:00",
+          "ftp": 300,
+          "indoor_ftp": 306,
+          "weight": 72.9,
+          "hr_rest": 42,
+          "hr_max": 177,
+          "ftp_wkg": 4.12,
+          "hr_reserve": 135,
+          "zone_model": {
+            "type": "power_zones",
+            "schema": "Coggan_7Z",
+            "zones": [
+              55,
+              75,
+              90,
+              105,
+              120,
+              150
+            ],
+            "names": [
+              "Active Recovery",
+              "Endurance",
+              "Tempo",
+              "Threshold",
+              "VO2 Max",
+              "Anaerobic",
+              "Neuromuscular"
+            ]
+          },
+          "training_age_years": null,
+          "preferred_units": "metric"
+        }
+      },
+      "report_header": {
+        "title": "Wellness & Recovery Status",
+        "scope": "Physiological and subjective recovery indicators",
+        "data_sources": "42-day wellness records (Intervals native)",
+        "intended_use": "Monitoring readiness, recovery balance and non-training stress"
+      },
+      "resolution": {
+        "CTL": "icu_only",
+        "ATL": "icu_only",
+        "TSB": "icu_only",
+        "zones": "not_applicable",
+        "derived_metrics": "wellness_only",
+        "extended_metrics": "none",
+        "insights": "recovery"
+      }
+    },
+    "wellness": {
+      "ctl": 75.29384,
+      "atl": 61.455624,
+      "tsb": 13.838216000000003,
+      "recovery": null,
+      "fatigue": null,
+      "fitness": null,
+      "form": null,
+      "CTL": 75.29384,
+      "ATL": 61.455624,
+      "TSB": 13.838216000000003
+    }
+  },
+  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=3370, ctx_keys=84\n\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4622, ctx_keys=84"
+}

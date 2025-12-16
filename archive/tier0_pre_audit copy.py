@@ -499,9 +499,15 @@ def fetch_athlete_profile(headers, from_cache=None, context=None):
 def run_tier0_pre_audit(start: str, end: str, context: dict):
     """Tier-0: OAuth-only Pre-audit fetch chain with adaptive chunking and meta-retry."""
 
-    if not ICU_TOKEN:
-        raise EnvironmentError("Missing Intervals.icu OAuth token. Set ICU_OAUTH env var.")
-    debug(context, f"[Tier-0] Using API endpoint: {INTERVALS_API}")
+    # If Railway has a token, send it; otherwise rely on Worker env.ICU_OAUTH
+    if ICU_TOKEN and ICU_TOKEN.strip():
+        headers["Authorization"] = f"Bearer {ICU_TOKEN.strip()}"
+    else:
+        # Only warn if we're using the Worker proxy
+        if "workers.dev" in INTERVALS_API or "clive-a5a.workers.dev" in INTERVALS_API:
+            debug(context, "[T0] ICU_OAUTH missing on Railway — relying on Worker-held token")
+        else:
+            raise RuntimeError("Missing Intervals.icu OAuth token. Set ICU_OAUTH env var.")
 
     # Ensure df_light always exists
     df_light = pd.DataFrame()

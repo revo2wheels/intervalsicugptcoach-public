@@ -1,0 +1,152 @@
+{
+  "status": "ok",
+  "message": "Summary report generated",
+  "semantic_graph": {
+    "meta": {
+      "framework": "Unified Reporting Framework v5.1",
+      "version": "v16.17",
+      "generated_at": "2025-12-16T00:00:00Z",
+      "report_type": "summary",
+      "period": {
+        "start": null,
+        "end": null
+      },
+      "timezone": "Europe/Zurich",
+      "athlete": {
+        "identity": {
+          "id": "1914741",
+          "name": "Clive King",
+          "profile_medium": "https://storage.googleapis.com/intervals-icu-images/profile_pics/2eaed503-0e10-40a4-b7dc-b63768fecbef",
+          "city": "Jongny",
+          "state": "Vaud",
+          "country": "Switzerland",
+          "timezone": "Europe/Zurich",
+          "sex": "M",
+          "bio": null,
+          "website": "https://www.cliveking.net",
+          "email": "clive@cliveking.com"
+        },
+        "profile": {
+          "athlete_id": "1914741",
+          "name": "Clive King",
+          "discipline": "cycling",
+          "timezone": "Europe/Zurich",
+          "updated": "2025-12-16T18:31:37.715+00:00",
+          "ftp": 300,
+          "indoor_ftp": 306,
+          "weight": 72.9,
+          "hr_rest": 42,
+          "hr_max": 177,
+          "ftp_wkg": 4.12,
+          "hr_reserve": 135,
+          "zone_model": {
+            "type": "power_zones",
+            "schema": "Coggan_7Z",
+            "zones": [
+              55,
+              75,
+              90,
+              105,
+              120,
+              150
+            ],
+            "names": [
+              "Active Recovery",
+              "Endurance",
+              "Tempo",
+              "Threshold",
+              "VO2 Max",
+              "Anaerobic",
+              "Neuromuscular"
+            ]
+          },
+          "training_age_years": null,
+          "preferred_units": "metric"
+        }
+      },
+      "report_header": {
+        "title": "Training Summary",
+        "scope": "High-level overview of current training state",
+        "data_sources": "Authoritative totals, wellness indicators, derived insights",
+        "intended_use": "Executive summary and coaching narrative synthesis"
+      },
+      "resolution": {
+        "CTL": "icu_only",
+        "ATL": "icu_only",
+        "TSB": "icu_only",
+        "zones": "suppressed",
+        "derived_metrics": "suppressed",
+        "extended_metrics": "suppressed",
+        "insights": "executive"
+      }
+    },
+    "hours": 10.59,
+    "tss": 474,
+    "distance_km": 256.7,
+    "wellness": {
+      "ctl": 75.29384,
+      "atl": 61.455624,
+      "tsb": 13.838216000000003,
+      "recovery": null,
+      "fatigue": null,
+      "fitness": null,
+      "form": null,
+      "CTL": 75.29384,
+      "ATL": 61.455624,
+      "TSB": 13.838216000000003
+    },
+    "insights": {
+      "fatigue_trend": {
+        "value_pct": -18.4,
+        "window": "7d",
+        "basis": "ATL vs CTL",
+        "classification": "amber",
+        "thresholds": {
+          "green": [
+            -10,
+            10
+          ],
+          "amber": [
+            -20,
+            20
+          ]
+        },
+        "interpretation": "FatigueTrend is calculated as the percentage change between the 7-day and 28-day moving averages. A 0% change indicates balance, while a positive percentage change indicates accumulating fatigue, and a negative percentage change indicates recovery.",
+        "coaching_implication": "If FatigueTrend is negative (e.g., below -0.2), this indicates a recovering state. Continue with controlled training load and focus on recovery to ensure sustained progress. Avoid aggressive increases in load."
+      },
+      "load_distribution": {
+        "zones_pct": {
+          "z1_z2": 57.3,
+          "z3_plus": 42.7
+        },
+        "window": "7d",
+        "basis": "time-in-zone (%)",
+        "classification": "threshold-heavy",
+        "interpretation": "Seiler Polarisation Index based on zone distribution. \u22650.75 indicates a polarised (80/20) intensity structure. 0.60\u20130.74 indicates a pyramidal or mixed distribution. <0.60 indicates insufficient polarisation or excessive threshold dominance."
+      },
+      "metabolic_drift": {
+        "value": 0.114,
+        "window": "7d",
+        "basis": "FOxI proxy",
+        "interpretation": "Proxy derived from fat oxidation efficiency. Interpret trend direction only, not absolute magnitude."
+      },
+      "fitness_phase": {
+        "phase": "productive/loading",
+        "basis": "ACWR",
+        "window": "rolling",
+        "interpretation": "EWMA Acute:Chronic Load Ratio \u2014 compares 7-day vs 28-day weighted loads. 0.8\u20131.3 = productive training, <0.8 = recovery or detraining, >1.5 = overload/injury risk.",
+        "coaching_implication": "If ACWR > 1.5, reduce intensity and focus on recovery to avoid overload. If ACWR < 0.8, gradually increase training load with controlled progression to build endurance."
+      }
+    },
+    "actions": [
+      "\u26a0 Increase Z1\u2013Z2 share to \u226570 % (Seiler 80/20).",
+      "\u26a0 Improve Zone 2 efficiency: extend duration or adjust IF.",
+      "\u2705 Durability improving (1.00) \u2014 maintain current long-ride structure.",
+      "\u26a0 Load intensity too high (LIR=2.00) \u2014 reduce intensity or monitor recovery.",
+      "\u2705 Efficiency drift stable (0.00%).",
+      "\u26a0 Polarisation low (57%) \u2014 increase Z1\u2013Z2 share toward \u226570 %. ",
+      "\u2705 Recovery Index healthy (0.69)."
+    ]
+  },
+  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=3369, ctx_keys=84\n\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4622, ctx_keys=84"
+}
