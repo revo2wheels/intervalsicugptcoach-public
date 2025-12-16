@@ -243,6 +243,123 @@
         "interpretation": "EWMA Acute:Chronic Load Ratio \u2014 compares 7-day vs 28-day weighted loads. 0.8\u20131.3 = productive training, <0.8 = recovery or detraining, >1.5 = overload/injury risk.",
         "coaching_implication": "If ACWR > 1.5, reduce intensity and focus on recovery to avoid overload. If ACWR < 0.8, gradually increase training load with controlled progression to build endurance."
       }
+    },
+    "insight_view": {
+      "summary": {
+        "fatigue_trend": {
+          "value_pct": -18.4,
+          "window": "90d",
+          "basis": "ATL vs CTL",
+          "classification": "amber",
+          "thresholds": {
+            "green": [
+              -10,
+              10
+            ],
+            "amber": [
+              -20,
+              20
+            ]
+          },
+          "interpretation": "FatigueTrend is calculated as the percentage change between the 7-day and 28-day moving averages. A 0% change indicates balance, while a positive percentage change indicates accumulating fatigue, and a negative percentage change indicates recovery.",
+          "coaching_implication": "If FatigueTrend is negative (e.g., below -0.2), this indicates a recovering state. Continue with controlled training load and focus on recovery to ensure sustained progress. Avoid aggressive increases in load."
+        },
+        "load_distribution": {
+          "zones_pct": {
+            "z1_z2": 57.3,
+            "z3_plus": 42.7
+          },
+          "window": "90d",
+          "basis": "time-in-zone (%)",
+          "classification": "threshold-heavy",
+          "interpretation": "Seiler Polarisation Index based on zone distribution. \u22650.75 indicates a polarised (80/20) intensity structure. 0.60\u20130.74 indicates a pyramidal or mixed distribution. <0.60 indicates insufficient polarisation or excessive threshold dominance."
+        },
+        "metabolic_drift": {
+          "value": 0.114,
+          "window": "90d",
+          "basis": "FOxI proxy",
+          "interpretation": "Proxy derived from fat oxidation efficiency. Interpret trend direction only, not absolute magnitude."
+        },
+        "fitness_phase": {
+          "phase": "productive/loading",
+          "basis": "ACWR",
+          "window": "rolling",
+          "interpretation": "EWMA Acute:Chronic Load Ratio \u2014 compares 7-day vs 28-day weighted loads. 0.8\u20131.3 = productive training, <0.8 = recovery or detraining, >1.5 = overload/injury risk.",
+          "coaching_implication": "If ACWR > 1.5, reduce intensity and focus on recovery to avoid overload. If ACWR < 0.8, gradually increase training load with controlled progression to build endurance."
+        }
+      },
+      "critical": [
+        {
+          "name": "Polarisation",
+          "value": 0.573,
+          "framework": "Seiler 80/20 Model",
+          "interpretation": "Seiler Polarisation Index based on zone distribution. \u22650.75 indicates a polarised (80/20) intensity structure. 0.60\u20130.74 indicates a pyramidal or mixed distribution. <0.60 indicates insufficient polarisation or excessive threshold dominance.",
+          "coaching_implication": "If PolarisationIndex <0.60, rebalance training toward greater Z1 volume and clearer separation between low-intensity and high-intensity sessions. Avoid excessive Z2/threshold dominance."
+        }
+      ],
+      "watch": [],
+      "positive": [],
+      "actions": [
+        "\u26a0 Increase Z1\u2013Z2 share to \u226570 % (Seiler 80/20).",
+        "\u26a0 Improve Zone 2 efficiency: extend duration or adjust IF.",
+        "\u2705 FatigueTrend (2.7%) \u2014 Increasing fatigue trend. Consider adjusting intensity or recovery.",
+        "\u2705 Durability improving (1.00) \u2014 maintain current long-ride structure.",
+        "\u26a0 Load intensity too high (LIR=2.00) \u2014 reduce intensity or monitor recovery.",
+        "\u2705 Efficiency drift stable (0.00%).",
+        "\u26a0 Polarisation low (57%) \u2014 increase Z1\u2013Z2 share toward \u226570 %. ",
+        "\u2705 Recovery Index healthy (0.69).",
+        "---",
+        "\ud83e\ude9c **Seasonal Phase Analysis**",
+        "\ud83d\udd01 **Continuous Load** (None \u2192 None) \u2014 steady training; insert variation if fatigue rises.",
+        "",
+        "\ud83d\udcd8 **Coach Note:**",
+        "Phases correspond to the macrocycle model (Base \u2192 Build \u2192 Peak \u2192 Taper \u2192 Recovery). Maintain ACWR \u2264 1.3, positive TSB for freshness, and use taper reduction of ATL by 30\u201350%. Derived from Friel / Seiler / Bannister periodisation heuristics.",
+        "\u2705 Reference: Coaching Cheat Sheet \u2014 Periodisation & Load Ratios (Section 9\u201311)"
+      ],
+      "phases": [
+        {
+          "phase": "Week 45",
+          "distance_km": 339.35747,
+          "hours": 12.136944444444444,
+          "tss": 588.0
+        },
+        {
+          "phase": "Week 46",
+          "distance_km": 242.47963000000001,
+          "hours": 10.007222222222222,
+          "tss": 471.0
+        },
+        {
+          "phase": "Week 47",
+          "distance_km": 410.64595999999995,
+          "hours": 14.785555555555556,
+          "tss": 702.0
+        },
+        {
+          "phase": "Week 48",
+          "distance_km": 239.99015,
+          "hours": 7.935277777777777,
+          "tss": 444.0
+        },
+        {
+          "phase": "Week 49",
+          "distance_km": 167.52785999999998,
+          "hours": 5.075833333333334,
+          "tss": 200.0
+        },
+        {
+          "phase": "Week 50",
+          "distance_km": 236.73660999999998,
+          "hours": 9.336666666666666,
+          "tss": 414.0
+        },
+        {
+          "phase": "Week 51",
+          "distance_km": 88.84107,
+          "hours": 3.194166666666667,
+          "tss": 158.0
+        }
+      ]
     }
   },
   "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4563, ctx_keys=83"

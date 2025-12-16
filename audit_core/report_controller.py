@@ -229,11 +229,15 @@ def run_report(
     if isinstance(context.get("wellness"), list):
         context["prefetched"]["wellness"] = context["wellness"]
 
+    # 🔑 FIX: athlete cache MUST be wrapped
     if isinstance(context.get("athlete"), dict):
-        context["prefetched"]["athlete"] = context["athlete"]
+        context["prefetched"]["athlete"] = {
+            "athlete": context["athlete"]
+        }
 
     if context["prefetched"]:
         debug(context, f"[ORCH] Registered prefetched datasets: {list(context['prefetched'].keys())}")
+
 
     # --- NEW: Bind reportMode for schema-based orchestration ---
     context["reportMode"] = reportType.lower() if isinstance(reportType, str) else "weekly"
