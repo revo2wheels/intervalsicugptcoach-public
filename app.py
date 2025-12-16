@@ -178,28 +178,12 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
 
     with redirect_stdout(buffer):
         if prefetch_context:
-
-            # 🔑 Build Tier-0 prefetch contract
-            raw_athlete = data.get("athlete", {})
-
-            # 🔒 FLATTEN BEFORE run_report
-            if isinstance(raw_athlete, dict) and "athlete" in raw_athlete:
-                raw_athlete = raw_athlete["athlete"]
-
-                prefetch_context = {
-                    "activities_light": data.get("activities_light", []),
-                    "activities_full": data.get("activities_full", []),
-                    "wellness": data.get("wellness", []),
-                    "athlete": raw_athlete,   # ← FLAT ICU ATHLETE
-                }
-
-                report, compliance = run_report(
-                    reportType=range,
-                    output_format=output_format,
-                    include_coaching_metrics=True,
-                    **prefetch_context
-                )
-
+            report, compliance = run_report(
+                reportType=range,
+                output_format=output_format,
+                include_coaching_metrics=True,
+                **prefetch_context
+            )
         else:
             report, compliance = run_report(
                 reportType=range,
@@ -216,10 +200,10 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
         context = {}
         markdown = str(report)
 
-    # Build semantic JSON (NO context logging)
     semantic_graph = build_semantic_json(context)
 
     return report, compliance, logs, context, semantic_graph, markdown
+
 
 
 # ─────────────────────────────────────────────
@@ -290,11 +274,17 @@ async def run_audit_with_data(request: Request):
         range = data.get("range", "weekly")
         fmt = data.get("format", "markdown").lower()
 
+        raw_athlete = data.get("athlete", {})
+
+        # ✅ NORMALISE ONCE — HERE AND ONLY HERE
+        if isinstance(raw_athlete, dict) and "athlete" in raw_athlete:
+            raw_athlete = raw_athlete["athlete"]
+
         prefetch_context = {
             "activities_light": data.get("activities_light", []),
             "activities_full": data.get("activities_full", []),
             "wellness": data.get("wellness", []),
-            "athlete": data.get("athlete", {}),
+            "athlete": raw_athlete,   # ← FLAT ICU ATHLETE
         }
 
         r, compliance, logs, context, sg, markdown = _run_full_audit(
