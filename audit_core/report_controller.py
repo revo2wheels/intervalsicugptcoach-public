@@ -246,6 +246,16 @@ def run_report(
         else:
             debug(context, "[ORCH-WARN] Invalid athlete cache payload, forcing Tier-0 fetch")
 
+    # 🔑 CRITICAL: Flatten athlete for Tier-0
+    if (
+        isinstance(context.get("prefetched"), dict)
+        and isinstance(context["prefetched"].get("athlete"), dict)
+        and isinstance(context["prefetched"]["athlete"].get("athlete"), dict)
+    ):
+        context["athlete"] = context["prefetched"]["athlete"]["athlete"]
+        debug(context, "[ORCH] Flattened prefetched athlete for Tier-0")
+
+
     if context["prefetched"]:
         debug(context, f"[ORCH] Registered prefetched datasets: {list(context['prefetched'].keys())}")
 
