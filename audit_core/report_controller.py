@@ -238,6 +238,10 @@ def run_report(
     if context["prefetched"]:
         debug(context, f"[ORCH] Registered prefetched datasets: {list(context['prefetched'].keys())}")
 
+    # 🔒 Prefetch is authoritative
+    if context.get("prefetched", {}).get("full"):
+        context["force_light"] = False
+        context["prefetch_done"] = True
 
     # --- NEW: Bind reportMode for schema-based orchestration ---
     context["reportMode"] = reportType.lower() if isinstance(reportType, str) else "weekly"
