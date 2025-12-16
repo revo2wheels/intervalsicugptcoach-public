@@ -182,17 +182,16 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
             # 🔑 Build Tier-0 prefetch contract
             raw_athlete = data.get("athlete", {})
 
-            # 🔒 FLATTEN HERE — BEFORE run_report
+            # 🔒 FLATTEN BEFORE run_report
             if isinstance(raw_athlete, dict) and "athlete" in raw_athlete:
                 raw_athlete = raw_athlete["athlete"]
 
             prefetch_context = {
-                "activities_light": ...,
-                "activities_full": ...,
-                "wellness": ...,
-                "athlete": raw_athlete,   # flat ICU athlete
+                "activities_light": data.get("activities_light", []),
+                "activities_full": data.get("activities_full", []),
+                "wellness": data.get("wellness", []),
+                "athlete": raw_athlete,   # ← FLAT ICU ATHLETE
             }
-
 
             report, compliance = run_report(
                 reportType=range,
