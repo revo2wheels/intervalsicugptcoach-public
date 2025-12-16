@@ -239,18 +239,12 @@ def run_report(
         raw_athlete = context.get("athlete")
 
         # Guard: must look like ICU athlete
-        if isinstance(raw_athlete, dict) and raw_athlete.get("id"):
+        if isinstance(context.get("athlete"), dict):
             context["prefetched"]["athlete"] = {
-                "athlete": raw_athlete
+                "athlete": context["athlete"]
             }
         else:
             debug(context, "[ORCH-WARN] Invalid athlete cache payload, forcing Tier-0 fetch")
-
-        # 🔒 Ensure timezone always exists for Tier-0
-        if isinstance(context["prefetched"].get("athlete", {}).get("athlete"), dict):
-            context["prefetched"]["athlete"]["athlete"].setdefault(
-                "timezone", "Europe/Zurich"
-    )
 
     if context["prefetched"]:
         debug(context, f"[ORCH] Registered prefetched datasets: {list(context['prefetched'].keys())}")
