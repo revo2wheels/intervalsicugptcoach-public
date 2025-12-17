@@ -280,12 +280,19 @@ async def run_audit_with_data(request: Request):
         if isinstance(raw_athlete, dict) and "athlete" in raw_athlete:
             raw_athlete = raw_athlete["athlete"]
 
-        prefetch_context = {
-            "activities_light": data.get("activities_light", []),
-            "activities_full": data.get("activities_full", []),
-            "wellness": data.get("wellness", []),
-            "athlete": raw_athlete,   # ← FLAT ICU ATHLETE
-        }
+        prefetch_context = {}
+
+        if data.get("activities_light"):
+            prefetch_context["activities_light"] = data["activities_light"]
+
+        if data.get("activities_full"):
+            prefetch_context["activities_full"] = data["activities_full"]
+
+        if data.get("wellness"):
+            prefetch_context["wellness"] = data["wellness"]
+
+        if raw_athlete:
+            prefetch_context["athlete"] = raw_athlete
 
         r, compliance, logs, context, sg, markdown = _run_full_audit(
             range=range,
