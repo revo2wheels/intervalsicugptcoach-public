@@ -249,11 +249,7 @@ def run_audit(
         })
 
     except Exception as e:
-        import traceback
-        return JSONResponse(status_code=500, content={
-            "error": str(e),
-            "trace": traceback.format_exc()
-        })
+        return error_response(e)
 
 # --- HELPER FOR LIST ----
 def require_list(name, value):
@@ -339,10 +335,28 @@ async def run_audit_with_data(request: Request):
         })
 
     except Exception as e:
-        return JSONResponse(status_code=500, content={
+        return error_response(e)
+
+# -----------------------------
+# /ERROR HANDLING
+# -----------------------------
+def error_response(e: Exception, buffer=None, status_code: int = 500):
+    import traceback
+
+    return JSONResponse(
+        status_code=status_code,
+        content={
             "status": "error",
-            "message": str(e)
-        })
+            "message": str(e),
+            "exception_type": type(e).__name__,
+            "trace": traceback.format_exc(),
+            "logs": (
+                buffer.getvalue()[-20000:]
+                if buffer is not None
+                else None
+            ),
+        },
+    )
 
 
 # -----------------------------
