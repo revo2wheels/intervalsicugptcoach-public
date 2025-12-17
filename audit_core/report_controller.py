@@ -248,13 +248,20 @@ def run_report(
     if (
         isinstance(context.get("prefetched"), dict)
         and isinstance(context["prefetched"].get("athlete"), dict)
-        and isinstance(context["prefetched"]["athlete"].get("athlete"), dict)
     ):
-        context["athleteProfile"] = context["prefetched"]["athlete"]["athlete"]
+        a = context["prefetched"]["athlete"]
+
+        # Support BOTH shapes:
+        # 1) Legacy: { "athlete": { ... } }
+        # 2) New:    { ... }  (flat)
+        if isinstance(a.get("athlete"), dict):
+            a = a["athlete"]
+
+        context["athleteProfile"] = a
         debug(context, "[ORCH] Bound prefetched athlete → athleteProfile")
 
         # 🔑 CRITICAL: Flatten athlete for Tier-0
-        context["athlete"] = context["prefetched"]["athlete"]["athlete"]
+        context["athlete"] = a
         debug(context, "[ORCH] Flattened prefetched athlete for Tier-0")
 
         # ============================================================
@@ -269,6 +276,7 @@ def run_report(
                 f"[ORCH-FIX] Injected missing athlete.timezone = {context['athlete']['timezone']}"
             )
 
+
     # ------------------------------------------------------------
     # Prefetch bookkeeping
     # ------------------------------------------------------------
@@ -282,6 +290,7 @@ def run_report(
     if context.get("prefetched", {}).get("full"):
         context["force_light"] = False
         context["prefetch_done"] = True
+
 
     # --- NEW: Bind reportMode for schema-based orchestration ---
     context["reportMode"] = reportType.lower() if isinstance(reportType, str) else "weekly"

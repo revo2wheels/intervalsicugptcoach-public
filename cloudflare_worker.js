@@ -61,6 +61,25 @@ export default {
       };
     };
 
+  // ================================================================
+  // 🔒 CANONICAL ATHLETE EXTRACTION (NO SAFE PARSE)
+  // ================================================================
+  const extractAthlete = (profTxt) => {
+    const athlete = JSON.parse(profTxt);
+
+    if (!athlete || typeof athlete !== "object") {
+      throw new Error("[FATAL] Athlete profile is not an object");
+    }
+
+    if (!athlete.timezone) {
+      throw new Error(
+        "[FATAL] Athlete missing timezone — refusing to continue"
+      );
+    }
+
+    return athlete;
+  };
+
     // ================================================================
     // 🔥 Correct safeParse with expected type
     // ================================================================
@@ -290,14 +309,14 @@ export default {
           headers: buildAuthHeaders()
         }).then((r) => r.text())
       ]);
-      const athleteObj = safeParse(profTxt, "object");
+      const athlete = extractAthlete(profTxt);
       const payload = {
         range: "weekly",
         format: url.searchParams.get("format") || "semantic",
         activities_light: safeParse(lightTxt, "array"),
         activities_full: safeParse(fullTxt, "array"),
         wellness: safeParse(wellTxt, "array"),
-        athlete: athleteObj
+        athlete
       };
 
       return await callRailway(payload, "WEEKLY", profTxt);
@@ -339,14 +358,14 @@ export default {
           headers: buildAuthHeaders()
         }).then((r) => r.text())
       ]);
-      const athleteObj = safeParse(profTxt, "object");
+      const athlete = extractAthlete(profTxt);
       const payload = {
         range: "season",
         format: url.searchParams.get("format") || "semantic",
         activities_light: safeParse(lightTxt, "array"),
         activities_full: safeParse(fullTxt, "array"),
         wellness: safeParse(wellTxt, "array"),
-        athlete: athleteObj
+        athlete
       };
 
       return await callRailway(payload, "SEASON", profTxt);
@@ -384,14 +403,14 @@ export default {
           headers: buildAuthHeaders()
         }).then((r) => r.text())
       ]);
-      const athleteObj = safeParse(profTxt, "object");
+      const athlete = extractAthlete(profTxt);
       const payload = {
         range: "wellness",
         format: url.searchParams.get("format") || "semantic",
         activities_light: safeParse(lightTxt, "array"),
         activities_full: safeParse(fullTxt, "array"),
         wellness: safeParse(wellTxt, "array"),
-        athlete: athleteObj
+        athlete
       };
 
       return await callRailway(payload, "WELLNESS", profTxt);
@@ -430,13 +449,15 @@ export default {
         }).then((r) => r.text())
       ]);
 
+      const athlete = extractAthlete(profTxt);
+
       const payload = {
         range: "summary",
         format: url.searchParams.get("format") || "semantic",
         activities_light: safeParse(lightTxt, "array"),
         activities_full: safeParse(fullTxt, "array"),
         wellness: safeParse(wellTxt, "array"),
-        athlete: (safeParse(profTxt, "object").athlete || {})
+        athlete
       };
 
       return await callRailway(payload, "SUMMARY", profTxt);

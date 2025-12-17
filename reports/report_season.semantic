@@ -35,10 +35,10 @@
           "ftp": 300,
           "indoor_ftp": 306,
           "weight": 72.9,
-          "hr_rest": 42,
+          "hr_rest": 43,
           "hr_max": 177,
           "ftp_wkg": 4.12,
-          "hr_reserve": 135,
+          "hr_reserve": 134,
           "zone_model": {
             "type": "power_zones",
             "schema": "Coggan_7Z",
@@ -80,9 +80,9 @@
         "insights": "strategic"
       }
     },
-    "hours": 10.59,
-    "tss": 474,
-    "distance_km": 256.7,
+    "hours": 9.24,
+    "tss": 388,
+    "distance_km": 210.0,
     "metrics": {
       "ACWR": {
         "name": "ACWR",
@@ -95,15 +95,15 @@
     },
     "extended_metrics": {
       "CTL": {
-        "value": 75.29384,
+        "value": 73.5223,
         "status": "icu"
       },
       "ATL": {
-        "value": 61.455624,
+        "value": 53.27452,
         "status": "icu"
       },
       "TSB": {
-        "value": 13.838216000000003,
+        "value": 20.24778,
         "status": "icu"
       },
       "EfficiencyFactor": 1.9,
@@ -141,9 +141,9 @@
     "phases": [
       {
         "phase": "Week 45",
-        "distance_km": 339.35747,
-        "hours": 12.136944444444444,
-        "tss": 588.0
+        "distance_km": 290.28281,
+        "hours": 10.865555555555556,
+        "tss": 526.0
       },
       {
         "phase": "Week 46",
@@ -185,12 +185,12 @@
     "actions": [
       "\u26a0 Increase Z1\u2013Z2 share to \u226570 % (Seiler 80/20).",
       "\u26a0 Improve Zone 2 efficiency: extend duration or adjust IF.",
-      "\u2705 FatigueTrend (2.7%) \u2014 Increasing fatigue trend. Consider adjusting intensity or recovery.",
+      "\u2705 FatigueTrend (23.2%) \u2014 Increasing fatigue trend. Consider adjusting intensity or recovery.",
       "\u2705 Durability improving (1.00) \u2014 maintain current long-ride structure.",
       "\u26a0 Load intensity too high (LIR=2.00) \u2014 reduce intensity or monitor recovery.",
       "\u2705 Efficiency drift stable (0.00%).",
-      "\u26a0 Polarisation low (57%) \u2014 increase Z1\u2013Z2 share toward \u226570 %. ",
-      "\u2705 Recovery Index healthy (0.69).",
+      "\u26a0 Polarisation low (55%) \u2014 increase Z1\u2013Z2 share toward \u226570 %. ",
+      "\u2705 Recovery Index healthy (0.77).",
       "---",
       "\ud83e\ude9c **Seasonal Phase Analysis**",
       "\ud83d\udd01 **Continuous Load** (None \u2192 None) \u2014 steady training; insert variation if fatigue rises.",
@@ -200,23 +200,23 @@
       "\u2705 Reference: Coaching Cheat Sheet \u2014 Periodisation & Load Ratios (Section 9\u201311)"
     ],
     "wellness": {
-      "ctl": 75.29384,
-      "atl": 61.455624,
-      "tsb": 13.838216000000003,
+      "ctl": 73.5223,
+      "atl": 53.27452,
+      "tsb": 20.24778,
       "recovery": null,
       "fatigue": null,
       "fitness": null,
       "form": null,
-      "CTL": 75.29384,
-      "ATL": 61.455624,
-      "TSB": 13.838216000000003
+      "CTL": 73.5223,
+      "ATL": 53.27452,
+      "TSB": 20.24778
     },
     "insights": {
       "fatigue_trend": {
-        "value_pct": -18.4,
+        "value_pct": -27.5,
         "window": "90d",
         "basis": "ATL vs CTL",
-        "classification": "amber",
+        "classification": "red",
         "thresholds": {
           "green": [
             -10,
@@ -231,7 +231,7 @@
         "coaching_implication": "If FatigueTrend is negative (e.g., below -0.2), this indicates a recovering state. Continue with controlled training load and focus on recovery to ensure sustained progress. Avoid aggressive increases in load."
       },
       "metabolic_drift": {
-        "value": 0.114,
+        "value": 0.096,
         "window": "90d",
         "basis": "FOxI proxy",
         "interpretation": "Proxy derived from fat oxidation efficiency. Interpret trend direction only, not absolute magnitude."
@@ -247,10 +247,10 @@
     "insight_view": {
       "summary": {
         "fatigue_trend": {
-          "value_pct": -18.4,
+          "value_pct": -27.5,
           "window": "90d",
           "basis": "ATL vs CTL",
-          "classification": "amber",
+          "classification": "red",
           "thresholds": {
             "green": [
               -10,
@@ -266,8 +266,8 @@
         },
         "load_distribution": {
           "zones_pct": {
-            "z1_z2": 57.3,
-            "z3_plus": 42.7
+            "z1_z2": 54.8,
+            "z3_plus": 45.2
           },
           "window": "90d",
           "basis": "time-in-zone (%)",
@@ -275,7 +275,7 @@
           "interpretation": "Seiler Polarisation Index based on zone distribution. \u22650.75 indicates a polarised (80/20) intensity structure. 0.60\u20130.74 indicates a pyramidal or mixed distribution. <0.60 indicates insufficient polarisation or excessive threshold dominance."
         },
         "metabolic_drift": {
-          "value": 0.114,
+          "value": 0.096,
           "window": "90d",
           "basis": "FOxI proxy",
           "interpretation": "Proxy derived from fat oxidation efficiency. Interpret trend direction only, not absolute magnitude."
@@ -291,7 +291,7 @@
       "critical": [
         {
           "name": "Polarisation",
-          "value": 0.573,
+          "value": 0.548,
           "framework": "Seiler 80/20 Model",
           "interpretation": "Seiler Polarisation Index based on zone distribution. \u22650.75 indicates a polarised (80/20) intensity structure. 0.60\u20130.74 indicates a pyramidal or mixed distribution. <0.60 indicates insufficient polarisation or excessive threshold dominance.",
           "coaching_implication": "If PolarisationIndex <0.60, rebalance training toward greater Z1 volume and clearer separation between low-intensity and high-intensity sessions. Avoid excessive Z2/threshold dominance."
@@ -302,12 +302,12 @@
       "actions": [
         "\u26a0 Increase Z1\u2013Z2 share to \u226570 % (Seiler 80/20).",
         "\u26a0 Improve Zone 2 efficiency: extend duration or adjust IF.",
-        "\u2705 FatigueTrend (2.7%) \u2014 Increasing fatigue trend. Consider adjusting intensity or recovery.",
+        "\u2705 FatigueTrend (23.2%) \u2014 Increasing fatigue trend. Consider adjusting intensity or recovery.",
         "\u2705 Durability improving (1.00) \u2014 maintain current long-ride structure.",
         "\u26a0 Load intensity too high (LIR=2.00) \u2014 reduce intensity or monitor recovery.",
         "\u2705 Efficiency drift stable (0.00%).",
-        "\u26a0 Polarisation low (57%) \u2014 increase Z1\u2013Z2 share toward \u226570 %. ",
-        "\u2705 Recovery Index healthy (0.69).",
+        "\u26a0 Polarisation low (55%) \u2014 increase Z1\u2013Z2 share toward \u226570 %. ",
+        "\u2705 Recovery Index healthy (0.77).",
         "---",
         "\ud83e\ude9c **Seasonal Phase Analysis**",
         "\ud83d\udd01 **Continuous Load** (None \u2192 None) \u2014 steady training; insert variation if fatigue rises.",
@@ -319,9 +319,9 @@
       "phases": [
         {
           "phase": "Week 45",
-          "distance_km": 339.35747,
-          "hours": 12.136944444444444,
-          "tss": 588.0
+          "distance_km": 290.28281,
+          "hours": 10.865555555555556,
+          "tss": 526.0
         },
         {
           "phase": "Week 46",
@@ -362,5 +362,5 @@
       ]
     }
   },
-  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4563, ctx_keys=83"
+  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4565, ctx_keys=83"
 }
