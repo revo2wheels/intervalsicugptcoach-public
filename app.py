@@ -255,6 +255,14 @@ def run_audit(
             "trace": traceback.format_exc()
         })
 
+# --- HELPER FOR LIST ----
+def require_list(name, value):
+    if value is None:
+        return None
+    if isinstance(value, list):
+        return value
+    raise ValueError(f"{name} must be a list, got {type(value).__name__}")
+
 
 # -----------------------------
 # POST /run (Worker mode)
@@ -282,16 +290,22 @@ async def run_audit_with_data(request: Request):
 
         prefetch_context = {}
 
-        if data.get("activities_light"):
-            prefetch_context["activities_light"] = data["activities_light"]
+        activities_light = require_list("activities_light", data.get("activities_light"))
+        activities_full  = require_list("activities_full",  data.get("activities_full"))
+        wellness          = require_list("wellness",          data.get("wellness"))
 
-        if data.get("activities_full"):
-            prefetch_context["activities_full"] = data["activities_full"]
+        if activities_light is not None:
+            prefetch_context["activities_light"] = activities_light
 
-        if data.get("wellness"):
-            prefetch_context["wellness"] = data["wellness"]
+        if activities_full is not None:
+            prefetch_context["activities_full"] = activities_full
+
+        if wellness is not None:
+            prefetch_context["wellness"] = wellness
 
         if raw_athlete:
+            if not isinstance(raw_athlete, dict):
+                raise ValueError("athlete must be an object")
             prefetch_context["athlete"] = raw_athlete
 
         # 🔑 CRITICAL: empty prefetch must be None
