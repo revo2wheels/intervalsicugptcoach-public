@@ -457,9 +457,15 @@ def fetch_athlete_profile(headers, from_cache=None, context=None):
     if athlete.get("source") in ["mock", "cache", "sandbox"]:
         raise AuditHalt("❌ Tier-0 halted: invalid data origin (mock/cache/sandbox)")
 
-    # Timezone
-    tz = athlete.get("timezone", "Europe/Zurich")
-    context["timezone"] = tz if isinstance(tz, str) and len(tz) >= 3 else "Europe/Zurich"
+    # -------------------------------------------------
+    # Timezone (MUST BE ON ATHLETE ITSELF)
+    # -------------------------------------------------
+    tz = athlete.get("timezone")
+    if not isinstance(tz, str) or len(tz) < 3:
+        tz = "Europe/Zurich"
+        athlete["timezone"] = tz   # 🔑 THIS LINE IS THE FIX
+
+    context["timezone"] = tz
 
     # -------------------------------------------------
     # 🧠 FRAMEWORK PROFILE MAPPING (THE FIX)
