@@ -294,11 +294,16 @@ async def run_audit_with_data(request: Request):
         if raw_athlete:
             prefetch_context["athlete"] = raw_athlete
 
+        # 🔑 CRITICAL: empty prefetch must be None
+        if not prefetch_context:
+            prefetch_context = None
+
         r, compliance, logs, context, sg, markdown = _run_full_audit(
             range=range,
             output_format=fmt,
             prefetch_context=prefetch_context
         )
+
 
         if fmt in ("json", "semantic"):
             return JSONResponse(content={
