@@ -525,33 +525,65 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         else:
             raise RuntimeError("Missing Intervals.icu OAuth token. Set ICU_OAUTH env var.")
 
-    # Ensure df_light always exists
+    # ============================================================
+    # Tier-0 LIGHT DATASET (90d) — FETCH OR PREFETCH (IDENTICAL)
+    # ============================================================
+
+    # Ensure df_light always exists (canonical invariants)
     df_light = pd.DataFrame()
     df_acts = pd.DataFrame()
     df_light_slice = pd.DataFrame()
 
     # --- REQUIRED: auth header + report type ---
     headers = {"Authorization": f"Bearer {ICU_TOKEN}"}
-    # 🔴 REQUIRED: persist for all downstream logic
     context["report_type"] = (context.get("report_type") or "weekly").lower()
 
     # --- Allow refetch for season mode ---
-    if context.get("report_type", "").lower() == "season":
+    if context["report_type"] == "season":
         debug(context, "[T0-LIGHT] Forcing re-fetch for season mode (ignoring prefetch_done flag).")
         context["prefetch_done"] = False
 
-    # prevent redundant prefetch when this function re-enters (e.g., weekly summaries)
+    # ============================================================
+    # 🔑 AUTHORITATIVE LIGHT SOURCE DECISION
+    # ============================================================
     if context.get("prefetch_done", False):
-        debug(context, "[T0-LIGHT] Prefetch already completed — skipping redundant lightweight call.")
-    else:
-        context["prefetch_done"] = True
 
+        debug(context, "[T0-LIGHT] Prefetch already completed — skipping redundant lightweight call.")
+
+        # --------------------------------------------------------
+        # 🔧 PREFETCH → df_light NORMALISATION (MANDATORY)
+        # --------------------------------------------------------
+        pref_light = context.get("prefetched", {}).get("light")
+
+        if not isinstance(pref_light, list) or not pref_light:
+            raise AuditHalt("❌ Prefetch path selected but prefetched['light'] missing or empty")
+
+        debug(context, "[T0-FIX] Building df_light from prefetched light dataset")
+
+        df_light = pd.DataFrame(pref_light)
+
+        if "start_date_local" not in df_light.columns:
+            raise AuditHalt("❌ Prefetched light dataset missing 'start_date_local'")
+
+        df_light["start_date_local"] = pd.to_datetime(
+            df_light["start_date_local"], errors="coerce"
+        ).dt.tz_localize(None)
+
+        context["df_light"] = df_light.copy()
+        context["df_light_full"] = df_light.copy()
+        context["activities_light"] = df_light.copy()
+
+    else:
+        # --------------------------------------------------------
+        # 🌐 FETCH LIGHTWEIGHT DATASET (LOCAL / ORCHESTRATED)
+        # --------------------------------------------------------
+        context["prefetch_done"] = True
 
         fields = (
             "id,name,type,start_date_local,distance,moving_time,"
             "icu_training_load,IF,average_heartrate,VO2MaxGarmin"
         )
-        # 🧭 use actual arguments instead of hardcoded offset
+
         oldest = pd.to_datetime(start).strftime("%Y-%m-%d")
         newest = pd.to_datetime(end).strftime("%Y-%m-%d")
 
@@ -561,100 +593,97 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
             f"{INTERVALS_API}/athlete/0/activities_t0light?"
             f"oldest={oldest}&newest={newest}&fields={fields}"
         )
+
         debug(context, f"[T0-LIGHT] Fetching lightweight dataset → {light_url}")
+
         resp = fetch_with_retry(light_url, headers)
         if resp.status_code != 200:
-            raise AuditHalt(f"❌ Tier-0 lightweight fetch failed → {resp.status_code}: {resp.text[:200]}")
+            raise AuditHalt(
+                f"❌ Tier-0 lightweight fetch failed → {resp.status_code}: {resp.text[:200]}"
+            )
 
         payload = resp.json()
         if not payload:
             raise AuditHalt("❌ Tier-0 lightweight fetch returned no data")
 
         df_light = pd.DataFrame(payload)
-        context["df_light_full"] = df_light.copy()
-        df_acts = df_light.copy()
-        debug(context, f"[T0-LIGHT] Retrieved {len(df_light)} activities with {len(df_light.columns)} fields")
 
-        # --- Diagnostic: check dataset contents early ---
-        if df_light.empty:
-            debug(context, "[T0-LIGHT-DIAG] ❌ df_light is EMPTY — Intervals.icu returned no activities.")
-        else:
-            debug(context, f"[T0-LIGHT-DIAG] ✅ df_light populated. First 3 rows:\n{df_light.head(3).to_string(index=False)}")
-            debug(context, f"[T0-LIGHT-DIAG] Columns: {df_light.columns.tolist()}")
-
-        # --- Ensure df_light_slice exists (initialize from df_light) ---
-        df_light_slice = df_light.copy()
-        debug(context, f"[T0-INIT] Created df_light_slice from df_light → {len(df_light_slice)} rows.")
-        debug(context, f"[T0-DIAG] Pre-slice df_light rows={len(df_light)}; "
-                    f"min={df_light['start_date_local'].min() if 'start_date_local' in df_light else 'n/a'}, "
-                    f"max={df_light['start_date_local'].max() if 'start_date_local' in df_light else 'n/a'}")
-
-
-        # --- Adaptive window based on report_type ---
-        report_type = context.get("report_type", "").lower() if isinstance(context, dict) else "weekly"
+        if "start_date_local" not in df_light.columns:
+            raise AuditHalt("❌ Lightweight fetch missing 'start_date_local'")
 
         df_light["start_date_local"] = pd.to_datetime(
             df_light["start_date_local"], errors="coerce"
         ).dt.tz_localize(None)
 
-        if report_type == "season":
-            slice_days = 90
-            debug(context, f"🧩 Tier-0 override: using {slice_days}-day slice for season report.")
-        else:
-            slice_days = 7
+        context["df_light"] = df_light.copy()
+        context["df_light_full"] = df_light.copy()
+        context["activities_light"] = df_light.copy()
 
-        window_end_exclusive = pd.to_datetime(end) + pd.Timedelta(days=1)
-        window_start = pd.to_datetime(end) - pd.Timedelta(days=slice_days - 1)
+        debug(context, f"[T0-LIGHT] Retrieved {len(df_light)} activities")
 
-        # --- Slice to adaptive subset (skip slicing for season mode) ---
-        if report_type == "season":
-            df_light_slice = df_light.copy()
-            debug(context, f"[T0-SLICE] Season mode: using full {len(df_light)}-row dataset (no date filter).")
-        else:
-            df_light_slice = df_light[
-                (df_light["start_date_local"] >= window_start)
-                & (df_light["start_date_local"] < window_end_exclusive)
-            ].copy()
-            debug(
-                context,
-                f"[T0-SLICE] {slice_days}-day window: {window_start.date()} → {window_end_exclusive.date()} "
-                f"({len(df_light_slice)} activities selected)"
-            )       
+    # ============================================================
+    # 🧮 SLICE LOGIC — IDENTICAL FOR FETCH + PREFETCH
+    # ============================================================
 
-        # --- Deduplicate before totals ---
-        if "id" in df_light_slice.columns:
-            before_dedup = len(df_light_slice)
-            df_light_slice = df_light_slice.drop_duplicates(subset=["id"], keep="first")
-            after_dedup = len(df_light_slice)
-            debug(context, f"[T0-DEDUP] Dropped {before_dedup - after_dedup} duplicates → {after_dedup} unique events")
+    report_type = context["report_type"]
 
-        # --- Numeric conversion ---
-        for col in ["moving_time", "distance", "icu_training_load"]:
-            if col in df_light_slice.columns:
-                df_light_slice[col] = pd.to_numeric(df_light_slice[col], errors="coerce").fillna(0)
+    if report_type == "season":
+        slice_days = 90
+    else:
+        slice_days = 7
 
-        # --- Compute adaptive totals ---
-        totals_key = f"tier0_snapshotTotals_{slice_days}d"
-        context[totals_key] = {
-            "hours": round(df_light_slice["moving_time"].sum() / 3600, 2),
-            "distance": round(df_light_slice["distance"].sum() / 1000, 1),
-            "tss": int(df_light_slice["icu_training_load"].sum()),
-            "count": len(df_light_slice),
-            "start": str(window_start.date()),
-            "end": str(window_end_exclusive.date())
-        }
+    window_end_exclusive = pd.to_datetime(end) + pd.Timedelta(days=1)
+    window_start = pd.to_datetime(end) - pd.Timedelta(days=slice_days - 1)
+
+    if report_type == "season":
+        df_light_slice = df_light.copy()
+        debug(context, f"[T0-SLICE] Season mode → using full {len(df_light)} rows")
+    else:
+        df_light_slice = df_light[
+            (df_light["start_date_local"] >= window_start)
+            & (df_light["start_date_local"] < window_end_exclusive)
+        ].copy()
 
         debug(
             context,
-            f"🧭 Tier-0: {slice_days}-day subset (lightweight) = "
-            f"{context[totals_key]['hours']} h | "
-            f"{context[totals_key]['distance']} km | "
-            f"{context[totals_key]['tss']} TSS "
-            f"({context[totals_key]['count']} events)"
+            f"[T0-SLICE] {slice_days}-day window {window_start.date()} → "
+            f"{window_end_exclusive.date()} ({len(df_light_slice)} rows)"
         )
 
-        # --- Serialize for Tier-1 use ---
-        context["snapshot_7d_json"] = df_light_slice.to_json(orient="records")
+    # --- Deduplicate ---
+    if "id" in df_light_slice.columns:
+        df_light_slice = df_light_slice.drop_duplicates(subset=["id"], keep="first")
+
+    # --- Numeric coercion ---
+    for col in ("moving_time", "distance", "icu_training_load"):
+        if col in df_light_slice.columns:
+            df_light_slice[col] = pd.to_numeric(df_light_slice[col], errors="coerce").fillna(0)
+
+    context["df_light_slice"] = df_light_slice.copy()
+
+    # ============================================================
+    # 📦 SNAPSHOT + TOTALS (WEEKLY NEEDS THIS)
+    # ============================================================
+
+    context["snapshot_7d_json"] = df_light_slice.to_json(orient="records")
+
+    context["tier0_snapshotTotals_7d"] = {
+        "hours": round(df_light_slice["moving_time"].sum() / 3600, 2),
+        "distance": round(df_light_slice["distance"].sum() / 1000, 1),
+        "tss": int(df_light_slice["icu_training_load"].sum()),
+        "count": len(df_light_slice),
+        "start": str(window_start.date()),
+        "end": str(window_end_exclusive.date()),
+    }
+
+    debug(
+        context,
+        f"🧭 Tier-0 weekly snapshot = "
+        f"{context['tier0_snapshotTotals_7d']['hours']}h | "
+        f"{context['tier0_snapshotTotals_7d']['tss']} TSS | "
+        f"{context['tier0_snapshotTotals_7d']['count']} events"
+    )
+
 
     # --- Preserve full 90-day dataset BEFORE any 7-day filtering ---
     if report_type == "season":
