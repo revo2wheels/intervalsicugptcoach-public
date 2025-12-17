@@ -220,9 +220,11 @@ def run_report(
 
     # 1) If caller already supplied a prefetched contract, DO NOT overwrite it.
     if isinstance(context.get("prefetched"), dict) and context["prefetched"]:
+        # Enforce FLAT invariant
         a = context["prefetched"].get("athlete")
-        if isinstance(a, dict) and "athlete" not in a:
-            context["prefetched"]["athlete"] = {"athlete": a}
+        if isinstance(a, dict) and "athlete" in a:
+            context["prefetched"]["athlete"] = a["athlete"]
+
     else:
         context["prefetched"] = {}
 
@@ -236,35 +238,27 @@ def run_report(
             context["prefetched"]["wellness"] = context["wellness"]
 
         if isinstance(context.get("athlete"), dict):
-            context["prefetched"]["athlete"] = {
-                "athlete": context["athlete"]
-            }
+            # 🔒 STORE FLAT — NEVER WRAP
+            context["prefetched"]["athlete"] = context["athlete"]
         else:
             debug(context, "[ORCH-WARN] Invalid athlete cache payload")
 
-    # ============================================================
-    # 🔑 AUTHORITATIVE BIND — PREFETCHED ATHLETE
-    # ============================================================
-    if (
-        isinstance(context.get("prefetched"), dict)
-        and isinstance(context["prefetched"].get("athlete"), dict)
-    ):
-        a = context["prefetched"]["athlete"]
 
-        # 🔑 NORMALISE BOTH SHAPES
-        if isinstance(a.get("athlete"), dict):
-            athlete = a["athlete"]
-        else:
-            athlete = a
+    # ============================================================
+    # 🔑 AUTHORITATIVE BIND — PREFETCHED ATHLETE (FLAT ONLY)
+    # ============================================================
 
-        # Bind once, flat, authoritative
+    if isinstance(context.get("prefetched", {}).get("athlete"), dict):
+        athlete = context["prefetched"]["athlete"]
+
+        # Bind ONCE, flat, authoritative
         context["athlete"] = athlete
         context["athleteProfile"] = athlete
         debug(context, "[ORCH] Bound prefetched athlete → athlete / athleteProfile")
 
-        # ============================================================
+        # --------------------------------------------------------
         # 🔧 HARD GUARD — Tier-0 REQUIRES timezone
-        # ============================================================
+        # --------------------------------------------------------
         tz = athlete.get("timezone")
         if not isinstance(tz, str) or len(tz) < 3:
             tz = context.get("timezone") or "Europe/Zurich"
@@ -274,6 +268,8 @@ def run_report(
                 f"[ORCH-FIX] Injected missing athlete.timezone = {tz}"
             )
 
+        # Single canonical timezone
+        context["timezone"] = athlete["timezone"]
 
 
     # ------------------------------------------------------------
@@ -285,10 +281,11 @@ def run_report(
             f"[ORCH] Registered prefetched datasets: {list(context['prefetched'].keys())}"
         )
 
-    # 🔒 Prefetch is authoritative
+    # 🔒 Prefetch is authoritative — never refetch
     if context.get("prefetched", {}).get("full"):
         context["force_light"] = False
         context["prefetch_done"] = True
+
 
 
     # --- NEW: Bind reportMode for schema-based orchestration ---
