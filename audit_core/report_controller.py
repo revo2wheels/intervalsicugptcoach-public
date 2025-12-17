@@ -249,31 +249,23 @@ def run_report(
         isinstance(context.get("prefetched"), dict)
         and isinstance(context["prefetched"].get("athlete"), dict)
     ):
-        a = context["prefetched"]["athlete"]
+        athlete = context["prefetched"]["athlete"]
 
-        # Support BOTH shapes:
-        # 1) Legacy: { "athlete": { ... } }
-        # 2) New:    { ... }  (flat)
-        if isinstance(a.get("athlete"), dict):
-            a = a["athlete"]
-
-        context["athleteProfile"] = a
-        debug(context, "[ORCH] Bound prefetched athlete → athleteProfile")
-
-        # 🔑 CRITICAL: Flatten athlete for Tier-0
-        context["athlete"] = a
-        debug(context, "[ORCH] Flattened prefetched athlete for Tier-0")
+        # Bind once, flat, authoritative
+        context["athlete"] = athlete
+        context["athleteProfile"] = athlete
+        debug(context, "[ORCH] Bound prefetched athlete → athlete / athleteProfile")
 
         # ============================================================
         # 🔧 HARD GUARD — Tier-0 REQUIRES timezone
         # ============================================================
-        if not context["athlete"].get("timezone"):
-            context["athlete"]["timezone"] = (
-                context["athleteProfile"].get("timezone") or "UTC"
-            )
+        tz = athlete.get("timezone")
+        if not isinstance(tz, str) or len(tz) < 3:
+            tz = context.get("timezone") or "Europe/Zurich"
+            athlete["timezone"] = tz
             debug(
                 context,
-                f"[ORCH-FIX] Injected missing athlete.timezone = {context['athlete']['timezone']}"
+                f"[ORCH-FIX] Injected missing athlete.timezone = {tz}"
             )
 
 
