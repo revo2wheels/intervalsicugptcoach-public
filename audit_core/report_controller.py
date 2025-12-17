@@ -207,6 +207,16 @@ def run_report(
     # Ensure debug_mode is set from kwargs
     context["debug_mode"] = kwargs.get("debug_mode", False)
 
+    # ============================================================
+    # 🔒 CANONICAL REPORT TYPE (AUTHORITATIVE)
+    # ============================================================
+
+    assert isinstance(reportType, str), "reportType must be a string"
+
+    context["report_type"] = reportType.lower()
+    debug(context, f"[ORCH] report_type locked → {context['report_type']}")
+
+
     # Initialize report
     report = {}
 
