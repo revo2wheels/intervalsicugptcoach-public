@@ -21,7 +21,7 @@ Includes:
 """
 
 import json
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 import pandas as pd
 from math import isnan
 from coaching_cheat_sheet import CHEAT_SHEET
@@ -222,7 +222,7 @@ def build_semantic_json(context):
         "meta": {
             "framework": "Unified Reporting Framework v5.1",
             "version": "v16.17",
-            "generated_at": "2025-12-16T00:00:00Z",
+            "generated_at": datetime.now(timezone.utc).isoformat(),
 
             # RESOLVED, NOT A PLACEHOLDER
             "report_type": context.get("report_type"),
