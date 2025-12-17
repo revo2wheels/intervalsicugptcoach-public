@@ -242,19 +242,24 @@ def run_report(
         else:
             debug(context, "[ORCH-WARN] Invalid athlete cache payload")
 
-    # ============================================================
-    # 🔑 AUTHORITATIVE BIND — PREFETCHED ATHLETE
-    # ============================================================
-    if (
-        isinstance(context.get("prefetched"), dict)
-        and isinstance(context["prefetched"].get("athlete"), dict)
-    ):
-        athlete = context["prefetched"]["athlete"]
+        # ============================================================
+        # 🔑 AUTHORITATIVE BIND — PREFETCHED ATHLETE
+        # ============================================================
+        if isinstance(context.get("prefetched"), dict):
+            a = context["prefetched"].get("athlete")
 
-        # Bind once, flat, authoritative
-        context["athlete"] = athlete
-        context["athleteProfile"] = athlete
-        debug(context, "[ORCH] Bound prefetched athlete → athlete / athleteProfile")
+            if isinstance(a, dict):
+                context["athlete"] = a
+                context["athleteProfile"] = a
+
+                # 🔑 THIS IS THE MISSING LINE
+                if "timezone" in a and isinstance(a["timezone"], str):
+                    context["timezone"] = a["timezone"]
+                else:
+                    raise AuditHalt("❌ Prefetched athlete missing timezone")
+
+                debug(context, "[ORCH] Prefetched athlete bound + timezone injected")
+
 
         # ============================================================
         # 🔧 HARD GUARD — Tier-0 REQUIRES timezone
