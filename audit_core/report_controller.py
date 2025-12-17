@@ -405,7 +405,9 @@ def run_report(
         debug(context, f"[T0-FULL] Preserved wellness in context ({len(wellness)} rows)")
 
     # --- Mark mode in context for downstream components ---
-    context["report_type"] = reportType.lower() if isinstance(reportType, str) else "weekly"
+    # Canonical report_type injection (LOCAL ONLY)
+    if "report_type" not in context or not context["report_type"]:
+        context["report_type"] = reportType.lower() if isinstance(reportType, str) else "weekly"
     context["chunk_mode"] = chunk
     context["light_days"] = light_days
     context["full_days"] = full_days
