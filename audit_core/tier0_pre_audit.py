@@ -539,10 +539,7 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     headers = {"Authorization": f"Bearer {ICU_TOKEN}"}
     context["report_type"] = (context.get("report_type") or "weekly").lower()
 
-    # --- Allow refetch for season mode ---
-    if context["report_type"] == "season":
-        debug(context, "[T0-LIGHT] Forcing re-fetch for season mode (ignoring prefetch_done flag).")
-        context["prefetch_done"] = False
+
 
     # ============================================================
     # 🔑 AUTHORITATIVE LIGHT SOURCE DECISION
