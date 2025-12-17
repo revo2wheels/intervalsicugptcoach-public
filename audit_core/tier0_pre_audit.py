@@ -469,10 +469,11 @@ def fetch_athlete_profile(headers, from_cache=None, context=None):
     merged_profile = map_icu_athlete_to_profile(athlete)
 
     # -------------------------------------------------
-    # 📦 CONTEXT EXPORTS
+    # 📦 CONTEXT EXPORTS (STRICT ROLES)
     # -------------------------------------------------
+    context["athlete_raw"] = athlete          # 🔒 raw ICU athlete (timezone lives here)
+    context["athlete"] = context["athlete_raw"]  # 🔑 canonical view for rest of pipeline
     context["athleteProfile"] = merged_profile
-    context["athlete"] = athlete
 
     context["athleteIdentity"] = {
         "id": athlete.get("id"),
