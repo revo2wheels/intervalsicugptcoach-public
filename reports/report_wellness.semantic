@@ -5,7 +5,7 @@
     "meta": {
       "framework": "Unified Reporting Framework v5.1",
       "version": "v16.17",
-      "generated_at": "2025-12-16T00:00:00Z",
+      "generated_at": "2025-12-18T21:32:13.614123+00:00",
       "report_type": "wellness",
       "period": {
         "start": null,
@@ -31,7 +31,7 @@
           "name": "Clive King",
           "discipline": "cycling",
           "timezone": "Europe/Zurich",
-          "updated": "2025-12-16T18:31:37.715+00:00",
+          "updated": "2025-12-18T18:57:02.958+00:00",
           "ftp": 300,
           "indoor_ftp": 306,
           "weight": 72.9,
@@ -81,17 +81,17 @@
       }
     },
     "wellness": {
-      "ctl": 75.29384,
-      "atl": 61.455624,
-      "tsb": 13.838216000000003,
+      "ctl": 74.42761,
+      "atl": 61.09218,
+      "tsb": 13.335430000000002,
       "recovery": null,
       "fatigue": null,
       "fitness": null,
       "form": null,
-      "CTL": 75.29384,
-      "ATL": 61.455624,
-      "TSB": 13.838216000000003
+      "CTL": 74.42761,
+      "ATL": 61.09218,
+      "TSB": 13.335430000000002
     }
   },
-  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=3370, ctx_keys=84\n\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4622, ctx_keys=84"
+  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=3382, ctx_keys=84\n\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4552, ctx_keys=84"
 }

@@ -128,7 +128,7 @@ def build_insights(semantic):
 
     insights = {}
     report_type = semantic.get("meta", {}).get("report_type")
-    window = "90d" if report_type == "season" else "7d"
+    window = "90d" if report_type in ("season", "summary") else "7d"
 
     # -------------------------------------------------
     # 1 — Fatigue Trend (derived from semantic metrics)
@@ -483,7 +483,7 @@ def apply_report_type_contract(semantic: dict) -> dict:
 
     # promote header for rendering
     semantic["header"] = semantic["meta"]["report_header"]
-    
+
         # ---------------- WEEKLY ----------------
     if report_type == "weekly":
         semantic["phases"] = []
