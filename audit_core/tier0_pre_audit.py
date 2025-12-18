@@ -814,24 +814,17 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         source_df = df_light.copy() if "df_light" in locals() else pd.DataFrame()
 
     # ------------------------------------------------------------
-    # Snapshot export — WEEKLY ONLY
+    # Snapshot export — ALWAYS (Tier-1 invariant)
     # ------------------------------------------------------------
-    if context.get("report_type") in ("weekly", "week", "7d"):
-        if not source_df.empty:
-            context["snapshot_7d_json"] = source_df.to_json(orient="records")
-            debug(
-                context,
-                f"[T0] snapshot_7d_json set (weekly, {len(source_df)} rows)"
-            )
-        else:
-            debug(context, "[T0] snapshot_7d_json empty (weekly) → using empty frame")
-            context["snapshot_7d_json"] = "[]"
-    else:
-        # SEASON / LONG-RANGE — do NOT overwrite snapshot_7d_json
+    if not source_df.empty:
+        context["snapshot_7d_json"] = source_df.to_json(orient="records")
         debug(
             context,
-            "[T0] Season mode → snapshot_7d_json NOT written"
-    )
+            f"[T0] snapshot_7d_json set ({context.get('report_type')}, {len(source_df)} rows)"
+        )
+    else:
+        context["snapshot_7d_json"] = "[]"
+        debug(context, "[T0] snapshot_7d_json set to empty array")
 
     # --- Step 4: Fetch wellness with adaptive chunking + meta-retry ---
     wellness_days = context.get("range", {}).get("wellnessDays", 42)
