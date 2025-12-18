@@ -5,7 +5,7 @@
     "meta": {
       "framework": "Unified Reporting Framework v5.1",
       "version": "v16.17",
-      "generated_at": "2025-12-17T22:16:50.332255+00:00",
+      "generated_at": "2025-12-18T20:24:25.757910+00:00",
       "report_type": "season",
       "period": {
         "start": null,
@@ -31,14 +31,14 @@
           "name": "Clive King",
           "discipline": "cycling",
           "timezone": "Europe/Zurich",
-          "updated": "2025-12-16T18:31:37.715+00:00",
+          "updated": "2025-12-18T18:57:02.958+00:00",
           "ftp": 300,
           "indoor_ftp": 306,
           "weight": 72.9,
-          "hr_rest": 43,
+          "hr_rest": 42,
           "hr_max": 177,
           "ftp_wkg": 4.12,
-          "hr_reserve": 134,
+          "hr_reserve": 135,
           "zone_model": {
             "type": "power_zones",
             "schema": "Coggan_7Z",
@@ -80,13 +80,10 @@
         "insights": "strategic"
       }
     },
-    "hours": 9.24,
-    "tss": 388,
-    "distance_km": 210.0,
     "metrics": {
       "ACWR": {
         "name": "ACWR",
-        "value": 0.99,
+        "value": 1.0,
         "classification": "productive",
         "interpretation": "EWMA Acute:Chronic Load Ratio \u2014 compares 7-day vs 28-day weighted loads. 0.8\u20131.3 = productive training, <0.8 = recovery or detraining, >1.5 = overload/injury risk.",
         "coaching_implication": "If ACWR > 1.5, reduce intensity and focus on recovery to avoid overload. If ACWR < 0.8, gradually increase training load with controlled progression to build endurance.",
@@ -95,15 +92,15 @@
     },
     "extended_metrics": {
       "CTL": {
-        "value": 73.5223,
+        "value": 74.42761,
         "status": "icu"
       },
       "ATL": {
-        "value": 53.27452,
+        "value": 61.09218,
         "status": "icu"
       },
       "TSB": {
-        "value": 20.24778,
+        "value": 13.335430000000002,
         "status": "icu"
       },
       "EfficiencyFactor": 1.9,
@@ -116,7 +113,7 @@
       "FatigueTrend": "\u2014",
       "PowerHRCorr": "\u2014",
       "EfficiencyFactorChange": "\u2014",
-      "FatigueVsLoad": NaN
+      "FatigueVsLoad": "\u2014"
     },
     "adaptation_metrics": {
       "Efficiency Factor": 1.9,
@@ -133,7 +130,7 @@
     "correlation_metrics": {
       "power_hr_correlation": "\u2014",
       "efficiency_factor_change": "\u2014",
-      "fatigue_vs_load": NaN
+      "fatigue_vs_load": "\u2014"
     },
     "zones": {},
     "daily_load": [],
@@ -177,9 +174,9 @@
       },
       {
         "phase": "Week 51",
-        "distance_km": 88.84107,
-        "hours": 3.194166666666667,
-        "tss": 158.0
+        "distance_km": 144.10810999999998,
+        "hours": 5.541388888888889,
+        "tss": 270.0
       }
     ],
     "actions": [
@@ -189,7 +186,7 @@
       "\u2705 Durability improving (1.00) \u2014 maintain current long-ride structure.",
       "\u26a0 Load intensity too high (LIR=2.00) \u2014 reduce intensity or monitor recovery.",
       "\u2705 Efficiency drift stable (0.00%).",
-      "\u26a0 Polarisation low (55%) \u2014 increase Z1\u2013Z2 share toward \u226570 %. ",
+      "\u26a0 Polarisation low (50%) \u2014 increase Z1\u2013Z2 share toward \u226570 %. ",
       "\u2705 Recovery Index healthy (0.77).",
       "---",
       "\ud83e\ude9c **Seasonal Phase Analysis**",
@@ -200,23 +197,26 @@
       "\u2705 Reference: Coaching Cheat Sheet \u2014 Periodisation & Load Ratios (Section 9\u201311)"
     ],
     "wellness": {
-      "ctl": 73.5223,
-      "atl": 53.27452,
-      "tsb": 20.24778,
+      "ctl": 74.42761,
+      "atl": 61.09218,
+      "tsb": 13.335430000000002,
       "recovery": null,
       "fatigue": null,
       "fitness": null,
       "form": null,
-      "CTL": 73.5223,
-      "ATL": 53.27452,
-      "TSB": 20.24778
+      "CTL": 74.42761,
+      "ATL": 61.09218,
+      "TSB": 13.335430000000002
     },
+    "hours": 63.55,
+    "tss": 3027,
+    "distance_km": 1731.8,
     "insights": {
       "fatigue_trend": {
-        "value_pct": -27.5,
+        "value_pct": -17.9,
         "window": "90d",
         "basis": "ATL vs CTL",
-        "classification": "red",
+        "classification": "amber",
         "thresholds": {
           "green": [
             -10,
@@ -231,7 +231,7 @@
         "coaching_implication": "If FatigueTrend is negative (e.g., below -0.2), this indicates a recovering state. Continue with controlled training load and focus on recovery to ensure sustained progress. Avoid aggressive increases in load."
       },
       "metabolic_drift": {
-        "value": 0.096,
+        "value": 0.08,
         "window": "90d",
         "basis": "FOxI proxy",
         "interpretation": "Proxy derived from fat oxidation efficiency. Interpret trend direction only, not absolute magnitude."
@@ -247,10 +247,10 @@
     "insight_view": {
       "summary": {
         "fatigue_trend": {
-          "value_pct": -27.5,
+          "value_pct": -17.9,
           "window": "90d",
           "basis": "ATL vs CTL",
-          "classification": "red",
+          "classification": "amber",
           "thresholds": {
             "green": [
               -10,
@@ -266,8 +266,8 @@
         },
         "load_distribution": {
           "zones_pct": {
-            "z1_z2": 54.8,
-            "z3_plus": 45.2
+            "z1_z2": 49.7,
+            "z3_plus": 50.3
           },
           "window": "90d",
           "basis": "time-in-zone (%)",
@@ -275,7 +275,7 @@
           "interpretation": "Seiler Polarisation Index based on zone distribution. \u22650.75 indicates a polarised (80/20) intensity structure. 0.60\u20130.74 indicates a pyramidal or mixed distribution. <0.60 indicates insufficient polarisation or excessive threshold dominance."
         },
         "metabolic_drift": {
-          "value": 0.096,
+          "value": 0.08,
           "window": "90d",
           "basis": "FOxI proxy",
           "interpretation": "Proxy derived from fat oxidation efficiency. Interpret trend direction only, not absolute magnitude."
@@ -291,7 +291,7 @@
       "critical": [
         {
           "name": "Polarisation",
-          "value": 0.548,
+          "value": 0.497,
           "framework": "Seiler 80/20 Model",
           "interpretation": "Seiler Polarisation Index based on zone distribution. \u22650.75 indicates a polarised (80/20) intensity structure. 0.60\u20130.74 indicates a pyramidal or mixed distribution. <0.60 indicates insufficient polarisation or excessive threshold dominance.",
           "coaching_implication": "If PolarisationIndex <0.60, rebalance training toward greater Z1 volume and clearer separation between low-intensity and high-intensity sessions. Avoid excessive Z2/threshold dominance."
@@ -306,7 +306,7 @@
         "\u2705 Durability improving (1.00) \u2014 maintain current long-ride structure.",
         "\u26a0 Load intensity too high (LIR=2.00) \u2014 reduce intensity or monitor recovery.",
         "\u2705 Efficiency drift stable (0.00%).",
-        "\u26a0 Polarisation low (55%) \u2014 increase Z1\u2013Z2 share toward \u226570 %. ",
+        "\u26a0 Polarisation low (50%) \u2014 increase Z1\u2013Z2 share toward \u226570 %. ",
         "\u2705 Recovery Index healthy (0.77).",
         "---",
         "\ud83e\ude9c **Seasonal Phase Analysis**",
@@ -355,12 +355,12 @@
         },
         {
           "phase": "Week 51",
-          "distance_km": 88.84107,
-          "hours": 3.194166666666667,
-          "tss": 158.0
+          "distance_km": 144.10810999999998,
+          "hours": 5.541388888888889,
+          "tss": 270.0
         }
       ]
     }
   },
-  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4565, ctx_keys=83"
+  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4577, ctx_keys=84"
 }

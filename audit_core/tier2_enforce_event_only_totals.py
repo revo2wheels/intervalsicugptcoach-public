@@ -27,15 +27,15 @@ def enforce_event_only_totals(df_events, context):
             source_label = "⚠️ Missing df_light_slice — fallback to Tier-2 events"
             debug(context, "[T2 WARN] df_light_slice missing — fallback to df_events/raw_activities.")
     else:
-        # Season mode or 90d block → use validated events as before
-        if df_events is not None and not df_events.empty:
-            df_source = df_events.copy()
-            source_label = "Tier-2 validated events"
+        # SEASON MODE — MUST use 90d dataset (never df_events)
+        if "snapshot_90d_json" in context:
+            df_source = pd.read_json(context["snapshot_90d_json"])
+            source_label = "Tier-2 season snapshot (90d)"
+        elif "df_light_full" in context and isinstance(context["df_light_full"], pd.DataFrame):
+            df_source = context["df_light_full"].copy()
+            source_label = "Tier-0 LIGHT 90d slice"
         else:
-            df_source = context.get("df_raw_activities")
-            source_label = "raw Tier-0 activities (fallback)"
-            if df_source is None or df_source.empty:
-                raise AuditHalt("❌ enforce_event_only_totals: no dataset available from Tier-2 or Tier-0")
+            raise AuditHalt("❌ Season report requires 90d dataset; none found")
 
     debug(context, f"🔍 Tier-2 enforcement source: {source_label} ({df_source.shape[0]} rows)")
 
@@ -130,15 +130,27 @@ def enforce_event_only_totals(df_events, context):
             "source": f"{source_label} • 90-day canonical",
             "validated": True,
         }
+
+        # 🔒 HARD LOCK — prevents weekly bleed-through
+        context["locked_totalHours"] = context["totalHours"]
+        context["locked_totalTss"] = context["totalTss"]
+        context["locked_totalDistance"] = context["totalDistance"]
+
         context["tier1_visibleTotals"] = context["tier2_enforced_totals"]
         context["eventTotals"] = context["tier2_enforced_totals"]
 
         debug(context, "[T2] Season mode → forced 90-day canonical totals override.")
-        context.setdefault("trace", []).append(
-            f"[T2] season override → using 90-day canonical totals "
-            f"(h={context['totalHours']}, TSS={context['totalTss']}, km={context['totalDistance']})"
-        )
-
+        # --- Step 6.1 Trace annotation (mode-safe) ---
+        if report_type == "season":
+            context.setdefault("trace", []).append(
+                f"T2 totals computed from {source_label} "
+                f"(season mode, events={len(df_event_only)})"
+            )
+        else:
+            context.setdefault("trace", []).append(
+                f"T2 totals computed from {source_label} "
+                f"(Δh={diff_hours:.2f}, ΔTSS={diff_tss:.1f}, events={len(df_event_only)})"
+            )
     else:
         # Weekly / Calendar logic
         if validated:

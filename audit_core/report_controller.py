@@ -421,7 +421,7 @@ def run_report(
     context["chunk_mode"] = chunk
     context["light_days"] = light_days
     context["full_days"] = full_days
-
+    context["df_light_full"] = context["_df_light_90d"]
     debug(context, f"[T0] Completed range alignment → chunk_mode={chunk}")
         
 
@@ -554,6 +554,7 @@ def run_report(
     if full_days > 7:
         assert len(df_scope) > 14, "Season analysis incorrectly scoped to short window"
 
+
     # --- Enforce totals and sync df_events for validator ---
     context = enforce_event_only_totals(df_scope, context)
     if "tier2_enforced_totals" in context:
@@ -588,8 +589,9 @@ def run_report(
         context["auditPrecision"] = "normal"
         debug(context, "[T2] Normal precision: full fetch succeeded or 7d slice validated.")
 
-    context["df_events"] = df_scope.copy()
-    debug(context, f"[SYNC] df_events replaced with df_scope ({len(df_scope)} rows) for Tier-2 validator")
+    if context.get("report_type") != "season":
+        context["df_events"] = df_scope.copy()
+        debug(context, f"[SYNC] df_events replaced with df_scope ({len(df_scope)} rows)")
 
     # --- Ensure totals exist even if enforcement failed ---
     if not context.get("totalHours") or not context.get("totalTss"):

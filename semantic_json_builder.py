@@ -86,6 +86,33 @@ def semantic_block_for_metric(name, value, context):
         "related_metrics": profile_desc.get("criteria", {}),
     }
 
+def resolve_authoritative_totals(context):
+    report_type = context.get("report_type")
+
+    # 🔒 HARD AUTHORITY (Tier-2 final lock)
+    if report_type in ("season", "summary"):
+        return {
+            "hours": context.get("locked_totalHours")
+                     or context.get("tier2_enforced_totals", {}).get("hours")
+                     or context.get("totalHours")
+                     or 0,
+            "tss": context.get("locked_totalTss")
+                   or context.get("tier2_enforced_totals", {}).get("tss")
+                   or context.get("totalTss")
+                   or 0,
+            "distance_km": context.get("locked_totalDistance")
+                           or context.get("tier2_enforced_totals", {}).get("distance")
+                           or context.get("totalDistance")
+                           or 0,
+        }
+
+    # Weekly / wellness (unchanged)
+    return {
+        "hours": context.get("totalHours", 0),
+        "tss": context.get("totalTss", 0),
+        "distance_km": context.get("totalDistance", 0),
+    }
+
 
 # ---------------------------------------------------------
 # Insights Builder
@@ -248,23 +275,6 @@ def build_semantic_json(context):
             }
         },
 
-        # Totals
-        "hours": handle_missing_data(
-            context.get("totalHours")
-            or context.get("tier2_enforced_totals", {}).get("time_h")
-            or 0
-        ),
-        "tss": handle_missing_data(
-            context.get("totalTss")
-            or context.get("tier2_enforced_totals", {}).get("tss")
-            or 0
-        ),
-        "distance_km": handle_missing_data(
-            context.get("totalDistance")
-            or context.get("tier2_enforced_totals", {}).get("distance_km")
-            or 0
-        ),
-
         # Metric containers (authoritative Tier-2 only)
         "metrics": {},
         "extended_metrics": {},
@@ -299,6 +309,21 @@ def build_semantic_json(context):
             for k, v in context.get("wellness_summary", {}).items()
         },
     }
+    # ---------------------------------------------------------
+    # AUTHORITATIVE TOTALS (Tier-2 ONLY)
+    # ---------------------------------------------------------
+    report_type = semantic["meta"]["report_type"]
+
+    if report_type in ("season", "summary"):
+        semantic["hours"] = handle_missing_data(context.get("locked_totalHours"), 0)
+        semantic["tss"] = handle_missing_data(context.get("locked_totalTss"), 0)
+        semantic["distance_km"] = handle_missing_data(context.get("locked_totalDistance"), 0)
+
+    else:  # weekly
+        semantic["hours"] = handle_missing_data(context.get("totalHours"), 0)
+        semantic["tss"] = handle_missing_data(context.get("totalTss"), 0)
+        semantic["distance_km"] = handle_missing_data(context.get("totalDistance"), 0)
+
 
     # ---------------------------------------------------------
     # AUTHORITATIVE Tier-2 metric injection
