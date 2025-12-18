@@ -5,7 +5,7 @@
     "meta": {
       "framework": "Unified Reporting Framework v5.1",
       "version": "v16.17",
-      "generated_at": "2025-12-18T20:59:04.309287+00:00",
+      "generated_at": "2025-12-18T21:07:40.561855+00:00",
       "report_type": "season",
       "period": {
         "start": null,
@@ -83,7 +83,7 @@
     "metrics": {
       "ACWR": {
         "name": "ACWR",
-        "value": 1.0,
+        "value": 0.94,
         "classification": "productive",
         "interpretation": "EWMA Acute:Chronic Load Ratio \u2014 compares 7-day vs 28-day weighted loads. 0.8\u20131.3 = productive training, <0.8 = recovery or detraining, >1.5 = overload/injury risk.",
         "coaching_implication": "If ACWR > 1.5, reduce intensity and focus on recovery to avoid overload. If ACWR < 0.8, gradually increase training load with controlled progression to build endurance.",
@@ -231,7 +231,7 @@
         "coaching_implication": "If FatigueTrend is negative (e.g., below -0.2), this indicates a recovering state. Continue with controlled training load and focus on recovery to ensure sustained progress. Avoid aggressive increases in load."
       },
       "metabolic_drift": {
-        "value": 0.08,
+        "value": 0.066,
         "window": "90d",
         "basis": "FOxI proxy",
         "interpretation": "Proxy derived from fat oxidation efficiency. Interpret trend direction only, not absolute magnitude."
@@ -275,7 +275,7 @@
           "interpretation": "Seiler Polarisation Index based on zone distribution. \u22650.75 indicates a polarised (80/20) intensity structure. 0.60\u20130.74 indicates a pyramidal or mixed distribution. <0.60 indicates insufficient polarisation or excessive threshold dominance."
         },
         "metabolic_drift": {
-          "value": 0.08,
+          "value": 0.066,
           "window": "90d",
           "basis": "FOxI proxy",
           "interpretation": "Proxy derived from fat oxidation efficiency. Interpret trend direction only, not absolute magnitude."
@@ -362,5 +362,5 @@
       ]
     }
   },
-  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4577, ctx_keys=84"
+  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4578, ctx_keys=84"
 }

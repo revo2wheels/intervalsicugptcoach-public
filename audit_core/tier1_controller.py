@@ -181,22 +181,34 @@ def run_tier1_controller(df_master, wellness, context):
 
     # --- 🧩 Tier-1 normalization for snapshot sources ---
     if report_type == "season":
-        # Map Tier-0 42-day snapshot → expected 7-day key
-        context["tier0_snapshotTotals_7d"] = context.get("tier0_snapshotTotals_42d")
-        context["snapshot_7d_json"] = context.get("snapshot_42d_json")
+        # Map Tier-0 42-day totals → expected 7-day key (totals only)
+        if context.get("tier0_snapshotTotals_42d"):
+            context["tier0_snapshotTotals_7d"] = context.get("tier0_snapshotTotals_42d")
 
-        # Build per-week rollup for season totals
-        if "snapshot_42d_json" in context and context["snapshot_42d_json"]:
+        # Only backfill snapshot_7d_json if it is missing
+        if not context.get("snapshot_7d_json"):
+            snap42 = context.get("snapshot_42d_json")
+            if snap42:
+                context["snapshot_7d_json"] = snap42
+                debug(context, "[T1] snapshot_7d_json backfilled from snapshot_42d_json")
+
+        # Build per-week rollup for season totals (independent of snapshot_7d_json)
+        snap42 = context.get("snapshot_42d_json")
+        if snap42:
             import pandas as pd
-            df = pd.DataFrame(context["snapshot_42d_json"])
+            df = pd.DataFrame(snap42)
             if not df.empty and "start_date_local" in df.columns:
-                df["start_date_local"] = pd.to_datetime(df["start_date_local"], errors="coerce")
+                df["start_date_local"] = pd.to_datetime(
+                    df["start_date_local"], errors="coerce"
+                )
                 df["week"] = df["start_date_local"].dt.isocalendar().week
+
                 weekly = df.groupby("week", as_index=False).agg({
                     "moving_time": "sum",
                     "distance": "sum",
                     "icu_training_load": "sum"
                 })
+
                 context["tier1_weekly_summary"] = weekly.to_dict(orient="records")
                 context["tier1_visibleTotals"] = {
                     "hours": weekly["moving_time"].sum() / 3600,
@@ -205,7 +217,9 @@ def run_tier1_controller(df_master, wellness, context):
                     "weeks": len(weekly),
                     "source": "Tier-1 seasonal weekly roll-up"
                 }
+
                 debug(context, f"[T1] Built seasonal weekly roll-up ({len(weekly)} weeks)")
+
 
     # --- Step 2: Unified totals initialisation (linked to Tier-0 lightweight snapshot) ---
     import pandas as pd, json
