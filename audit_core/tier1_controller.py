@@ -216,7 +216,7 @@ def run_tier1_controller(df_master, wellness, context):
         raise AuditHalt("❌ Tier-1: missing Tier-0 7-day snapshot totals")
 
     # --- Unified visible totals with mean metrics ---
-    t0 = context.get("tier0_snapshotTotals_7d", {}).copy()
+    t0 = (context.get("tier0_snapshotTotals_7d") or {}).copy()
 
     # Ensure the 7-day snapshot JSON exists
     if "snapshot_7d_json" not in context or not context["snapshot_7d_json"]:
