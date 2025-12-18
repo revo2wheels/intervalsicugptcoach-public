@@ -481,7 +481,10 @@ def apply_report_type_contract(semantic: dict) -> dict:
     semantic["meta"]["report_header"] = REPORT_HEADERS.get(report_type, {})
     semantic["meta"]["resolution"] = REPORT_RESOLUTION.get(report_type, {})
 
-    # ---------------- WEEKLY ----------------
+    # promote header for rendering
+    semantic["header"] = semantic["meta"]["report_header"]
+    
+        # ---------------- WEEKLY ----------------
     if report_type == "weekly":
         semantic["phases"] = []
         return semantic  # full fidelity (minus phases)

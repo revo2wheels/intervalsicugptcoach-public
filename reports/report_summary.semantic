@@ -5,7 +5,7 @@
     "meta": {
       "framework": "Unified Reporting Framework v5.1",
       "version": "v16.17",
-      "generated_at": "2025-12-16T00:00:00Z",
+      "generated_at": "2025-12-18T21:19:36.911949+00:00",
       "report_type": "summary",
       "period": {
         "start": null,
@@ -31,7 +31,7 @@
           "name": "Clive King",
           "discipline": "cycling",
           "timezone": "Europe/Zurich",
-          "updated": "2025-12-16T18:31:37.715+00:00",
+          "updated": "2025-12-18T18:57:02.958+00:00",
           "ftp": 300,
           "indoor_ftp": 306,
           "weight": 72.9,
@@ -80,24 +80,24 @@
         "insights": "executive"
       }
     },
-    "hours": 10.59,
-    "tss": 474,
-    "distance_km": 256.7,
+    "hours": 11.59,
+    "tss": 500,
+    "distance_km": 265.3,
     "wellness": {
-      "ctl": 75.29384,
-      "atl": 61.455624,
-      "tsb": 13.838216000000003,
+      "ctl": 74.42761,
+      "atl": 61.09218,
+      "tsb": 13.335430000000002,
       "recovery": null,
       "fatigue": null,
       "fitness": null,
       "form": null,
-      "CTL": 75.29384,
-      "ATL": 61.455624,
-      "TSB": 13.838216000000003
+      "CTL": 74.42761,
+      "ATL": 61.09218,
+      "TSB": 13.335430000000002
     },
     "insights": {
       "fatigue_trend": {
-        "value_pct": -18.4,
+        "value_pct": -17.9,
         "window": "7d",
         "basis": "ATL vs CTL",
         "classification": "amber",
@@ -116,8 +116,8 @@
       },
       "load_distribution": {
         "zones_pct": {
-          "z1_z2": 57.3,
-          "z3_plus": 42.7
+          "z1_z2": 49.7,
+          "z3_plus": 50.3
         },
         "window": "7d",
         "basis": "time-in-zone (%)",
@@ -125,7 +125,7 @@
         "interpretation": "Seiler Polarisation Index based on zone distribution. \u22650.75 indicates a polarised (80/20) intensity structure. 0.60\u20130.74 indicates a pyramidal or mixed distribution. <0.60 indicates insufficient polarisation or excessive threshold dominance."
       },
       "metabolic_drift": {
-        "value": 0.114,
+        "value": 0.08,
         "window": "7d",
         "basis": "FOxI proxy",
         "interpretation": "Proxy derived from fat oxidation efficiency. Interpret trend direction only, not absolute magnitude."
@@ -144,9 +144,9 @@
       "\u2705 Durability improving (1.00) \u2014 maintain current long-ride structure.",
       "\u26a0 Load intensity too high (LIR=2.00) \u2014 reduce intensity or monitor recovery.",
       "\u2705 Efficiency drift stable (0.00%).",
-      "\u26a0 Polarisation low (57%) \u2014 increase Z1\u2013Z2 share toward \u226570 %. ",
-      "\u2705 Recovery Index healthy (0.69)."
+      "\u26a0 Polarisation low (50%) \u2014 increase Z1\u2013Z2 share toward \u226570 %. ",
+      "\u2705 Recovery Index healthy (0.77)."
     ]
   },
-  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=3369, ctx_keys=84\n\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4622, ctx_keys=84"
+  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=3381, ctx_keys=84\n\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4552, ctx_keys=84"
 }
