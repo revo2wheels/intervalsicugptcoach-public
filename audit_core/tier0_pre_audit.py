@@ -963,26 +963,6 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         df_activities["start_date_local"] = df_activities["start_date_local"].dt.tz_localize(None)
         debug(context, f"[T0-FIX] Injected synthetic start_date_local for {len(df_activities)} activities.")
 
-    # --- Season-mode extended snapshot (42-day full fetch) ---
-    if report_type == "season":
-        try:
-            df_season_full = df_activities.copy()
-
-            # Store extended snapshot for Tier-1 normalization
-            context["snapshot_42d_json"] = df_season_full.to_dict(orient="records")
-
-            context["tier0_snapshotTotals_42d"] = {
-                "hours": df_season_full["moving_time"].sum() / 3600,
-                "distance": df_season_full["distance"].sum() / 1000,
-                "tss": df_season_full["icu_training_load"].sum(),
-                "count": len(df_season_full),
-                "source": "Tier-0 42d full dataset",
-            }
-
-            debug(context, "[T0-SEASON] Exported snapshot_42d_json + tier0_snapshotTotals_42d for season mode.")
-        except Exception as e:
-            debug(context, f"[T0-SEASON WARN] Failed to create season snapshot: {e}")
-
     # ------------------------------------------------------------
     # PRESERVE REAL 90-DAY DATASET (for extended metrics)
     # ------------------------------------------------------------
@@ -1002,28 +982,22 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         else pd.DataFrame()
     )
 
-    # ------------------------------------------------------------
-    # Season canonical 42-day snapshot (authoritative)
-    # ------------------------------------------------------------
-    if context.get("report_type") == "season":
-        if isinstance(context.get("df_light"), pd.DataFrame) and not context["df_light"].empty:
-            df_42d = (
-                context["df_light"]
-                .sort_values("start_date_local")
-                .tail(42)
-            )
+    # ============================================================
+    # 🔒 FINAL Tier-1 invariant — snapshot_7d_json MUST be a string
+    # ============================================================
+    snap = context.get("snapshot_7d_json")
 
-            context["snapshot_42d_json"] = df_42d.to_json(orient="records")
-
+    if not isinstance(snap, str) or not snap.strip():
+        if isinstance(context.get("df_light_slice"), pd.DataFrame):
+            context["snapshot_7d_json"] = context["df_light_slice"].to_json(orient="records")
             debug(
                 context,
-                f"[T0] snapshot_42d_json set (season, {len(df_42d)} rows)"
+                f"[T0-FINAL] snapshot_7d_json forced (string) from df_light_slice "
+                f"({len(context['df_light_slice'])} rows)"
             )
         else:
-            debug(
-                context,
-                "[T0 WARN] snapshot_42d_json NOT set — df_light missing or empty"
-            )
+            context["snapshot_7d_json"] = "[]"
+            debug(context, "[T0-FINAL] snapshot_7d_json forced to '[]'")
 
     # ------------------------------------------------------------
     # 🔒 CANONICAL MASTER DATASET (Tier-1 input)
