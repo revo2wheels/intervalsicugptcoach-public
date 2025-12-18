@@ -216,7 +216,7 @@ def root():
 
 
 # -----------------------------
-# GET /run (markdown / semantic)
+# GET /run (markdown / semantic) / CURL / DIRECT
 # -----------------------------
 @app.get("/run")
 def run_audit(
@@ -261,10 +261,12 @@ def require_list(name, value):
 
 
 # -----------------------------
-# POST /run (Worker mode)
+# POST /run (Worker / ChatGPT mode)
 # -----------------------------
 @app.post("/run")
 async def run_audit_with_data(request: Request):
+    buffer = io.StringIO()
+
     try:
         raw = await request.body()
         if not raw:
@@ -275,67 +277,80 @@ async def run_audit_with_data(request: Request):
         except Exception as e:
             raise ValueError(f"JSON parse failed: {e}, raw={raw[:200]}")
 
-        range = data.get("range", "weekly")
+        report_range = data.get("range", "weekly")
         fmt = data.get("format", "markdown").lower()
 
-        raw_athlete = data.get("athlete", {})
-
-        # ✅ NORMALISE ONCE — HERE AND ONLY HERE
-        if isinstance(raw_athlete, dict) and "athlete" in raw_athlete:
-            raw_athlete = raw_athlete["athlete"]
-
+        # -----------------------------
+        # Canonical prefetch builder
+        # -----------------------------
         prefetch_context = {}
 
+        def require_list(name, value):
+            if value is None:
+                return None
+            if isinstance(value, list):
+                return value
+            raise ValueError(f"{name} must be a list, got {type(value).__name__}")
+
+        # Activities
         activities_light = require_list("activities_light", data.get("activities_light"))
         activities_full  = require_list("activities_full",  data.get("activities_full"))
         wellness          = require_list("wellness",          data.get("wellness"))
 
-        if activities_light is not None:
+        if activities_light:
             prefetch_context["activities_light"] = activities_light
 
-        if activities_full is not None:
+        if activities_full:
             prefetch_context["activities_full"] = activities_full
 
-        if wellness is not None:
+        if wellness:
             prefetch_context["wellness"] = wellness
 
-        if raw_athlete:
-            if not isinstance(raw_athlete, dict):
-                raise ValueError("athlete must be an object")
-            prefetch_context["athlete"] = raw_athlete
+        # Athlete (FLAT ONLY)
+        raw_athlete = data.get("athlete")
+        if isinstance(raw_athlete, dict):
+            if "athlete" in raw_athlete:
+                raw_athlete = raw_athlete["athlete"]
 
-        # 🔑 CRITICAL: empty prefetch must be None
+            if isinstance(raw_athlete, dict) and raw_athlete:
+                prefetch_context["athlete"] = raw_athlete
+
+        # 🔒 CRITICAL RULE:
+        # Empty dict means NO prefetch — force canonical fetch path
         if not prefetch_context:
             prefetch_context = None
 
-        r, compliance, logs, context, sg, markdown = _run_full_audit(
-            range=range,
-            output_format=fmt,
-            prefetch_context=prefetch_context
-        )
+        with redirect_stdout(buffer):
+            report, compliance = run_report(
+                reportType=report_range,
+                output_format=fmt,
+                include_coaching_metrics=True,
+                **(prefetch_context or {})
+            )
 
+        logs = buffer.getvalue()
 
         if fmt in ("json", "semantic"):
-            return JSONResponse(content={
+            return JSONResponse({
                 "status": "ok",
-                "report_type": range,
+                "report_type": report_range,
                 "output_format": "semantic_json",
-                "semantic_graph": sanitize(sg),
+                "semantic_graph": sanitize(build_semantic_json(report.get("context", {}))),
                 "compliance": compliance,
-                "logs": logs[:20000]
+                "logs": logs[-20000:],
             })
 
-        return JSONResponse(content={
+        return JSONResponse({
             "status": "ok",
-            "report_type": range,
+            "report_type": report_range,
             "output_format": "markdown",
-            "markdown": markdown,
+            "markdown": report.get("markdown", ""),
             "compliance": compliance,
-            "logs": logs[:20000]
+            "logs": logs[-20000:],
         })
 
     except Exception as e:
-        return error_response(e)
+        return error_response(e, buffer)
 
 # -----------------------------
 # /ERROR HANDLING
