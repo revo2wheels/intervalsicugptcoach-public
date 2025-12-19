@@ -223,5 +223,5 @@ This section is auto-generated and refreshed via GitHub Actions on commit.
 
 **Maintainer:** Intervals ICU GPT Coach Architecture Team  
 **Repository:** [revo2wheels/intervalsicugptcoach-public](https://github.com/revo2wheels/intervalsicugptcoach-public)
-# rebuild trigger
+
 
