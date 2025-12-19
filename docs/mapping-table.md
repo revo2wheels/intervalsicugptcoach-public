@@ -1,27 +1,34 @@
-# 🗂 v16.1 Data Flow Mapping — Inputs to Outputs (Enhanced)
+# 🗂 v17 Data Flow Mapping — Inputs to Semantic Outputs
 
-| Input Data / Field | Source Module | Processed In | Derived Metrics / Outputs | Render / Report Placement | Coaching Frameworks / Actions |
-|-------------------|---------------|--------------|--------------------------|--------------------------|-----------------------------|
-| `activity.moving_time` | Intervals.icu API | Tier-2 Step-3: Enforce Event-Only Totals | TotalHours | Weekly / Seasonal Report – Section Summary | Used in **Foster Monotony/Strain**, **San Millán Metabolic Flexibility** |
-| `activity.distance` | Intervals.icu API | Tier-2 Step-4: Calculation Integrity | TotalDistance | Weekly / Seasonal Report – Section Summary | Relevant to **Banister TRIMP**, **Skiba Critical Power** |
-| `activity.icu_training_load` | Intervals.icu API | Tier-2 Step-3: Enforce Event-Only Totals | TotalTSS | Weekly / Seasonal Report – Section Summary | Affects **Banister TRIMP**, **Seiler 80/20 Polarization** |
-| `wellness.HRV` | Intervals.icu API | Tier-2 Step-5: Wellness Validation | RecoveryIndex | Weekly Report – Recovery Section | Relevant to **San Millán Metabolic Flexibility**, **Banister TRIMP** |
-| `wellness.restHR` | Intervals.icu API | Tier-2 Step-5: Wellness Validation | RecoveryIndex | Weekly Report – Recovery Section | Impacts **Foster Monotony/Strain**, **San Millán Metabolic Flexibility** |
-| `wellness.sleep` | Intervals.icu API | Tier-2 Step-5: Wellness Validation | RecoveryIndex | Weekly Report – Recovery Section | Directly tied to **Foster Monotony/Strain**, **Fatigue Index** |
-| `RPE`, `Feel` | Subjective Input | Tier-2 Step-6: Derived Metrics | FatOxidationIndex, SubjectiveReadinessIndex | Weekly / Seasonal Report – Training Quality | Affects **San Millán Metabolic Flexibility**, **Coaching Heuristics** |
-| `power/HR` | Activity | Tier-2 Step-6: Derived Metrics | ACWR, Monotony, Strain, Polarisation, DurabilityIndex, FatOxidationIndex, HybridMode | Weekly / Seasonal Report – Metrics Panel | Impacts **Seiler 80/20 Polarization**, **Banister TRIMP**, **Foster Monotony/Strain**, **San Millán Metabolic Flexibility** |
-| `FTP`, `LT1`, `LT2` | Athlete Profile / Test | Tier-2 Step-6: Derived Metrics | BenchmarkIndex, SpecificityIndex, ConsistencyIndex | Seasonal Report – Advanced Markers | Linked to **Skiba Critical Power**, **Friel Periodisation** |
-| `age` | Athlete Profile | Tier-2 Step-6: Derived Metrics | AgeFactor adjusted ATL | Seasonal Report – Periodisation / Load Planning | Used in **Friel Periodisation** |
-| `activity.climbing` | Activity | Tier-2 Step-6: Derived Metrics | DurabilityIndex | Weekly / Seasonal Report – Training Quality | Relevant to **San Millán Metabolic Flexibility** |
-| `discipline` | Activity | Tier-2 Step-1: Data Integrity | Validates dataset split (cycling, running, triathlon) | Weekly Report – Discipline Breakdown | Affects **Foster Monotony/Strain**, **Coaching Cheat Sheet** |
-| `session.type` | Activity | Tier-2 Step-2: Event Completeness | Assigns “Rest Day 🛌”, “Current Day ⏳” icons | Weekly Report – Summary Section | Influences **Coaching Heuristics**, **Coaching Cheat Sheet** |
-| Derived `C/R/S` components | Tier-2 Step-6 | Tier-2 Step-4 Calculation Integrity | Combined load totals | Weekly / Seasonal Report – Metrics Panel | Influences **Banister TRIMP**, **Seiler 80/20 Polarization** |
-| All event totals | Tier-2 Step-3 | Tier-2 Step-4 Calculation Integrity | Checks variance vs derived totals | Internal Audit / Compliance Log | Used in **Audit Flags** for **Adaptive Actions** |
-| Audit flags | Tier-0 → Tier-2 | Tier-2 Step-7: Evaluate Actions | Adaptive Actions | Weekly / Seasonal Report – Actions Section | Triggered by **`evaluate_actions()`** in **t2_actions.py** |
-| Placeholders (`{xxx}`) | Glossary & Placeholders | Used across all modules | Populated values for rendering | Unified Reporting Framework v5.1 sections | Tied to **Coaching Heuristics**, **Coaching Profile** |
+This document defines the **canonical Tier-2 data lineage** for the Intervals.icu GPT Coaching Framework.
+All outputs are first assembled into a **semantic JSON structure**, which serves as the single source of truth.
+Markdown rendering is a downstream presentation step derived from this JSON.
+
+| Input Data / Field | Source Module | Processed In | Semantic JSON Fields / Outputs | Optional Report Placement | Coaching Frameworks / Actions |
+|-------------------|---------------|--------------|--------------------------------|---------------------------|-------------------------------|
+| `activity.moving_time` | Intervals.icu API | Tier-2 Step-3: Enforce Event-Only Totals | `totals.total_hours` | Summary (weekly / seasonal) | Foster Monotony/Strain, San Millán |
+| `activity.distance` | Intervals.icu API | Tier-2 Step-4: Calculation Integrity | `totals.total_distance` | Summary (weekly / seasonal) | Banister TRIMP, Skiba CP |
+| `activity.icu_training_load` | Intervals.icu API | Tier-2 Step-3: Enforce Event-Only Totals | `totals.total_tss` | Summary (weekly / seasonal) | Banister TRIMP, Seiler 80/20 |
+| `wellness.HRV` | Intervals.icu API | Tier-2 Step-5: Wellness Validation | `recovery.recovery_index` | Recovery section | San Millán, Banister |
+| `wellness.restHR` | Intervals.icu API | Tier-2 Step-5: Wellness Validation | `recovery.recovery_index` | Recovery section | Foster, San Millán |
+| `wellness.sleep` | Intervals.icu API | Tier-2 Step-5: Wellness Validation | `recovery.recovery_index` | Recovery section | Foster, Fatigue Index |
+| `RPE`, `Feel` | Subjective Input | Tier-2 Step-6: Derived Metrics | `subjective.readiness`, `metabolic.fat_oxidation_index` | Training Quality | Coaching Heuristics |
+| `power/HR` | Activity | Tier-2 Step-6: Derived Metrics | `load.acwr`, `load.monotony`, `load.strain`, `intensity.polarisation`, `durability.index` | Metrics Panel | Seiler, Banister, Foster |
+| `FTP`, `LT1`, `LT2` | Athlete Profile | Tier-2 Step-6: Derived Metrics | `benchmarks.*` | Seasonal Advanced Markers | Skiba CP, Friel |
+| `age` | Athlete Profile | Tier-2 Step-6: Derived Metrics | `context.age_factor_adjusted_atl` | Periodisation / Planning | Friel |
+| `activity.climbing` | Activity | Tier-2 Step-6: Derived Metrics | `durability.index` | Training Quality | San Millán |
+| `discipline` | Activity | Tier-2 Step-1: Data Integrity | `context.discipline_validated` | Discipline Breakdown | Foster, Cheat Sheet |
+| `session.type` | Activity | Tier-2 Step-2: Event Completeness | `calendar.rest_day`, `calendar.current_day` | Summary | Coaching Heuristics |
+| Derived `C/R/S` | Tier-2 | Tier-2 Step-4: Calculation Integrity | `load.combined_components` | Metrics Panel | Banister, Seiler |
+| All event totals | Tier-2 | Tier-2 Step-4: Calculation Integrity | `audit.variance_checks` | — (audit only) | Audit Flags |
+| Audit flags | Tier-0 → Tier-2 | Tier-2 Step-7: Evaluate Actions | `actions.adaptive` | Actions section | `evaluate_actions()` |
+| Placeholders `{xxx}` | Semantic Builder | JSON Assembly | `semantic.placeholders` | All sections | Coaching Profile |
 
 
 **OVERVIEW FLOW DIAGRAM**
+
+> All outputs shown below are first assembled into a semantic JSON structure.
+> Report sections consume this JSON and do not derive metrics directly.
 
 ```mermaid
 flowchart TB

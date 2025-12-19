@@ -1,9 +1,9 @@
-# Coaching Framework Map
+# Coaching Framework Map v17
 
 ## Overview
 This document outlines the coaching framework, which leverages performance metrics and audit outputs to guide decision-making in athlete training. The framework consists of several key modules and actions, including adaptive training load adjustments, periodisation, and fatigue resistance, all driven by audit outputs from the **Audit Chain**.
 
-The audit outputs—derived from **Tier-2 actions** such as **ACWR**, **Strain**, **Monotony**, **TRIMP**—influence coaching decisions related to **load management**, **periodisation**, and **athlete readiness**. These decisions are influenced by both **ChatGPT Cloud Execution** (where data is dynamically fetched from GitHub) and **Local Python Execution** (where data is fetched locally or from cached sources).
+The audit outputs—derived from **Tier-2 actions** such as **ACWR**, **Strain**, **Monotony**, **TRIMP**—influence coaching decisions related to **load management**, **periodisation**, and **athlete readiness**. These decisions are influenced by both **Cloud execution** via a backend API (ChatGPT → Worker → backend), with data fetching and module loading performed server-side and **Local Python Execution** (where data is fetched locally or from cached sources).
 
 ---
 
@@ -148,14 +148,18 @@ The **Critical Power (CP) Model** involves the measurement of **Wprime** (work d
 ---
 
 ## Key Differences Between Cloud and Local Coaching Frameworks
-| Feature | Cloud (ChatGPT) | Local (Python) |
+
+| Feature | Cloud Execution | Local Execution |
 |:--|:--|:--|
-| Data Fetching | Dynamic API-based data fetching from GitHub | Local data or cached data |
-| Execution Flow | Orchestrated by `run_report()` → `run_audit()` | Direct execution from `run_audit.py` |
-| Reporting | Automated via `render_unified_report.py` | Manual report via local execution |
-| Coaching Actions | Derived from audit markers (`ACWR`, `Strain`, `Monotony`) | Same adaptive actions based on local audit data |
+| Orchestration | ChatGPT → Worker → backend | Direct Python execution |
+| Data Fetching | Backend API (Intervals.icu, GitHub JIT) | Local or cached |
+| Audit Execution | Backend Tier-0 → Tier-2 | Local Tier-0 → Tier-2 |
+| Canonical Output | Semantic JSON | Semantic JSON |
+| Rendering | Optional, derived from JSON | Optional, derived from JSON |
+| Coaching Actions | Derived from semantic metrics | Identical logic |
+
 
 ## Conclusion
-The **coaching framework** operates similarly in both Cloud and Local modes, using **audit-derived metrics** (ACWR, Strain, Monotony, FatOxidationIndex) to adjust **training load**, **fatigue resistance**, and **readiness**. The main difference lies in the **data fetching method** and the **execution flow**—automated in the cloud and manual locally. Both modes ensure coaches can make data-driven, adaptive decisions to optimize athlete training and performance.
+The **coaching framework** operates similarly in both Cloud and Local modes, using **audit-derived metrics** (ACWR, Strain, Monotony, FatOxidationIndex) to adjust **training load**, **fatigue resistance**, and **readiness**. The main difference lies in orchestration and runtime environment; audit logic and coaching semantics are identical. Both modes ensure coaches can make data-driven, adaptive decisions to optimize athlete training and performance.
 
 ---

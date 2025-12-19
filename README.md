@@ -1,11 +1,11 @@
-# 📊 Intervals.icu GPT Coaching Framework — v16.16G
+# 📊 Intervals.icu GPT Coaching Framework — v17
 
 A deterministic, rules-based audit and coaching engine for Intervals.icu.  
 Implements the **Unified Reporting Framework v5.1**, providing reproducible load validation, physiological audit integrity, and adaptive coaching decisions.
 
 Supports dual execution modes:  
-- **Cloud (ChatGPT)** — automated orchestration via GPT-5.  
-- **Local Python Execution** — identical logic via `report.py → run_report()`.
+- **Cloud (ChatGPT)** — automated orchestration via GPT-5 using a Worker-gated backend API.  
+- **Local Python Execution** — identical logic via `report.py → run_report()`, no cloud dependencies.
 
 ---
 ## 🧭 About [https://www.cliveking.net/]
@@ -29,6 +29,8 @@ The **primary function** is to transform Intervals.icu athlete data into validat
 4. Interpret → map metrics through the Coaching Framework Stack.  
 5. Render → output adaptive Markdown report and JSON data payload.
 
+Note: Cloud execution assumes a deterministic, non-sleeping backend runtime.
+
 ---
 
 ## ⚙️ System Architecture (Full)
@@ -37,7 +39,7 @@ The **primary function** is to transform Intervals.icu athlete data into validat
 |:--|:--|:--|:--|
 | **Data Layer** | `intervals_icu__jit_plugin` | Data Acquisition | Fetches activities, wellness, and profile directly from Intervals.icu. |
 | **Ruleset Layer** | `all-modules.md` | Rules & Schema | Defines audit dependencies, flow order, and validation gates. |
-| **Tier Controller Layer** | `audit_core/report_controller.py` | Tier Routing | Directs Tier-0 → Tier-2 audit chain execution. |
+| **Tier Controller Layer** | `audit_core/report_controller.py` | Tier Routing | Directs Tier-0 → Tier-2 audit chain execution and enforces execution order. |
 | **Tier-0 Layer** | `tier0_pre_audit.py` | Initialization | Fetches, cleans, and validates primary data windows. |
 | **Tier-1 Layer** | `tier1_controller.py` | Audit Controller | Checks dataset integrity, duplication, and total alignment. |
 | **Tier-2 Layer** | `tier2_*` suite | Validation and Metrics | Executes Data Integrity, Totals, Calculation, Wellness, Derived Metrics, and Actions logic. |
@@ -51,6 +53,8 @@ The **primary function** is to transform Intervals.icu athlete data into validat
 ---
 
 ### 🧠 Architecture Flow Diagram
+
+Note: In Cloud (ChatGPT) execution, requests are first routed through a Cloudflare Worker (OAuth, validation, routing) before reaching the audit chain. The diagram below represents the canonical backend audit execution flow.
 
 ```mermaid
 flowchart TD
@@ -78,6 +82,24 @@ flowchart TD
     end
 ```
 ---
+
+## ☁️ Execution & Hosting Constraints
+
+Cloud execution uses a split model:
+
+- **Edge Gateway (Cloudflare Worker)**  
+  Request validation, OAuth, routing only.  
+  No audit, aggregation, or metric computation.
+
+- **Backend Engine (FastAPI / Python)**  
+  Executes the full Tier-0 → Tier-2 audit and rendering pipeline.
+
+⚠️ Cloud execution requires an **always-on backend container**  
+(e.g. Railway Hobby or equivalent).  
+Free / sleeping tiers introduce cold starts and CPU throttling that break
+audit determinism and invalidate results.
+
+Local execution is unaffected.
 
 ## 🧩 Audit Chain Summary
 
@@ -152,33 +174,34 @@ This section is auto-generated and refreshed via GitHub Actions on commit.
 ### 🧩 Core Framework Documents
 | File | Description |
 |:--|:--|
-| [all-modules.md](./all-modules.md) | Module list, bindings, and dependency schema. |
-| [USAGE_GUIDE.md](docs/USAGE_GUIDE.md) | Usage for local (`report.py`) and ChatGPT modes. |
+| [all-modules.md](./all-modules.md) | Declarative module manifest consumed at backend startup (via `app.py`) for GitHub JIT loading and dependency validation. |
+| [USAGE_GUIDE.md](docs/USAGE_GUIDE.md) | Usage for local execution and Cloud execution (ChatGPT → Worker → backend). |
 
 ### 🧱 Coaching Framework Stack
 | File | Description |
 |:--|:--|
-| [coach_framework-map.md](docs/coach_framework-map.md) | Hierarchical coaching frameworks. |
-| [coach_mapping-table.md](docs/coach_mapping-table.md) | Metric-to-framework mappings. |
+| [coach_framework-map.md](docs/coach_framework-map.md) | Conceptual coaching frameworks and metric-to-action logic (non-executable). |
+| [coach_mapping-table.md](docs/coach_mapping-table.md) | Authoritative mapping of audit outputs to coaching frameworks and adaptive actions. |
 
 ### 🔬 Analytical & Mapping Resources
 | File | Description |
 |:--|:--|
-| [mapping-table.md](docs/mapping-table.md) | Full data lineage diagram and report linkage. |
-| [audit_framework-map.md](docs/audit_framework-map.md) | Audit tier dependency flow. |
+| [mapping-table.md](docs/mapping-table.md) | Tier-2 data lineage: raw inputs → derived metrics → Unified Report sections. |
 
 ### ⚖️ Governance & Integrity
 | File | Description |
 |:--|:--|
-| [COMPLIANCE_LOG_GUIDE.md](docs/COMPLIANCE_LOG_GUIDE.md) | Logging and compliance trace rules. |
-| [audit_chain_overview.md](docs/audit_chain_overview.md) | Tier integrity enforcement and validation logic. |
+| [COMPLIANCE_LOG_GUIDE.md](docs/COMPLIANCE_LOG_GUIDE.md) | Compliance logging and audit traceability for backend cloud execution vs local runs. |
+| [audit_chain_overview.md](docs/audit_chain_overview.md) | Canonical Tier-0 → Tier-2 audit flow and validation guarantees. |
 
 ### 🧭 Entry Points
 | File | Function |
 |:--|:--|
+| `app.py` | **Backend service entry point** (Railway). Initializes runtime and GitHub JIT loading. |
 | `report.py` | Primary local execution entry for `run_report()`. |
-| `run_audit.py` | Developer diagnostic utility. |
-| `audit_core/report_controller.py` | ChatGPT execution controller. |
+| `run_audit.py` | Developer diagnostic utility (non-canonical). |
+| `audit_core/report_controller.py` | Canonical audit and execution controller (Tier routing authority). |
+
 
 ---
 

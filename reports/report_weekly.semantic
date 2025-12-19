@@ -5,7 +5,7 @@
     "meta": {
       "framework": "Unified Reporting Framework v5.1",
       "version": "v16.17",
-      "generated_at": "2025-12-18T21:07:52.766688+00:00",
+      "generated_at": "2025-12-19T09:03:09.342642+00:00",
       "report_type": "weekly",
       "period": {
         "start": null,
@@ -31,14 +31,14 @@
           "name": "Clive King",
           "discipline": "cycling",
           "timezone": "Europe/Zurich",
-          "updated": "2025-12-18T18:57:02.958+00:00",
+          "updated": "2025-12-19T08:00:34.395+00:00",
           "ftp": 300,
           "indoor_ftp": 306,
           "weight": 72.9,
-          "hr_rest": 42,
+          "hr_rest": 46,
           "hr_max": 177,
           "ftp_wkg": 4.12,
-          "hr_reserve": 135,
+          "hr_reserve": 131,
           "zone_model": {
             "type": "power_zones",
             "schema": "Coggan_7Z",
@@ -204,15 +204,15 @@
     },
     "extended_metrics": {
       "CTL": {
-        "value": 74.42761,
+        "value": 72.67645,
         "status": "icu"
       },
       "ATL": {
-        "value": 61.09218,
+        "value": 52.959457,
         "status": "icu"
       },
       "TSB": {
-        "value": 13.335430000000002,
+        "value": 19.716993000000002,
         "status": "icu"
       },
       "EfficiencyFactor": 1.9,
@@ -363,26 +363,26 @@
       "\u2705 Recovery Index healthy (0.77)."
     ],
     "wellness": {
-      "ctl": 74.42761,
-      "atl": 61.09218,
-      "tsb": 13.335430000000002,
+      "ctl": 72.67645,
+      "atl": 52.959457,
+      "tsb": 19.716993000000002,
       "recovery": null,
       "fatigue": null,
       "fitness": null,
       "form": null,
-      "CTL": 74.42761,
-      "ATL": 61.09218,
-      "TSB": 13.335430000000002
+      "CTL": 72.67645,
+      "ATL": 52.959457,
+      "TSB": 19.716993000000002
     },
     "hours": 10.24,
     "tss": 425,
     "distance_km": 210.6,
     "insights": {
       "fatigue_trend": {
-        "value_pct": -17.9,
+        "value_pct": -27.1,
         "window": "7d",
         "basis": "ATL vs CTL",
-        "classification": "amber",
+        "classification": "red",
         "thresholds": {
           "green": [
             -10,
@@ -423,10 +423,10 @@
     "insight_view": {
       "summary": {
         "fatigue_trend": {
-          "value_pct": -17.9,
+          "value_pct": -27.1,
           "window": "7d",
           "basis": "ATL vs CTL",
-          "classification": "amber",
+          "classification": "red",
           "thresholds": {
             "green": [
               -10,
@@ -492,7 +492,13 @@
           "delta": 0.0
         }
       ]
+    },
+    "header": {
+      "title": "Weekly Training Report",
+      "scope": "Detailed analysis of the last 7 days of training activity",
+      "data_sources": "7-day full activities, 42-day wellness, zone distributions",
+      "intended_use": "Day-to-day coaching decisions, intensity balance, short-term fatigue and recovery management"
     }
   },
-  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4549, ctx_keys=84\n\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4549, ctx_keys=84"
+  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4550, ctx_keys=84\n\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4550, ctx_keys=84"
 }

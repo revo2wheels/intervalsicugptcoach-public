@@ -5,46 +5,57 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const pathname = url.pathname;
+    // ================================================================
+    // 🟢 PUBLIC OAUTH ROUTES — HARD EXIT, NO AUTH, NO HELPERS
+    // ================================================================
+    if (pathname.startsWith("/oauth/authorize")) {
+      const target = new URL(
+        request.url.replace(
+          /^https:\/\/intervalsicugptcoach\.clive-a5a\.workers\.dev/,
+          "https://intervals.icu"
+        )
+      );
+      target.searchParams.set(
+        "redirect_uri",
+        "https://chat.openai.com/aip/g-3b0244cf708774fb9151458671c462eb5460f41e/oauth/callback"
+      );
+      return Response.redirect(target.toString(), 302);
+    }
+
+    if (pathname.startsWith("/oauth/callback")) {
+      return Response.redirect(
+        "https://chat.openai.com/aip/g-3b0244cf708774fb9151458671c462eb5460f41e/oauth/callback" +
+          new URL(request.url).search,
+        302
+      );
+    }
+
+    if (pathname.startsWith("/api/oauth/token")) {
+      const resp = await fetch("https://intervals.icu/api/oauth/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: await request.text()
+      });
+
+      const json = await resp.json();
+
+      return new Response(JSON.stringify(json), {
+        status: resp.status,
+        headers: {
+          "content-type": "application/json",
+          "access-control-allow-origin": "*"
+        }
+      });
+    }
+
     const INTERVALS_API_BASE = "https://intervals.icu/api/v1";
     const RAILWAY_BASE = "https://intervalsicugptcoach-public-production.up.railway.app";
     const authHeader = request.headers.get("Authorization");
-
-    // ================================================================
-    // 🧠 UNIFIED AUTH HANDLING (Corrected)
-    // ================================================================
-    let bearerToken = null;
-
-    // 1️⃣ Always prefer the Worker-stored secret token
-    if (env.ICU_OAUTH && env.ICU_OAUTH.trim() !== "") {
-      bearerToken = `Bearer ${env.ICU_OAUTH.trim()}`;
-      console.log("[AUTH] Using ICU_OAUTH from Worker environment");
-    }
-
-    // 2️⃣ If ChatGPT or local Python sends an Authorization header, override
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      bearerToken = authHeader.trim();
-      console.log("[AUTH] Overriding with inbound Authorization header");
-    }
-
-    // 3️⃣ If still nothing → fail explicitly (should never happen)
-    if (!bearerToken) {
-      console.log("[AUTH] ERROR — No Authorization token available");
-      return new Response(
-        JSON.stringify({ error: "No OAuth token available for Intervals.icu" }),
-        { status: 401 }
-      );
-    }
+    console.log("[DEBUG AUTH HEADER]", request.headers.get("Authorization"));
 
     // ================================================================
     // Helpers
     // ================================================================
-    const buildAuthHeaders = () => {
-      const h = new Headers();
-      h.set("Authorization", bearerToken);
-      h.set("Accept", "application/json");
-      return h;
-    };
-
     const getDate = (daysAgo) => {
       const d = new Date();
       d.setUTCDate(d.getUTCDate() - daysAgo);
@@ -200,6 +211,43 @@ export default {
         }
       });
     }
+
+    // ================================================================
+    // 🧠 UNIFIED AUTH HANDLING (Corrected)
+    // ================================================================
+    let bearerToken = null;
+
+    // 1️⃣ Always prefer the Worker-stored secret token
+    if (env.ICU_OAUTH && env.ICU_OAUTH.trim() !== "") {
+      bearerToken = `Bearer ${env.ICU_OAUTH.trim()}`;
+      console.log("[AUTH] Using ICU_OAUTH from Worker environment");
+    }
+
+    // 2️⃣ If ChatGPT or local Python sends an Authorization header, override
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      bearerToken = authHeader.trim();
+      console.log("[AUTH] Overriding with inbound Authorization header");
+    }
+
+    // 3️⃣ If still nothing → fail explicitly (should never happen)
+    if (!bearerToken) {
+      console.log("[AUTH] ERROR — No Authorization token available");
+      return new Response(
+        JSON.stringify({ error: "No OAuth token available for Intervals.icu" }),
+        { status: 401 }
+      );
+    }
+
+    // ================================================================
+    // Helpers
+    // ================================================================
+    const buildAuthHeaders = () => {
+      const h = new Headers();
+      h.set("Authorization", bearerToken);
+      h.set("Accept", "application/json");
+      return h;
+    };
+
 
     // ================================================================
     // INTERNAL DATA ROUTES

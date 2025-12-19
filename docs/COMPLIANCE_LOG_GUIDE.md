@@ -1,39 +1,111 @@
-# Compliance Log Guide
+# Compliance Log Guide — v17
 
 ## Overview
-This document provides an overview of compliance logging in the audit process. It explains how compliance logs are generated and tracked both in **Cloud Mode** (via ChatGPT) and **Local Python Mode**.
 
-## Compliance Logging in Cloud (ChatGPT) Mode
-In **Cloud Mode**, compliance logging is handled automatically by the ChatGPT environment. Logs are generated as part of the audit process and are used for monitoring data integrity, validation status, and any deviations from the expected metrics.
+This document describes **compliance logging within the audit process**.
+Compliance logs provide a deterministic, traceable record of data validation,
+rule enforcement, and audit decisions across both **Cloud** and **Local** execution modes.
 
-### Cloud Mode Compliance Flow
-1. **run_report()** in `audit_core/report_controller.py` initiates the audit process, which involves running all tiers from Tier-0 to Tier-2.
-2. During the process, each function logs its compliance to ensure data consistency, such as:
-   - Tier-0 validation of athlete data
-   - Tier-1 checks for duplicates and integrity
-   - Tier-2 enforcement of rules (e.g., no missing events)
-3. These logs are captured and stored in a cloud-based stream for easy review and troubleshooting. Compliance logs are included in the audit output in a structured format (e.g., JSON, Markdown).
+Compliance logging is part of the **canonical audit pipeline** and is generated
+by the backend runtime — not by ChatGPT.
 
-## Compliance Logging in Local Execution Mode
-In **Local Mode**, compliance logs are written to the local filesystem, allowing developers and operators to track the progress of their audit and check for any issues that may arise during execution.
+---
 
-### Local Mode Compliance Flow
-1. **run_audit.py** directly triggers each tier module from Tier-0 to Tier-2.
-2. As each tier executes, compliance checks are performed, and logs are generated for:
-   - Data completeness
-   - Validations
-   - Metric calculations
-3. The logs are saved as **`compliance.log`** or in other custom log files, depending on the configuration.
-   - These logs can be manually reviewed after the audit execution to ensure the system’s integrity.
+## Compliance Logging — Cloud Execution
+
+**Execution context:** ChatGPT → Cloudflare Worker → Backend API  
+**Log authority:** Backend (FastAPI)
+
+In Cloud execution, compliance logging is generated **entirely by the backend** as part of the Tier-0 → Tier-2 audit chain.
+
+ChatGPT and the Cloudflare Worker:
+- do **not** generate logs
+- do **not** interpret compliance state
+- act only as orchestration and transport layers
+
+### Cloud Compliance Flow
+
+1. ChatGPT issues a report intent (`weekly`, `season`, etc.).
+2. Request passes through the Cloudflare Worker (OAuth, validation, routing).
+3. Backend entry point (`app.py`) receives the request.
+4. `run_report()` in `audit_core/report_controller.py` initiates the audit.
+5. Each tier emits structured compliance events:
+   - Tier-0: data window validation and fetch integrity
+   - Tier-1: dataset consistency, duplication checks
+   - Tier-2: rule enforcement, tolerance checks, audit flags
+6. Compliance events are accumulated into a **structured compliance log object**.
+7. The compliance log is attached to the **semantic JSON audit output**.
+8. Selected compliance summaries may be surfaced to ChatGPT for transparency.
+
+**Important:**
+- Compliance logs are **JSON-first**.
+- Markdown representations (if shown) are derived from JSON.
+- The compliance log is part of the audit output, not a side effect.
+
+---
+
+## Compliance Logging — Local Execution
+
+**Execution context:** Local Python runtime  
+**Log authority:** Local filesystem + in-memory structures
+
+In Local mode, compliance logging follows the **same audit semantics** as Cloud mode,
+but logs are additionally persisted to disk for inspection.
+
+### Local Compliance Flow
+
+1. `report.py` or `run_audit.py` triggers audit execution.
+2. Tier-0 → Tier-2 modules emit the same structured compliance events.
+3. Compliance events are accumulated in memory.
+4. At completion:
+   - Compliance events are written to `compliance.log`
+   - Full compliance state is embedded in `report.json`
+
+Local execution allows:
+- post-run inspection
+- diffing between runs
+- developer debugging of individual tiers
+
+---
+
+## Compliance Log Structure (Canonical)
+
+Compliance logs are structured objects containing:
+
+- `tier`: Tier-0 / Tier-1 / Tier-2
+- `check`: validation or rule identifier
+- `status`: pass / warn / fail
+- `tolerance`: applied tolerance (if relevant)
+- `observed`: observed value(s)
+- `expected`: expected value(s)
+- `timestamp`: execution time
+- `context`: optional execution metadata
+
+This structure is identical in Cloud and Local modes.
+
+---
 
 ## Key Differences Between Cloud and Local Compliance Logging
-| Feature | Cloud (ChatGPT) | Local (Python) |
+
+| Feature | Cloud Execution | Local Execution |
 |:--|:--|:--|
-| Log Location | Cloud-based logs | Local `compliance.log` or custom log files |
-| Log Format | Structured JSON/Markdown format | Plain text log entries, possibly JSON |
-| Accessibility | Automatic, viewable through ChatGPT interface | Manually retrieved from local filesystem |
+| Log generation | Backend runtime | Backend runtime |
+| Persistence | Embedded in semantic JSON | Embedded in JSON + `compliance.log` |
+| Log format | Structured JSON | Structured JSON + text |
+| Accessibility | Returned via API / ChatGPT | Local filesystem |
+| Determinism | Guaranteed | Guaranteed |
+
+---
 
 ## Conclusion
-Compliance logging is a critical part of the audit process, ensuring the integrity of the data being processed. Both **Cloud Mode** and **Local Mode** handle this process efficiently but with different logging mechanisms suited to their respective environments.
+
+Compliance logging is a **first-class audit artifact** in the Intervals.icu GPT Coaching Framework.
+
+- Logs are generated by the backend, not ChatGPT
+- Logs are JSON-first and deterministic
+- Logs enforce audit integrity and reproducibility
+- Presentation is secondary to semantic correctness
+
+Any execution environment that cannot preserve this behavior is **non-compliant**.
 
 ---

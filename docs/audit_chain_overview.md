@@ -1,50 +1,118 @@
-# Audit Chain Overview
+# Audit Chain Overview — v17
 
 ## Overview
-This document outlines the step-by-step flow of the audit process, starting from **Tier-0** and progressing through **Tier-2** modules. It also details how the audit process differs between **ChatGPT Cloud Mode** and **Local Python Execution Mode**.
 
-## ChatGPT (Cloud) Execution Flow
-In **Cloud Mode**, ChatGPT orchestrates the entire audit process. This is done by fetching modules from the GitHub repository via raw URLs, parsing them, and executing them as per the audit rules.
+This document describes the **canonical audit execution flow** of the Intervals.icu GPT Coaching Framework.
+It outlines the Tier-0 → Tier-2 audit chain and clarifies how execution differs between
+**Cloud execution (ChatGPT-orchestrated, backend-executed)** and **Local Python execution**.
 
-### Flow in ChatGPT Mode
-1. **run_report()** in `audit_core/report_controller.py` is invoked to begin the report generation process.
-2. This calls **run_audit()**, which triggers the following sequence:
-   - **Tier-0: run_tier0_pre_audit()** — Collects athlete context, activities, and wellness data.
-   - **Tier-1: run_tier1_controller()** — Validates data integrity.
-   - **Tier-2: Various validation functions** — Ensures dataset completeness, enforces event-only totals, checks for calculation integrity, computes derived metrics, evaluates actions, and validates render readiness.
-3. The entire process is automated in the **ChatGPT environment**, where outputs are processed through the `render_unified_report.py` file, resulting in a comprehensive 10-section Markdown report.
+This document defines **execution semantics**, not conceptual coaching logic.
 
-## Local Execution Flow
-In **Local Python Mode**, the audit is executed manually through the CLI using **report.py**.  
-This file serves as the official local entry point and calls `run_report()` from  
-`audit_core/report_controller.py`, invoking the same Tier-0 → Tier-2 audit chain used in Cloud Mode.
+---
 
-### Flow in Local Mode
-1. `report.py` imports and executes `run_report()`, which orchestrates all audit tiers.
-2. Each Tier module (Tier-0 through Tier-2) is run locally using identical logic to the Cloud controller.
-3. Outputs are written to `/output/report.json` and `/output/report.md`.
-4. A diagnostic script, **run_audit.py**, remains available for developer testing and direct tier calls but is **not** used for standard reporting.
+## Cloud Execution (Authoritative)
 
-### Local Mode Flow Diagram
+**Execution model:** ChatGPT → Cloudflare Worker → Backend API  
+**Audit authority:** Backend runtime (FastAPI / Python)
+
+In Cloud execution, **ChatGPT does not execute audits, fetch modules, or render reports**.
+All audit logic runs in the backend runtime.
+
+### Cloud Audit Flow
+
+1. ChatGPT issues a report intent (e.g. `weekly`, `season`).
+2. Request is routed through the **Cloudflare Worker**:
+   - OAuth token exchange
+   - Request validation
+   - Routing to backend
+3. Backend entry point (`app.py`) receives the request.
+4. `run_report()` in `audit_core/report_controller.py` is invoked.
+5. `run_report()` orchestrates the full audit chain:
+   - **Tier-0 — Pre-Audit**
+     - Data window validation
+     - Athlete profile, activities, wellness fetch
+   - **Tier-1 — Dataset Integrity**
+     - Duplication checks
+     - Dataset consistency validation
+   - **Tier-2 — Validation & Metrics**
+     - Data integrity checks
+     - Event completeness
+     - Event-only totals enforcement
+     - Calculation integrity (variance enforcement)
+     - Wellness validation
+     - Derived metrics computation
+     - Adaptive action evaluation
+6. Outputs are assembled into a **semantic JSON audit object**.
+7. Optional Markdown rendering may be generated **from semantic JSON**.
+8. Semantic JSON (and optional rendered output) is returned via the API.
+
+**Important:**
+- No audit logic runs in ChatGPT or the Worker.
+- JSON is the **canonical audit artifact**.
+- Rendering is downstream and optional.
+
+---
+
+## Local Execution (Python)
+
+**Execution model:** Direct Python runtime  
+**Audit authority:** Local process
+
+Local execution mirrors Cloud execution **exactly**, without orchestration layers.
+
+### Local Audit Flow
+
+1. `report.py` invokes `run_report()` from `audit_core/report_controller.py`.
+2. `run_report()` orchestrates the identical Tier-0 → Tier-2 audit chain.
+3. Semantic JSON audit output is assembled.
+4. Optional Markdown rendering is generated from JSON.
+5. Outputs are written to disk.
+
+**Artifacts:**
+- `/output/report.json` — canonical semantic audit output
+- `/output/report.md` — rendered presentation (optional)
+- `/logs/compliance.log` — compliance trace (optional)
+
+A developer utility, `run_audit.py`, may invoke individual tiers for diagnostics.
+It is **non-canonical** and not used for standard reporting.
+
+---
+
+## Local Execution Flow Diagram
+
 ```mermaid
 graph TB
-    A[Local Data Fetch] --> B[report.py - run_report]
-    B --> C[tier0_pre_audit.py]
-    C --> D[tier1_controller.py]
-    D --> E[tier2_modules - integrity, totals, wellness, metrics]
-    E --> F[render_unified_report.py]
-    F --> G[Unified Report Output]
+    A[report.py] --> B[run_report()]
+    B --> C[Tier-0 Pre-Audit]
+    C --> D[Tier-1 Controller]
+    D --> E[Tier-2 Validation & Metrics]
+    E --> F[Semantic JSON Builder]
+    F --> G[Adaptive Actions]
+    G --> H[Optional Markdown Rendering]
+
 ```
-## Key Differences Between Cloud and Local Flows
-| Feature | Cloud (ChatGPT) | Local (Python) |
+## Key Differences Between Cloud and Local Execution
+
+| Feature | Cloud Execution | Local Execution |
 |:--|:--|:--|
-| Execution | ChatGPT orchestrates | Local CLI runs `run_audit.py` |
-| Entry Point | `run_report()` calls `run_audit()` via `report_controller.py` | `run_audit.py` directly imports and calls modules |
-| Report Generation | Automated via `render_unified_report.py` | Manual render via `run_audit.py` or `report.py` |
-| Data Fetching | Data fetched from cloud APIs (via `intervals_icu__jit_plugin`) | Data loaded from local APIs or cached storage |
+| Orchestration | ChatGPT → Worker | None |
+| Audit Execution | Backend runtime | Local Python |
+| Entry Point | `app.py` → `run_report()` | `report.py` → `run_report()` |
+| Canonical Output | Semantic JSON | Semantic JSON |
+| Rendering | Optional, derived | Optional, derived |
+| Determinism | Enforced | Enforced |
 
 ## Conclusion
-This audit flow provides a seamless method for both cloud-based and local-based execution of the audit process, ensuring flexibility for remote and offline use.
+
+The audit chain is **single, deterministic, and canonical** across all environments.
+
+- Tier-0 → Tier-2 always execute in the same order  
+- Semantic JSON is the source of truth  
+- Rendering is never authoritative  
+- ChatGPT orchestrates but does not compute  
+
+Any execution model that violates these constraints is **non-compliant**.
+
 
 ---
 
