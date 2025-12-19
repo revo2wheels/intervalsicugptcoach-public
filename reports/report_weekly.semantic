@@ -5,7 +5,7 @@
     "meta": {
       "framework": "Unified Reporting Framework v5.1",
       "version": "v16.17",
-      "generated_at": "2025-12-19T09:03:09.342642+00:00",
+      "generated_at": "2025-12-19T10:26:56.764992+00:00",
       "report_type": "weekly",
       "period": {
         "start": null,
@@ -83,7 +83,7 @@
     "metrics": {
       "ACWR": {
         "name": "ACWR",
-        "value": 1.02,
+        "value": 0.91,
         "classification": "productive",
         "interpretation": "EWMA Acute:Chronic Load Ratio \u2014 compares 7-day vs 28-day weighted loads. 0.8\u20131.3 = productive training, <0.8 = recovery or detraining, >1.5 = overload/injury risk.",
         "coaching_implication": "If ACWR > 1.5, reduce intensity and focus on recovery to avoid overload. If ACWR < 0.8, gradually increase training load with controlled progression to build endurance.",
@@ -91,7 +91,7 @@
       },
       "Monotony": {
         "name": "Monotony",
-        "value": 1.15,
+        "value": 1.22,
         "classification": "optimal",
         "interpretation": "1\u20132 shows healthy variation; >2.5 means repetitive stress pattern.",
         "coaching_implication": "If Monotony > 2.5, introduce more variation in training or implement a deload week to reduce repetitive stress.",
@@ -99,7 +99,7 @@
       },
       "Strain": {
         "name": "Strain",
-        "value": 69.8,
+        "value": 76.2,
         "classification": "optimal",
         "interpretation": "Product of load \u00d7 monotony; >3500 signals potential overreach.",
         "coaching_implication": "If Strain > 3000, monitor for signs of overreach and consider more rest or deloading. If Strain > 3500, consider reducing volume or intensity temporarily.",
@@ -163,7 +163,7 @@
       },
       "RecoveryIndex": {
         "name": "RecoveryIndex",
-        "value": 0.77,
+        "value": 0.756,
         "classification": "moderate",
         "interpretation": "0.6\u20131.0 means recovered; <0.5 = heavy fatigue.",
         "coaching_implication": "If RecoveryIndex is low (<0.7), ensure adequate rest and recovery, and avoid heavy training loads.",
@@ -204,15 +204,15 @@
     },
     "extended_metrics": {
       "CTL": {
-        "value": 72.67645,
+        "value": 72.95879,
         "status": "icu"
       },
       "ATL": {
-        "value": 52.959457,
+        "value": 54.556923,
         "status": "icu"
       },
       "TSB": {
-        "value": 19.716993000000002,
+        "value": 18.401866999999996,
         "status": "icu"
       },
       "EfficiencyFactor": 1.9,
@@ -256,13 +256,13 @@
         "power_z8": 13.1
       },
       "hr": {
-        "hr_z1": 78.5,
-        "hr_z2": 14.0,
-        "hr_z3": 4.5,
-        "hr_z4": 2.0,
+        "hr_z1": 80.1,
+        "hr_z2": 13.0,
+        "hr_z3": 4.2,
+        "hr_z4": 1.9,
         "hr_z5": 0.2,
         "hr_z6": 0.2,
-        "hr_z7": 0.6
+        "hr_z7": 0.5
       }
     },
     "daily_load": [
@@ -285,9 +285,20 @@
       {
         "date": "2025-12-18 00:00:00",
         "tss": 112.0
+      },
+      {
+        "date": "2025-12-19 00:00:00",
+        "tss": 12.0
       }
     ],
     "events": [
+      {
+        "start_date_local": null,
+        "name": "Jongny Hike",
+        "icu_training_load": 12,
+        "moving_time": 2929,
+        "distance": 5991.69
+      },
       {
         "start_date_local": null,
         "name": "Zwift - Group Workout: BaseCamp Lower-Cadence Tempo with High-Cadence Surges",
@@ -360,26 +371,26 @@
       "\u26a0 Load intensity too high (LIR=2.00) \u2014 reduce intensity or monitor recovery.",
       "\u2705 Efficiency drift stable (0.00%).",
       "\u26a0 Polarisation low (50%) \u2014 increase Z1\u2013Z2 share toward \u226570 %. ",
-      "\u2705 Recovery Index healthy (0.77)."
+      "\u2705 Recovery Index healthy (0.76)."
     ],
     "wellness": {
-      "ctl": 72.67645,
-      "atl": 52.959457,
-      "tsb": 19.716993000000002,
+      "ctl": 72.95879,
+      "atl": 54.556923,
+      "tsb": 18.401866999999996,
       "recovery": null,
       "fatigue": null,
       "fitness": null,
       "form": null,
-      "CTL": 72.67645,
-      "ATL": 52.959457,
-      "TSB": 19.716993000000002
+      "CTL": 72.95879,
+      "ATL": 54.556923,
+      "TSB": 18.401866999999996
     },
-    "hours": 10.24,
-    "tss": 425,
-    "distance_km": 210.6,
+    "hours": 11.06,
+    "tss": 437,
+    "distance_km": 216.6,
     "insights": {
       "fatigue_trend": {
-        "value_pct": -27.1,
+        "value_pct": -25.2,
         "window": "7d",
         "basis": "ATL vs CTL",
         "classification": "red",
@@ -423,7 +434,7 @@
     "insight_view": {
       "summary": {
         "fatigue_trend": {
-          "value_pct": -27.1,
+          "value_pct": -25.2,
           "window": "7d",
           "basis": "ATL vs CTL",
           "classification": "red",
@@ -482,7 +493,7 @@
         "\u26a0 Load intensity too high (LIR=2.00) \u2014 reduce intensity or monitor recovery.",
         "\u2705 Efficiency drift stable (0.00%).",
         "\u26a0 Polarisation low (50%) \u2014 increase Z1\u2013Z2 share toward \u226570 %. ",
-        "\u2705 Recovery Index healthy (0.77)."
+        "\u2705 Recovery Index healthy (0.76)."
       ],
       "phases": [
         {
@@ -500,5 +511,5 @@
       "intended_use": "Day-to-day coaching decisions, intensity balance, short-term fatigue and recovery management"
     }
   },
-  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4550, ctx_keys=84\n\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4550, ctx_keys=84"
+  "logs": "\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4608, ctx_keys=84\n\u2705 Renderer source: Tier-2 enforced totals (canonical dataset)\n[FINALIZER] Enforcing markdown-only return (season-safe mode)\n[FINALIZER] Markdown-only return OK \u2014 len=4608, ctx_keys=84"
 }

@@ -1,0 +1,20 @@
+# Secrets (never commit)
+.env
+.env.*
+*.pem
+*.key
+*.crt
+
+# Local/editor junk
+.vscode/
+.vscodium/
+.DS_Store
+Thumbs.db
+
+# OS / temp
+*.log
+*.tmp
+
+#dir
+/archive/
+/reports/
