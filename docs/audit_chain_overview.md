@@ -82,14 +82,13 @@ It is **non-canonical** and not used for standard reporting.
 
 ```mermaid
 graph TB
-    A[report.py] --> B[run_report()]
-    B --> C[Tier-0 Pre-Audit]
-    C --> D[Tier-1 Controller]
-    D --> E[Tier-2 Validation & Metrics]
-    E --> F[Semantic JSON Builder]
-    F --> G[Adaptive Actions]
-    G --> H[Optional Markdown Rendering]
-
+    A["report.py"] --> B["run report"]
+    B --> C["Tier 0 Pre Audit"]
+    C --> D["Tier 1 Controller"]
+    D --> E["Tier 2 Validation and Metrics"]
+    E --> F["Semantic JSON Builder"]
+    F --> G["Adaptive Actions"]
+    G --> H["Optional Markdown Rendering"]
 ```
 ## Key Differences Between Cloud and Local Execution
 
