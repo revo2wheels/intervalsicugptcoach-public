@@ -97,7 +97,7 @@ def collect_zone_distributions(df_master, athlete_profile, context):
         if not parsed.empty:
             try:
                 sample = parsed.iloc[0]
-                debug(context, f"[DEBUG-ZONES] sample type={type(sample)} content={str(sample)[:400]}")
+                debug(context, f"[DEBUG-ZONES] sample type={type(sample)} content={str(sample)[:1000]}")
 
                 # ✅ CASE 1: Already flattened (dict-of-dicts or ICU JSON)
                 if isinstance(sample, dict):
@@ -147,19 +147,35 @@ def collect_zone_distributions(df_master, athlete_profile, context):
         if not cols:
             debug(context, f"[DEBUG-ZONES] ❌ No {label} columns found — skipping.")
             return {}
+
+        # Log full table for raw data
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+            raw_data = df_master[cols].to_string(index=False)
+        debug(context, f"[DEBUG-ZONES] FULL {label} dataset:\n{raw_data}")
+
+        # Apply numeric conversion and handle missing values
         subset = df_master[cols].apply(pd.to_numeric, errors="coerce").fillna(0)
+        
+        # Compute the total sum of values in all zones
         total = subset.sum().sum()
-        if total <= 0:
-            debug(context, f"[DEBUG-ZONES] ⚠ No valid {label} data — total=0")
-            return {}
+        
+        # Log the total sum (calories or any other total you're interested in)
+        debug(context, f"[DEBUG-ZONES] Total {label} sum (all zones combined): {total}")
+        
+        # Compute the percentage for each zone by dividing each zone's total by the overall total and multiplying by 100
         dist = (subset.sum() / total * 100).round(1).to_dict()
+        
+        # Log the computed distributions
         debug(context, f"[DEBUG-ZONES] ✅ {label} zones computed → {dist}")
+        
+        # Return the computed distributions in the desired format
         return dist
 
     # --- Compute all three ---
     context["zone_dist_power"] = compute(power_cols, "power")
     context["zone_dist_hr"]    = compute(hr_cols, "hr")
     context["zone_dist_pace"]  = compute(pace_cols, "pace")
+
 
     # --- Fallback to athlete profile if all empty ---
     if not any([context["zone_dist_power"], context["zone_dist_hr"], context["zone_dist_pace"]]):
@@ -723,8 +739,8 @@ def run_tier1_controller(df_master, wellness, context):
 
         # --- Compute into temp context ---
         debug(context, f"[ZONES-RAW] Columns before zone dist: {list(df_master.columns)}")
-        debug(context, f"[ZONES-RAW] icu_power_zones sample: {df_master['icu_power_zones'].head(3).tolist() if 'icu_power_zones' in df_master else 'n/a'}")
-        debug(context, f"[ZONES-RAW] icu_zone_times sample: {df_master['icu_zone_times'].head(3).tolist() if 'icu_zone_times' in df_master else 'n/a'}")
+        debug(context, f"[ZONES-RAW] icu_power_zones sample: {df_master['icu_power_zones'].head(13).tolist() if 'icu_power_zones' in df_master else 'n/a'}")
+        debug(context, f"[ZONES-RAW] icu_zone_times sample: {df_master['icu_zone_times'].head(13).tolist() if 'icu_zone_times' in df_master else 'n/a'}")
 
         tmp = {}
         tmp = collect_zone_distributions(zone_df, athleteProfile, tmp)
