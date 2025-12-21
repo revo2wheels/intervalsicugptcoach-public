@@ -844,7 +844,7 @@ def run_tier1_controller(df_master, wellness, context):
         context["outliers"] = []
 
 
-    # --- Step 7: Qualitative label translation ---
+    # --- Step 7: Qualitative label translation ----
     rpe_map = {1: "very easy", 2: "easy", 3: "moderate", 4: "somewhat hard",
                5: "hard", 6: "very hard", 7: "maximal", 8: "maximal+",
                9: "extreme", 10: "all out"}
