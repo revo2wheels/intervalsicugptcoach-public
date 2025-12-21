@@ -67,8 +67,8 @@ def collect_zone_distributions(df_master, athlete_profile, context):
 
     debug(context, f"[ZONES] Normalized columns → {len(df_master.columns)} total")
 
-    # --- 🩹 Expand icu_zone_times if present and not already flattened ---
-    if "icu_zone_times" in df_master.columns:
+    # --- 🩹 Expand icu_zone_times only if not already flattened ---
+    if "power_z1" not in df_master.columns and "icu_zone_times" in df_master.columns:
         debug(context, "[DEBUG-ZONES] Found icu_zone_times — attempting to expand.")
         import pandas as pd, ast, json, numpy as np
 
@@ -77,7 +77,6 @@ def collect_zone_distributions(df_master, athlete_profile, context):
                 return x
             if isinstance(x, str):
                 x = x.strip()
-                # handle nested or escaped JSON
                 if x.startswith('"[{') or x.startswith("'[{"):
                     try:
                         x = json.loads(x)
@@ -124,6 +123,7 @@ def collect_zone_distributions(df_master, athlete_profile, context):
 
             except Exception as e:
                 debug(context, f"[DEBUG-ZONES] ⚠️ Failed to expand icu_zone_times ({e})")
+
 
     # --- 🔍 Helper: detect zone columns by prefix ---
     def detect(prefixes):
