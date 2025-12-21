@@ -151,13 +151,12 @@ def collect_zone_distributions(df_master, athlete_profile, context):
         # Function to handle lists of dictionaries and extract the 'secs' values
         def extract_secs(value):
             if isinstance(value, list):  # If it's a list (like the railway data)
-                debug(context, f"[DEBUG-ZONES] Extracting 'secs' values from list: {value}")
-                return sum([entry['secs'] for entry in value if isinstance(entry, dict)])  # Sum 'secs' values from each dictionary in the list
-            debug(context, f"[DEBUG-ZONES] Value is not a list: {value}")
+                if isinstance(value[0], dict):  # Handle icu_zone_times (multi-row data)
+                    return sum([entry['secs'] for entry in value if isinstance(entry, dict)])  # Sum 'secs' values from each dictionary in the list
+                return sum(value)  # Sum if it's just numbers (like icu_power_zones)
             return value  # If it's a numeric value, return it as is
 
         # Apply the function to handle the lists and convert all data to numeric
-        debug(context, f"[DEBUG-ZONES] Applying 'extract_secs' function to the dataset")
         subset = df_master[cols].applymap(extract_secs).apply(pd.to_numeric, errors="coerce").fillna(0)
 
         # Log full table for raw data
@@ -165,11 +164,7 @@ def collect_zone_distributions(df_master, athlete_profile, context):
             raw_data = df_master[cols].to_string(index=False)
         debug(context, f"[DEBUG-ZONES] FULL {label} dataset:\n{raw_data}")
 
-        # Sum of all values in the subset
         total = subset.sum().sum()
-
-        # Debugging the total computation
-        debug(context, f"[DEBUG-ZONES] Total sum of all {label} values: {total}")
 
         if total <= 0:
             debug(context, f"[DEBUG-ZONES] ⚠ No valid {label} data — total=0")
@@ -177,10 +172,11 @@ def collect_zone_distributions(df_master, athlete_profile, context):
 
         dist = (subset.sum() / total * 100).round(1).to_dict()
 
-        # Debug output to show the distribution
+        # Debug output to show data
         debug(context, f"[DEBUG-ZONES] ✅ {label} zones computed → {dist}")
         debug(context, f"[DEBUG-ZONES] Total {label} sum (all zones combined): {total}")
         return dist
+
 
     # --- Compute all three ---
     context["zone_dist_power"] = compute(power_cols, "power")
