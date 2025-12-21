@@ -48,10 +48,25 @@ export default {
       });
     }
 
+    // ================================================================
+    // 🚦 ROUTE TO RAILWAY (PROD OR STAGING)
+    // ================================================================
     const INTERVALS_API_BASE = "https://intervals.icu/api/v1";
-    const RAILWAY_BASE = "https://intervalsicugptcoach-public-production.up.railway.app";
+    let RAILWAY_BASE = "https://intervalsicugptcoach-public-production.up.railway.app";
+
+    if (url.searchParams.get("staging") === "1") {
+      RAILWAY_BASE = "https://intervalsicugptcoach-public-staging.up.railway.app";
+    }
     const authHeader = request.headers.get("Authorization");
     console.log("[DEBUG AUTH HEADER]", request.headers.get("Authorization"));
+    
+    const userAgent = request.headers.get("User-Agent") || "unknown";
+    const referer = request.headers.get("Referer") || "none";
+    const ip = request.headers.get("CF-Connecting-IP") || "n/a";
+
+    console.log(
+      `[ROUTE → ${RAILWAY_BASE}] ${url.pathname}${url.search} | UA=${userAgent} | Ref=${referer} | IP=${ip} | Auth=${authHeader ? "✅" : "❌"}`
+    );
 
     // ================================================================
     // Helpers
@@ -81,25 +96,24 @@ export default {
         return -1;
       }
     };
-  // ================================================================
-  // 🔒 CANONICAL ATHLETE EXTRACTION (NO SAFE PARSE)
-  // ================================================================
-  const extractAthlete = (profTxt) => {
-    const athlete = JSON.parse(profTxt);
+    // ================================================================
+    // 🔒 CANONICAL ATHLETE EXTRACTION (NO SAFE PARSE)
+    // ================================================================
+    const extractAthlete = (profTxt) => {
+      const athlete = JSON.parse(profTxt);
 
-    if (!athlete || typeof athlete !== "object") {
-      throw new Error("[FATAL] Athlete profile is not an object");
-    }
+      if (!athlete || typeof athlete !== "object") {
+        throw new Error("[FATAL] Athlete profile is not an object");
+      }
 
-    if (!athlete.timezone) {
-      throw new Error(
-        "[FATAL] Athlete missing timezone — refusing to continue"
-      );
-    }
+      if (!athlete.timezone) {
+        throw new Error(
+          "[FATAL] Athlete missing timezone — refusing to continue"
+        );
+      }
 
-    return athlete;
-  };
-
+      return athlete;
+    };
     // ================================================================
     // 🔥 Correct safeParse with expected type
     // ================================================================
@@ -119,7 +133,7 @@ export default {
     // ================================================================
     // 🔥 Unified payload logger (LOGGING ONLY)
     // ================================================================
-    const logPayload = (tag, payload, athleteRawText = "") => {
+    const logPayload = (tag, payload, athleteRawText = "", routeTarget = "unknown") => {
       const sizes = {
         athlete: jsonSize(payload.athlete),
         activities_light: jsonSize(payload.activities_light),
@@ -141,9 +155,11 @@ export default {
           : 0,
       };
 
+      const rowSummary = `rows(light=${rows.light}, full=${rows.full}, well=${rows.wellness})`;
+
       console.log(
         JSON.stringify({
-          message: `[${tag}] PAYLOAD SIZE (bytes)`,
+          message: `[${tag}] ${routeTarget} | ${rowSummary}`,
           range: payload.range,
           athlete_id: payload.athlete?.id ?? "<missing>",
           sizes,
@@ -154,7 +170,6 @@ export default {
         })
       );
     };
-
 
     // ================================================================
     // 🔥 Correct callRailway (with athleteRawText support)
