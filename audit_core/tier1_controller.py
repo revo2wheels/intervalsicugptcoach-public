@@ -720,10 +720,10 @@ def run_tier1_controller(df_master, wellness, context):
     else:
         debug(context, "[T1] No valid wellness DataFrame — skipping wellness hydration")
 
-
     # --- Step 6b: Build HR / Power / Pace zone distributions ---
+    debug(context, f"[DEBUG-T1] Sanity check before Step 6b — rows in df_master: {len(df_master)}")
 
-    debug(context, f"[DEBUG-T1] sanity check before Step 6b — rows in df_master: {len(df_master)}")
+    # Ensure athlete profile is available
     athleteProfile = context.get("athleteProfile", {}) or {}
 
     try:
@@ -733,6 +733,7 @@ def run_tier1_controller(df_master, wellness, context):
         zone_df = df_master
         scope = "7d"
 
+        # Check if context has 'df_light' for the season mode and use it
         if report_type == "season" and isinstance(context.get("df_light"), pd.DataFrame):
             candidate = context["df_light"]
 
@@ -750,21 +751,42 @@ def run_tier1_controller(df_master, wellness, context):
 
         # --- Compute into temp context ---
         debug(context, f"[ZONES-RAW] Columns before zone dist: {list(df_master.columns)}")
-        debug(context, f"[ZONES-RAW] icu_power_zones sample: {df_master['icu_power_zones'].head(13).tolist() if 'icu_power_zones' in df_master else 'n/a'}")
-        debug(context, f"[ZONES-RAW] icu_zone_times sample: {df_master['icu_zone_times'].head(13).tolist() if 'icu_zone_times' in df_master else 'n/a'}")
+        
+        # Log some sample values from critical columns to verify data
+        if 'icu_power_zones' in df_master.columns:
+            debug(context, f"[ZONES-RAW] icu_power_zones sample: {df_master['icu_power_zones'].head(13).tolist()}")
+        else:
+            debug(context, "[ZONES-RAW] 'icu_power_zones' column not found in df_master.")
+            
+        if 'icu_zone_times' in df_master.columns:
+            debug(context, f"[ZONES-RAW] icu_zone_times sample: {df_master['icu_zone_times'].head(13).tolist()}")
+        else:
+            debug(context, "[ZONES-RAW] 'icu_zone_times' column not found in df_master.")
+        
+        # Sanity check for missing or NaN values in critical columns
+        missing_icu_power_zones = df_master['icu_power_zones'].isnull().sum() if 'icu_power_zones' in df_master.columns else 0
+        missing_icu_zone_times = df_master['icu_zone_times'].isnull().sum() if 'icu_zone_times' in df_master.columns else 0
+        debug(context, f"[DEBUG-T1] Missing values: icu_power_zones: {missing_icu_power_zones}, icu_zone_times: {missing_icu_zone_times}")
+        
+        # Check if columns have at least some data
+        debug(context, f"[DEBUG-T1] First few rows of icu_power_zones: {df_master['icu_power_zones'].head() if 'icu_power_zones' in df_master.columns else 'n/a'}")
+        debug(context, f"[DEBUG-T1] First few rows of icu_zone_times: {df_master['icu_zone_times'].head() if 'icu_zone_times' in df_master.columns else 'n/a'}")
 
+        # Initialize tmp dictionary to store the results
         tmp = {}
+
+        # Proceed to compute zone distributions
         tmp = collect_zone_distributions(zone_df, athleteProfile, tmp)
 
-        # 🔒 CANONICAL KEYS (Tier-2 depends on these)
+        # Final logging for results
         context["zone_dist_power"] = tmp.get("zone_dist_power") or {}
-        context["zone_dist_hr"]    = tmp.get("zone_dist_hr") or {}
-        context["zone_dist_pace"]  = tmp.get("zone_dist_pace") or {}
+        context["zone_dist_hr"] = tmp.get("zone_dist_hr") or {}
+        context["zone_dist_pace"] = tmp.get("zone_dist_pace") or {}
 
         # 🧭 Scoped copies for debugging / UI
         context[f"zone_dist_power_{scope}"] = context["zone_dist_power"]
-        context[f"zone_dist_hr_{scope}"]    = context["zone_dist_hr"]
-        context[f"zone_dist_pace_{scope}"]  = context["zone_dist_pace"]
+        context[f"zone_dist_hr_{scope}"] = context["zone_dist_hr"]
+        context[f"zone_dist_pace_{scope}"] = context["zone_dist_pace"]
         context["zone_scope"] = scope
 
         debug(context, f"[T1-ZONE] Completed zone dist extraction (scope={scope})")
@@ -772,11 +794,24 @@ def run_tier1_controller(df_master, wellness, context):
         debug(context, f"  hr:    {context['zone_dist_hr']}")
 
     except Exception as e:
-        debug(context, f"⚠ Zone distribution collection failed: {e}")
+        debug(context, f"[ERROR] Exception while computing zone distributions: {str(e)}")
+
+        # Handle the case where tmp was never initialized or failed in processing
         context["zone_dist_power"] = {}
         context["zone_dist_hr"] = {}
         context["zone_dist_pace"] = {}
         context["zone_scope"] = "none"
+
+        # 🧭 Scoped copies for debugging / UI
+        context[f"zone_dist_power_{scope}"] = context["zone_dist_power"]
+        context[f"zone_dist_hr_{scope}"] = context["zone_dist_hr"]
+        context[f"zone_dist_pace_{scope}"] = context["zone_dist_pace"]
+        context["zone_scope"] = scope
+
+        debug(context, f"[T1-ZONE] Completed zone dist extraction (scope={scope})")
+        debug(context, f"  power: {context['zone_dist_power']}")
+        debug(context, f"  hr:    {context['zone_dist_hr']}")
+
 
     # --- Step 6c: Outlier Detection ---
     try:
