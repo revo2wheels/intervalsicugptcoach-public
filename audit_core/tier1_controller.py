@@ -148,27 +148,31 @@ def collect_zone_distributions(df_master, athlete_profile, context):
             debug(context, f"[DEBUG-ZONES] ❌ No {label} columns found — skipping.")
             return {}
 
+        # Function to handle lists of dictionaries and extract the 'secs' values
+        def extract_secs(value):
+            if isinstance(value, list):  # If it's a list (like the railway data)
+                return sum([entry['secs'] for entry in value if isinstance(entry, dict)])  # Sum 'secs' values from each dictionary in the list
+            return value  # If it's a numeric value, return it as is
+
+        # Apply the function to handle the lists and convert all data to numeric
+        subset = df_master[cols].applymap(extract_secs).apply(pd.to_numeric, errors="coerce").fillna(0)
+
         # Log full table for raw data
         with pd.option_context('display.max_rows', None, 'display.max_columns', None):
             raw_data = df_master[cols].to_string(index=False)
         debug(context, f"[DEBUG-ZONES] FULL {label} dataset:\n{raw_data}")
 
-        # Apply numeric conversion and handle missing values
-        subset = df_master[cols].apply(pd.to_numeric, errors="coerce").fillna(0)
-        
-        # Compute the total sum of values in all zones
         total = subset.sum().sum()
-        
-        # Log the total sum (calories or any other total you're interested in)
-        debug(context, f"[DEBUG-ZONES] Total {label} sum (all zones combined): {total}")
-        
-        # Compute the percentage for each zone by dividing each zone's total by the overall total and multiplying by 100
+
+        if total <= 0:
+            debug(context, f"[DEBUG-ZONES] ⚠ No valid {label} data — total=0")
+            return {}
+
         dist = (subset.sum() / total * 100).round(1).to_dict()
-        
-        # Log the computed distributions
+
+        # Debug output to show data
         debug(context, f"[DEBUG-ZONES] ✅ {label} zones computed → {dist}")
-        
-        # Return the computed distributions in the desired format
+        debug(context, f"[DEBUG-ZONES] Total {label} sum (all zones combined): {total}")
         return dist
 
     # --- Compute all three ---
