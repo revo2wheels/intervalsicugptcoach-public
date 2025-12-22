@@ -53,20 +53,42 @@ export default {
     // ================================================================
     const INTERVALS_API_BASE = "https://intervals.icu/api/v1";
     let RAILWAY_BASE = "https://intervalsicugptcoach-public-production.up.railway.app";
+    let ENVIRONMENT = "production"; // default
 
-    if (url.searchParams.get("staging") === "1") {
-      RAILWAY_BASE = "https://intervalsicugptcoach-public-staging.up.railway.app";
-    }
-    const authHeader = request.headers.get("Authorization");
-    console.log("[DEBUG AUTH HEADER]", request.headers.get("Authorization"));
-    
+    // Extract parameters
+    const stagingParam = url.searchParams.get("staging");
+    const ownerParam = url.searchParams.get("owner");
     const userAgent = request.headers.get("User-Agent") || "unknown";
     const referer = request.headers.get("Referer") || "none";
     const ip = request.headers.get("CF-Connecting-IP") || "n/a";
+    const authHeader = request.headers.get("Authorization");
 
+    // ----------------------------------------------------------------
+    // 🔐 OWNER-BASED STAGING ACCESS (for ChatGPT & manual tests)
+    // ----------------------------------------------------------------
+    if (stagingParam === "1" && ownerParam === "clive") {
+      RAILWAY_BASE = "https://intervalsicugptcoach-public-staging.up.railway.app";
+      ENVIRONMENT = "staging-owner";
+    }
+    // Unauthorized attempts to staging → strip parameter, stay prod
+    else if (stagingParam === "1") {
+      url.searchParams.delete("staging");
+      ENVIRONMENT = "blocked-staging";
+    }
+
+    // ----------------------------------------------------------------
+    // 🧭 Debug Logging
+    // ----------------------------------------------------------------
     console.log(
-      `[ROUTE → ${RAILWAY_BASE}] ${url.pathname}${url.search} | UA=${userAgent} | Ref=${referer} | IP=${ip} | Auth=${authHeader ? "✅" : "❌"}`
+      `[ROUTE → ${ENVIRONMENT.toUpperCase()}] ${url.pathname}${url.search}` +
+      ` | Target=${RAILWAY_BASE}` +
+      ` | UA=${userAgent}` +
+      ` | Ref=${referer}` +
+      ` | IP=${ip}` +
+      ` | Auth=${authHeader ? "✅" : "❌"}` +
+      (ownerParam ? ` | Owner=${ownerParam}` : "")
     );
+
 
     // ================================================================
     // Helpers
@@ -131,9 +153,17 @@ export default {
     };
 
     // ================================================================
-    // 🔥 Unified payload logger (LOGGING ONLY)
+    // 🔥 Unified payload logger (ENVIRONMENT-aware + color-coded)
     // ================================================================
-    const logPayload = (tag, payload, athleteRawText = "", routeTarget = "unknown") => {
+    const logPayload = (tag, payload, athleteRawText = "", routeTarget) => {
+      // Auto-fill the route target if missing
+      if (!routeTarget) routeTarget = ENVIRONMENT || "unknown";
+
+      let envTag = "⚪️";
+      if (routeTarget.includes("prod")) envTag = "🟢";
+      else if (routeTarget.includes("staging")) envTag = "🟣";
+      else if (routeTarget.includes("blocked")) envTag = "🔒";
+
       const sizes = {
         athlete: jsonSize(payload.athlete),
         activities_light: jsonSize(payload.activities_light),
@@ -159,7 +189,7 @@ export default {
 
       console.log(
         JSON.stringify({
-          message: `[${tag}] ${routeTarget} | ${rowSummary}`,
+          message: `${envTag} [${tag}] ${routeTarget} | ${rowSummary}`,
           range: payload.range,
           athlete_id: payload.athlete?.id ?? "<missing>",
           sizes,
@@ -172,28 +202,36 @@ export default {
     };
 
     // ================================================================
-    // 🔥 Correct callRailway (with athleteRawText support)
+    // 🔥 callRailway — passes ENVIRONMENT automatically
     // ================================================================
     const callRailway = async (payload, tag, athleteRawText = "") => {
-      logPayload(tag, payload, athleteRawText);
+      logPayload(tag, payload, athleteRawText, ENVIRONMENT);
 
       const resp = await fetch(`${RAILWAY_BASE}/run`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
 
       const text = await resp.text();
-      console.log(`[${tag}] Railway returned ${resp.status} (${text.length} bytes)`);
+      const envTag =
+        ENVIRONMENT.includes("prod")
+          ? "🟢"
+          : ENVIRONMENT.includes("staging")
+          ? "🟣"
+          : "🔒";
+
+      console.log(`${envTag} [${tag}] Railway returned ${resp.status} (${text.length} bytes)`);
 
       return new Response(text, {
         status: resp.status,
         headers: {
           "content-type": "application/json",
-          "access-control-allow-origin": "*"
-        }
+          "access-control-allow-origin": "*",
+        },
       });
     };
+
 
     // ================================================================
     // OAuth proxy routes

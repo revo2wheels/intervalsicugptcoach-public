@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Intervals.icu Training Coach Proxy",
-    "version": "5.2.0",
-    "description": "Cloudflare proxy for URF reports. Use ?staging=1 for staging mode. ChatGPT never sees raw activities/wellness."
+    "version": "5.3.0",
+    "description": "Cloudflare proxy for URF reports. ChatGPT never sees raw activities/wellness."
   },
 
   "servers": [
@@ -22,6 +22,13 @@
             "schema": { "type": "integer", "enum": [0, 1] },
             "required": false,
             "description": "Use 1 to route request through the staging Railway environment."
+          },
+          {
+            "in": "query",
+            "name": "owner",
+            "schema": { "type": "string" },
+            "required": false,
+            "description": "Optional owner flag for internal routing (e.g., 'intervals')."
           }
         ],
         "responses": {
@@ -48,6 +55,13 @@
             "schema": { "type": "integer", "enum": [0, 1] },
             "required": false,
             "description": "Use 1 to route request through the staging Railway environment."
+          },
+          {
+            "in": "query",
+            "name": "owner",
+            "schema": { "type": "string" },
+            "required": false,
+            "description": "Optional owner flag for internal routing (e.g., 'intervals')."
           }
         ],
         "responses": {
@@ -74,6 +88,13 @@
             "schema": { "type": "integer", "enum": [0, 1] },
             "required": false,
             "description": "Use 1 to route request through the staging Railway environment."
+          },
+          {
+            "in": "query",
+            "name": "owner",
+            "schema": { "type": "string" },
+            "required": false,
+            "description": "Optional owner flag for internal routing (e.g., 'intervals')."
           }
         ],
         "responses": {
@@ -100,6 +121,13 @@
             "schema": { "type": "integer", "enum": [0, 1] },
             "required": false,
             "description": "Use 1 to route request through the staging Railway environment."
+          },
+          {
+            "in": "query",
+            "name": "owner",
+            "schema": { "type": "string" },
+            "required": false,
+            "description": "Optional owner flag for internal routing (e.g., 'intervals')."
           }
         ],
         "responses": {
