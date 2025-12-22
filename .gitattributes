@@ -1,0 +1,6 @@
+docs/devandtest.md export-ignore
+config/staging.env export-ignore
+tests/private/* export-ignore
+*.json export-ignore
+*.js export-ignore
+oauth_token_fetcher.py export-ignore
