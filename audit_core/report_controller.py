@@ -830,7 +830,7 @@ def run_report(
     context["allow_intent_inference"] = False
 
 
-    # --- Final render ---
+    # --- Final render ----
     final_output, compliance = finalize_and_validate_render(context, reportType=reportType)
 
     # Check if the requested format is "semantic" or "markdown"
