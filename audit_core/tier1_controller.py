@@ -221,6 +221,8 @@ def collect_zone_distributions(df_master, athlete_profile, context):
         return dist
 
 
+    debug(context, f"[ZONE-DEBUG] df_master columns → {list(df_master.columns)}")
+    debug(context, f"[ZONE-DEBUG] Power cols detected → {power_cols}")
 
     # --- Compute all three ---
     context["zone_dist_power"] = compute(power_cols, "power")
