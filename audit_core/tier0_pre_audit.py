@@ -316,6 +316,27 @@ def fetch_activities_chunked(
     # =================================================
     df_activities = pd.concat(df_activities_list, ignore_index=True)
 
+        # --- 🩹 FIX: De-stringify nested zone JSONs coming from Cloudflare ---
+    import json, ast
+
+    def safe_eval_zones(x):
+        if isinstance(x, str):
+            try:
+                return json.loads(x)
+            except Exception:
+                try:
+                    return ast.literal_eval(x)
+                except Exception:
+                    return None
+        return x
+
+    for col in ["icu_zone_times", "icu_hr_zone_times", "pace_zone_times"]:
+        if col in df_activities.columns:
+            df_activities[col] = df_activities[col].apply(safe_eval_zones)
+            sample_type = type(df_activities["icu_zone_times"].iloc[0])
+    debug(context, f"[T0-FIX] icu_zone_times type after patch → {sample_type}")
+
+
     if "id" in df_activities.columns:
         before = len(df_activities)
         df_activities.drop_duplicates(subset=["id"], inplace=True)

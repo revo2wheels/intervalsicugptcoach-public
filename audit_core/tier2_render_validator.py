@@ -648,10 +648,10 @@ def finalize_and_validate_render(context, reportType="weekly"):
     })
 
     # === Context completeness diagnostic ===
-    debug(context,"\n[DEBUG] Context keys available before finalize_and_validate_render() return:")
-    for k in sorted(context.keys()):
-        debug(context,f"  - {k}")
-    debug(context,"[DEBUG] End of context key list\n")
+#    debug(context,"\n[DEBUG] Context keys available before finalize_and_validate_render() return:")
+#    for k in sorted(context.keys()):
+#        debug(context,f"  - {k}")
+#    debug(context,"[DEBUG] End of context key list\n")
 
     for section in ["derived_metrics", "load_metrics", "adaptation_metrics", "actions", "trend_metrics"]:
         value = context.get(section)
