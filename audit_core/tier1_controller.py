@@ -148,33 +148,42 @@ def collect_zone_distributions(df_master, athlete_profile, context):
             debug(context, f"[DEBUG-ZONES] ❌ No {label} columns found — skipping.")
             return {}
 
-        # Function to handle lists of dictionaries and extract the 'secs' values
+        # Function to extract seconds from zones, handling missing or None data
         def extract_secs(value):
             if isinstance(value, list):  # If it's a list (like the railway data)
-                if isinstance(value[0], dict):  # Handle icu_zone_times (multi-row data)
-                    return sum([entry['secs'] for entry in value if isinstance(entry, dict)])  # Sum 'secs' values from each dictionary in the list
-                return sum(value)  # Sum if it's just numbers (like icu_power_zones)
-            return value  # If it's a numeric value, return it as is
+                debug(context, f"[DEBUG-ZONES] Extracting 'secs' from list: {value}")
+                # Handle missing or invalid entries inside the list
+                total_secs = 0
+                for entry in value:
+                    if isinstance(entry, dict) and "secs" in entry:
+                        total_secs += entry["secs"]
+                    else:
+                        debug(context, f"[DEBUG-ZONES] Invalid entry in zone: {entry}")
+                return total_secs
+            debug(context, f"[DEBUG-ZONES] Value is not a list: {value}")
+            return value if isinstance(value, (int, float)) else 0  # Default to 0 for non-numeric values
 
         # Apply the function to handle the lists and convert all data to numeric
         subset = df_master[cols].applymap(extract_secs).apply(pd.to_numeric, errors="coerce").fillna(0)
 
-        # Log full table for raw data
+        # Debugging full table for raw data and subset
         with pd.option_context('display.max_rows', None, 'display.max_columns', None):
             raw_data = df_master[cols].to_string(index=False)
         debug(context, f"[DEBUG-ZONES] FULL {label} dataset:\n{raw_data}")
+        debug(context, f"[DEBUG-ZONES] Processed subset:\n{subset}")
 
+        # Calculate total sum and check if valid data exists
         total = subset.sum().sum()
 
         if total <= 0:
             debug(context, f"[DEBUG-ZONES] ⚠ No valid {label} data — total=0")
             return {}
 
+        # Calculate and return distribution
         dist = (subset.sum() / total * 100).round(1).to_dict()
 
-        # Debug output to show data
+        # Debug output for the result
         debug(context, f"[DEBUG-ZONES] ✅ {label} zones computed → {dist}")
-        debug(context, f"[DEBUG-ZONES] Total {label} sum (all zones combined): {total}")
         return dist
 
 
