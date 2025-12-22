@@ -248,6 +248,11 @@ def build_insights(semantic):
 
 def build_semantic_json(context):
     """Build the final semantic graph."""
+    # ---------------------------------------------------------
+    # Optional: user render/aggregation overrides
+    # ---------------------------------------------------------
+    render_mode = context.get("render_mode", "default")
+    aggregation = context.get("aggregation", "daily")
 
     # ---------------------------------------------------------
     # BASE SEMANTIC STRUCTURE
