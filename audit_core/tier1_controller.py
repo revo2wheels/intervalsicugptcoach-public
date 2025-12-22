@@ -123,11 +123,32 @@ def collect_zone_distributions(df_master, athlete_profile, context):
 
                     try:
                         expanded = df_master["icu_zone_times"].apply(expand_row)
-                        zone_df = pd.DataFrame(list(expanded))
-                        zone_df = zone_df.fillna(0)
+                        zone_df = pd.DataFrame(list(expanded)).fillna(0)
 
+                        # 🩹 Ensure index alignment before concatenation
+                        zone_df.reset_index(drop=True, inplace=True)
+                        df_master.reset_index(drop=True, inplace=True)
+
+                        # 🩹 Rename Z8 → power_sweetspot for consistency (Intervals often use Z8 = SS)
+                        if "power_z8" in zone_df.columns and "power_sweetspot" not in zone_df.columns:
+                            zone_df.rename(columns={"power_z8": "power_sweetspot"}, inplace=True)
+
+                        # 🩹 Merge into master frame
                         df_master = pd.concat([df_master, zone_df], axis=1)
-                        debug(context, f"[DEBUG-ZONES] ✅ Expanded icu_zone_times row-wise for {len(zone_df)} rows → {list(zone_df.columns)}")
+
+                        debug(
+                            context,
+                            f"[DEBUG-ZONES] ✅ Expanded icu_zone_times row-wise for {len(zone_df)} rows "
+                            f"→ {list(zone_df.columns)}"
+                        )
+
+                        # 🧩 Extra visibility for validation
+                        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                            debug(
+                                context,
+                                f"[DEBUG-ZONES] FULL power dataset:\n{df_master[[c for c in zone_df.columns if c in df_master]].to_string(index=True)}"
+                            )
+
                     except Exception as e:
                         debug(context, f"[DEBUG-ZONES] ⚠️ Row-wise expansion failed: {e}")
 
