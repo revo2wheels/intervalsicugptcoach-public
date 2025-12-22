@@ -776,6 +776,30 @@ def run_tier1_controller(df_master, wellness, context):
         # Check if columns have at least some data
         debug(context, f"[DEBUG-T1] First few rows of icu_power_zones: {df_master['icu_power_zones'].head() if 'icu_power_zones' in df_master.columns else 'n/a'}")
         debug(context, f"[DEBUG-T1] First few rows of icu_zone_times: {df_master['icu_zone_times'].head() if 'icu_zone_times' in df_master.columns else 'n/a'}")
+       
+        # For df_master['icu_power_zones'], replace NaN or None with 0.0, but log the changes for visibility
+        if 'icu_power_zones' in df_master.columns:
+            missing_power_zones = df_master['icu_power_zones'].isnull().sum()
+            debug(context, f"[DEBUG-T1] Missing values in icu_power_zones: {missing_power_zones}")
+            
+            df_master['icu_power_zones'] = df_master['icu_power_zones'].fillna(0.0)
+            debug(context, f"[DEBUG-T1] After fillna, icu_power_zones sample: {df_master['icu_power_zones'].head()}")
+
+        # For icu_zone_times, process the list of dictionaries, replacing None values with 0.0, and logging transformations
+        def process_zone_times(zone_times):
+            if isinstance(zone_times, list):
+                # Process the list of dictionaries and replace None values inside the dictionaries with 0.0
+                transformed = [{k: (0.0 if v is None else v) for k, v in zone.items()} for zone in zone_times]
+                debug(context, f"[DEBUG-ZONES] Transformed icu_zone_times: {transformed}")
+                return transformed
+            return zone_times  # Return the value as is if it's not a list
+
+        if 'icu_zone_times' in df_master.columns:
+            missing_zone_times = df_master['icu_zone_times'].isnull().sum()
+            debug(context, f"[DEBUG-T1] Missing values in icu_zone_times: {missing_zone_times}")
+            
+            df_master['icu_zone_times'] = df_master['icu_zone_times'].apply(process_zone_times)
+            debug(context, f"[DEBUG-T1] After processing, icu_zone_times sample: {df_master['icu_zone_times'].head()}")
 
         # Initialize tmp dictionary to store the results
         tmp = {}
