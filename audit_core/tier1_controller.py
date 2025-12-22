@@ -185,7 +185,7 @@ def collect_zone_distributions(df_master, athlete_profile, context):
         # Function to extract seconds from zones, handling missing or None data
         def extract_secs(value):
             if isinstance(value, list):  # If it's a list (like the railway data)
-                debug(context, f"[DEBUG-ZONES] Extracting 'secs' from list: {value}")
+                #debug(context, f"[DEBUG-ZONES] Extracting 'secs' from list: {value}")
                 # Handle missing or invalid entries inside the list
                 total_secs = 0
                 for entry in value:

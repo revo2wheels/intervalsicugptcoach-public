@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Intervals.icu Training Coach Proxy",
-    "version": "5.1.0",
-    "description": "Cloudflare proxy for URF reports. ChatGPT never sees raw activities/wellness."
+    "version": "5.2.0",
+    "description": "Cloudflare proxy for URF reports. Use ?staging=1 for staging mode. ChatGPT never sees raw activities/wellness."
   },
 
   "servers": [
@@ -14,7 +14,16 @@
     "/run_weekly": {
       "get": {
         "summary": "Generate a weekly URF report (7-day)",
-        "operationId": "runWeeklyReportV2",        
+        "operationId": "runWeeklyReportV2",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "staging",
+            "schema": { "type": "integer", "enum": [0, 1] },
+            "required": false,
+            "description": "Use 1 to route request through the staging Railway environment."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Weekly URF report output",
@@ -32,6 +41,15 @@
       "get": {
         "summary": "Generate a season URF report (90-day block)",
         "operationId": "runSeasonReportV2",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "staging",
+            "schema": { "type": "integer", "enum": [0, 1] },
+            "required": false,
+            "description": "Use 1 to route request through the staging Railway environment."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Season URF report output",
@@ -49,6 +67,15 @@
       "get": {
         "summary": "Generate a 42-day wellness URF report",
         "operationId": "runWellnessReportV2",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "staging",
+            "schema": { "type": "integer", "enum": [0, 1] },
+            "required": false,
+            "description": "Use 1 to route request through the staging Railway environment."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Wellness URF report output",
@@ -66,6 +93,15 @@
       "get": {
         "summary": "Generate a URF high-level summary",
         "operationId": "runSummaryReportV2",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "staging",
+            "schema": { "type": "integer", "enum": [0, 1] },
+            "required": false,
+            "description": "Use 1 to route request through the staging Railway environment."
+          }
+        ],
         "responses": {
           "200": {
             "description": "Summary URF output",
@@ -103,7 +139,9 @@
         "generate weekly report",
         "7 day report",
         "7-day report",
-        "past week report"
+        "past week report",
+        "weekly report staging",
+        "run weekly report staging"
       ],
       "action": "runWeeklyReportV2",
       "x-intent": {
@@ -117,7 +155,9 @@
         "90 day report",
         "block report",
         "training block report",
-        "run season report"
+        "run season report",
+        "season report staging",
+        "run season report staging"
       ],
       "action": "runSeasonReportV2",
       "x-intent": {
@@ -130,7 +170,9 @@
         "wellness report",
         "42 day wellness",
         "recovery report",
-        "run wellness report"
+        "run wellness report",
+        "wellness report staging",
+        "run wellness report staging"
       ],
       "action": "runWellnessReportV2",
       "x-intent": {
@@ -143,7 +185,9 @@
         "summary report",
         "overview report",
         "high level summary",
-        "run summary"
+        "run summary",
+        "summary report staging",
+        "run summary report staging"
       ],
       "action": "runSummaryReportV2",
       "x-intent": {
@@ -154,21 +198,9 @@
   ],
 
   "x-actions": {
-    "runWeeklyReportV2": {
-      "type": "operation",
-      "operationId": "runWeeklyReportV2"
-    },
-    "runSeasonReportV2": {
-      "type": "operation",
-      "operationId": "runSeasonReportV2"
-    },
-    "runWellnessReportV2": {
-      "type": "operation",
-      "operationId": "runWellnessReportV2"
-    },
-    "runSummaryReportV2": {
-      "type": "operation",
-      "operationId": "runSummaryReportV2"
-    }
+    "runWeeklyReportV2": { "type": "operation", "operationId": "runWeeklyReportV2" },
+    "runSeasonReportV2": { "type": "operation", "operationId": "runSeasonReportV2" },
+    "runWellnessReportV2": { "type": "operation", "operationId": "runWellnessReportV2" },
+    "runSummaryReportV2": { "type": "operation", "operationId": "runSummaryReportV2" }
   }
 }
