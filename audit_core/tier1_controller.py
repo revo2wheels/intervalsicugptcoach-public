@@ -108,18 +108,28 @@ def collect_zone_distributions(df_master, athlete_profile, context):
 
                 # ✅ CASE 2: List of dicts (Intervals-style [{'id':'Z1','secs':...}, ...])
                 elif isinstance(sample, list) and all(isinstance(z, dict) for z in sample):
-                    zone_cols = {}
-                    for z in sample:
-                        zid = str(z.get("id", "")).strip().upper()
-                        secs = float(z.get("secs", 0))
-                        if zid.startswith("Z"):
-                            zone_cols[f"power_z{zid[1:]}"] = [secs]
-                        elif zid == "SS":
-                            zone_cols["power_sweetspot"] = [secs]
-                    if zone_cols:
-                        df_zone = pd.DataFrame(zone_cols)
-                        df_master = pd.concat([df_master, df_zone], axis=1)
-                        debug(context, f"[DEBUG-ZONES] ✅ Built canonical zones → {list(zone_cols.keys())}")
+                    # --- 🩹 FIX: Expand icu_zone_times for every row, not just one sample ---
+                    def expand_row(zlist):
+                        row = {}
+                        if isinstance(zlist, list):
+                            for z in zlist:
+                                zid = str(z.get("id", "")).strip().upper()
+                                secs = float(z.get("secs", 0))
+                                if zid.startswith("Z"):
+                                    row[f"power_z{zid[1:]}"] = secs
+                                elif zid == "SS":
+                                    row["power_sweetspot"] = secs
+                        return row
+
+                    try:
+                        expanded = df_master["icu_zone_times"].apply(expand_row)
+                        zone_df = pd.DataFrame(list(expanded))
+                        zone_df = zone_df.fillna(0)
+
+                        df_master = pd.concat([df_master, zone_df], axis=1)
+                        debug(context, f"[DEBUG-ZONES] ✅ Expanded icu_zone_times row-wise for {len(zone_df)} rows → {list(zone_df.columns)}")
+                    except Exception as e:
+                        debug(context, f"[DEBUG-ZONES] ⚠️ Row-wise expansion failed: {e}")
 
             except Exception as e:
                 debug(context, f"[DEBUG-ZONES] ⚠️ Failed to expand icu_zone_times ({e})")
@@ -148,6 +158,9 @@ def collect_zone_distributions(df_master, athlete_profile, context):
             debug(context, f"[DEBUG-ZONES] ❌ No {label} columns found — skipping.")
             return {}
 
+        # 🩹 Optional cleanup: remove any non-time columns like icu_power_zones
+        cols = [c for c in cols if c.lower() != "icu_power_zones"]
+
         # Function to extract seconds from zones, handling missing or None data
         def extract_secs(value):
             if isinstance(value, list):  # If it's a list (like the railway data)
@@ -157,10 +170,10 @@ def collect_zone_distributions(df_master, athlete_profile, context):
                 for entry in value:
                     if isinstance(entry, dict) and "secs" in entry:
                         total_secs += entry["secs"]
-                    else:
-                        debug(context, f"[DEBUG-ZONES] Invalid entry in zone: {entry}")
+#                    else:
+#                       debug(context, f"[DEBUG-ZONES] Invalid entry in zone: {entry}")
                 return total_secs
-            debug(context, f"[DEBUG-ZONES] Value is not a list: {value}")
+#           debug(context, f"[DEBUG-ZONES] Value is not a list: {value}")
             return value if isinstance(value, (int, float)) else 0  # Default to 0 for non-numeric values
 
         # Apply the function to handle the lists and convert all data to numeric
@@ -185,6 +198,7 @@ def collect_zone_distributions(df_master, athlete_profile, context):
         # Debug output for the result
         debug(context, f"[DEBUG-ZONES] ✅ {label} zones computed → {dist}")
         return dist
+
 
 
     # --- Compute all three ---

@@ -316,7 +316,7 @@ def fetch_activities_chunked(
     # =================================================
     df_activities = pd.concat(df_activities_list, ignore_index=True)
 
-        # --- 🩹 FIX: De-stringify nested zone JSONs coming from Cloudflare ---
+    # --- 🩹 FIX: De-stringify nested zone JSONs coming from Cloudflare ---
     import json, ast
 
     def safe_eval_zones(x):
