@@ -514,13 +514,39 @@ def run_tier1_controller(df_master, wellness, context):
         f"{context['tier1_visibleTotals']['tss']} TSS"
     )
 
-   # --- Step 3: Basic variance validation (unified) ---
+    # --- Step 3: Basic variance validation (unified) ---
     t1_hours = context.get("tier1_visibleTotals", {}).get("hours", 0)
     t1_tss = context.get("tier1_visibleTotals", {}).get("tss", 0)
 
     if t1_hours <= 0 or t1_tss <= 0:
-        raise AuditHalt("❌ Tier-1: invalid or missing canonical totals from Tier-0 snapshot")
+        warn_msg = (
+            "⚠️ Tier-1 detected missing or zero canonical totals.\n"
+            "This often occurs if recent activities have no Training Load (TSS) or HR zone data.\n"
+            "If you're using a smartwatch such as Amazfit that only records HR, "
+            "Intervals.icu may not compute load metrics.\n\n"
+            "👉 Please check:\n"
+            " • At least one activity in the past 7 days has valid TSS or HR-based load\n"
+            " • Your FTP and HR zones are set in Intervals.icu → Athlete → Settings → Zones\n"
+            " • Try ‘Re-analyze’ or ‘Estimate load from HR’ on recent activities\n\n"
+            "Then re-run the report."
+        )
+        context["tier1_warning"] = warn_msg
 
+        # Instead of halting, produce a minimal fallback report
+        context["tier1_visibleTotals"] = {"hours": 0, "tss": 0, "km": 0}
+        context["df_events"] = df_master.head(0)  # empty dataframe
+        log.warn(warn_msg)
+
+        # Return gracefully — don't raise AuditHalt
+        return {
+            "status": "warning",
+            "message": "Tier-1 skipped due to incomplete training load data",
+            "details": warn_msg,
+            "semantic_graph": {},
+            "logs": "\n".join(context.get("logs", [])) if "logs" in context else "",
+        }
+
+    # Continue if totals are valid
     context.pop("dailyTotals", None)
     context["df_events"] = df_master
 

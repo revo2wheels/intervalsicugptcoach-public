@@ -7,7 +7,7 @@ Usage:
     python report.py --range weekly --format markdown
     python report.py --range weekly --format semantic
     python report.py --range weekly --format semantic --prefetch
-    python report.py --range weekly --format semantic --prefetch --staging
+    python report.py --range weekly --format semantic --prefetch --staging --owner xyz
 """
 
 import io
@@ -29,7 +29,7 @@ from audit_core.utils import debug
 sys.stdout.reconfigure(encoding="utf-8")
 
 # ─────────────────────────────────────────────
-# DEBUG REPRTS
+# DEBUG REPORTS
 # ─────────────────────────────────────────────
 
 def fetch_debug_report(report_type, format="semantic", staging=False):
@@ -64,23 +64,35 @@ def fetch_debug_report(report_type, format="semantic", staging=False):
 # ─────────────────────────────────────────────
 # PREFETCH HELPER — Cloudflare Worker Schema
 # ─────────────────────────────────────────────
-def fetch_remote_report(report_type, fmt="semantic", staging=False):
-    """Fetch a full rendered URF report (semantic+markdown+logs) from Cloudflare Worker."""
+def fetch_remote_report(report_type, fmt="semantic", staging=False, owner=None):
+    """
+    Fetch a full rendered URF report (semantic+markdown+logs) from Cloudflare Worker.
+    Access control (for staging) is handled entirely by the Worker.
+    """
     base = f"https://intervalsicugptcoach.clive-a5a.workers.dev/run_{report_type}"
+
+    # Pass staging and owner — Worker decides what to do
+    params = []
     if staging:
-        base += "?staging=1"
+        params.append("staging=1")
+    if owner:
+        params.append(f"owner={owner}")
+    if params:
+        base += "?" + "&".join(params)
 
     headers = {
         "Authorization": f"Bearer {os.getenv('ICU_OAUTH', '')}",
         "User-Agent": "IntervalsGPTCoachLocal/1.0"
     }
 
-    print(f"[REMOTE] Fetching full {report_type} report (staging={staging}) from {base}")
+    print(f"[REMOTE] Fetching full {report_type} report (staging={staging}, owner={owner}) from {base}")
     resp = requests.get(base, headers=headers, timeout=60)
     resp.raise_for_status()
     data = resp.json()
 
-    outname = f"report_{report_type}_{'staging' if staging else 'prod'}_{fmt}.json"
+    env_tag = "staging" if staging else "prod"
+    outname = f"report_{report_type}_{env_tag}_{fmt}.json"
+
     Path("reports").mkdir(exist_ok=True)
     Path(f"reports/{outname}").write_text(json.dumps(data, indent=2), encoding="utf-8")
 
@@ -88,11 +100,12 @@ def fetch_remote_report(report_type, fmt="semantic", staging=False):
     print(f"[REMOTE] keys={list(data.keys())}")
     return data
 
+
 # ─────────────────────────────────────────────
 # MAIN REPORT GENERATION
 # ─────────────────────────────────────────────
 def generate_full_report(report_type="weekly", output_path=None, output_format="markdown",
-                         prefetch=False, staging=False):
+                         prefetch=False, staging=False, owner=None):
     """Run report and capture logs and output into one file."""
     buffer = io.StringIO()
     os.environ["REPORT_TYPE"] = report_type.lower()
@@ -101,12 +114,12 @@ def generate_full_report(report_type="weekly", output_path=None, output_format="
         Path("reports").mkdir(parents=True, exist_ok=True)
         suffix = ""
         if prefetch:
-            suffix = "_prefetch_staging" if staging else "_prefetch_prod"
+            suffix = f"_prefetch_{'staging' if staging else 'prod'}"
         output_path = Path("reports") / f"report_{report_type}{suffix}.{output_format}"
 
     if prefetch:
-        print(f"[PREFETCH] Using Worker prehydrated report (staging={staging})")
-        data = fetch_remote_report(report_type, fmt=output_format, staging=staging)
+        print(f"[PREFETCH] Using Worker prehydrated report (staging={staging}, owner={owner})")
+        data = fetch_remote_report(report_type, fmt=output_format, staging=staging, owner=owner)
 
         log_output = data.get("logs", "")
         if output_format == "semantic":
@@ -177,6 +190,7 @@ def generate_full_report(report_type="weekly", output_path=None, output_format="
 
     print(f"✅ {report_type.title()} report written to {Path(output_path).resolve()}")
 
+
 # ─────────────────────────────────────────────
 # CLI ENTRY POINT
 # ─────────────────────────────────────────────
@@ -191,16 +205,20 @@ def main():
                         default="semantic",
                         help="Output format (default: semantic)")
     parser.add_argument("--prefetch", action="store_true",
-                        help="Use prehydrated dataset from Railway proxy")
+                        help="Use prehydrated dataset from Railway proxy (via Worker)")
     parser.add_argument("--staging", action="store_true",
-                        help="Use staging Railway proxy instead of production")
+                        help="Request staging environment (Worker will decide access)")
+    parser.add_argument("--owner", type=str, default=None,
+                        help="Optional owner identifier (e.g., 'xyz' for staging access)")
 
     args = parser.parse_args()
+
     generate_full_report(report_type=args.range,
                          output_path=args.output,
                          output_format=args.format,
                          prefetch=args.prefetch,
-                         staging=args.staging)
+                         staging=args.staging,
+                         owner=args.owner)
 
 if __name__ == "__main__":
     main()
