@@ -420,7 +420,26 @@ def compute_derived_metrics(df_events, context):
 
     # --- ✅ 8. ZQI (Zone Quality Index) ---
     zqi = compute_zone_intensity(df_events, context)
-    debug(context, f"[DERIVED] ZQI={zqi}")
+    debug(context, f"[DERIVED] ZQI (initial)={zqi}")
+
+    # --- 🩹 Fallback recompute if no zone columns were present ---
+    if (zqi == 0.0 or not zqi):
+        zones = context.get("zone_dist_power") or context.get("zone_dist_hr") or {}
+        if not zones and "zones" in context:
+            # try pulling from 'zones' block if collect_zone_distributions() already ran
+            zblock = context["zones"]
+            if "power" in zblock and isinstance(zblock["power"], dict):
+                zones = zblock["power"]
+            elif "hr" in zblock and isinstance(zblock["hr"], dict):
+                zones = zblock["hr"]
+
+        if zones:
+            total = sum(float(v) for v in zones.values())
+            if total > 0:
+                high = sum(float(zones.get(z, 0)) for z in ["power_z5","power_z6","power_z7","hr_z5","hr_z6","hr_z7"])
+                zqi = round(high / total * 100, 1)
+                debug(context, f"[ZQI] 🩵 Recomputed from zone distributions → {zqi}% (High={high:.1f} / Total={total:.1f})")
+                context["ZQI"] = zqi
 
     # --- ✅ 9. Fat oxidation efficiency ---
     if "IF" in df_events.columns:
