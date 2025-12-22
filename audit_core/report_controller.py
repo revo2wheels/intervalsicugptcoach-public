@@ -843,6 +843,17 @@ def run_report(
             bool(context.get("correlation_metrics")),
         ))
 
+        # Patch: inject athlete thresholds into context if missing
+        athlete = context.get("athlete_raw", {})
+        sport_settings = athlete.get("sportSettings", [])
+        if sport_settings:
+            primary = sport_settings[0]
+            if "power_zones" in primary and not context.get("icu_power_zones"):
+                context["icu_power_zones"] = primary["power_zones"]
+            if "hr_zones" in primary and not context.get("icu_hr_zones"):
+                context["icu_hr_zones"] = primary["hr_zones"]
+
+
         semantic_output = build_semantic_json(context)  # Ensure semantic_output is generated
 
         # If the output format is "semantic", return the semantic graph

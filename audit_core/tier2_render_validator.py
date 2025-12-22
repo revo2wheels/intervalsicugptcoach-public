@@ -426,16 +426,21 @@ def finalize_and_validate_render(context, reportType="weekly"):
         debug(context, f"[TRACE-CONTEXT] eventTotals(hours,tss) = "
                     f"{context['eventTotals'].get('hours')}, {context['eventTotals'].get('tss')}")
 
-    # --- ZONE DISTRIBUTION PRESERVATION ---
+    # --- 🧩 SAFE ZONE DISTRIBUTION PRESERVATION ---
     for k in ["zone_dist", "zone_dist_power", "zone_dist_hr", "zone_dist_pace"]:
-        if k not in context or not context[k]:
+        val = context.get(k)
+
+        # Only patch if truly missing or invalid (None, not a dict, or empty dict)
+        if not isinstance(val, dict) or not val:
             src = context.get("derived_metrics", {}).get(k)
-            if src:
+            if isinstance(src, dict) and src:
                 context[k] = src
-                debug(context, f"[ZONE-PATCH] restored {k} from derived_metrics")
+                debug(context, f"[ZONE-PATCH] 🔄 restored {k} from derived_metrics ({len(src)} keys)")
             else:
-                debug(context, f"[ZONE-PATCH] missing {k}, using empty dict")
+                debug(context, f"[ZONE-PATCH] ⚠ missing {k}, no derived backup — leaving empty dict")
                 context[k] = {}
+        else:
+            debug(context, f"[ZONE-PATCH] ✅ preserved {k} from Tier-1 ({len(val)} keys)")
 
     # --- Renderer execution ---
     report = render_template(

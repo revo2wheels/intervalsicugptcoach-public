@@ -164,10 +164,15 @@ def build_insights(semantic):
     # -------------------------------------------------
     # 2 — Load Distribution (Intensity Bias)
     # -------------------------------------------------
-    zones = semantic.get("zones", {}).get("power", {})
-    z1 = zones.get("power_z1", 0)
-    z2 = zones.get("power_z2", 0)
-    z3plus = sum(v for k, v in zones.items() if k not in ("power_z1", "power_z2"))
+    zones = semantic.get("zones", {}).get("power", {}) or {}
+    dist = zones.get("distribution", zones)  # Support new nested structure or flat fallback
+
+    z1 = dist.get("power_z1", 0)
+    z2 = dist.get("power_z2", 0)
+    z3plus = sum(
+        v for k, v in dist.items()
+        if k not in ("power_z1", "power_z2") and isinstance(v, (int, float))
+    )
 
     z_low = round(z1 + z2, 1)
     z_high = round(z3plus, 1)
@@ -286,10 +291,19 @@ def build_semantic_json(context):
 
         # Zones
         "zones": {
-            "power": context.get("zone_dist_power", {}),
-            "hr": context.get("zone_dist_hr", {}),
+            "power": {
+                "distribution": context.get("zone_dist_power", {}),
+                "thresholds": context.get("icu_power_zones") or context.get("athlete_power_zones") or [],
+            },
+            "hr": {
+                "distribution": context.get("zone_dist_hr", {}),
+                "thresholds": context.get("icu_hr_zones") or context.get("athlete_hr_zones") or [],
+            },
+            "pace": {
+                "distribution": context.get("zone_dist_pace", {}),
+                "thresholds": context.get("icu_pace_zones") or [],
+            },
         },
-
         # Daily load
         "daily_load": [
             {
@@ -586,6 +600,69 @@ def build_semantic_json(context):
 
     semantic["insights"] = build_insights(semantic)
     semantic["insight_view"] = build_insight_view(semantic)
+
+    # ---------------------------------------------------------
+    # 🧩 FINAL ZONE THRESHOLD PRESERVATION (context-driven)
+    # ---------------------------------------------------------
+    try:
+        report_type = semantic.get("meta", {}).get("report_type")
+
+        # Only apply for detailed (non-wellness) reports
+        if report_type not in ("wellness", None):
+            zones_section = semantic.get("zones", {})
+
+            def extract_thresholds(context, keys):
+                """Try all possible locations where thresholds may exist."""
+                for key in keys:
+                    val = context.get(key)
+                    if isinstance(val, (list, tuple)) and len(val) > 0:
+                        return list(val)
+                # check nested dicts (derived_metrics, athlete, enforced totals)
+                for src in (
+                    context.get("derived_metrics", {}),
+                    context.get("athlete", {}),
+                    context.get("tier2_enforced_totals", {}),
+                ):
+                    if isinstance(src, dict):
+                        for key in keys:
+                            val = src.get(key)
+                            if isinstance(val, (list, tuple)) and len(val) > 0:
+                                return list(val)
+                return []  # nothing found
+
+            # Dynamic extraction
+            power_thresholds = extract_thresholds(
+                context,
+                ["icu_power_zones", "athlete_power_zones", "power_zones"]
+            )
+            hr_thresholds = extract_thresholds(
+                context,
+                ["icu_hr_zones", "athlete_hr_zones", "hr_zones"]
+            )
+            pace_thresholds = extract_thresholds(
+                context,
+                ["icu_pace_zones", "athlete_pace_zones", "pace_zones"]
+            )
+
+            # Apply dynamically found thresholds (if any)
+            if "power" in zones_section:
+                zones_section["power"]["thresholds"] = power_thresholds
+            if "hr" in zones_section:
+                zones_section["hr"]["thresholds"] = hr_thresholds
+            if "pace" in zones_section:
+                zones_section["pace"]["thresholds"] = pace_thresholds
+
+            semantic["zones"] = zones_section
+            debug(
+                context,
+                f"[SEMANTIC-ZONES] Preserved thresholds dynamically → "
+                f"power={len(power_thresholds)}, hr={len(hr_thresholds)}, pace={len(pace_thresholds)}"
+            )
+
+    except Exception as e:
+        debug(context, f"[SEMANTIC-ZONES] ⚠ Failed to reapply thresholds: {e}")
+
+
 
     return apply_report_type_contract(semantic)
 

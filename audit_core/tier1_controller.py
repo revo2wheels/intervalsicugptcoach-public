@@ -243,13 +243,23 @@ def collect_zone_distributions(df_master, athlete_profile, context):
     context["zone_dist_pace"]  = compute(pace_cols, "pace")
 
 
-    # --- Fallback to athlete profile if all empty ---
-    if not any([context["zone_dist_power"], context["zone_dist_hr"], context["zone_dist_pace"]]):
-        debug(context, "⚠️ No zone columns found — falling back to athlete_profile.")
-        prof = athlete_profile or context.get("athlete_profile", {}) or {}
-        context["zone_dist_power"] = prof.get("power_zones", {})
-        context["zone_dist_hr"] = prof.get("hr_zones", {})
-        context["zone_dist_pace"] = prof.get("pace_zones", {})
+    # --- Fallback to athlete profile if truly no zone data ---
+    has_zone_cols = any([power_cols, hr_cols, pace_cols])
+    has_valid_data = any([
+        bool(context["zone_dist_power"]),
+        bool(context["zone_dist_hr"]),
+        bool(context["zone_dist_pace"]),
+    ])
+
+    if has_zone_cols and not has_valid_data:
+        debug(context, "⚠️ Zone columns detected but compute() returned empty — keeping raw context to avoid data loss.")
+    else:
+        if not has_valid_data:
+            debug(context, "⚠️ No zone columns found — falling back to athlete_profile.")
+            prof = athlete_profile or context.get("athlete_profile", {}) or {}
+            context["zone_dist_power"] = prof.get("power_zones", {})
+            context["zone_dist_hr"] = prof.get("hr_zones", {})
+            context["zone_dist_pace"] = prof.get("pace_zones", {})
 
     # --- Canonical packaging ---
     context["zones"] = {
@@ -271,6 +281,19 @@ def collect_zone_distributions(df_master, athlete_profile, context):
         f"hr={len(context['zones']['hr'])}, "
         f"pace={len(context['zones']['pace'])}"
     )
+
+    # ✅ Extract from athlete profile if missing
+    athlete = context.get("athlete_raw", {}) or context.get("athlete", {})
+    sport_settings = athlete.get("sportSettings", [])
+
+    if sport_settings:
+        primary = sport_settings[0]  # pick first sport
+        if "power_zones" in primary and isinstance(primary["power_zones"], list):
+            context["icu_power_zones"] = primary["power_zones"]
+            debug(context, f"[ZONE-CONTEXT] Pulled icu_power_zones from athlete profile → {primary['power_zones']}")
+        if "hr_zones" in primary and isinstance(primary["hr_zones"], list):
+            context["icu_hr_zones"] = primary["hr_zones"]
+            debug(context, f"[ZONE-CONTEXT] Pulled icu_hr_zones from athlete profile → {primary['hr_zones']}")
 
     return context
 
