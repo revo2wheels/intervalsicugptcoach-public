@@ -601,6 +601,16 @@ def build_semantic_json(context):
     semantic["insights"] = build_insights(semantic)
     semantic["insight_view"] = build_insight_view(semantic)
 
+    # ---------------------------------------------------------
+    # RENDER MODE OVERRIDE
+    # ---------------------------------------------------------
+    if render_mode == "events":
+        # Skip daily rollups; keep full event list
+        semantic["daily_load"] = []
+        # Optionally flag that events are authoritative
+        semantic["meta"]["render_mode"] = "events"
+        semantic["meta"]["aggregation"] = "none"
+
     return apply_report_type_contract(semantic)
 
 def build_insight_view(semantic):
