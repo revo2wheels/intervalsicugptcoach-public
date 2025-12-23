@@ -125,3 +125,31 @@ def validate_wellness_alignment(activity_df: pd.DataFrame, wellness_df: pd.DataF
 
     debug(context,"✅ Wellness alignment check passed.")
     return True
+
+# PREFETCH RESOLUTION
+def resolve_prefetched(name, context, fetch_fn=None, **kwargs):
+    """
+    Generic resolver for any prefetched dataset.
+    Mirrors T0 resolve_dataset() pattern but works for any name.
+    """
+    pre = context.get("prefetched", {})
+
+    # ✅ 1. Use prefetched data if available
+    if name in pre and pre[name]:
+        debug(context, f"[PREFETCH] Using prefetched '{name}' ({len(pre[name])} records)")
+        return pre[name]
+
+    # ✅ 2. Never fetch in prefetched (Railway) mode
+    if "prefetched" in context:
+        debug(context, f"[PREFETCH] Skipping external fetch for '{name}' (prefetched mode)")
+        return []
+
+    # ✅ 3. Fallback to fetch_fn only in local/dev
+    if fetch_fn:
+        debug(context, f"[PREFETCH] Fetching '{name}' via {fetch_fn.__name__}()")
+        return fetch_fn(context, **kwargs)
+
+    # 🚫 Safe default
+    debug(context, f"[PREFETCH] No prefetched data or fetch function for '{name}'")
+    return []
+

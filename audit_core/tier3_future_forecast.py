@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 import os, requests, json, traceback
-from audit_core.utils import debug  # ✅ Use shared debug utility
+from audit_core.utils import debug, resolve_prefetched
 
 CLOUDFLARE_BASE = os.getenv("CLOUDFLARE_BASE", "https://intervalsicugptcoach.clive-a5a.workers.dev")
 ICU_TOKEN = os.getenv("ICU_OAUTH")
@@ -49,6 +49,23 @@ def fetch_calendar_fallback(context, days=14, owner="intervals"):
         traceback.print_exc()
         return []
 
+from audit_core.utils import debug, resolve_prefetched
+from audit_core.tier3_future_forecast import fetch_calendar_fallback
+
+def resolve_calendar(context, forecast_days=14):
+    """
+    Tier-3 calendar resolver using the shared resolve_prefetched() utility.
+    """
+    planned = resolve_prefetched("calendar", context, fetch_fn=fetch_calendar_fallback, days=forecast_days)
+
+    if isinstance(planned, list) and len(planned) > 0:
+        debug(context, f"[T3-RESOLVE] Calendar resolved ({len(planned)} events)")
+    else:
+        debug(context, "[T3-RESOLVE] ⚠️ No planned events available after prefetch resolution")
+
+    return planned
+
+
 
 # ---------------------------------------------------------------------
 # 🚀 Main Forecast Runner
@@ -80,34 +97,20 @@ def run_future_forecast(context, forecast_days=14):
 
 
     # -----------------------------------------------------------------
-    # 1️⃣ Acquire planned events (prefetched → local → skip external fetch)
+    # 1️⃣ Acquire planned events (using shared resolver)
     # -----------------------------------------------------------------
-    planned = None
 
-    # ✅ 1. Try Cloudflare-prefetched payload first (nested)
-    pre = context.get("prefetched", {})
-    if isinstance(pre, dict) and isinstance(pre.get("calendar"), list) and len(pre["calendar"]) > 0:
-        planned = pre["calendar"]
-        debug(context, f"[T3] 🧩 Using Cloudflare-prefetched calendar ({len(planned)} events)")
-
-    # ✅ 2. If not found, try top-level (for local or fallback-injected)
-    if not planned and isinstance(context.get("calendar"), list) and len(context["calendar"]) > 0:
-        planned = context["calendar"]
-        debug(context, f"[T3] 🧩 Using local context calendar ({len(planned)} events)")
-
-    # ✅ 3. If neither available, only fetch in local mode
-    if not planned:
-        if "prefetched" in context:
-            debug(context, "[T3] 🚫 Skipping external fetch (prefetched Railway mode detected)")
-            planned = []
-        else:
-            debug(context, "[T3] ⚙️ No prefetched calendar found — using fallback Cloudflare fetch.")
-            planned = fetch_calendar_fallback(context, days=forecast_days, owner=context.get("owner", "intervals"))
+    planned = resolve_prefetched(
+        "calendar",
+        context,
+        fetch_fn=fetch_calendar_fallback,
+        days=forecast_days
+    )
 
     # -----------------------------------------------------------------
     # 2️⃣ Safety check
     # -----------------------------------------------------------------
-    if not planned or not isinstance(planned, list) or len(planned) == 0:
+    if not isinstance(planned, list) or len(planned) == 0:
         debug(context, "[T3] ⚠️ No usable calendar data available for future forecast → aborting.")
         return {
             "future_forecast": {},
@@ -115,6 +118,7 @@ def run_future_forecast(context, forecast_days=14):
         }
 
     debug(context, f"[T3] 📅 {len(planned)} planned events loaded for forecast window")
+
 
     # -----------------------------------------------------------------
     # 3️⃣ Build forward projection series (final safe + full debug)
