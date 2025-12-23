@@ -669,7 +669,12 @@ def run_report(
             bool(context.get("correlation_metrics")),
         )
     )
-
+    # ============================================================
+    # 🗓️ TIER-3: CALENDAR & FUTURE FORECAST
+    # ============================================================
+    # --- after T2 complete ---
+    from audit_core.tier3_future_forecast import compute_future_forecast
+    context = compute_future_forecast(context)
 
 
     # --- Ensure minimum required context keys for validator ---
