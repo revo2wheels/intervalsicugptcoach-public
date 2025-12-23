@@ -499,11 +499,18 @@ def build_semantic_json(context):
     # ---------------------------------------------------------
     # 🗓️ PLANNED EVENTS — Grouped by Date (Calendar Context)
     # ---------------------------------------------------------
-    if "calendar" in context and isinstance(context["calendar"], list):
-        planned_events = []
+
+    # ✅ Always define safe defaults
+    planned_events = []
+    planned_summary_by_date = {}
+
+    calendar_data = context.get("calendar")
+
+    # ✅ Only build if available
+    if isinstance(calendar_data, list) and len(calendar_data) > 0:
         planned_by_date = {}
 
-        for e in context["calendar"]:
+        for e in calendar_data:
             if not isinstance(e, dict):
                 continue
 
@@ -513,7 +520,6 @@ def build_semantic_json(context):
             elif isinstance(start, str) and "T" in start:
                 start = start.split("T")[0]
 
-            # Build rich, normalized structure
             event = {
                 "id": e.get("id"),
                 "uid": e.get("uid"),
@@ -540,14 +546,9 @@ def build_semantic_json(context):
             }
 
             planned_events.append(event)
-
-            # Group by date (ISO format)
             if start:
-                if start not in planned_by_date:
-                    planned_by_date[start] = []
-                planned_by_date[start].append(event)
+                planned_by_date.setdefault(start, []).append(event)
 
-        # Optional: compute daily rollups (useful for summaries)
         planned_summary_by_date = {
             day: {
                 "total_events": len(events),
@@ -558,6 +559,7 @@ def build_semantic_json(context):
             for day, events in planned_by_date.items()
         }
 
+    # ✅ Always safely assign, even if no calendar exists
     semantic["planned_events"] = planned_events
     semantic["planned_summary_by_date"] = planned_summary_by_date
     semantic["future_forecast"] = context.get("future_forecast", {})

@@ -672,9 +672,23 @@ def run_report(
     # ============================================================
     # 🗓️ TIER-3: CALENDAR & FUTURE FORECAST
     # ============================================================
-    # --- after T2 complete ---
-    from audit_core.tier3_future_forecast import compute_future_forecast
-    context = compute_future_forecast(context)
+    from audit_core.tier3_future_forecast import run_future_forecast
+
+    debug(context, "[T3] 🚀 Starting Tier-3 Future Forecast module …")
+
+    try:
+        future_output = run_future_forecast(context)
+        if isinstance(future_output, dict):
+            context.update(future_output)
+            ff = context.get("future_forecast", {})
+            debug(context, f"[T3] ✅ Future forecast added: CTL_future={ff.get('CTL_future', 'n/a')}, ATL_future={ff.get('ATL_future', 'n/a')}, TSB_future={ff.get('TSB_future', 'n/a')}")
+        else:
+            debug(context, "[T3] ⚠️ No valid future forecast output returned from module.")
+
+    except Exception as e:
+        import traceback
+        debug(context, f"[T3] ❌ Future forecast failed with error: {e}")
+        traceback.print_exc()
 
 
     # --- Ensure minimum required context keys for validator ---
