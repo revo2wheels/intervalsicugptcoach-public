@@ -73,6 +73,10 @@ def run_future_forecast(context, forecast_days=14):
 
     debug(context, f"[T3] Prefetched calendar present: {has_prefetched_calendar}")
     debug(context, f"[T3] Local calendar present: {has_local_calendar}")
+    pre = context.get("prefetched", {})
+    debug(context, f"[T3] Prefetched keys available: {list(pre.keys()) if isinstance(pre, dict) else 'None'}")
+    if isinstance(pre, dict) and "calendar" in pre:
+        debug(context, f"[T3] Prefetched calendar type: {type(pre['calendar'])}, len={len(pre['calendar']) if isinstance(pre['calendar'], list) else 'n/a'}")
 
 
     # -----------------------------------------------------------------
