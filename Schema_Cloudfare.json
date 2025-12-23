@@ -156,6 +156,48 @@
           }
         }
       }
+    },
+    "/calendar/delete": {
+      "post": {
+        "summary": "Delete planned workouts or events from Intervals.icu calendar",
+        "operationId": "deleteCalendarV1",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": { "type": ["integer", "string"], "description": "Event ID to delete" },
+                  "date": { "type": "string", "format": "date", "description": "If ID not provided, delete all events on this date" }
+                },
+                "oneOf": [
+                  { "required": ["id"] },
+                  { "required": ["date"] }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Delete successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "deleted": { "type": "integer", "description": "Number of events deleted" },
+                    "status": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Missing ID or date" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
     }
   },
   "components": {

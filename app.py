@@ -296,15 +296,16 @@ async def run_audit_with_data(request: Request):
         activities_light = require_list("activities_light", data.get("activities_light"))
         activities_full  = require_list("activities_full",  data.get("activities_full"))
         wellness          = require_list("wellness",          data.get("wellness"))
+        calendar          = require_list("calendar",          data.get("calendar"))
 
         if activities_light:
             prefetch_context["activities_light"] = activities_light
-
         if activities_full:
             prefetch_context["activities_full"] = activities_full
-
         if wellness:
             prefetch_context["wellness"] = wellness
+        if calendar:
+            prefetch_context["calendar"] = calendar
 
         # Athlete (FLAT ONLY)
         raw_athlete = data.get("athlete")
