@@ -690,15 +690,11 @@ def build_semantic_json(context):
         semantic["actions_future"] = []
 
 
-    # ---------------------------------------------------------
-    # RENDER MODE OVERRIDE
-    # ---------------------------------------------------------
-    if render_mode == "events":
-        # Skip daily rollups; keep full event list
-        semantic["daily_load"] = []
-        # Optionally flag that events are authoritative
-        semantic["meta"]["render_mode"] = "events"
-        semantic["meta"]["aggregation"] = "none"
+    # -----------------------------------------------------------------
+    # 🧩 Echo render options so ChatGPT can see how report was rendered
+    # -----------------------------------------------------------------
+    if "render_options" in context:
+        semantic["options"] = context["render_options"]
 
     return apply_report_type_contract(semantic)
 
