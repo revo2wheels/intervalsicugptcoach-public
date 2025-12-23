@@ -507,12 +507,6 @@ def build_semantic_json(context):
             ]
             debug(context, f"[JSON BUILDER] Included verbose events (n={len(df_events)})")
 
-        else:
-            # 📊 Default summarized rollup
-            semantic["events"] = summarize_events(df_events)
-            debug(context, "[JSON BUILDER] Included summarized events view.")
-
-
     # ---------------------------------------------------------
     # 🗓️ PLANNED EVENTS — Grouped by Date (Calendar Context)
     # ---------------------------------------------------------
