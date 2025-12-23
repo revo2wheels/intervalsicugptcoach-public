@@ -496,67 +496,67 @@ def build_semantic_json(context):
             for _, row in df_events.iterrows()
         ]
 
-# ---------------------------------------------------------
-# 🗓️ PLANNED EVENTS — Grouped by Date (Calendar Context)
-# ---------------------------------------------------------
-if "calendar" in context and isinstance(context["calendar"], list):
-    planned_events = []
-    planned_by_date = {}
+    # ---------------------------------------------------------
+    # 🗓️ PLANNED EVENTS — Grouped by Date (Calendar Context)
+    # ---------------------------------------------------------
+    if "calendar" in context and isinstance(context["calendar"], list):
+        planned_events = []
+        planned_by_date = {}
 
-    for e in context["calendar"]:
-        if not isinstance(e, dict):
-            continue
+        for e in context["calendar"]:
+            if not isinstance(e, dict):
+                continue
 
-        start = e.get("start_date_local") or e.get("date")
-        if isinstance(start, datetime):
-            start = start.date().isoformat()
-        elif isinstance(start, str) and "T" in start:
-            start = start.split("T")[0]
+            start = e.get("start_date_local") or e.get("date")
+            if isinstance(start, datetime):
+                start = start.date().isoformat()
+            elif isinstance(start, str) and "T" in start:
+                start = start.split("T")[0]
 
-        # Build rich, normalized structure
-        event = {
-            "id": e.get("id"),
-            "uid": e.get("uid"),
-            "category": e.get("category", "OTHER"),
-            "name": e.get("name") or e.get("title") or "Untitled",
-            "description": e.get("description") or e.get("notes") or "",
-            "start_date_local": e.get("start_date_local"),
-            "end_date_local": e.get("end_date_local"),
-            "duration_minutes": e.get("duration_minutes"),
-            "icu_training_load": e.get("icu_training_load") or e.get("tss"),
-            "load_target": e.get("load_target"),
-            "time_target": e.get("time_target"),
-            "distance_target": e.get("distance_target"),
-            "strain_score": e.get("strain_score"),
-            "plan_name": e.get("plan_name"),
-            "plan_workout_id": e.get("plan_workout_id"),
-            "color": e.get("color"),
-            "tags": e.get("tags"),
-            "day_of_week": (
-                datetime.fromisoformat(start).strftime("%A")
-                if isinstance(start, str) and len(start) == 10
-                else None
-            ),
+            # Build rich, normalized structure
+            event = {
+                "id": e.get("id"),
+                "uid": e.get("uid"),
+                "category": e.get("category", "OTHER"),
+                "name": e.get("name") or e.get("title") or "Untitled",
+                "description": e.get("description") or e.get("notes") or "",
+                "start_date_local": e.get("start_date_local"),
+                "end_date_local": e.get("end_date_local"),
+                "duration_minutes": e.get("duration_minutes"),
+                "icu_training_load": e.get("icu_training_load") or e.get("tss"),
+                "load_target": e.get("load_target"),
+                "time_target": e.get("time_target"),
+                "distance_target": e.get("distance_target"),
+                "strain_score": e.get("strain_score"),
+                "plan_name": e.get("plan_name"),
+                "plan_workout_id": e.get("plan_workout_id"),
+                "color": e.get("color"),
+                "tags": e.get("tags"),
+                "day_of_week": (
+                    datetime.fromisoformat(start).strftime("%A")
+                    if isinstance(start, str) and len(start) == 10
+                    else None
+                ),
+            }
+
+            planned_events.append(event)
+
+            # Group by date (ISO format)
+            if start:
+                if start not in planned_by_date:
+                    planned_by_date[start] = []
+                planned_by_date[start].append(event)
+
+        # Optional: compute daily rollups (useful for summaries)
+        planned_summary_by_date = {
+            day: {
+                "total_events": len(events),
+                "total_duration": sum((e.get("duration_minutes") or 0) for e in events),
+                "total_load": sum((e.get("icu_training_load") or 0) for e in events),
+                "categories": sorted({e.get("category") for e in events if e.get("category")}),
+            }
+            for day, events in planned_by_date.items()
         }
-
-        planned_events.append(event)
-
-        # Group by date (ISO format)
-        if start:
-            if start not in planned_by_date:
-                planned_by_date[start] = []
-            planned_by_date[start].append(event)
-
-    # Optional: compute daily rollups (useful for summaries)
-    planned_summary_by_date = {
-        day: {
-            "total_events": len(events),
-            "total_duration": sum((e.get("duration_minutes") or 0) for e in events),
-            "total_load": sum((e.get("icu_training_load") or 0) for e in events),
-            "categories": sorted({e.get("category") for e in events if e.get("category")}),
-        }
-        for day, events in planned_by_date.items()
-    }
 
     semantic["planned_events"] = planned_events
     semantic["planned_summary_by_date"] = planned_summary_by_date
