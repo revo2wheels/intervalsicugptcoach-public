@@ -2,34 +2,20 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Intervals.icu Training Coach Proxy",
-    "version": "5.3.0",
-    "description": "Cloudflare proxy for URF reports. ChatGPT never sees raw activities/wellness."
+    "version": "5.4.1",
+    "description": "Cloudflare proxy for URF reports with Tier-3 future load forecasting and calendar integration. ChatGPT never sees raw activities/wellness."
   },
-
   "servers": [
     { "url": "https://intervalsicugptcoach.clive-a5a.workers.dev" }
   ],
-
   "paths": {
     "/run_weekly": {
       "get": {
         "summary": "Generate a weekly URF report (7-day)",
         "operationId": "runWeeklyReportV2",
         "parameters": [
-          {
-            "in": "query",
-            "name": "staging",
-            "schema": { "type": "integer", "enum": [0, 1] },
-            "required": false,
-            "description": "Use 1 to route request through the staging Railway environment."
-          },
-          {
-            "in": "query",
-            "name": "owner",
-            "schema": { "type": "string" },
-            "required": false,
-            "description": "Optional owner flag for internal routing (e.g., 'intervals')."
-          }
+          { "in": "query", "name": "staging", "schema": { "type": "integer", "enum": [0, 1] }, "required": false, "description": "Use 1 to route request through the staging Railway environment." },
+          { "in": "query", "name": "owner", "schema": { "type": "string" }, "required": false, "description": "Optional owner flag for internal routing (e.g., 'intervals')." }
         ],
         "responses": {
           "200": {
@@ -43,26 +29,13 @@
         }
       }
     },
-
     "/run_season": {
       "get": {
         "summary": "Generate a season URF report (90-day block)",
         "operationId": "runSeasonReportV2",
         "parameters": [
-          {
-            "in": "query",
-            "name": "staging",
-            "schema": { "type": "integer", "enum": [0, 1] },
-            "required": false,
-            "description": "Use 1 to route request through the staging Railway environment."
-          },
-          {
-            "in": "query",
-            "name": "owner",
-            "schema": { "type": "string" },
-            "required": false,
-            "description": "Optional owner flag for internal routing (e.g., 'intervals')."
-          }
+          { "in": "query", "name": "staging", "schema": { "type": "integer", "enum": [0, 1] }, "required": false, "description": "Use 1 to route request through the staging Railway environment." },
+          { "in": "query", "name": "owner", "schema": { "type": "string" }, "required": false, "description": "Optional owner flag for internal routing (e.g., 'intervals')." }
         ],
         "responses": {
           "200": {
@@ -76,26 +49,13 @@
         }
       }
     },
-
     "/run_wellness": {
       "get": {
         "summary": "Generate a 42-day wellness URF report",
         "operationId": "runWellnessReportV2",
         "parameters": [
-          {
-            "in": "query",
-            "name": "staging",
-            "schema": { "type": "integer", "enum": [0, 1] },
-            "required": false,
-            "description": "Use 1 to route request through the staging Railway environment."
-          },
-          {
-            "in": "query",
-            "name": "owner",
-            "schema": { "type": "string" },
-            "required": false,
-            "description": "Optional owner flag for internal routing (e.g., 'intervals')."
-          }
+          { "in": "query", "name": "staging", "schema": { "type": "integer", "enum": [0, 1] }, "required": false, "description": "Use 1 to route request through the staging Railway environment." },
+          { "in": "query", "name": "owner", "schema": { "type": "string" }, "required": false, "description": "Optional owner flag for internal routing (e.g., 'intervals')." }
         ],
         "responses": {
           "200": {
@@ -109,26 +69,13 @@
         }
       }
     },
-
     "/run_summary": {
       "get": {
         "summary": "Generate a URF high-level summary",
         "operationId": "runSummaryReportV2",
         "parameters": [
-          {
-            "in": "query",
-            "name": "staging",
-            "schema": { "type": "integer", "enum": [0, 1] },
-            "required": false,
-            "description": "Use 1 to route request through the staging Railway environment."
-          },
-          {
-            "in": "query",
-            "name": "owner",
-            "schema": { "type": "string" },
-            "required": false,
-            "description": "Optional owner flag for internal routing (e.g., 'intervals')."
-          }
+          { "in": "query", "name": "staging", "schema": { "type": "integer", "enum": [0, 1] }, "required": false, "description": "Use 1 to route request through the staging Railway environment." },
+          { "in": "query", "name": "owner", "schema": { "type": "string" }, "required": false, "description": "Optional owner flag for internal routing (e.g., 'intervals')." }
         ],
         "responses": {
           "200": {
@@ -141,9 +88,76 @@
           }
         }
       }
+    },
+    "/calendar/read": {
+      "get": {
+        "summary": "Read planned workouts from Intervals.icu calendar",
+        "operationId": "readCalendarV1",
+        "parameters": [
+          { "in": "query", "name": "start", "schema": { "type": "string", "format": "date" }, "required": true, "description": "Start date (ISO 8601) for calendar range." },
+          { "in": "query", "name": "end", "schema": { "type": "string", "format": "date" }, "required": true, "description": "End date (ISO 8601) for calendar range." },
+          { "in": "query", "name": "owner", "schema": { "type": "string" }, "required": false, "description": "Optional owner flag for internal routing (access limited)." }
+        ],
+        "responses": {
+          "200": {
+            "description": "Array of planned workouts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/PlannedWorkout" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/calendar/write": {
+      "post": {
+        "summary": "Write or update planned workouts to Intervals.icu calendar",
+        "operationId": "writeCalendarV1",
+        "parameters": [
+          { "in": "query", "name": "owner", "schema": { "type": "string" }, "required": false, "description": "Optional owner flag for internal routing (access limited)." }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "planned_workouts": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/PlannedWorkout" },
+                    "description": "List of planned workouts to create or update."
+                  }
+                },
+                "required": ["planned_workouts"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Planned workouts successfully written",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string" },
+                    "created": { "type": "integer", "description": "Number of workouts created" },
+                    "updated": { "type": "integer", "description": "Number of workouts updated" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
-
   "components": {
     "schemas": {
       "ReportResponse": {
@@ -152,83 +166,44 @@
           "status": { "type": "string" },
           "report_type": { "type": "string" },
           "markdown": { "type": ["string", "null"] },
-          "semantic_graph": { "type": ["object", "null"] },
+          "semantic_graph": {
+            "type": ["object", "null"],
+            "properties": {
+              "future_state": { "type": ["object", "null"], "description": "Projected load and fitness state based on planned workouts." },
+              "actions_future": { "type": ["array", "null"], "description": "Forecasted coaching recommendations." }
+            }
+          },
           "logs": { "type": ["string", "null"] }
         }
+      },
+      "PlannedWorkout": {
+        "type": "object",
+        "properties": {
+          "date": { "type": "string", "format": "date" },
+          "title": { "type": "string" },
+          "tss": { "type": ["number", "null"] },
+          "duration_minutes": { "type": ["number", "null"] },
+          "notes": { "type": ["string", "null"] }
+        },
+        "required": ["date", "title"]
       }
     }
   },
-
   "x-intents": [
-    {
-      "trigger": [
-        "weekly report",
-        "run weekly report",
-        "generate weekly report",
-        "7 day report",
-        "7-day report",
-        "past week report",
-        "weekly report staging",
-        "run weekly report staging"
-      ],
-      "action": "runWeeklyReportV2",
-      "x-intent": {
-        "x-intent": "weekly",
-        "strict": true
-      }
-    },
-    {
-      "trigger": [
-        "season report",
-        "90 day report",
-        "block report",
-        "training block report",
-        "run season report",
-        "season report staging",
-        "run season report staging"
-      ],
-      "action": "runSeasonReportV2",
-      "x-intent": {
-        "x-intent": "season",
-        "strict": true
-      }
-    },
-    {
-      "trigger": [
-        "wellness report",
-        "42 day wellness",
-        "recovery report",
-        "run wellness report",
-        "wellness report staging",
-        "run wellness report staging"
-      ],
-      "action": "runWellnessReportV2",
-      "x-intent": {
-        "x-intent": "wellness",
-        "strict": true
-      }
-    },
-    {
-      "trigger": [
-        "summary report",
-        "overview report",
-        "high level summary",
-        "run summary",
-        "summary report staging",
-        "run summary report staging"
-      ],
-      "action": "runSummaryReportV2",
-      "x-intent": {
-        "x-intent": "summary",
-        "strict": true
-      }
-    }
+    { "trigger": ["weekly report", "run weekly report", "generate weekly report", "7 day report", "7-day report", "past week report", "weekly report staging", "run weekly report staging"], "action": "runWeeklyReportV2", "x-intent": { "x-intent": "weekly", "strict": true } },
+    { "trigger": ["season report", "90 day report", "block report", "training block report", "run season report", "season report staging", "run season report staging"], "action": "runSeasonReportV2", "x-intent": { "x-intent": "season", "strict": true } },
+    { "trigger": ["wellness report", "42 day wellness", "recovery report", "run wellness report", "wellness report staging", "run wellness report staging"], "action": "runWellnessReportV2", "x-intent": { "x-intent": "wellness", "strict": true } },
+    { "trigger": ["summary report", "overview report", "high level summary", "run summary", "summary report staging", "run summary report staging"], "action": "runSummaryReportV2", "x-intent": { "x-intent": "summary", "strict": true } }
   ],
-
   "x-actions": {
     "runWeeklyReportV2": { "type": "operation", "operationId": "runWeeklyReportV2" },
     "runSeasonReportV2": { "type": "operation", "operationId": "runSeasonReportV2" },
     "runWellnessReportV2": { "type": "operation", "operationId": "runWellnessReportV2" },
-    "runSummaryReportV2": { "type": "operation", "operationId": "runSummaryReportV2" }
+    "runSummaryReportV2": { "type": "operation", "operationId": "runSummaryReportV2" },
+    "readCalendarV1": { "type": "operation", "operationId": "readCalendarV1" },
+    "writeCalendarV1": { "type": "operation", "operationId": "writeCalendarV1" }
+  },
+  "x-notes": {
+    "calendar_endpoints": "Access to /calendar/read and /calendar/write is restricted. Only authorized owner requests are routed to staging. Public API access disabled."
   }
 }
