@@ -49,6 +49,19 @@ export default {
     }
 
     // ================================================================
+    // 🌐 CORS preflight support
+    // ================================================================
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        headers: {
+          "access-control-allow-origin": "*",
+          "access-control-allow-headers": "Authorization, Content-Type",
+          "access-control-allow-methods": "GET, POST, OPTIONS"
+        }
+      });
+    }
+
+    // ================================================================
     // 🚦 ROUTE TO RAILWAY (PROD OR STAGING)
     // ================================================================
     const INTERVALS_API_BASE = "https://intervals.icu/api/v1";
@@ -109,6 +122,96 @@ export default {
       };
     };
     // ================================================================
+    // 📆 DEFAULT DATA WINDOWS (centralized config)
+    // ================================================================
+    // These define how far back/forward each dataset should go.
+    // All durations are in days.
+    const DATA_WINDOWS = {
+      LIGHT_DAYS: 90,    // historical light summary range
+      FULL_DAYS: 7,      // detailed full activity window
+      WELLNESS_DAYS: 42, // wellness tracking window
+      CALENDAR_DAYS: 14  // future planned event lookahead
+    };
+    // ================================================================
+    // 📅 FUTURE CALENDAR RANGE HELPER
+    // ================================================================
+    const getFutureDateRange = (daysAhead = DATA_WINDOWS.CALENDAR_DAYS) => {
+      const today = new Date();
+      const start = today.toISOString().slice(0, 10);
+      const end = new Date(today.getTime() + daysAhead * 86400000)
+        .toISOString()
+        .slice(0, 10);
+      return { start, end };
+    };
+    // ================================================================
+    // 📅 Fetch calendar for explicit start → end range (quiet, production-safe)
+    // ================================================================
+    const fetchFutureCalendarFromRange = async (start, end) => {
+      try {
+        // 1️⃣ WORKOUTS
+        const workoutsReq = fetch(
+          `${INTERVALS_API_BASE}/athlete/0/events?oldest=${start}&newest=${end}&category=WORKOUT`,
+          { headers: buildAuthHeaders() }
+        );
+
+        // 2️⃣ RACES (RACE, A/B/C RACE — parallelized)
+        const raceCats = ["RACE", "A RACE", "B RACE", "C RACE"];
+        const raceReqs = raceCats.map(cat =>
+          fetch(
+            `${INTERVALS_API_BASE}/athlete/0/events?oldest=${start}&newest=${end}&category=${encodeURIComponent(cat)}`,
+            { headers: buildAuthHeaders() }
+          )
+        );
+
+        // 3️⃣ EVERYTHING ELSE (no category filter)
+        const allReq = fetch(
+          `${INTERVALS_API_BASE}/athlete/0/events?oldest=${start}&newest=${end}`,
+          { headers: buildAuthHeaders() }
+        );
+
+        // Wait for all in parallel
+        const [workoutsRes, raceResList, allRes] = await Promise.all([
+          workoutsReq,
+          Promise.all(raceReqs),
+          allReq
+        ]);
+
+        // Parse safely — handle any non-200s gracefully
+        const workoutsTxt = workoutsRes.ok ? await workoutsRes.text() : "[]";
+        const raceTxts = await Promise.all(
+          raceResList.map(r => (r.ok ? r.text() : "[]"))
+        );
+        const allTxt = allRes.ok ? await allRes.text() : "[]";
+
+        // Safely parse each block
+        const workouts = safeParse(workoutsTxt, "array");
+        const races = raceTxts.flatMap(txt => safeParse(txt, "array"));
+        const all = safeParse(allTxt, "array");
+
+        // Exclude duplicates and known categories
+        const others = all.filter(
+          e => !["WORKOUT", "RACE", "A RACE", "B RACE", "C RACE"].includes(e.category)
+        );
+
+        // Merge all quietly (even if any group is empty)
+        const calendar = [...workouts, ...races, ...others].sort(
+          (a, b) => new Date(a.start_date_local) - new Date(b.start_date_local)
+        );
+
+        // Compact summary
+        console.log(
+          `[CALENDAR RANGE] ✅ ${calendar.length} total (${workouts.length} workouts, ${races.length} races, ${others.length} others) for ${start} → ${end}`
+        );
+
+        return calendar;
+      } catch (err) {
+        // Contextual error log — minimal noise
+        console.error("[CALENDAR RANGE] ❌", err.message, { start, end });
+        return [];
+      }
+    };
+
+    // ================================================================
     // 📏 JSON size helpers (byte-accurate)
     // ================================================================
     const jsonSize = (obj) => {
@@ -164,14 +267,17 @@ export default {
       else if (routeTarget.includes("staging")) envTag = "🟣";
       else if (routeTarget.includes("blocked")) envTag = "🔒";
 
+      // === Byte size accounting ===
       const sizes = {
         athlete: jsonSize(payload.athlete),
         activities_light: jsonSize(payload.activities_light),
         activities_full: jsonSize(payload.activities_full),
         wellness: jsonSize(payload.wellness),
+        calendar: jsonSize(payload.calendar), // 👈 added
         total: jsonSize(payload),
       };
 
+      // === Row counts ===
       const rows = {
         athlete: payload.athlete ? 1 : 0,
         light: Array.isArray(payload.activities_light)
@@ -183,10 +289,15 @@ export default {
         wellness: Array.isArray(payload.wellness)
           ? payload.wellness.length
           : 0,
+        calendar: Array.isArray(payload.calendar)
+          ? payload.calendar.length
+          : 0, // 👈 added
       };
 
-      const rowSummary = `rows(light=${rows.light}, full=${rows.full}, well=${rows.wellness})`;
+      // === Compact summary ===
+      const rowSummary = `rows(light=${rows.light}, full=${rows.full}, well=${rows.wellness}, cal=${rows.calendar})`;
 
+      // === Emit structured log ===
       console.log(
         JSON.stringify({
           message: `${envTag} [${tag}] ${routeTarget} | ${rowSummary}`,
@@ -200,6 +311,7 @@ export default {
         })
       );
     };
+
 
     // ================================================================
     // 🔥 callRailway — passes ENVIRONMENT automatically
@@ -231,59 +343,6 @@ export default {
         },
       });
     };
-
-
-    // ================================================================
-    // OAuth proxy routes
-    // ================================================================
-    if (pathname.startsWith("/oauth/authorize")) {
-      const target = new URL(
-        request.url.replace(
-          /^https:\/\/intervalsicugptcoach\.clive-a5a\.workers\.dev/,
-          "https://intervals.icu"
-        )
-      );
-      target.searchParams.set(
-        "redirect_uri",
-        "https://chat.openai.com/aip/g-3b0244cf708774fb9151458671c462eb5460f41e/oauth/callback"
-      );
-      console.log(`[OAUTH] Redirecting to ${target}`);
-      return Response.redirect(target.toString(), 302);
-    }
-
-    if (pathname.startsWith("/oauth/callback")) {
-      const redirectTarget =
-        "https://chat.openai.com/aip/g-3b0244cf708774fb9151458671c462eb5460f41e/oauth/callback" +
-        url.search;
-      console.log(`[OAUTH] Proxying callback → ${redirectTarget}`);
-      return Response.redirect(redirectTarget, 302);
-    }
-
-    if (pathname.startsWith("/api/oauth/token")) {
-      const resp = await fetch("https://intervals.icu/api/oauth/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: await request.text()
-      });
-      return new Response(await resp.text(), {
-        status: resp.status,
-        headers: {
-          "access-control-allow-origin": "*",
-          "access-control-allow-headers": "Authorization, Content-Type"
-        }
-      });
-    }
-
-    // CORS support
-    if (request.method === "OPTIONS") {
-      return new Response(null, {
-        headers: {
-          "access-control-allow-origin": "*",
-          "access-control-allow-headers": "Authorization, Content-Type",
-          "access-control-allow-methods": "GET, OPTIONS"
-        }
-      });
-    }
 
     // ================================================================
     // 🧠 UNIFIED AUTH HANDLING (Corrected)
@@ -321,15 +380,85 @@ export default {
       return h;
     };
 
+    // ================================================================
+    // 📅 Unified calendar fetch — pulls WORKOUT + RACE + OTHER (quiet, production-safe)
+    // ================================================================
+    const fetchFutureCalendar = async (daysAhead = DATA_WINDOWS.CALENDAR_DAYS) => {
+      const { start: calStart, end: calEnd } = getFutureDateRange(daysAhead);
+
+      try {
+        // 1️⃣ WORKOUTS (single category)
+        const workoutsReq = fetch(
+          `${INTERVALS_API_BASE}/athlete/0/events?oldest=${calStart}&newest=${calEnd}&category=WORKOUT`,
+          { headers: buildAuthHeaders() }
+        );
+
+        // 2️⃣ RACES (RACE, A/B/C RACE — parallelized)
+        const raceCats = ["RACE", "A RACE", "B RACE", "C RACE"];
+        const raceReqs = raceCats.map(cat =>
+          fetch(
+            `${INTERVALS_API_BASE}/athlete/0/events?oldest=${calStart}&newest=${calEnd}&category=${encodeURIComponent(cat)}`,
+            { headers: buildAuthHeaders() }
+          )
+        );
+
+        // 3️⃣ EVERYTHING ELSE (no category filter)
+        const allReq = fetch(
+          `${INTERVALS_API_BASE}/athlete/0/events?oldest=${calStart}&newest=${calEnd}`,
+          { headers: buildAuthHeaders() }
+        );
+
+        // Wait for all in parallel
+        const [workoutsRes, raceResList, allRes] = await Promise.all([
+          workoutsReq,
+          Promise.all(raceReqs),
+          allReq
+        ]);
+
+        // Parse safely — handle any non-200s gracefully
+        const workoutsTxt = workoutsRes.ok ? await workoutsRes.text() : "[]";
+        const raceTxts = await Promise.all(
+          raceResList.map(r => (r.ok ? r.text() : "[]"))
+        );
+        const allTxt = allRes.ok ? await allRes.text() : "[]";
+
+        // Safely parse each block
+        const workouts = safeParse(workoutsTxt, "array");
+        const races = raceTxts.flatMap(txt => safeParse(txt, "array"));
+        const all = safeParse(allTxt, "array");
+
+        // Filter out duplicates and known categories
+        const others = all.filter(
+          e => !["WORKOUT", "RACE", "A RACE", "B RACE", "C RACE"].includes(e.category)
+        );
+
+        // Merge all and sort chronologically
+        const calendar = [...workouts, ...races, ...others].sort(
+          (a, b) => new Date(a.start_date_local) - new Date(b.start_date_local)
+        );
+
+        // Compact success log — one per call
+        console.log(
+          `[CALENDAR] ✅ ${calendar.length} total (${workouts.length} workouts, ${races.length} races, ${others.length} others) for ${calStart} → ${calEnd}`
+        );
+
+        return calendar;
+      } catch (err) {
+        console.error("[CALENDAR] ❌ fetchFutureCalendar failed:", err.message, { calStart, calEnd });
+        return [];
+      }
+    };
+
 
     // ================================================================
-    // INTERNAL DATA ROUTES
+    // INTERNAL DATA ROUTES — UPDATED TO USE /events API
     // ================================================================
     const athleteIdMatch = pathname.match(/^\/athlete\/(\d+|0)\//);
     const athleteId = athleteIdMatch ? athleteIdMatch[1] : "0";
 
+    // === LIGHT ACTIVITIES ===
     if (pathname.startsWith(`/athlete/${athleteId}/activities_t0light`)) {
-      const { oldest, newest } = normaliseDateParams(url.searchParams, 90);
+      const { oldest, newest } = normaliseDateParams(url.searchParams, DATA_WINDOWS.LIGHT_DAYS);
       const fields =
         "id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin";
 
@@ -342,45 +471,66 @@ export default {
       const r = await fetch(target, { headers: buildAuthHeaders() });
       return new Response(await r.text(), {
         status: r.status,
-        headers: { "content-type": "application/json", "access-control-allow-origin": "*" }
+        headers: {
+          "content-type": "application/json",
+          "access-control-allow-origin": "*"
+        }
       });
     }
 
+    // === FULL ACTIVITIES ===
     if (
       pathname.startsWith(`/athlete/${athleteId}/activities`) &&
       !pathname.includes("t0light")
     ) {
-      const { oldest, newest } = normaliseDateParams(url.searchParams, 7);
-
+      const { oldest, newest } = normaliseDateParams(url.searchParams, DATA_WINDOWS.FULL_DAYS);
       const target =
         `${INTERVALS_API_BASE}/athlete/${athleteId}/activities` +
         `?oldest=${oldest}&newest=${newest}`;
-
       console.log(`[FULL] → ${target}`);
 
       const r = await fetch(target, { headers: buildAuthHeaders() });
       return new Response(await r.text(), {
         status: r.status,
-        headers: { "content-type": "application/json", "access-control-allow-origin": "*" }
+        headers: {
+          "content-type": "application/json",
+          "access-control-allow-origin": "*"
+        }
       });
     }
 
+    // === WELLNESS ===
     if (pathname.startsWith(`/athlete/${athleteId}/wellness`)) {
-      const { oldest, newest } = normaliseDateParams(url.searchParams, 42);
-
+      const { oldest, newest } = normaliseDateParams(url.searchParams, DATA_WINDOWS.WELLNESS_DAYS);
       const target =
         `${INTERVALS_API_BASE}/athlete/${athleteId}/wellness` +
         `?oldest=${oldest}&newest=${newest}`;
-
       console.log(`[WELLNESS] → ${target}`);
 
       const r = await fetch(target, { headers: buildAuthHeaders() });
       return new Response(await r.text(), {
         status: r.status,
-        headers: { "content-type": "application/json", "access-control-allow-origin": "*" }
+        headers: {
+          "content-type": "application/json",
+          "access-control-allow-origin": "*"
+        }
       });
     }
 
+    // === CALENDAR (planned workouts) → EVENTS API ===
+    if (pathname.startsWith(`/athlete/${athleteId}/calendar`)) {
+      const calendar = await fetchFutureCalendar(DATA_WINDOWS.CALENDAR_DAYS);
+      return new Response(JSON.stringify(calendar), {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+          "access-control-allow-origin": "*"
+        }
+      });
+    }
+
+
+    // === PROFILE ===
     if (pathname.startsWith(`/athlete/${athleteId}`)) {
       const target = `${INTERVALS_API_BASE}${pathname}`;
       console.log(`[PROFILE] → ${target}`);
@@ -388,22 +538,27 @@ export default {
       const r = await fetch(target, { headers: buildAuthHeaders() });
       return new Response(await r.text(), {
         status: r.status,
-        headers: { "content-type": "application/json", "access-control-allow-origin": "*" }
+        headers: {
+          "content-type": "application/json",
+          "access-control-allow-origin": "*"
+        }
       });
     }
 
+
     // ================================================================
-    // REPORT ROUTES
+    // REPORT ROUTES — UPDATED TO USE /events API (planned workouts)
     // ================================================================
     const runWeekly = async () => {
       console.log("[RUN_WEEKLY] Fetching datasets…");
 
       const { oldest: lightOldest, newest: lightNewest } =
-        normaliseDateParams(url.searchParams, 90);
+        normaliseDateParams(url.searchParams, DATA_WINDOWS.LIGHT_DAYS);
       const { oldest: fullOldest, newest: fullNewest } =
-        normaliseDateParams(url.searchParams, 7);
+        normaliseDateParams(url.searchParams, DATA_WINDOWS.FULL_DAYS);
       const { oldest: wellOldest, newest: wellNewest } =
-        normaliseDateParams(url.searchParams, 42);
+        normaliseDateParams(url.searchParams, DATA_WINDOWS.WELLNESS_DAYS);
+      const { start: calStart, end: calEnd } = getFutureDateRange(DATA_WINDOWS.CALENDAR_DAYS);
 
       const [lightTxt, fullTxt, wellTxt, profTxt] = await Promise.all([
         // 90d light
@@ -425,11 +580,13 @@ export default {
           { headers: buildAuthHeaders() }
         ).then((r) => r.text()),
 
-        // profile
+        // Profile
         fetch(`${INTERVALS_API_BASE}/athlete/0`, {
           headers: buildAuthHeaders()
-        }).then((r) => r.text())
+        }).then((r) => r.text()),
       ]);
+      // Calendar → Events (planned workouts)
+      const calendar = await fetchFutureCalendar(DATA_WINDOWS.CALENDAR_DAYS);
       const athlete = extractAthlete(profTxt);
       const payload = {
         range: "weekly",
@@ -437,6 +594,7 @@ export default {
         activities_light: safeParse(lightTxt, "array"),
         activities_full: safeParse(fullTxt, "array"),
         wellness: safeParse(wellTxt, "array"),
+        calendar,
         athlete
       };
 
@@ -447,16 +605,19 @@ export default {
       return runWeekly();
     }
 
+    // ================================================================
     // SEASON
+    // ================================================================
     if (pathname === "/run_season" && request.method === "GET") {
       console.log("[RUN_SEASON] Fetching datasets…");
 
       const { oldest: lightOldest, newest: lightNewest } =
-        normaliseDateParams(url.searchParams, 90);
+        normaliseDateParams(url.searchParams, DATA_WINDOWS.LIGHT_DAYS);
       const { oldest: fullOldest, newest: fullNewest } =
-        normaliseDateParams(url.searchParams, 7);
+        normaliseDateParams(url.searchParams, DATA_WINDOWS.FULL_DAYS);
       const { oldest: wellOldest, newest: wellNewest } =
-        normaliseDateParams(url.searchParams, 42);
+        normaliseDateParams(url.searchParams,DATA_WINDOWS.WELLNESS_DAYS);
+      const { start: calStart, end: calEnd } = getFutureDateRange(DATA_WINDOWS.CALENDAR_DAYS);
 
       const [lightTxt, fullTxt, wellTxt, profTxt] = await Promise.all([
         fetch(
@@ -477,8 +638,10 @@ export default {
 
         fetch(`${INTERVALS_API_BASE}/athlete/0`, {
           headers: buildAuthHeaders()
-        }).then((r) => r.text())
+        }).then((r) => r.text()),
       ]);
+      // Calendar → Events (planned workouts)
+      const calendar = await fetchFutureCalendar(DATA_WINDOWS.CALENDAR_DAYS);
       const athlete = extractAthlete(profTxt);
       const payload = {
         range: "season",
@@ -486,22 +649,26 @@ export default {
         activities_light: safeParse(lightTxt, "array"),
         activities_full: safeParse(fullTxt, "array"),
         wellness: safeParse(wellTxt, "array"),
+        calendar,
         athlete
       };
 
       return await callRailway(payload, "SEASON", profTxt);
     }
 
+    // ================================================================
     // WELLNESS
+    // ================================================================
     if (pathname === "/run_wellness" && request.method === "GET") {
       console.log("[RUN_WELLNESS] Fetching datasets…");
 
       const { oldest: lightOldest, newest: lightNewest } =
-        normaliseDateParams(url.searchParams, 90);
+        normaliseDateParams(url.searchParams, DATA_WINDOWS.LIGHT_DAYS);
       const { oldest: fullOldest, newest: fullNewest } =
-        normaliseDateParams(url.searchParams, 7);
+        normaliseDateParams(url.searchParams, DATA_WINDOWS.FULL_DAYS);
       const { oldest: wellOldest, newest: wellNewest } =
-        normaliseDateParams(url.searchParams, 42);
+        normaliseDateParams(url.searchParams, DATA_WINDOWS.WELLNESS_DAYS);
+      const { start: calStart, end: calEnd } = getFutureDateRange(DATA_WINDOWS.CALENDAR_DAYS);
 
       const [lightTxt, fullTxt, wellTxt, profTxt] = await Promise.all([
         fetch(
@@ -522,8 +689,10 @@ export default {
 
         fetch(`${INTERVALS_API_BASE}/athlete/0`, {
           headers: buildAuthHeaders()
-        }).then((r) => r.text())
+        }).then((r) => r.text()),
       ]);
+      // Calendar → Events (planned workouts)
+      const calendar = await fetchFutureCalendar(DATA_WINDOWS.CALENDAR_DAYS);
       const athlete = extractAthlete(profTxt);
       const payload = {
         range: "wellness",
@@ -531,22 +700,26 @@ export default {
         activities_light: safeParse(lightTxt, "array"),
         activities_full: safeParse(fullTxt, "array"),
         wellness: safeParse(wellTxt, "array"),
+        calendar,
         athlete
       };
 
       return await callRailway(payload, "WELLNESS", profTxt);
     }
 
+    // ================================================================
     // SUMMARY
+    // ================================================================
     if (pathname === "/run_summary" && request.method === "GET") {
       console.log("[RUN_SUMMARY] Fetching datasets…");
 
       const { oldest: lightOldest, newest: lightNewest } =
-        normaliseDateParams(url.searchParams, 90);
+        normaliseDateParams(url.searchParams, DATA_WINDOWS.LIGHT_DAYS);
       const { oldest: fullOldest, newest: fullNewest } =
-        normaliseDateParams(url.searchParams, 7);
+        normaliseDateParams(url.searchParams, DATA_WINDOWS.FULL_DAYS);
       const { oldest: wellOldest, newest: wellNewest } =
-        normaliseDateParams(url.searchParams, 42);
+        normaliseDateParams(url.searchParams, DATA_WINDOWS.WELLNESS_DAYS);
+      const { start: calStart, end: calEnd } = getFutureDateRange(DATA_WINDOWS.CALENDAR_DAYS);
 
       const [lightTxt, fullTxt, wellTxt, profTxt] = await Promise.all([
         fetch(
@@ -567,21 +740,190 @@ export default {
 
         fetch(`${INTERVALS_API_BASE}/athlete/0`, {
           headers: buildAuthHeaders()
-        }).then((r) => r.text())
+        }).then((r) => r.text()),
       ]);
-
+      // Calendar → Events (planned workouts)
+      const calendar = await fetchFutureCalendar(
+        parseInt(url.searchParams.get("daysAhead") || DATA_WINDOWS.CALENDAR_DAYS, 10)
+      );
       const athlete = extractAthlete(profTxt);
-
       const payload = {
         range: "summary",
         format: url.searchParams.get("format") || "semantic",
         activities_light: safeParse(lightTxt, "array"),
         activities_full: safeParse(fullTxt, "array"),
         wellness: safeParse(wellTxt, "array"),
+        calendar,
         athlete
       };
 
       return await callRailway(payload, "SUMMARY", profTxt);
+    }
+
+    // ================================================================
+    // 📅 CALENDAR ENDPOINTS — using unified fetchFutureCalendar + flexible DATA_WINDOWS
+    // ================================================================
+
+    // === READ planned & future events ===
+    if (pathname === "/calendar/read" && request.method === "GET") {
+      let start = url.searchParams.get("start");
+      let end = url.searchParams.get("end");
+
+      // ✅ Determine lookahead window dynamically
+      const daysAhead = parseInt(
+        url.searchParams.get("daysAhead") || DATA_WINDOWS.CALENDAR_DAYS,
+        10
+      );
+
+      // ✅ If user didn’t pass explicit start/end → compute from today
+      if (!start || !end) {
+        const { start: defStart, end: defEnd } = getFutureDateRange(daysAhead);
+        start = start || defStart;
+        end = end || defEnd;
+      }
+
+      console.log(`[CALENDAR READ] fetching events for ${start} → ${end} (daysAhead=${daysAhead})`);
+
+      // Use unified helper that supports explicit range
+      const calendar = await fetchFutureCalendarFromRange(start, end);
+
+      return new Response(JSON.stringify(calendar), {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+          "access-control-allow-origin": "*"
+        }
+      });
+    }
+
+
+    // === WRITE planned workouts / events ===
+    if (pathname === "/calendar/write" && request.method === "POST") {
+      const body = await request.json();
+
+      // 🧩 Accept top-level object, array, or ChatGPT JSON schema
+      let events = [];
+      if (Array.isArray(body)) {
+        events = body;
+      } else if (body.planned_workouts && Array.isArray(body.planned_workouts)) {
+        events = body.planned_workouts;
+      } else if (typeof body === "object" && Object.keys(body).length > 0) {
+        events = [body];
+      } else {
+        return new Response(JSON.stringify({ error: "Missing event data" }), {
+          status: 400,
+          headers: { "content-type": "application/json" }
+        });
+      }
+
+      // 🧠 Normalize category names
+      const normalizeCategory = (cat = "NOTE") => {
+        const c = cat.trim().toUpperCase();
+        if (["NOTES", "MEMO"].includes(c)) return "NOTE";
+        if (["HOLIDAY", "HOLIDAYS", "VACATION", "BREAK"].includes(c)) return "HOLIDAY";
+        return c;
+      };
+
+      const todayISO = new Date().toISOString().split("T")[0];
+
+      const normalized = events.map((e) => {
+        const category = normalizeCategory(e.category || "NOTE");
+        const start =
+          e.start_date_local ||
+          (e.date ? `${e.date}T00:00:00` : `${todayISO}T00:00:00`);
+        const end =
+          e.end_date_local ||
+          e.end_date ||
+          `${start.split("T")[0]}T00:00:00`; // ✅ required
+
+        // 🧩 Map flexible fields → Intervals schema
+        const name = e.name || e.title || "Note";
+        const description = e.description || e.notes || e.note || e.text || "";
+
+        // Minimal valid event
+        const normalizedEvent = {
+          start_date_local: start,
+          end_date_local: end,
+          category,
+          name,
+          description,
+          duration_minutes: e.duration_minutes ?? 0,
+          color: e.color || null
+        };
+
+        return normalizedEvent;
+      });
+
+      const target = `${INTERVALS_API_BASE}/athlete/0/events/bulk?upsert=true`;
+      console.log(`[CALENDAR WRITE → EVENTS] → ${target} (${normalized.length} events)`);
+
+      const r = await fetch(target, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          Authorization: bearerToken
+        },
+        body: JSON.stringify(normalized)
+      });
+
+      const txt = await r.text();
+      console.log(`[CALENDAR WRITE RESPONSE] status=${r.status} bytes=${txt.length}`);
+
+      return new Response(txt, {
+        status: r.status,
+        headers: {
+          "content-type": "application/json",
+          "access-control-allow-origin": "*"
+        }
+      });
+    }
+
+    if (pathname === "/calendar/delete" && request.method === "POST") {
+      const body = await request.json();
+      const id = body.id;
+      const date = body.date;
+
+      let target;
+      if (id) {
+        target = `${INTERVALS_API_BASE}/athlete/0/events/${id}`;
+      } else if (date) {
+        // fetch events on date, then delete all
+        const res = await fetch(
+          `${INTERVALS_API_BASE}/athlete/0/events?oldest=${date}&newest=${date}`,
+          { headers: buildAuthHeaders() }
+        );
+        const events = res.ok ? await res.json() : [];
+        for (const ev of events) {
+          await fetch(`${INTERVALS_API_BASE}/athlete/0/events/${ev.id}`, {
+            method: "DELETE",
+            headers: buildAuthHeaders()
+          });
+        }
+        return new Response(
+          JSON.stringify({ deleted: events.length }),
+          { status: 200, headers: { "content-type": "application/json", "access-control-allow-origin": "*" } }
+        );
+      }
+
+      if (!target)
+        return new Response(JSON.stringify({ error: "Missing id or date" }), {
+          status: 400,
+          headers: { "content-type": "application/json" }
+        });
+
+      const r = await fetch(target, {
+        method: "DELETE",
+        headers: buildAuthHeaders()
+      });
+      const txt = await r.text();
+
+      return new Response(txt, {
+        status: r.status,
+        headers: {
+          "content-type": "application/json",
+          "access-control-allow-origin": "*"
+        }
+      });
     }
 
     // ================================================================
