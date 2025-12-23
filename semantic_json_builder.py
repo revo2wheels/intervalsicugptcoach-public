@@ -252,8 +252,8 @@ def build_semantic_json(context):
     # 🔧 Read render options from context (if provided)
     # -----------------------------------------------------------------
     options = context.get("render_options", {})
-    verbose_events = bool(options.get("verbose_events", False))
-    include_all_events = bool(options.get("include_all_events", False))
+    verbose_events = bool(options.get("verbose_events", True))
+    include_all_events = bool(options.get("include_all_events", True))
     return_format = options.get("return_format", "semantic")
     render_mode = options.get("render_mode", "default")  # ✅ new line
 
@@ -482,31 +482,21 @@ def build_semantic_json(context):
         },
     }
 
-
     # ---------------------------------------------------------
-    # EVENTS (canonical, unaggregated)
+    # EVENTS (canonical)
     # ---------------------------------------------------------
     df_events = context.get("df_events")
     if isinstance(df_events, pd.DataFrame) and not df_events.empty:
-        if include_all_events:
-            # 🧾 Include all events — unaggregated
-            semantic["events"] = df_events.to_dict(orient="records")
-            debug(context, f"[JSON BUILDER] Included all {len(df_events)} events (unrolled).")
-
-        elif verbose_events:
-            # 🗒️ Include verbose subset
-            semantic["events"] = [
-                {
-                    "start_date_local": convert_to_str(r.get("start_date_local")),
-                    "name": r.get("name"),
-                    "icu_training_load": r.get("icu_training_load"),
-                    "category": r.get("category"),
-                    "distance": r.get("distance"),
-                    "notes": r.get("notes"),
-                }
-                for _, r in df_events.iterrows()
-            ]
-            debug(context, f"[JSON BUILDER] Included verbose events (n={len(df_events)})")
+        semantic["events"] = [
+            {
+                "start_date_local": convert_to_str(row.get("start_date_local")),
+                "name": row.get("name"),
+                "icu_training_load": row.get("icu_training_load"),
+                "moving_time": row.get("moving_time"),
+                "distance": row.get("distance"),
+            }
+            for _, row in df_events.iterrows()
+        ]
 
     # ---------------------------------------------------------
     # 🗓️ PLANNED EVENTS — Grouped by Date (Calendar Context)
