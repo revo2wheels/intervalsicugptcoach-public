@@ -750,8 +750,6 @@ def render_report(data):
 
     # --- ✅ FINAL SAFETY NORMALIZATION (Markdown-only return) ---
     try:
-        print("[FINALIZER] Enforcing markdown-only return (season-safe mode)")
-
         # --- Step 1: Ensure report has a valid Markdown string ---
         md_text = None
         if isinstance(report, dict):
