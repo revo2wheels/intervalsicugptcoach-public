@@ -347,10 +347,12 @@ async def run_audit_with_data(request: Request):
                 "status": "ok",
                 "report_type": report_range,
                 "output_format": "semantic_json",
-                "semantic_graph": sanitize(build_semantic_json(report.get("context", {}))),
+                # ✅ Use the context returned from _run_full_audit()
+                "semantic_graph": sanitize(build_semantic_json(context)),
                 "compliance": compliance,
                 "logs": logs[-20000:],
             })
+
 
         return JSONResponse({
             "status": "ok",
