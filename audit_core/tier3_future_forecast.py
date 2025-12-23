@@ -66,16 +66,40 @@ def run_future_forecast(context, forecast_days=14):
     debug(context, f"[T3] Context keys: {list(context.keys())[:12]}")
     debug(context, f"[T3] Prefetched calendar present: {'calendar' in context and isinstance(context.get('calendar'), list)}")
 
+       # -----------------------------------------------------------------
+    # 1️⃣ Acquire planned events (prefetched → local → skip external fetch)
     # -----------------------------------------------------------------
-    # 1️⃣ Acquire planned events (local or fallback)
-    # -----------------------------------------------------------------
-    planned = context.get("calendar")
-    if not planned or not isinstance(planned, list) or len(planned) == 0:
-        debug(context, "[T3] ⚙️ No prefetched calendar found — using fallback Cloudflare fetch.")
-        planned = fetch_calendar_fallback(context, days=forecast_days, owner=context.get("owner", "intervals"))
+    planned = None
 
-    if not planned:
-        debug(context, "[T3] ⚠️ No calendar data available for future forecast → aborting.")
+    # ✅ Detect if this is a Cloudflare-prefetched context
+    if "prefetched" in context:
+        pre = context.get("prefetched", {})
+        if isinstance(pre, dict) and isinstance(pre.get("calendar"), list) and len(pre["calendar"]) > 0:
+            planned = pre["calendar"]
+            debug(context, f"[T3] 🧩 Using Cloudflare-prefetched calendar ({len(planned)} events)")
+        else:
+            debug(context, "[T3] ⚙️ Prefetched context present but no valid calendar array")
+
+    # ✅ Fall back to top-level context if available (for local runs)
+    elif isinstance(context.get("calendar"), list) and len(context["calendar"]) > 0:
+        planned = context["calendar"]
+        debug(context, f"[T3] 🧩 Using local context calendar ({len(planned)} events)")
+
+    # 🚫 Absolutely NO network fetch in Cloudflare/Railway prefetched mode
+    else:
+        if "prefetched" in context:
+            debug(context, "[T3] 🚫 Skipping all external fetches (Railway Cloudflare-prefetched mode detected)")
+            planned = []
+        else:
+            # Only allowed in local or dev mode
+            debug(context, "[T3] ⚙️ No prefetched calendar found — using fallback Cloudflare fetch.")
+            planned = fetch_calendar_fallback(context, days=forecast_days, owner=context.get("owner", "intervals"))
+
+    # -----------------------------------------------------------------
+    # 2️⃣ Safety check
+    # -----------------------------------------------------------------
+    if not planned or not isinstance(planned, list) or len(planned) == 0:
+        debug(context, "[T3] ⚠️ No usable calendar data available for future forecast → aborting.")
         return {
             "future_forecast": {},
             "actions_future": []
