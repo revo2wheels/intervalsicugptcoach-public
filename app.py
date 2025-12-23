@@ -88,6 +88,14 @@ from audit_core.report_controller import run_report
 from audit_core.utils import debug
 
 # Semantic JSON builder
+# -----------------------------------------------------------------
+# 🔧 Force semantic builder options (verbose event listing, etc.)
+# -----------------------------------------------------------------
+context["render_options"] = {
+    "verbose_events": True,
+    "include_all_events": True,
+    "return_format": "markdown",   # or "semantic" if you prefer JSON style
+}
 from semantic_json_builder import build_semantic_json
 
 

@@ -182,13 +182,46 @@ def generate_full_report(report_type="weekly", output_path=None, output_format="
         else:
             full_output = {"markdown": str(report), "logs": log_output}
 
-    # ─── Write to disk
-    if isinstance(full_output, dict):
-        Path(output_path).write_text(json.dumps(full_output, indent=2, default=str), encoding="utf-8")
-    else:
-        Path(output_path).write_text(full_output, encoding="utf-8")
+    # ─────────────────────────────────────────────
+    # WRITE OUTPUTS TO DISK (.json for semantic / .md for markdown)
+    # Preserve full descriptive filename (range, prefetch, staging, format)
+    # ─────────────────────────────────────────────
+    reports_dir = Path("reports")
+    reports_dir.mkdir(parents=True, exist_ok=True)
 
-    print(f"✅ {report_type.title()} report written to {Path(output_path).resolve()}")
+    # Compute base name from inputs
+    env_tag = "staging" if staging else "prod"
+    prefetch_tag = "_prefetch" if prefetch else ""
+    base_name = f"report_{report_type}{prefetch_tag}_{env_tag}_{output_format}"
+
+    # Determine correct extension (semantic → .json, markdown → .md)
+    if output_format == "semantic":
+        primary_path = reports_dir / f"{base_name}.json"
+    elif output_format == "markdown":
+        primary_path = reports_dir / f"{base_name}.md"
+    else:
+        primary_path = reports_dir / f"{base_name}.json"
+
+    # ─── Primary file write
+    if isinstance(full_output, dict):
+        primary_path.write_text(
+            json.dumps(full_output, indent=2, default=str),
+            encoding="utf-8"
+        )
+    else:
+        primary_path.write_text(full_output, encoding="utf-8")
+
+    print(f"✅ {report_type.title()} report written to {primary_path.resolve()}")
+
+    # ─── Optional JSON mirror (for markdown only)
+    if output_format == "markdown":
+        mirror_path = reports_dir / f"{base_name}.json"
+        mirror_payload = (
+            full_output if isinstance(full_output, dict)
+            else {"markdown": full_output}
+        )
+        mirror_path.write_text(json.dumps(mirror_payload, indent=2, default=str), encoding="utf-8")
+        print(f"💾 JSON mirror written to {mirror_path.resolve()}")
 
 
 # ─────────────────────────────────────────────
