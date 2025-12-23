@@ -877,7 +877,7 @@ export default {
         }
       });
     }
-
+    // DELETE ITEMS
     if (pathname === "/calendar/delete" && request.method === "POST") {
       const body = await request.json();
       const id = body.id;
