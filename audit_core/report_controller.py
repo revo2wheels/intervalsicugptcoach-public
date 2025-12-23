@@ -253,6 +253,12 @@ def run_report(
         else:
             debug(context, "[ORCH-WARN] Invalid athlete cache payload")
 
+        if isinstance(context.get("calendar"), list):
+            context["prefetched"]["calendar"] = context["calendar"]
+            debug(context, f"[T1] ✅ Registered prefetched calendar ({len(context['calendar'])} events)")
+        else:
+            debug(context, "[T1] ⚠️ No prefetched calendar found or invalid format")
+
 
     # ============================================================
     # 🔑 AUTHORITATIVE BIND — PREFETCHED ATHLETE (FLAT ONLY)
