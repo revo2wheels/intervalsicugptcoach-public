@@ -106,7 +106,6 @@ def render_report(data):
     # --- Ensure Tier-2 derived metrics persist through render ---
     if "derived_metrics" in ctx:
         ctx["tier2_derived_metrics"] = ctx["derived_metrics"]
-
     # --- 🧩 Determine renderer totals source (priority-based) ---
     totals_source = None
 
@@ -119,7 +118,6 @@ def render_report(data):
         ctx["totalTss"] = et.get("tss", 0)
         ctx["totalDistance"] = et.get("distance_km") or et.get("distance", 0)
         debug(ctx, "[SYNC] Renderer using Tier-2 enforced totals (canonical).")
-        print("✅ Renderer source: Tier-2 enforced totals (canonical dataset)")
 
     # 2️⃣ Otherwise fall back to Tier-1 visibleTotals
     elif "tier1_visibleTotals" in ctx:
@@ -130,7 +128,6 @@ def render_report(data):
         ctx["totalTss"] = et.get("tss", 0)
         ctx["totalDistance"] = et.get("distance", 0)
         debug(ctx, "[SYNC] Renderer using Tier-1 visibleTotals (fallback).")
-        print("✅ Renderer source: Tier-1 visibleTotals (fallback)")
 
     # 3️⃣ Fallback: legacy eventTotals
     elif "eventTotals" in ctx:
@@ -140,18 +137,18 @@ def render_report(data):
         ctx["totalTss"] = et.get("tss", 0)
         ctx["totalDistance"] = et.get("distance", 0)
         debug(ctx, "[SYNC] Renderer using legacy eventTotals (fallback).")
-        print("✅ Renderer source: eventTotals (legacy fallback)")
 
     # 4️⃣ Use locked canonical values if available
     ctx["totalHours"] = ctx.get("locked_totalHours") or ctx.get("totalHours")
     ctx["totalTss"] = ctx.get("locked_totalTss") or ctx.get("totalTss")
     ctx["totalDistance"] = ctx.get("locked_totalDistance") or ctx.get("totalDistance")
 
-    debug(ctx, f"[RENDER] Totals unified from {totals_source} → "
-            f"{ctx['totalHours']} h | {ctx['totalDistance']} km | {ctx['totalTss']} TSS")
-
-
-
+    # 🧭 Unified renderer trace (single clean line)
+    debug(
+        ctx,
+        f"[RENDERER] Totals unified from {totals_source} → "
+        f"{ctx.get('totalHours')} h | {ctx.get('totalDistance')} km | {ctx.get('totalTss')} TSS"
+    )
 
     # --- Ensure downstream load metrics consistency
     ctx.setdefault("load_metrics", {})
@@ -756,7 +753,7 @@ def render_report(data):
             md_text = report.get("markdown")
             # If markdown is missing or invalid, try to recover or synthesize
             if not isinstance(md_text, str) or md_text.strip().startswith("{") or "DataFrame" in str(md_text):
-                print("[SANITY] Invalid markdown payload — substituting canonical summary")
+                debug(ctx, "[SANITY] Invalid markdown payload — substituting canonical summary")
                 md_text = (
                     "## Season Summary\n\n"
                     f"- **Period:** {ctx.get('window_start', 'n/a')} → {ctx.get('window_end', 'n/a')}\n"
@@ -784,7 +781,6 @@ def render_report(data):
                     continue
                 minimal_ctx[k] = v
 
-
         # --- Step 3: Construct final compact return ---
         final_output = {
             "markdown": md_text.strip(),
@@ -796,55 +792,82 @@ def render_report(data):
             "phases": report.get("phases", []) if isinstance(report, dict) else [],
         }
 
-        print(f"[FINALIZER] Markdown-only return OK — len={len(md_text)}, ctx_keys={len(minimal_ctx)}")
+        # ✅ Optional visible confirmation (only once per run)
+        if not ctx.get("_final_output_logged"):
+            debug(ctx, f"[FINALIZER] ✅ Markdown-only return OK — len={len(md_text)}, ctx_keys={len(minimal_ctx)}")
+            ctx["_final_output_logged"] = True
+        else:
+            debug(ctx, "[FINALIZER] Skipping duplicate Markdown-only confirmation")
+
         return final_output
 
     except Exception as e:
         import traceback
         tb = traceback.format_exc()
-        print(f"[FINALIZER] ⚠ Exception during markdown-only return: {e}\n{tb}")
+
+        # Log neatly via structured debug trace
+        debug(ctx, f"[FINALIZER] ⚠ Exception during markdown-only return: {e}")
+        debug(ctx, f"[TRACEBACK]\n{tb}")
+
+        # Return compact failure object (no raw traceback in markdown)
         return {
-            "markdown": f"_⚠ Render failed: {e}_\n```\n{tb}\n```",
-            "context": {}
+            "markdown": (
+                f"_⚠ Render failed: {e}_\n"
+                "_Detailed error logged internally for diagnostics._"
+            ),
+            "context": {
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "trace_excerpt": tb.splitlines()[-3:]  # last 3 lines, concise hint
+            },
         }
 
 
-
-
-
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python render_unified_report.py <report.json> [--out report.md]")
-        sys.exit(1)
+    import argparse
+    import traceback
 
-    path = Path(sys.argv[1])
+    parser = argparse.ArgumentParser(
+        description="Render a unified Markdown report from a JSON file"
+    )
+    parser.add_argument("input", help="Path to input JSON report (e.g. report.json)")
+    parser.add_argument("--out", help="Optional output Markdown path (e.g. report.md)")
+    args = parser.parse_args()
+
+    path = Path(args.input)
     if not path.exists():
         print(f"❌ File not found: {path}")
         sys.exit(1)
 
-    # Load JSON report structure
-    data = json.loads(path.read_text())
+    try:
+        # --- Load JSON report structure ---
+        data = json.loads(path.read_text())
 
-    # Run renderer
-    result = render_report(data)
+        # --- Run renderer ---
+        result = render_report(data)
 
-    # Normalise renderer output → md_text (always a string)
-    if isinstance(result, dict):
-        md_text = result.get("markdown", "")
-        if not isinstance(md_text, str):
-            md_text = str(md_text)
-    else:
-        md_text = str(result)
+        # --- Normalize output to markdown text ---
+        if isinstance(result, dict):
+            md_text = result.get("markdown", "")
+            if not isinstance(md_text, str):
+                md_text = str(md_text)
+        else:
+            md_text = str(result)
 
-    # Output to file if requested
-    if len(sys.argv) > 3 and sys.argv[2] == "--out":
-        out_path = Path(sys.argv[3])
-        out_path.write_text(md_text, encoding="utf-8")
-        print(f"✅ Markdown report written to {out_path}")
-    else:
-        print(md_text)
+        # --- Write to file or print to stdout ---
+        if args.out:
+            out_path = Path(args.out)
+            out_path.write_text(md_text, encoding="utf-8")
+            print(f"✅ Markdown report written to {out_path}")
+        else:
+            print(md_text)
 
-
+    except Exception as e:
+        tb = traceback.format_exc()
+        # Compact but clear CLI error
+        print(f"⚠ Renderer failed: {e}")
+        print("\n".join(tb.splitlines()[-6:]))  # last few lines only
+        sys.exit(2)
 
 if __name__ == "__main__":
     main()
