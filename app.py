@@ -88,14 +88,6 @@ from audit_core.report_controller import run_report
 from audit_core.utils import debug
 
 # Semantic JSON builder
-# -----------------------------------------------------------------
-# 🔧 Force semantic builder options (verbose event listing, etc.)
-# -----------------------------------------------------------------
-context["render_options"] = {
-    "verbose_events": True,
-    "include_all_events": True,
-    "return_format": "markdown",   # or "semantic" if you prefer JSON style
-}
 from semantic_json_builder import build_semantic_json
 
 
@@ -208,7 +200,18 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
         context = {}
         markdown = str(report)
 
+    # -----------------------------------------------------------------
+    # 🔧 Force semantic builder options (verbose event listing, etc.)
+    # -----------------------------------------------------------------
+    context["render_options"] = {
+        "verbose_events": True,
+        "include_all_events": True,
+        "return_format": "markdown",  # or "semantic"
+    }
+
+    # Build semantic graph (after options injected)
     semantic_graph = build_semantic_json(context)
+
 
     return report, compliance, logs, context, semantic_graph, markdown
 
