@@ -64,7 +64,16 @@ def run_future_forecast(context, forecast_days=14):
     debug(context, "───────────────────────────────────────────────")
     debug(context, f"[T3] 🧭 Starting Future Forecast (window={forecast_days}d)")
     debug(context, f"[T3] Context keys: {list(context.keys())[:12]}")
-    debug(context, f"[T3] Prefetched calendar present: {'calendar' in context and isinstance(context.get('calendar'), list)}")
+    # -----------------------------------------------------------------
+    # 🔍 Enhanced debug preamble — checks both prefetched + local levels
+    # -----------------------------------------------------------------
+    prefetched = context.get("prefetched", {})
+    has_prefetched_calendar = isinstance(prefetched, dict) and isinstance(prefetched.get("calendar"), list) and len(prefetched["calendar"]) > 0
+    has_local_calendar = isinstance(context.get("calendar"), list) and len(context.get("calendar", [])) > 0
+
+    debug(context, f"[T3] Prefetched calendar present: {has_prefetched_calendar}")
+    debug(context, f"[T3] Local calendar present: {has_local_calendar}")
+
 
     # -----------------------------------------------------------------
     # 1️⃣ Acquire planned events (prefetched → local → skip external fetch)
