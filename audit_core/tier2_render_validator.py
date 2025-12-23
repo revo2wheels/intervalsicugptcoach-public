@@ -442,12 +442,26 @@ def finalize_and_validate_render(context, reportType="weekly"):
         else:
             debug(context, f"[ZONE-PATCH] ✅ preserved {k} from Tier-1 ({len(val)} keys)")
 
+    # ---------------------------------------------------------
+    # 🧩 Prevent duplicate render pass (Tier-2 overlap)
+    # ---------------------------------------------------------
+    if context.get("_render_pass_done"):
+        debug(context, "[SKIP] render_unified_report already executed — skipping duplicate render.")
+        return context.get("cached_report", {}), {"status": "ok", "note": "render reused"}
+
+    context["_render_pass_done"] = True
+
     # --- Renderer execution ---
     report = render_template(
         reportType,
         framework="Unified_Reporting_Framework_v5.1",
         context=context,
     )
+
+    # 🧠 Cache this render so later phases (e.g., Tier-3 finalizer)
+    # can reuse it without re-rendering
+    context["cached_report"] = report
+
     # --- Runtime trace for ChatGPT vs Local ---
     debug(context, f"[TRACE-POST-RENDER-CHECK] header={report.get('header', {})}")
     debug(context, f"[TRACE-POST-RENDER-CHECK] summary={report.get('summary', {})}")
@@ -731,52 +745,39 @@ def finalize_and_validate_render(context, reportType="weekly"):
         context["auditPrecision"] = "normal"
         context.pop("render_block_reason", None)
 
-    # --- Unified Markdown rendering ---
-    from render_unified_report import render_report
+    # --- Unified Semantic Finalization (Markdown skipped) ---
+    # ✅ We now skip legacy markdown rendering entirely.
+    #    The semantic_json_builder is the authoritative output format.
 
-    # ✅ Ensure both context and top-level report carry auditFinal flag early
-    # This guarantees correct state even if finalize() is re-entered
+    if context.get("_render_pass_done"):
+        debug(context, "[FINALIZER] Skipping redundant unified render (already finalized earlier)")
+        return report, {"status": "ok", "note": "semantic JSON only"}
+
+    context["_render_pass_done"] = True
+
+    # Ensure audit flags
     if not context.get("auditFinal", False):
         context["auditFinal"] = True
     if not report.get("auditFinal", False):
         report["auditFinal"] = True
 
-    # 🧩 Prevent duplicate render (reuse previous markdown if already finalized)
-    if context.get("rendered", False):
-        debug(context, "[FINALIZER] Skipping duplicate render (already finalized)")
-        return context.get("markdown", ""), {
-            "status": "ok",
-            "note": "reused existing markdown"
-        }
+    # Force semantic-only behavior
+    context["semantic_json_enabled"] = True
+    debug(context, "[FINALIZER] Markdown rendering skipped (semantic_json_enabled=True)")
 
-    # 🧩 Define render context parameters
-    context["render_mode"] = context.get("render_mode", "full+metrics")
-    context["enforce_render_source"] = context.get("enforce_render_source", "tier2_enforced_totals")
+    # Mark finalized so Tier-3 and beyond know this report is complete
+    context["rendered"] = True
+    report["rendered"] = True
 
-    try:
-        # 🔧 Important: call render_report(report), not context
-        rendered = render_report(report)
-        context["rendered"] = True
-        report["rendered"] = True
+    # Optionally, attach a minimal summary
+    summary = {
+        "status": "ok",
+        "note": "semantic JSON finalized (markdown skipped)",
+        "total_events": len(context.get("df_events", []))
+        if isinstance(context.get("df_events"), list)
+        else None,
+    }
 
-        # Normalize output to Markdown
-        if isinstance(rendered, dict) and "markdown" in rendered:
-            md_output = rendered["markdown"]
-        elif isinstance(rendered, str):
-            md_output = rendered
-        elif hasattr(rendered, "to_markdown"):
-            md_output = rendered.to_markdown()
-        else:
-            md_output = str(rendered)
+    return report, summary
 
-        debug(context, f"[FINALIZER] Markdown render succeeded (len={len(md_output)})")
-        context["markdown"] = md_output
-        return md_output, {"status": "ok", "note": "markdown rendered"}
-
-    except Exception as e:
-        debug(context, f"[FINALIZER] Unified renderer failed → {e}")
-        return f"Render failed: {e}", {
-            "status": "error",
-            "note": "unified render failed"
-        }
 
