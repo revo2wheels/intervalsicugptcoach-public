@@ -255,6 +255,7 @@ def build_semantic_json(context):
     verbose_events = bool(options.get("verbose_events", False))
     include_all_events = bool(options.get("include_all_events", False))
     return_format = options.get("return_format", "semantic")
+    render_mode = options.get("render_mode", "default")  # ✅ new line
 
     # ---------------------------------------------------------
     # BASE SEMANTIC STRUCTURE
