@@ -343,6 +343,7 @@ async def run_audit_with_data(request: Request):
         logs = buffer.getvalue()
 
         if fmt in ("json", "semantic"):
+            context = report.get("context", {}) if isinstance(report, dict) else {}
             return JSONResponse({
                 "status": "ok",
                 "report_type": report_range,
