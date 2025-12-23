@@ -78,22 +78,36 @@ def run_future_forecast(context, forecast_days=14):
     - Forward coaching actions
     """
 
+    # ───────────────────────────────────────────────
     debug(context, "───────────────────────────────────────────────")
-    debug(context, f"[T3] 🧭 Starting Future Forecast (window={forecast_days}d)")
-    debug(context, f"[T3] Context keys: {list(context.keys())[:12]}")
+    debug(context, f"[T3] 🧭 Starting Future Forecast (window={forecast_days} d)")
+    debug(context, f"[T3] Context keys (first 12): {list(context.keys())[:12]}")
+
     # -----------------------------------------------------------------
-    # 🔍 Enhanced debug preamble — checks both prefetched + local levels
+    # 🔍 Prefetch status summary — checks prefetched + local calendars
     # -----------------------------------------------------------------
     prefetched = context.get("prefetched", {})
-    has_prefetched_calendar = isinstance(prefetched, dict) and isinstance(prefetched.get("calendar"), list) and len(prefetched["calendar"]) > 0
-    has_local_calendar = isinstance(context.get("calendar"), list) and len(context.get("calendar", [])) > 0
+    pre_calendar = prefetched.get("calendar") if isinstance(prefetched, dict) else None
+    local_calendar = context.get("calendar")
 
-    debug(context, f"[T3] Prefetched calendar present: {has_prefetched_calendar}")
-    debug(context, f"[T3] Local calendar present: {has_local_calendar}")
-    pre = context.get("prefetched", {})
-    debug(context, f"[T3] Prefetched keys available: {list(pre.keys()) if isinstance(pre, dict) else 'None'}")
-    if isinstance(pre, dict) and "calendar" in pre:
-        debug(context, f"[T3] Prefetched calendar type: {type(pre['calendar'])}, len={len(pre['calendar']) if isinstance(pre['calendar'], list) else 'n/a'}")
+    has_prefetch = isinstance(pre_calendar, list) and len(pre_calendar) > 0
+    has_local = isinstance(local_calendar, list) and len(local_calendar) > 0
+    pre_keys = list(prefetched.keys()) if isinstance(prefetched, dict) else []
+
+    debug(context, f"[T3] Prefetch keys: {pre_keys}")
+    debug(
+        context,
+        f"[T3] Calendar sources → prefetched: {has_prefetch} "
+        f"({len(pre_calendar) if has_prefetch else 0}), "
+        f"local: {has_local} ({len(local_calendar) if has_local else 0})"
+    )
+
+    if has_prefetch:
+        debug(context, f"[T3] ✅ Using prefetched calendar from Cloudflare ({len(pre_calendar)} events)")
+    elif has_local:
+        debug(context, f"[T3] ⚙️ Using local calendar ({len(local_calendar)} events)")
+    else:
+        debug(context, "[T3] ⚠️ No usable calendar detected — fallback or abort expected")
 
 
     # -----------------------------------------------------------------
