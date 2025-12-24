@@ -417,6 +417,18 @@ def compute_derived_metrics(df_events, context):
         stress_tolerance = 0.0
         debug(context, f"[T2] StressTolerance fallback triggered: {e}")
 
+    # ======================================================
+    # 🩵 HR→Power Equivalence Normalization (optional scaling)
+    # ======================================================
+    if "power_proxy" in context or (any("hr_z" in c.lower() for c in df_events.columns) and not any("power_z" in c.lower() for c in df_events.columns)):
+        context.setdefault("power_proxy", True)
+        context.setdefault("hr_power_equiv_factor", 0.93)
+        factor = context["hr_power_equiv_factor"]
+
+        hr_zone_cols = [c for c in df_events.columns if c.lower().startswith("hr_z")]
+        if hr_zone_cols:
+            df_events.loc[:, hr_zone_cols] = df_events[hr_zone_cols].apply(lambda col: col * factor)
+            debug(context, f"[T2] ⚙️ Applied HR→Power scaling ×{factor} to HR zones ({len(hr_zone_cols)} cols)")
 
     # --- ✅ 8. ZQI (Zone Quality Index) ---
     zqi = compute_zone_intensity(df_events, context)
@@ -642,7 +654,31 @@ def compute_derived_metrics(df_events, context):
             "icon": classified["StressTolerance"]["icon"],
             "desc": "Sustainable training tolerance",
         },
-}
+    }   
+    # ======================================================
+    # 🩵 HR-only Fallback Annotations (metadata for reports)
+    # ======================================================
+    has_power = any("power_z" in c.lower() for c in df_events.columns)
+    has_if = "IF" in df_events.columns
+    has_hr = any("hr_z" in c.lower() for c in df_events.columns)
+
+    context["hr_only_mode"] = bool(has_hr and not has_power)
+    context["power_data_present"] = bool(has_power)
+    context["if_proxy_used"] = not has_if
+
+    if context["hr_only_mode"]:
+        debug(context, "[T2] ⚙️ HR-only fallback mode — metrics derived from HR zones or IF proxy.")
+        context["derived_warnings"] = [
+            "⚙️ Using HR-only data — FatOx, MES, and Polarisation approximated.",
+            "Zone metrics derived from HR response (lag-corrected).",
+        ]
+    elif context["if_proxy_used"]:
+        debug(context, "[T2] ⚙️ IF proxy mode — no direct power or IF data available.")
+        context["derived_warnings"] = [
+            "⚙️ Intensity Factor proxy (0.7) used — metabolic scores approximate.",
+        ]
+    else:
+        context["derived_warnings"] = []
 
 
     # --- ✅ 12. Flatten for validator ---
