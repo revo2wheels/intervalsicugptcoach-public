@@ -166,11 +166,99 @@ def fetch_wellness_chunked(
             else:
                 df_well["date"] = pd.NaT
 
-    debug(
-        context,
-        f"[T0-WELLNESS] Final wellness shape={df_well.shape}, "
-        f"columns={df_well.columns.tolist()}"
-    )
+    # =================================================
+    # 🩵 HRV NORMALISATION — vendor-agnostic support
+    # =================================================
+    if not df_well.empty:
+        # --- Ensure we have a usable date column ---
+        if "date" not in df_well.columns and "id" in df_well.columns:
+            df_well = df_well.rename(columns={"id": "date"})
+
+        # --- Find plausible HRV-related columns (Garmin, Whoop, Oura, etc.) ---
+        hrv_candidates = [
+            c for c in df_well.columns
+            if any(k in c.lower() for k in [
+                "hrv", "rmssd", "recovery_score", "recovery_index", "recovery",
+                "oura", "whoop", "fitbit", "polar",
+                "hrv_mean", "hrv_rmssd", "daily_hrv", "hrv_status", "hrvsdnn"
+            ])
+        ]
+        debug(context, f"[T0-WELLNESS] HRV candidates detected: {hrv_candidates}")
+
+        # --- Try to normalise HRV column ---
+        if hrv_candidates:
+            # 💙 Only create hrv column if missing (avoid wiping real Garmin HRV)
+            if "hrv" not in df_well.columns:   # ✅ FIX: preserve Garmin HRV
+                df_well["hrv"] = np.nan
+
+            for col in hrv_candidates:
+                try:
+                    col_lower = col.lower()
+                    raw_vals = df_well[col]
+
+                    # --- Debug first few values ---
+                    debug(context, f"[T0-WELLNESS] Sample values from {col}: {raw_vals.head(5).tolist()}")
+
+                    # --- Safe numeric conversion ---
+                    if pd.api.types.is_numeric_dtype(raw_vals):
+                        val = raw_vals
+                    else:
+                        val = pd.to_numeric(
+                            raw_vals.astype(str).str.extract(r"([-+]?\d*\.?\d+)")[0],
+                            errors="coerce"
+                        )
+
+                    # --- Vendor-specific classification ---
+                    if "whoop" in col_lower and "recovery_score" in col_lower:
+                        val *= 1.2
+                        src = "whoop"
+                    elif any(k in col_lower for k in ["oura", "apple", "fitbit"]):
+                        src = "oura/apple/fitbit"
+                    elif "polar" in col_lower:
+                        src = "polar"
+                    elif any(k in col_lower for k in ["garmin", "hrv_mean", "hrvsdnn"]) or col_lower == "hrv":
+                        src = "garmin"
+                    else:
+                        src = "generic"
+
+                    # --- Prioritise first valid HRV column with data ---
+                    if df_well["hrv"].isna().all() and val.notna().any():
+                        df_well["hrv"] = val
+                        context["hrv_source"] = src
+                        debug(context, f"[T0-WELLNESS] Using HRV from '{col}' (source={src})")
+
+                except Exception as e:
+                    debug(context, f"[T0-WELLNESS] HRV normalisation failed for {col} → {e}")
+
+        # ✅ FIX: If Garmin HRV already existed, auto-assign its source
+        if "hrv" in df_well.columns and "hrv_source" not in context:
+            context["hrv_source"] = "garmin"
+            debug(context, "[T0-WELLNESS] Existing HRV column detected — assuming Garmin source")
+
+        # --- Final propagation ---
+        if "hrv" in df_well.columns:
+            df_well["hrv"] = pd.to_numeric(df_well["hrv"], errors="coerce")
+            context["hrv_source"] = context.get("hrv_source", "unknown")
+            context["hrv_available"] = bool(df_well["hrv"].notna().any())
+            context["df_wellness"] = df_well
+
+            debug(
+                context,
+                f"[T0-WELLNESS] Normalised HRV column ready "
+                f"(source={context['hrv_source']}, available={context['hrv_available']}, "
+                f"non-null={df_well['hrv'].notna().sum()})"
+            )
+        else:
+            context["hrv_source"] = "none"
+            context["hrv_available"] = False
+            context["df_wellness"] = df_well
+            debug(context, "[T0-WELLNESS] No HRV field found — defaulting to none.")
+
+        debug(
+            context,
+            f"[T0-WELLNESS] Final wellness shape={df_well.shape}, "
+            f"columns={df_well.columns.tolist()}"
+        )
 
     return df_well
 

@@ -333,7 +333,37 @@ def build_semantic_json(context):
             for k, v in context.get("wellness_summary", {}).items()
         },
     }
-    # ---------------------------------------------------------
+    # 🩵 Inject HRV summary & 42-day series (from Tier-1/Tier-0)
+    if "df_wellness" in context and not getattr(context["df_wellness"], "empty", True):
+        dfw = context["df_wellness"]
+        if "hrv" in dfw.columns:
+            vals = pd.to_numeric(dfw["hrv"], errors="coerce").dropna()
+            if len(vals) > 0:
+                mean_val = round(vals.mean(), 1)
+                latest_val = round(vals.iloc[-1], 1)
+                trend_val = (
+                    round(vals.tail(7).mean() - vals.head(7).mean(), 1)
+                    if len(vals) >= 14 else None
+                )
+
+                semantic["wellness"].update({
+                    "hrv_mean": mean_val,
+                    "hrv_latest": latest_val,
+                    "hrv_trend_7d": trend_val,
+                    "hrv_source": context.get("hrv_source", "unknown"),
+                    "hrv_available": True,
+                    "hrv_samples": int(len(vals)),
+                    "hrv_series": dfw.tail(42)[["date", "hrv"]]
+                        .dropna()
+                        .assign(date=lambda x: pd.to_datetime(x["date"]).dt.strftime("%Y-%m-%d"))
+                        .to_dict(orient="records"),
+                })
+                debug(
+                    context,
+                    f"[SEMANTIC] Injected HRV → mean={mean_val}, latest={latest_val}, "
+                    f"trend_7d={trend_val}, samples={len(vals)}, source={context.get('hrv_source')}"
+                )
+        # ---------------------------------------------------------
     # AUTHORITATIVE TOTALS (Tier-2 ONLY)
     # ---------------------------------------------------------
     report_type = semantic["meta"]["report_type"]
@@ -441,12 +471,33 @@ def build_semantic_json(context):
                 "concept2": athlete.get("concept2_sync_activities"),
             },
 
-            # 💓 Wellness Capabilities
+            # 💓 Wellness Capabilities (vendor-agnostic)
             "wellness_features": {
-                "garmin_health_enabled": athlete.get("icu_garmin_health"),
-                "wellness_keys": athlete.get("icu_garmin_wellness_keys"),
-                "hrv_available": "hrv" in (athlete.get("icu_garmin_wellness_keys") or []),
-                "weight_sync": athlete.get("icu_weight_sync"),
+                # Source detection across vendors
+                "sources": {
+                    "garmin": bool(athlete.get("icu_garmin_health")),
+                    "whoop": bool(athlete.get("whoop_sync_activities")),
+                    "oura": bool(athlete.get("oura_sync_activities")),
+                    "fitbit": bool(athlete.get("fitbit_sync_activities")),
+                    "polar": bool(athlete.get("polar_sync_activities")),
+                    "coros": bool(athlete.get("coros_sync_activities")),
+                    "suunto": bool(athlete.get("suunto_sync_activities")),
+                },
+
+                # Unified wellness keys — from any platform
+                "wellness_keys": (
+                    athlete.get("icu_garmin_wellness_keys")
+                    or athlete.get("wellness_keys")
+                    or context.get("wellness_keys")
+                    or []
+                ),
+
+                # HRV capability inferred dynamically from Tier-1/0
+                "hrv_available": bool(context.get("hrv_available", False)),
+                "hrv_source": context.get("hrv_source", "unknown"),
+
+                # Other common fields
+                "weight_sync": athlete.get("icu_weight_sync") or "NONE",
                 "resting_hr": athlete.get("icu_resting_hr"),
             },
 

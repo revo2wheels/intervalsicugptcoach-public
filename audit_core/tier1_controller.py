@@ -750,7 +750,7 @@ def run_tier1_controller(df_master, wellness, context):
                     f"values={df_well['readiness'].dropna().tolist() if 'readiness' in df_well.columns else 'n/a'}")
 
 
-        # --- Build wellness summary block ---
+         # --- Build wellness summary block ---
         context["wellness_metrics"] = {
             "rest_hr": rest_hr,
             "hrv_trend": hrv_trend,
@@ -764,7 +764,31 @@ def run_tier1_controller(df_master, wellness, context):
 
         debug(context, f"[T1] Wellness summary → rest_days={rest_days}, rest_hr={rest_hr}, hrv_trend={hrv_trend}")
 
+        # --- 🩵 HRV summary (vendor-agnostic, uses Tier-0 normalization) ---
+        if "df_wellness" in context and not context["df_wellness"].empty:
+            dfw = context["df_wellness"]
+            if "hrv" in dfw.columns:
+                vals = pd.to_numeric(dfw["hrv"], errors="coerce").dropna()
+                if len(vals) > 0:
+                    context["hrv_mean"] = round(vals.mean(), 1)
+                    context["hrv_latest"] = round(vals.iloc[-1], 1)
+                    context["hrv_trend_7d"] = (
+                        round(vals.tail(7).mean() - vals.head(7).mean(), 1)
+                        if len(vals) >= 14 else None
+                    )
+                    debug(
+                        context,
+                        f"[T1] HRV summary → mean={context['hrv_mean']}, "
+                        f"latest={context['hrv_latest']}, trend_7d={context['hrv_trend_7d']}, "
+                        f"source={context.get('hrv_source', 'unknown')}"
+                    )
+                else:
+                    context["hrv_mean"] = context["hrv_latest"] = context["hrv_trend_7d"] = None
+            else:
+                context["hrv_mean"] = context["hrv_latest"] = context["hrv_trend_7d"] = None
+
         daily_summary = df_well.copy()
+        context["df_wellness"] = df_well
     else:
         context["wellness_metrics"] = {
             "rest_hr": np.nan, "hrv_trend": np.nan,
