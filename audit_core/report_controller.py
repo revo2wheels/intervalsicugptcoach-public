@@ -287,7 +287,6 @@ def run_report(
         # Single canonical timezone
         context["timezone"] = athlete["timezone"]
 
-
     # ------------------------------------------------------------
     # Prefetch bookkeeping
     # ------------------------------------------------------------
@@ -302,6 +301,12 @@ def run_report(
         context["force_light"] = False
         context["prefetch_done"] = True
 
+    # ------------------------------------------------------------
+    # 🧭 Local-mode correction for non-prefetched runs
+    # ------------------------------------------------------------
+    if not context.get("prefetched"):
+        context["force_light"] = True
+        debug(context, f"[T0] Local mode → force_light=True (no prefetch, {reportType})")
 
 
     # --- NEW: Bind reportMode for schema-based orchestration ---
@@ -530,6 +535,13 @@ def run_report(
     from io import StringIO
 
     full_days = context.get("range", {}).get("fullDays", 7)
+
+    # ✅ Preserve the real full dataset before df_scope is overwritten
+    if isinstance(df_master, pd.DataFrame) and not df_master.empty:
+        context["_df_scope_full"] = df_master.copy()
+        debug(context, f"[PRESERVE] Stored df_master as _df_scope_full ({len(df_master)} rows, {len(df_master.columns)} cols)")
+    else:
+        debug(context, "[PRESERVE] No valid df_master available to preserve as _df_scope_full")
 
     if full_days == 7:
         # WEEKLY analysis → strict 7-day scope
@@ -854,7 +866,6 @@ def run_report(
     context["enforce_render_source"] = "tier2_enforced_totals"  # ✅ use canonical source
     context["allow_intent_inference"] = False
 
-
     # --- Final render ----
     final_output, compliance = finalize_and_validate_render(context, reportType=reportType)
 
@@ -877,7 +888,6 @@ def run_report(
                 context["icu_power_zones"] = primary["power_zones"]
             if "hr_zones" in primary and not context.get("icu_hr_zones"):
                 context["icu_hr_zones"] = primary["hr_zones"]
-
 
         semantic_output = build_semantic_json(context)  # Ensure semantic_output is generated
 

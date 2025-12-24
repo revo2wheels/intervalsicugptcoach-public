@@ -575,6 +575,8 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         context["activities_light"] = df_light.copy()
 
     else:
+        from datetime import datetime, timedelta
+
         # --------------------------------------------------------
         # 🌐 FETCH LIGHTWEIGHT DATASET (LOCAL / ORCHESTRATED)
         # --------------------------------------------------------
@@ -585,10 +587,19 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
             "icu_training_load,IF,average_heartrate,VO2MaxGarmin"
         )
 
+        # 🔧 Use controller range by default
         oldest = pd.to_datetime(start).strftime("%Y-%m-%d")
         newest = pd.to_datetime(end).strftime("%Y-%m-%d")
 
-        debug(context, f"[T0-LIGHT] Using controller-supplied range oldest={oldest} newest={newest}")
+        # 🚀 OVERRIDE: Force 90-day window when force_light=True
+        if context.get("force_light", False):
+            newest_date = datetime.now().date()
+            oldest_date = newest_date - timedelta(days=context.get("range", {}).get("lightDays", 90))
+            oldest = oldest_date.strftime("%Y-%m-%d")
+            newest = newest_date.strftime("%Y-%m-%d")
+            debug(context, f"[T0-FORCE-LIGHT] Overriding controller range → {oldest} → {newest}")
+
+        debug(context, f"[T0-LIGHT] Using range oldest={oldest} newest={newest}")
 
         light_url = (
             f"{INTERVALS_API}/athlete/0/activities_t0light?"
@@ -621,6 +632,20 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         context["activities_light"] = df_light.copy()
 
         debug(context, f"[T0-LIGHT] Retrieved {len(df_light)} activities")
+
+    # ============================================================
+    # 🧩 Inject activities_full for Tier-2 enrichment
+    # ============================================================
+    if "activities_full" not in context:
+        try:
+            context["activities_full"] = df_light.to_dict(orient="records")
+            debug(
+                context,
+                f"[T0-PATCH] Injected df_light as activities_full for Tier-2 enrichment "
+                f"({len(df_light)} rows, {len(df_light.columns)} columns)"
+            )
+        except Exception as e:
+            debug(context, f"[T0-PATCH] Failed to inject df_light as activities_full: {e}")
 
     # ============================================================
     # 🧮 SLICE LOGIC — IDENTICAL FOR FETCH + PREFETCH

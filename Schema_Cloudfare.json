@@ -198,6 +198,35 @@
           "401": { "description": "Unauthorized" }
         }
       }
+    },
+    "/athlete/0/activities_t0light": {
+      "get": {
+        "summary": "List activities (Tier-0 lightweight, 90-day reduced fieldset)",
+        "operationId": "listActivitiesLight",
+        "parameters": [
+          { "name": "oldest", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "newest", "in": "query", "schema": { "type": "string", "format": "date" } },
+          {
+            "name": "fields",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Comma-separated field list for lightweight mode"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lightweight 90-day dataset of completed activities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/ActivityLight" }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -238,7 +267,8 @@
     { "trigger": ["summary report", "overview report", "high level summary", "run summary", "summary report staging", "run summary report staging"], "action": "runSummaryReportV2", "x-intent": { "x-intent": "summary", "strict": true } },
     { "trigger": ["read calendar", "read events", "get planned workouts", "list planned events", "fetch calendar"], "action": "readCalendarV1", "x-intent": { "x-intent": "calendar-read", "strict": true } },
     { "trigger": ["write calendar", "add event", "create event", "plan workout", "update calendar", "sync planned workouts"], "action": "writeCalendarV1", "x-intent": { "x-intent": "calendar-write", "strict": true } },
-    { "trigger": ["delete calendar event", "remove event", "cancel planned workout"], "action": "deleteCalendarV1", "x-intent": { "x-intent": "calendar-delete", "strict": true } }
+    { "trigger": ["delete calendar event", "remove event", "cancel planned workout"], "action": "deleteCalendarV1", "x-intent": { "x-intent": "calendar-delete", "strict": true } },
+    { "trigger": ["list activities","show recent rides","show my workouts","list recent sessions","show last runs"],  "action": "listActivitiesLight", "x-intent": { "x-intent": "activities-light", "strict": true } }
   ],
   "x-actions": {
     "runWeeklyReportV2": { "type": "operation", "operationId": "runWeeklyReportV2" },
