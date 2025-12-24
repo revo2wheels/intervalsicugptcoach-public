@@ -201,8 +201,11 @@ def run_future_forecast(context, forecast_days=14):
         # -----------------------------------------------------------------
         # Summarize forecast
         # -----------------------------------------------------------------
+        total_horizon_days = (end_date - start_date).days
+
         future_state = {
             "days": forecast_days,
+            "horizon_days": total_horizon_days,
             "start_date": str(start_date),
             "end_date": str(end_date),
             "CTL_future": round(float(ctl_values[-1]), 2),

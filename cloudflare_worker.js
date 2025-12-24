@@ -801,58 +801,157 @@ export default {
     if (pathname === "/calendar/write" && request.method === "POST") {
       const body = await request.json();
 
-      // 🧩 Accept top-level object, array, or ChatGPT JSON schema
+      // 🧩 Accept array, ChatGPT schema, or object
       let events = [];
       if (Array.isArray(body)) {
         events = body;
-      } else if (body.planned_workouts && Array.isArray(body.planned_workouts)) {
+      } else if (Array.isArray(body.planned_workouts)) {
         events = body.planned_workouts;
       } else if (typeof body === "object" && Object.keys(body).length > 0) {
         events = [body];
       } else {
         return new Response(JSON.stringify({ error: "Missing event data" }), {
           status: 400,
-          headers: { "content-type": "application/json" }
+          headers: { "content-type": "application/json" },
         });
       }
 
-      // 🧠 Normalize category names
-      const normalizeCategory = (cat = "NOTE") => {
-        const c = cat.trim().toUpperCase();
-        if (["NOTES", "MEMO"].includes(c)) return "NOTE";
-        if (["HOLIDAY", "HOLIDAYS", "VACATION", "BREAK"].includes(c)) return "HOLIDAY";
-        return c;
-      };
+      // ================================================================
+      // 📅 SMART CATEGORY + TYPE INFERENCE (schema-aligned)
+      // ================================================================
+      function inferCategoryAndType(name = "", description = "") {
+        const n = `${name} ${description}`.toLowerCase();
+
+        // 🎯 Race events
+        if (n.match(/\b(a race|a-race|priority race|main event)\b/)) return { category: "RACE_A", type: "Ride" };
+        if (n.match(/\b(b race|b-race)\b/)) return { category: "RACE_B", type: "Ride" };
+        if (n.match(/\b(c race|c-race)\b/)) return { category: "RACE_C", type: "Ride" };
+        if (n.match(/\b(race|competition|event|gran fondo|marathon|triathlon)\b/)) {
+          if (n.includes("run")) return { category: "RACE_A", type: "Run" };
+          if (n.includes("swim")) return { category: "RACE_A", type: "Swim" };
+          return { category: "RACE_A", type: "Ride" };
+        }
+
+        // 🚴 Workouts
+        if (n.match(/\b(ride|bike|zwift|trainer|tempo|interval|ftp|endurance|climb)\b/)) {
+          if (n.includes("virtual")) return { category: "WORKOUT", type: "VirtualRide" };
+          if (n.includes("mountain")) return { category: "WORKOUT", type: "MountainBikeRide" };
+          if (n.includes("gravel")) return { category: "WORKOUT", type: "GravelRide" };
+          return { category: "WORKOUT", type: "Ride" };
+        }
+        if (n.match(/\b(run|jog|trail|tempo run|track)\b/)) {
+          if (n.includes("trail")) return { category: "WORKOUT", type: "TrailRun" };
+          return { category: "WORKOUT", type: "Run" };
+        }
+        if (n.match(/\b(swim|laps|pool|open water)\b/)) {
+          if (n.includes("open")) return { category: "WORKOUT", type: "OpenWaterSwim" };
+          return { category: "WORKOUT", type: "Swim" };
+        }
+
+        // 🏋️ Strength & Cross-training
+        if (n.match(/\b(weight|gym|strength|lifting|resistance|powerlifting|squat|deadlift|bench)\b/))
+          return { category: "WORKOUT", type: "WeightTraining" };
+        if (n.match(/\b(core|mobility|yoga|stretch|pilates|rehab|balance)\b/))
+          return { category: "WORKOUT", type: "Yoga" };
+
+        // 🥾 Outdoor activity
+        if (n.match(/\b(hike|walk|trek)\b/)) return { category: "WORKOUT", type: "Hike" };
+
+        // 💤 Recovery / Off days
+        if (n.match(/\b(rest|recovery|off|easy|relax)\b/)) return { category: "NOTE", type: "Other" };
+
+        // 🏖️ Holiday
+        if (n.match(/\b(holiday|vacation|break|travel)\b/)) return { category: "HOLIDAY", type: "Other" };
+
+        // ⚕️ Sick / Injured
+        if (n.match(/\b(sick|ill|flu|cold)\b/)) return { category: "SICK", type: "Other" };
+        if (n.match(/\b(injury|injured|rehab)\b/)) return { category: "INJURED", type: "Other" };
+
+        // 🧪 FTP / fitness set
+        if (n.match(/\b(ftp test|max hr|threshold|fitness test)\b/)) return { category: "SET_EFTP", type: "Ride" };
+
+        // Default → note or plan
+        if (n.match(/\b(plan|schedule|block)\b/)) return { category: "PLAN", type: "Other" };
+
+        return { category: "NOTE", type: "Other" };
+      }
+
+      // 🧩 SMART DELETE: Delete matching events by date+name (inclusive date window)
+      async function deleteMatchingEvents(events) {
+        for (const e of events) {
+          const date = e.date || e.start_date_local?.split("T")[0];
+          const name = (e.title || e.name || "").trim().toLowerCase();
+          if (!date || !name) continue;
+
+          // 🔸 Widen date window to include events that cross midnight
+          const oldest = `${date}T00:00:00`;
+          const nextDay = new Date(date);
+          nextDay.setDate(nextDay.getDate() + 1);
+          const newest = `${nextDay.toISOString().split("T")[0]}T00:00:00`;
+
+          const res = await fetch(
+            `${INTERVALS_API_BASE}/athlete/0/events?oldest=${oldest}&newest=${newest}`,
+            { headers: buildAuthHeaders() }
+          );
+          if (!res.ok) {
+            console.warn(`[CALENDAR SMART DELETE] Failed to query for ${date} (${res.status})`);
+            continue;
+          }
+
+          const existing = await res.json();
+
+          // Normalize both names for comparison
+          const matches = existing.filter(ev =>
+            ev.name?.trim().toLowerCase() === name &&
+            ev.start_date_local?.slice(0, 10) === date
+          );
+
+          if (matches.length === 0) {
+            console.log(`[CALENDAR SMART DELETE] No matches for ${date} ${name}`);
+            continue;
+          }
+
+          for (const m of matches) {
+            await fetch(`${INTERVALS_API_BASE}/athlete/0/events/${m.id}`, {
+              method: "DELETE",
+              headers: buildAuthHeaders(),
+            });
+            console.log(`[CALENDAR SMART DELETE] Deleted id=${m.id} (${date} ${name})`);
+          }
+        }
+      }
 
       const todayISO = new Date().toISOString().split("T")[0];
 
       const normalized = events.map((e) => {
-        const category = normalizeCategory(e.category || "NOTE");
-        const start =
-          e.start_date_local ||
-          (e.date ? `${e.date}T00:00:00` : `${todayISO}T00:00:00`);
-        const end =
-          e.end_date_local ||
-          e.end_date ||
-          `${start.split("T")[0]}T00:00:00`; // ✅ required
+        const start = e.start_date_local || (e.date ? `${e.date}T00:00:00` : `${todayISO}T00:00:00`);
+        const name = e.name || e.title || "Untitled Session";
+        const description = e.description || e.notes || e.note || "";
+        const { category, type } = inferCategoryAndType(name, description);
 
-        // 🧩 Map flexible fields → Intervals schema
-        const name = e.name || e.title || "Note";
-        const description = e.description || e.notes || e.note || e.text || "";
+        // detect if it's likely indoor
+        const indoor = /\b(zwift|trainer|indoor)\b/i.test(name + description);
 
-        // Minimal valid event
-        const normalizedEvent = {
+        return {
           start_date_local: start,
-          end_date_local: end,
+          end_date_local: e.end_date_local || start,
           category,
+          type,
           name,
           description,
-          duration_minutes: e.duration_minutes ?? 0,
-          color: e.color || null
+          moving_time: (e.duration_minutes ?? e.time_target ?? 0) * 60,  // ✅ convert to seconds
+          icu_training_load: e.tss ?? e.load ?? null,  // ✅ Intervals accepts this
+//          load_target: e.load_target ?? null,          // optional future support
+//          time_target: e.time_target ?? e.duration_minutes ?? null,
+          sub_type: e.sub_type || null,             // 🆕 subtype
+          tags: e.tags || [],                       // 🆕 optional tags
+          indoor,                                   // 🆕 auto flag
+          color: e.color || null,                   // 🆕 user-set color
+          show_on_fitness_line: e.show_on_fitness_line ?? false, // 🆕 optional
+          visibility: "PUBLIC"
         };
-
-        return normalizedEvent;
       });
+
 
       const target = `${INTERVALS_API_BASE}/athlete/0/events/bulk?upsert=true`;
       console.log(`[CALENDAR WRITE → EVENTS] → ${target} (${normalized.length} events)`);
@@ -861,70 +960,144 @@ export default {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          Authorization: bearerToken
+          Authorization: bearerToken,
         },
-        body: JSON.stringify(normalized)
+        body: JSON.stringify(normalized),
       });
 
       const txt = await r.text();
       console.log(`[CALENDAR WRITE RESPONSE] status=${r.status} bytes=${txt.length}`);
+      if (r.status >= 400) console.error("[CALENDAR WRITE ERROR BODY]", txt);
 
       return new Response(txt, {
         status: r.status,
         headers: {
           "content-type": "application/json",
-          "access-control-allow-origin": "*"
-        }
+          "access-control-allow-origin": "*",
+        },
       });
     }
-    // DELETE ITEMS
+
+    // === DELETE ITEMS (single ID, multiple IDs, or multiple dates) ===
     if (pathname === "/calendar/delete" && request.method === "POST") {
       const body = await request.json();
-      const id = body.id;
-      const date = body.date;
+      const ids = Array.isArray(body.ids)
+        ? body.ids
+        : body.id
+        ? [body.id]
+        : [];
+      const dates = Array.isArray(body.dates)
+        ? body.dates
+        : body.date
+        ? [body.date]
+        : [];
 
-      let target;
-      if (id) {
-        target = `${INTERVALS_API_BASE}/athlete/0/events/${id}`;
-      } else if (date) {
-        // fetch events on date, then delete all
-        const res = await fetch(
-          `${INTERVALS_API_BASE}/athlete/0/events?oldest=${date}&newest=${date}`,
-          { headers: buildAuthHeaders() }
-        );
-        const events = res.ok ? await res.json() : [];
-        for (const ev of events) {
-          await fetch(`${INTERVALS_API_BASE}/athlete/0/events/${ev.id}`, {
+      // --- Helper: Delete by ID ---
+      async function deleteEventById(id) {
+        try {
+          const r = await fetch(`${INTERVALS_API_BASE}/athlete/0/events/${id}`, {
             method: "DELETE",
-            headers: buildAuthHeaders()
+            headers: buildAuthHeaders(),
           });
+          if (!r.ok) {
+            const errTxt = await r.text();
+            console.warn(`[CALENDAR DELETE] Failed ID=${id}: ${r.status} ${errTxt.slice(0, 200)}`);
+          }
+          return r.ok;
+        } catch (err) {
+          console.error(`[CALENDAR DELETE] Exception for ID=${id}: ${err.message}`);
+          return false;
         }
+      }
+
+      // --- Helper: Delete all events for a given date ---
+      async function deleteEventsByDate(date) {
+        try {
+          const res = await fetch(
+            `${INTERVALS_API_BASE}/athlete/0/events?oldest=${date}&newest=${date}`,
+            { headers: buildAuthHeaders() }
+          );
+
+          if (!res.ok) {
+            console.warn(`[CALENDAR DELETE] Could not fetch events for ${date} (HTTP ${res.status})`);
+            return 0;
+          }
+
+          const events = await res.json();
+          if (!Array.isArray(events) || !events.length) {
+            console.log(`[CALENDAR DELETE] No events found on ${date}`);
+            return 0;
+          }
+
+          const results = await Promise.allSettled(events.map(ev => deleteEventById(ev.id)));
+          const deletedCount = results.filter(r => r.status === "fulfilled" && r.value).length;
+          console.log(`[CALENDAR DELETE] ${date}: deleted ${deletedCount}/${events.length}`);
+          return deletedCount;
+        } catch (err) {
+          console.error(`[CALENDAR DELETE] Exception while deleting date=${date}: ${err.message}`);
+          return 0;
+        }
+      }
+
+      // --- Case 1️⃣: Delete by explicit event IDs ---
+      if (ids.length > 0) {
+        console.log(`[CALENDAR DELETE] Bulk delete by IDs (${ids.length})`);
+        const results = await Promise.allSettled(ids.map(deleteEventById));
+        const deleted = results.filter(r => r.status === "fulfilled" && r.value).length;
+        const failed = ids.length - deleted;
+
+        const statusCode = failed > 0 ? 207 : 200; // 207 Multi-Status if partial failure
         return new Response(
-          JSON.stringify({ deleted: events.length }),
-          { status: 200, headers: { "content-type": "application/json", "access-control-allow-origin": "*" } }
+          JSON.stringify({ mode: "ids", deleted, failed, total: ids.length }),
+          {
+            status: statusCode,
+            headers: {
+              "content-type": "application/json",
+              "access-control-allow-origin": "*"
+            }
+          }
         );
       }
 
-      if (!target)
-        return new Response(JSON.stringify({ error: "Missing id or date" }), {
-          status: 400,
-          headers: { "content-type": "application/json" }
-        });
+      // --- Case 2️⃣: Delete by one or more dates ---
+      if (dates.length > 0) {
+        console.log(`[CALENDAR DELETE] Deleting by dates: ${dates.join(", ")}`);
+        let totalDeleted = 0;
 
-      const r = await fetch(target, {
-        method: "DELETE",
-        headers: buildAuthHeaders()
-      });
-      const txt = await r.text();
-
-      return new Response(txt, {
-        status: r.status,
-        headers: {
-          "content-type": "application/json",
-          "access-control-allow-origin": "*"
+        for (const date of dates) {
+          const deletedForDate = await deleteEventsByDate(date);
+          totalDeleted += deletedForDate;
         }
-      });
+
+        return new Response(
+          JSON.stringify({
+            mode: "dates",
+            deleted: totalDeleted,
+            dates: dates.length
+          }),
+          {
+            status: 200,
+            headers: {
+              "content-type": "application/json",
+              "access-control-allow-origin": "*"
+            }
+          }
+        );
+      }
+
+      // --- Case 3️⃣: Missing params ---
+      return new Response(
+        JSON.stringify({ error: "Missing id(s) or date(s) — must provide at least one." }),
+        {
+          status: 400,
+          headers: {
+            "content-type": "application/json",
+            "access-control-allow-origin": "*"
+          }
+        }
+      );
     }
+
 
     // ================================================================
     // DEFAULT 404
