@@ -764,7 +764,7 @@ def run_tier1_controller(df_master, wellness, context):
 
         debug(context, f"[T1] Wellness summary → rest_days={rest_days}, rest_hr={rest_hr}, hrv_trend={hrv_trend}")
 
-        # --- 🩵 HRV summary (vendor-agnostic, uses Tier-0 normalization) ---
+        # --- 🩵 HRV summary (vendor-agnostic, uses Tier-2 derived metrics normalization) ---
         if "df_wellness" in context and not context["df_wellness"].empty:
             dfw = context["df_wellness"]
             if "hrv" in dfw.columns:

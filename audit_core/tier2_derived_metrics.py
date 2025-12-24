@@ -14,6 +14,91 @@ from coaching_profile import COACH_PROFILE
 from coaching_heuristics import HEURISTICS
 from coaching_cheat_sheet import CHEAT_SHEET
 
+def normalise_hrv(df_well, context=None):
+    """
+    Tier-2 HRV Normalisation — vendor-agnostic harmonisation across Garmin, Whoop, Oura, etc.
+    """
+    if df_well is None or getattr(df_well, "empty", True):
+        return None
+
+    import pandas as pd, numpy as np
+    debug = context.get("debug", lambda *a, **kw: None)
+
+    # --- Find plausible HRV columns ---
+    hrv_candidates = [
+        c for c in df_well.columns
+        if any(k in c.lower() for k in [
+            "hrv", "rmssd", "recovery_score", "recovery_index",
+            "oura", "whoop", "fitbit", "polar",
+            "hrv_mean", "hrv_rmssd", "daily_hrv", "hrv_status", "hrvsdnn"
+        ])
+    ]
+    debug(context, f"[T2-HRV] HRV candidates detected: {hrv_candidates}")
+
+    if not hrv_candidates:
+        context["hrv_available"] = False
+        context["hrv_source"] = "none"
+        return df_well
+
+    if "hrv" not in df_well.columns:
+        df_well["hrv"] = np.nan
+
+    # --- Iterate through candidate columns ---
+    for col in hrv_candidates:
+        try:
+            col_lower = col.lower()
+            raw_vals = df_well[col]
+            if not pd.api.types.is_numeric_dtype(raw_vals):
+                val = pd.to_numeric(
+                    raw_vals.astype(str).str.extract(r"([-+]?\d*\.?\d+)")[0],
+                    errors="coerce"
+                )
+            else:
+                val = raw_vals
+
+            # --- Vendor-specific classification ---
+            if "whoop" in col_lower and "recovery_score" in col_lower:
+                val *= 1.2
+                src = "whoop"
+            elif any(k in col_lower for k in ["oura", "apple", "fitbit"]):
+                src = "oura/apple/fitbit"
+            elif "polar" in col_lower:
+                src = "polar"
+            elif any(k in col_lower for k in ["garmin", "hrv_mean", "hrvsdnn"]) or col_lower == "hrv":
+                src = "garmin"
+            else:
+                src = "generic"
+
+            # --- Assign only once ---
+            if df_well["hrv"].isna().all() and val.notna().any():
+                df_well["hrv"] = val
+                context["hrv_source"] = src
+                debug(context, f"[T2-HRV] Using HRV from '{col}' (source={src})")
+
+        except Exception as e:
+            debug(context, f"[T2-HRV] HRV normalisation failed for {col}: {e}")
+
+    # --- Final safety check for Garmin default ---
+    if df_well["hrv"].notna().any() and not context.get("hrv_source"):
+        context["hrv_source"] = "garmin"
+        debug(context, "[T2-HRV] Defaulted HRV source to Garmin (detected native HRV data).")
+
+    # --- Preserve known source; do not overwrite ---
+    if not context.get("hrv_source"):
+        context["hrv_source"] = "unknown"
+
+    df_well["hrv"] = pd.to_numeric(df_well["hrv"], errors="coerce")
+    context["hrv_available"] = bool(df_well["hrv"].notna().any())
+    context["df_wellness"] = df_well
+
+    debug(context, (
+        f"[T2-HRV] Normalised HRV column ready "
+        f"(source={context['hrv_source']}, available={context['hrv_available']}, "
+        f"non-null={df_well['hrv'].notna().sum()})"
+    ))
+
+    return df_well
+
 def compute_zone_intensity(df, context=None):
     """
     Zone Quality Index (ZQI) — percentage of total training time spent in high-intensity zones (Z5–Z7).
@@ -273,6 +358,13 @@ def compute_derived_metrics(df_events, context):
 
     debug(context, f"[T2] Starting derived metric computation on {len(df_events)} events.")
     debug(context, f"[T2] Columns available: {list(df_events.columns)}")
+
+    # --- 🩵 HRV Normalisation (Tier-2 context enrichment) ---
+    df_well = context.get("df_wellness")
+    if df_well is not None:
+        df_well = normalise_hrv(df_well, context)
+    else:
+        debug(context, "[T2-HRV] No wellness dataframe in context — skipping HRV normalisation.")
 
     # --- ✅ 2. Build daily load time series ---
     # FIX: convert millis → proper datetime
