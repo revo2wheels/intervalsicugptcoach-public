@@ -27,6 +27,7 @@ from math import isnan
 from coaching_cheat_sheet import CHEAT_SHEET
 from coaching_profile import COACH_PROFILE, REPORT_HEADERS, REPORT_RESOLUTION
 from audit_core.utils import debug
+import numpy as np
 
 # ---------------------------------------------------------
 # Helpers
@@ -257,6 +258,18 @@ def build_semantic_json(context):
     return_format = options.get("return_format", "semantic")
     render_mode = options.get("render_mode", "default")  # ✅ new line
 
+    # Prefer the preserved full dataset for events
+    if "_df_scope_full" in context and isinstance(context["_df_scope_full"], pd.DataFrame):
+        df_full = context["_df_scope_full"]
+        debug(context, f"[SEMANTIC-FORCE] Using preserved _df_scope_full ({len(df_full)} rows, {len(df_full.columns)} cols)")
+    elif "df_scope" in context and isinstance(context["df_scope"], pd.DataFrame):
+        df_full = context["df_scope"]
+        debug(context, f"[SEMANTIC-FORCE] Using df_scope ({len(df_full)} rows, {len(df_full.columns)} cols)")
+    else:
+        df_full = context.get("df_events", pd.DataFrame())
+        debug(context, f"[SEMANTIC-FORCE] Fallback to df_events ({len(df_full)} rows)")
+
+
     # ---------------------------------------------------------
     # BASE SEMANTIC STRUCTURE
     # ---------------------------------------------------------
@@ -363,7 +376,7 @@ def build_semantic_json(context):
                     f"[SEMANTIC] Injected HRV → mean={mean_val}, latest={latest_val}, "
                     f"trend_7d={trend_val}, samples={len(vals)}, source={context.get('hrv_source')}"
                 )
-        # ---------------------------------------------------------
+    # ---------------------------------------------------------
     # AUTHORITATIVE TOTALS (Tier-2 ONLY)
     # ---------------------------------------------------------
     report_type = semantic["meta"]["report_type"]
@@ -536,18 +549,91 @@ def build_semantic_json(context):
     # ---------------------------------------------------------
     # EVENTS (canonical)
     # ---------------------------------------------------------
-    df_events = context.get("df_events")
+    df_events = context["_df_scope_full"]
+
     if isinstance(df_events, pd.DataFrame) and not df_events.empty:
-        semantic["events"] = [
-            {
-                "start_date_local": convert_to_str(row.get("start_date_local")),
-                "name": row.get("name"),
-                "icu_training_load": row.get("icu_training_load"),
-                "moving_time": row.get("moving_time"),
-                "distance": row.get("distance"),
-            }
-            for _, row in df_events.iterrows()
+        debug(
+            context,
+            f"[SEMANTIC] EVENTS: building canonical event list → {len(df_events)} rows, "
+            f"available columns={list(df_events.columns)}"
+        )
+
+        core_fields = [
+            "start_date_local", "name", "type",
+            "distance", "moving_time", "icu_training_load", "IF",
+            "average_heartrate", "average_cadence", "icu_average_watts",
+            "strain_score", "trimp", "hr_load",
+            "icu_efficiency_factor", "icu_intensity", "icu_power_hr",
+            "decoupling", "icu_pm_w_prime", "icu_w_prime",
+            "icu_max_wbal_depletion", "icu_joules_above_ftp",
+            "total_elevation_gain", "calories", "VO2MaxGarmin",
+            "source", "device_name"
         ]
+
+        # Identify which core fields actually exist in the incoming df
+        available_fields = [f for f in core_fields if f in df_events.columns]
+        missing_fields = [f for f in core_fields if f not in df_events.columns]
+        debug(
+            context,
+            f"[SEMANTIC] EVENTS: fields present={available_fields}, missing={missing_fields}"
+        )
+
+        semantic["events"] = []
+        for _, row in df_events.iterrows():
+            ev = {k: row.get(k) for k in available_fields}
+            if "start_date_local" in ev:
+                ev["start_date_local"] = convert_to_str(ev["start_date_local"])
+            semantic["events"].append(ev)
+
+        debug(
+            context,
+            f"[SEMANTIC] EVENTS: populated semantic.events with {len(semantic['events'])} entries"
+        )
+    else:
+        debug(context, "[SEMANTIC] EVENTS: no df_events available or empty DataFrame")
+
+    # ---------------------------------------------------------
+    # DERIVED EVENT SUMMARIES — W' Balance & Performance
+    # ---------------------------------------------------------
+    df_ev = pd.DataFrame(semantic["events"])
+    if not df_ev.empty:
+        # --- W' (Wbal) summaries ---
+        if {"icu_pm_w_prime", "icu_max_wbal_depletion", "icu_joules_above_ftp"} <= set(df_ev.columns):
+            with np.errstate(divide="ignore", invalid="ignore"):
+                wbal_pct = df_ev["icu_max_wbal_depletion"] / df_ev["icu_pm_w_prime"]
+                anaerobic_pct = df_ev["icu_joules_above_ftp"] / df_ev["icu_pm_w_prime"]
+
+            semantic["wbal_summary"] = {
+                "mean_wbal_depletion_pct": round(float(wbal_pct.mean(skipna=True) or 0), 3),
+                "mean_anaerobic_contrib_pct": round(float(anaerobic_pct.mean(skipna=True) or 0), 3),
+                "sessions_with_wbal_data": int(df_ev["icu_max_wbal_depletion"].notna().sum()),
+            }
+
+        # --- General performance summaries ---
+        perf_fields = {
+            "IF": "mean_IF",
+            "icu_intensity": "mean_intensity",
+            "icu_efficiency_factor": "mean_efficiency_factor",
+            "decoupling": "mean_decoupling",
+            "icu_power_hr": "mean_power_hr_ratio"
+        }
+
+        perf_summary = {}
+        for in_name, out_name in perf_fields.items():
+            if in_name in df_ev.columns:
+                debug(context, f"[SEMANTIC-SUMMARY] Computing mean for {in_name}, dtype={df_ev[in_name].dtype}")
+                try:
+                    # ✅ Safely coerce to numeric (ignore strings)
+                    val_series = pd.to_numeric(df_ev[in_name], errors="coerce")
+                    mean_val = float(val_series.mean(skipna=True) or 0)
+                    perf_summary[out_name] = round(mean_val, 3)
+                except Exception as e:
+                    debug(context, f"[SEMANTIC-SUMMARY] Skipped {in_name}: {e}")
+                    perf_summary[out_name] = 0
+
+
+                if perf_summary:
+                    semantic["performance_summary"] = perf_summary
 
     # ---------------------------------------------------------
     # 🗓️ PLANNED EVENTS — Grouped by Date (Calendar Context)

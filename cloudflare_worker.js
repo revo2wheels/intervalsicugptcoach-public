@@ -466,10 +466,13 @@ export default {
         `${INTERVALS_API_BASE}/athlete/${athleteId}/activities` +
         `?oldest=${oldest}&newest=${newest}&fields=${encodeURIComponent(fields)}`;
 
-      console.log(`[T0-LIGHT] → ${target}`);
-
       const r = await fetch(target, { headers: buildAuthHeaders() });
-      return new Response(await r.text(), {
+      const text = await r.text();
+      const sizeKB = (new TextEncoder().encode(text).length / 1024).toFixed(1);
+
+      console.log(`[T0-LIGHT] → ${target} (${sizeKB} KB)`);
+
+      return new Response(text, {
         status: r.status,
         headers: {
           "content-type": "application/json",
@@ -479,18 +482,19 @@ export default {
     }
 
     // === FULL ACTIVITIES ===
-    if (
-      pathname.startsWith(`/athlete/${athleteId}/activities`) &&
-      !pathname.includes("t0light")
-    ) {
+    if (pathname.startsWith(`/athlete/${athleteId}/activities`) && !pathname.includes("t0light")) {
       const { oldest, newest } = normaliseDateParams(url.searchParams, DATA_WINDOWS.FULL_DAYS);
       const target =
         `${INTERVALS_API_BASE}/athlete/${athleteId}/activities` +
         `?oldest=${oldest}&newest=${newest}`;
-      console.log(`[FULL] → ${target}`);
 
       const r = await fetch(target, { headers: buildAuthHeaders() });
-      return new Response(await r.text(), {
+      const text = await r.text();
+      const sizeKB = (new TextEncoder().encode(text).length / 1024).toFixed(1);
+
+      console.log(`[FULL] → ${target} (${sizeKB} KB)`);
+
+      return new Response(text, {
         status: r.status,
         headers: {
           "content-type": "application/json",
@@ -505,10 +509,14 @@ export default {
       const target =
         `${INTERVALS_API_BASE}/athlete/${athleteId}/wellness` +
         `?oldest=${oldest}&newest=${newest}`;
-      console.log(`[WELLNESS] → ${target}`);
 
       const r = await fetch(target, { headers: buildAuthHeaders() });
-      return new Response(await r.text(), {
+      const text = await r.text();
+      const sizeKB = (new TextEncoder().encode(text).length / 1024).toFixed(1);
+
+      console.log(`[WELLNESS] → ${target} (${sizeKB} KB)`);
+
+      return new Response(text, {
         status: r.status,
         headers: {
           "content-type": "application/json",
@@ -520,6 +528,9 @@ export default {
     // === CALENDAR (planned workouts) → EVENTS API ===
     if (pathname.startsWith(`/athlete/${athleteId}/calendar`)) {
       const calendar = await fetchFutureCalendar(DATA_WINDOWS.CALENDAR_DAYS);
+      const sizeKB = (JSON.stringify(calendar).length / 1024).toFixed(1);
+      console.log(`[CALENDAR] → (payload=${sizeKB} KB)`);
+
       return new Response(JSON.stringify(calendar), {
         status: 200,
         headers: {
@@ -529,14 +540,16 @@ export default {
       });
     }
 
-
     // === PROFILE ===
     if (pathname.startsWith(`/athlete/${athleteId}`)) {
       const target = `${INTERVALS_API_BASE}${pathname}`;
-      console.log(`[PROFILE] → ${target}`);
-
       const r = await fetch(target, { headers: buildAuthHeaders() });
-      return new Response(await r.text(), {
+      const text = await r.text();
+      const sizeKB = (new TextEncoder().encode(text).length / 1024).toFixed(1);
+
+      console.log(`[PROFILE] → ${target} (${sizeKB} KB)`);
+
+      return new Response(text, {
         status: r.status,
         headers: {
           "content-type": "application/json",
@@ -544,6 +557,7 @@ export default {
         }
       });
     }
+
 
 
     // ================================================================
