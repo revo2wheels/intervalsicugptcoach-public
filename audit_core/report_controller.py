@@ -692,16 +692,16 @@ def run_report(
     # ============================================================
     from audit_core.tier3_future_forecast import run_future_forecast
 
-    debug(context, "[T3] 🚀 Starting Tier-3 Future Forecast module …")
+    debug(context, "[T3] Starting Tier-3 Future Forecast module …")
 
     try:
         future_output = run_future_forecast(context)
         if isinstance(future_output, dict):
             context.update(future_output)
             ff = context.get("future_forecast", {})
-            debug(context, f"[T3] ✅ Future forecast added: CTL_future={ff.get('CTL_future', 'n/a')}, ATL_future={ff.get('ATL_future', 'n/a')}, TSB_future={ff.get('TSB_future', 'n/a')}")
+            debug(context, f"[T3] Future forecast added: CTL_future={ff.get('CTL_future', 'n/a')}, ATL_future={ff.get('ATL_future', 'n/a')}, TSB_future={ff.get('TSB_future', 'n/a')}")
         else:
-            debug(context, "[T3] ⚠️ No valid future forecast output returned from module.")
+            debug(context, "[T3] No valid future forecast output returned from module.")
 
     except Exception as e:
         import traceback

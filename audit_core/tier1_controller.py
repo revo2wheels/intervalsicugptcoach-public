@@ -220,7 +220,11 @@ def collect_zone_distributions(df_master, athlete_profile, context):
         debug(context, f"[DEBUG-ZONES] ✅ {label} zones computed → {dist}")
         return dist
 
-    debug(context, f"[ZONE-DEBUG] df_master columns → {list(df_master.columns)}")
+    debug(
+        context,
+        f"[ZONE-DEBUG] df_master columns (sample {min(10, len(df_master.columns))}/{len(df_master.columns)}): "
+        f"{list(df_master.columns)[:10]}"
+    )
     debug(context, f"[ZONE-DEBUG] Power cols detected → {power_cols}")
 
     # --- Compute all three ---
@@ -359,7 +363,7 @@ def run_tier1_controller(df_master, wellness, context):
     df_master = df_master.copy()
     if "start_date_local" not in df_master.columns:
         raise AuditHalt("❌ Tier-1 missing start_date_local column — verify Tier-0 output")
-    debug(context,f"[T1] Columns at entry: {list(df_master.columns)}")
+    debug(context, f"[DEBUG-T1-COLUMNS] sample type={type(df_master)} content={str(list(df_master.columns))[:100]}")
 
     # --- Step 1: Dataset integrity ---
     if df_master.empty:
@@ -881,7 +885,11 @@ def run_tier1_controller(df_master, wellness, context):
                 debug(context, "[T1-ZONE] df_light has no zone cols → fallback to df_master")
 
         # --- Compute into temp context ---
-        debug(context, f"[ZONES-RAW] Columns before zone dist: {list(df_master.columns)}")
+        debug(
+            context,
+            f"[ZONES-RAW] Columns before zone dist (sample {min(10, len(df_master.columns))}/{len(df_master.columns)}): "
+            f"{list(df_master.columns)[:10]}"
+        )
         
         # Log some sample values from critical columns to verify data
         if 'icu_power_zones' in df_master.columns:
