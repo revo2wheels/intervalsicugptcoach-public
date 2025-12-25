@@ -29,6 +29,7 @@ from coaching_profile import COACH_PROFILE, REPORT_HEADERS, REPORT_RESOLUTION
 from audit_core.utils import debug
 import numpy as np
 from math import isnan
+import pytz
 
 # ---------------------------------------------------------
 # Helpers
@@ -271,6 +272,26 @@ def build_semantic_json(context):
         debug(context, f"[SEMANTIC-FORCE] Fallback to df_events ({len(df_full)} rows)")
 
 
+    # --- Derive report period if missing ---
+    if "period" not in context or not context["period"]:
+        df_ref = None
+
+        # Prefer authoritative full dataset
+        if isinstance(context.get("activities_full"), list) and len(context["activities_full"]) > 0:
+
+            df_ref = pd.DataFrame(context["activities_full"])
+        elif "_df_scope_full" in context and isinstance(context["_df_scope_full"], pd.DataFrame):
+            df_ref = context["_df_scope_full"]
+
+        if df_ref is not None and not df_ref.empty and "start_date_local" in df_ref.columns:
+            start_date = pd.to_datetime(df_ref["start_date_local"]).min().strftime("%Y-%m-%d")
+            end_date = pd.to_datetime(df_ref["start_date_local"]).max().strftime("%Y-%m-%d")
+            context["period"] = {"start": start_date, "end": end_date}
+            debug(context, f"[SEMANTIC-FIX] Derived period from full dataset → {start_date} → {end_date}")
+        else:
+            debug(context, "[SEMANTIC-FIX] Could not derive period — no valid dataset found")
+
+
     # ---------------------------------------------------------
     # BASE SEMANTIC STRUCTURE
     # ---------------------------------------------------------
@@ -278,13 +299,24 @@ def build_semantic_json(context):
         "meta": {
             "framework": "Unified Reporting Framework v5.1",
             "version": "v16.17",
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+
+            # Generate both local and UTC timestamps (rounded to seconds)
+            "generated_at": {
+                "local": (
+                    datetime.now(
+                        pytz.timezone(context.get("timezone", "UTC"))
+                        if context.get("timezone") else pytz.UTC
+                    ).replace(microsecond=0).isoformat()
+                ),
+                "utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+            },
             "report_type": context.get("report_type"),
             "period": {
                 "start": context.get("period", {}).get("start"),
                 "end": context.get("period", {}).get("end"),
             },
             "timezone": context.get("timezone"),
+
             "athlete": {
                 "identity": {},
                 "profile": {}
@@ -308,11 +340,13 @@ def build_semantic_json(context):
         "zones": {
             "power": {
                 "distribution": context.get("zone_dist_power", {}),
-                "thresholds": context.get("icu_power_zones") or context.get("athlete_power_zones") or [],
+                "thresholds": context.get("icu_power_zones")
+                    or context.get("athlete_power_zones") or [],
             },
             "hr": {
                 "distribution": context.get("zone_dist_hr", {}),
-                "thresholds": context.get("icu_hr_zones") or context.get("athlete_hr_zones") or [],
+                "thresholds": context.get("icu_hr_zones")
+                    or context.get("athlete_hr_zones") or [],
             },
             "pace": {
                 "distribution": context.get("zone_dist_pace", {}),
@@ -322,10 +356,7 @@ def build_semantic_json(context):
 
         # Daily load
         "daily_load": [
-            {
-                "date": row["date"],
-                "tss": float(row["icu_training_load"])
-            }
+            {"date": row["date"], "tss": float(row["icu_training_load"])}
             for _, row in getattr(context.get("df_daily"), "iterrows", lambda: [])()
         ] if context.get("df_daily") is not None else [],
 
