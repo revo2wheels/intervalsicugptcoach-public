@@ -28,6 +28,7 @@ from coaching_cheat_sheet import CHEAT_SHEET
 from coaching_profile import COACH_PROFILE, REPORT_HEADERS, REPORT_RESOLUTION
 from audit_core.utils import debug
 import numpy as np
+from math import isnan
 
 # ---------------------------------------------------------
 # Helpers
@@ -278,23 +279,16 @@ def build_semantic_json(context):
             "framework": "Unified Reporting Framework v5.1",
             "version": "v16.17",
             "generated_at": datetime.now(timezone.utc).isoformat(),
-
-            # RESOLVED, NOT A PLACEHOLDER
             "report_type": context.get("report_type"),
-
             "period": {
                 "start": context.get("period", {}).get("start"),
                 "end": context.get("period", {}).get("end"),
             },
-
             "timezone": context.get("timezone"),
-
             "athlete": {
                 "identity": {},
                 "profile": {}
             },
-
-            # SINGLE CANONICAL HEADER LOCATION
             "report_header": {
                 "title": None,
                 "scope": None,
@@ -303,7 +297,7 @@ def build_semantic_json(context):
             }
         },
 
-        # Metric containers (authoritative Tier-2 only)
+        # Metric containers
         "metrics": {},
         "extended_metrics": {},
         "adaptation_metrics": {},
@@ -325,6 +319,7 @@ def build_semantic_json(context):
                 "thresholds": context.get("icu_pace_zones") or [],
             },
         },
+
         # Daily load
         "daily_load": [
             {
@@ -339,14 +334,17 @@ def build_semantic_json(context):
 
         "phases": context.get("phases", []),
         "actions": context.get("actions", []),
-
-        # Wellness
-        "wellness": {
-            k: handle_missing_data(v, None)
-            for k, v in context.get("wellness_summary", {}).items()
-        },
     }
-    # 🩵 Inject HRV summary & 42-day series (from Tier-1/Tier-0)
+
+    # ---------------------------------------------------------
+    # WELLNESS BLOCK
+    # ---------------------------------------------------------
+    semantic["wellness"] = {
+        k: handle_missing_data(v, None)
+        for k, v in context.get("wellness_summary", {}).items()
+    }
+
+    # 🩵 Inject HRV summary & 42-day series
     if "df_wellness" in context and not getattr(context["df_wellness"], "empty", True):
         dfw = context["df_wellness"]
         if "hrv" in dfw.columns:
@@ -376,6 +374,39 @@ def build_semantic_json(context):
                     f"[SEMANTIC] Injected HRV → mean={mean_val}, latest={latest_val}, "
                     f"trend_7d={trend_val}, samples={len(vals)}, source={context.get('hrv_source')}"
                 )
+
+    # ---------------------------------------------------------
+    # 🧹 Remove subjective fields from the top-level wellness
+    # ---------------------------------------------------------
+    for k in ["recovery", "fatigue", "fitness", "form"]:
+        semantic["wellness"].pop(k, None)
+
+    # ---------------------------------------------------------
+    # 🧠 Wrap subjective markers (and clean nulls)
+    # ---------------------------------------------------------
+    subjective_fields = ["recovery", "fatigue", "fitness", "form"]
+    subjective_block = {}
+    for k, v in context.get("wellness_summary", {}).items():
+        if (
+            k in subjective_fields
+            and not (
+                v is None
+                or (isinstance(v, (float, int)) and pd.isna(v))
+                or (isinstance(v, (list, dict, np.ndarray)) and len(v) == 0)
+                or v == ""
+            )
+        ):
+            subjective_block[k] = v
+
+    # ✅ Always preserve key for schema consistency
+    semantic["wellness"]["subjective"] = subjective_block or {}
+
+    debug(
+        context,
+        f"[SEMANTIC] Wellness subjective markers → keys={list(semantic['wellness']['subjective'].keys())}"
+    )
+
+
     # ---------------------------------------------------------
     # AUTHORITATIVE TOTALS (Tier-2 ONLY)
     # ---------------------------------------------------------
@@ -641,13 +672,11 @@ def build_semantic_json(context):
     # 🗓️ PLANNED EVENTS — Grouped by Date (Calendar Context)
     # ---------------------------------------------------------
 
-    # ✅ Always define safe defaults
     planned_events = []
     planned_summary_by_date = {}
 
     calendar_data = context.get("calendar")
 
-    # ✅ Only build if available
     if isinstance(calendar_data, list) and len(calendar_data) > 0:
         planned_by_date = {}
 
@@ -686,6 +715,13 @@ def build_semantic_json(context):
                 ),
             }
 
+            # 🧹 Remove all null/NaN/empty values
+            event = {
+                k: v
+                for k, v in event.items()
+                if v not in (None, "", [], {}) and not (isinstance(v, float) and isnan(v))
+            }
+
             planned_events.append(event)
             if start:
                 planned_by_date.setdefault(start, []).append(event)
@@ -700,7 +736,6 @@ def build_semantic_json(context):
             for day, events in planned_by_date.items()
         }
 
-    # ✅ Always safely assign, even if no calendar exists
     semantic["planned_events"] = planned_events
     semantic["planned_summary_by_date"] = planned_summary_by_date
     semantic["future_forecast"] = context.get("future_forecast", {})
