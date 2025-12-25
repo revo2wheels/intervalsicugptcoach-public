@@ -300,7 +300,7 @@ def build_semantic_json(context):
             "framework": "Unified Reporting Framework v5.1",
             "version": "v16.17",
 
-            # Generate both local and UTC timestamps (rounded to seconds)
+            # Generate local timestamps (rounded to seconds)
             "generated_at": {
                 "local": (
                     datetime.now(
@@ -308,7 +308,6 @@ def build_semantic_json(context):
                         if context.get("timezone") else pytz.UTC
                     ).replace(microsecond=0).isoformat()
                 ),
-                "utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat()
             },
             "report_type": context.get("report_type"),
             "period": {
