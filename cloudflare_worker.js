@@ -456,15 +456,49 @@ export default {
     const athleteIdMatch = pathname.match(/^\/athlete\/(\d+|0)\//);
     const athleteId = athleteIdMatch ? athleteIdMatch[1] : "0";
 
-    // === LIGHT ACTIVITIES ===
     if (pathname.startsWith(`/athlete/${athleteId}/activities_t0light`)) {
-      const { oldest, newest } = normaliseDateParams(url.searchParams, DATA_WINDOWS.LIGHT_DAYS);
-      const fields =
-        "id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin";
+      // --- 1️⃣ Parse query or JSON body for overrides ---
+      let bodyOverrides = {};
+      if (request.method === "POST") {
+        try {
+          bodyOverrides = await request.json();
+        } catch {
+          bodyOverrides = {};
+        }
+      }
 
+      const queryOldest = url.searchParams.get("oldest");
+      const queryNewest = url.searchParams.get("newest");
+      const queryFields = url.searchParams.get("fields");
+
+      // --- 2️⃣ Default date range (fallback if none provided) ---
+      const { oldest: defaultOldest, newest: defaultNewest } =
+        normaliseDateParams(url.searchParams, DATA_WINDOWS.LIGHT_DAYS);
+
+      const oldest = bodyOverrides.oldest || queryOldest || defaultOldest;
+      const newest = bodyOverrides.newest || queryNewest || defaultNewest;
+
+      // --- 3️⃣ Default field list ---
+      const defaultFields = `
+        id,start_date_local,name,type,sport_type,
+        distance,moving_time,icu_training_load,IF,
+        average_heartrate,average_cadence,icu_average_watts,
+        strain_score,trimp,hr_load,
+        icu_efficiency_factor,icu_intensity,icu_power_hr,
+        decoupling,icu_pm_w_prime,icu_w_prime,
+        icu_max_wbal_depletion,icu_joules_above_ftp,
+        total_elevation_gain,calories,VO2MaxGarmin,
+        source,device_name
+      `.replace(/\s+/g, '');
+
+      const fields = bodyOverrides.fields || queryFields || defaultFields;
+
+      // --- 4️⃣ Build and fetch target URL ---
       const target =
         `${INTERVALS_API_BASE}/athlete/${athleteId}/activities` +
-        `?oldest=${oldest}&newest=${newest}&fields=${encodeURIComponent(fields)}`;
+        `?oldest=${encodeURIComponent(oldest)}` +
+        `&newest=${encodeURIComponent(newest)}` +
+        `&fields=${encodeURIComponent(fields)}`;
 
       const r = await fetch(target, { headers: buildAuthHeaders() });
       const text = await r.text();
@@ -480,6 +514,7 @@ export default {
         }
       });
     }
+
 
     // === FULL ACTIVITIES ===
     if (pathname.startsWith(`/athlete/${athleteId}/activities`) && !pathname.includes("t0light")) {

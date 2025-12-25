@@ -552,11 +552,7 @@ def build_semantic_json(context):
     df_events = context["_df_scope_full"]
 
     if isinstance(df_events, pd.DataFrame) and not df_events.empty:
-        debug(
-            context,
-            f"[SEMANTIC] EVENTS: building canonical event list → {len(df_events)} rows, "
-            f"available columns={list(df_events.columns)}"
-        )
+        debug(context, f"[DEBUG-EVENTS] sample type={type(df_events)} rows={len(df_events)} cols_sample={str(list(df_events.columns))[:100]}")
 
         core_fields = [
             "start_date_local", "name", "type",
@@ -573,17 +569,22 @@ def build_semantic_json(context):
         # Identify which core fields actually exist in the incoming df
         available_fields = [f for f in core_fields if f in df_events.columns]
         missing_fields = [f for f in core_fields if f not in df_events.columns]
-        debug(
-            context,
-            f"[SEMANTIC] EVENTS: fields present={available_fields}, missing={missing_fields}"
-        )
 
         semantic["events"] = []
         for _, row in df_events.iterrows():
-            ev = {k: row.get(k) for k in available_fields}
+            # ✅ Only include fields that have real (non-null, non-NaN, non-empty) values
+            ev = {
+                k: row[k]
+                for k in available_fields
+                if pd.notna(row[k]) and row[k] != "" and row[k] is not None
+            }
+
             if "start_date_local" in ev:
                 ev["start_date_local"] = convert_to_str(ev["start_date_local"])
-            semantic["events"].append(ev)
+
+            # ✅ Skip events that are completely empty
+            if ev:
+                semantic["events"].append(ev)
 
         debug(
             context,
@@ -591,6 +592,7 @@ def build_semantic_json(context):
         )
     else:
         debug(context, "[SEMANTIC] EVENTS: no df_events available or empty DataFrame")
+
 
     # ---------------------------------------------------------
     # DERIVED EVENT SUMMARIES — W' Balance & Performance

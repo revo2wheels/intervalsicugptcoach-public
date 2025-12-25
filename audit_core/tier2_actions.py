@@ -131,10 +131,8 @@ def evaluate_actions(context):
         if k in extended:
             context[k] = extended[k]
 
-    debug(context, "[T2-ACTIONS] Integrated derived metrics:")
-    debug(context, derived)
-    debug(context, "[T2-ACTIONS] Integrated extended metrics:")
-    debug(context, extended)
+    debug(context, f"[DEBUG-T2-ACTIONS] Integrated derived metrics sample type={type(derived)} content={str(derived)[:200]}")
+    debug(context, f"[DEBUG-T2-ACTIONS] Integrated extended metrics sample type={type(extended)} content={str(extended)[:200]}")
 
     actions = []
 

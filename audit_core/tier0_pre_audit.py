@@ -507,7 +507,7 @@ def fetch_athlete_profile(headers, from_cache=None, context=None):
         f"[T0] Athlete profile ready — id={athlete['id']} name={athlete.get('name')}"
     )
     # --- Log context after updates ---
-    debug(context, f"[DEBUG] ATHLETE context: {context}")
+    debug(context, f"[DEBUG-ATHLETE] sample type={type(context.get('athlete'))} content={str(context.get('athlete'))[:100]}")
 
     return athlete, context
 
@@ -919,7 +919,11 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     # --- Debug inspection ---
     debug(context,"[DEBUG] wellness raw:", type(wellness), len(wellness))
     if isinstance(wellness, pd.DataFrame):
-        debug(context,"[DEBUG] wellness columns:", wellness.columns.tolist())
+        debug(
+            context,
+            f"[DEBUG] wellness columns (sample {min(10, len(wellness.columns))}/{len(wellness.columns)}): "
+            f"{wellness.columns.tolist()[:10]}"
+        )
         debug(context,"[DEBUG] wellness head:\n", wellness.head())
         
     # --- Step 5: Finalize context ---
