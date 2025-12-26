@@ -274,6 +274,11 @@ def run_report(
         debug(context, "[ORCH] Bound prefetched athlete → athlete / athleteProfile")
 
         # --------------------------------------------------------
+        # ✅ Force rebind for Railway dynamic scope
+        # --------------------------------------------------------
+        from athlete_profile import map_icu_athlete_to_profile
+
+        # --------------------------------------------------------
         # ✅ NEW: normalize the prefetched athlete just like local Tier-0
         # --------------------------------------------------------
         try:
