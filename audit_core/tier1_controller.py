@@ -746,6 +746,26 @@ def run_tier1_controller(df_master, wellness, context):
 
         debug(context, f"[T1-REST] Counted rest days: {rest_days} → Dates: {rest_dates}")
 
+        # ------------------------------------------------------------
+        # ✅ Ensure daily_load & df_daily are bound even in prefetch mode
+        # ------------------------------------------------------------
+        if "daily_load" not in context or not context["daily_load"]:
+            try:
+                df_daily = daily_load.reset_index()
+                df_daily.columns = ["date", "icu_training_load"]
+                context["df_daily"] = df_daily
+
+                context["daily_load"] = [
+                    {"date": str(d.date()), "tss": float(t)} for d, t in daily_load.items()
+                ]
+
+                debug(
+                    context,
+                    f"[T1-REST] Exported daily_load into context ({len(context['daily_load'])} days)"
+                )
+            except Exception as e:
+                debug(context, f"[T1-REST] ⚠️ Failed to bind daily_load in prefetch mode: {e}")
+
 
         # --- Debug readiness data completeness ---
         debug(context, f"[T1-READINESS] readiness column summary: "
