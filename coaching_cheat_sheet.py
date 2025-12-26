@@ -44,15 +44,20 @@ CHEAT_SHEET["context"] = {
     "ZQI": "Zone Quality Index (%) 5-15 high-intensity time is normal <3% too easy, >20% too intense or erratic pacing.",
     "FatOxEfficiency": "0.4–0.8 means balanced fat oxidation; lower = carb dependence.",
     "Polarisation": (
-        "Seiler Polarisation Ratio showing the balance of low- and high-intensity work "
-        "relative to moderate-intensity (Z2) training. "
-        "≥1.0 indicates a well-polarised (80/20) structure; 0.7–0.99 = mixed; <0.7 = threshold-heavy. "
-        "Displayed in reports as a percentage (e.g., 0.78 → 78%)."
+        "Seiler Polarisation Ratio (Z1 + Z3) / (2 × Z2) showing the balance between low- and "
+        "high-intensity work relative to moderate-intensity (Z2) training. "
+        "≥1.0 = polarised (80/20), 0.7–0.99 = mixed, <0.7 = Z2-dominant. "
+        "Note: Z2-dominant patterns are normal during aerobic base or conditioning phases. "
+        "Interpretation depends on training phase — low ratios may indicate healthy base structure "
+        "rather than threshold overuse."
     ),
     "PolarisationIndex": (
-        "Normalized time-in-zone index (0–1) showing total proportion of training spent "
-        "in low and moderate intensities (Z1+Z2). "
-        "≥0.75 indicates strong aerobic bias, 0.6–0.74 = mixed distribution, <0.6 = threshold dominance."
+        "Normalized Polarisation Index (0–1) showing the proportion of total training spent in "
+        "low and moderate intensities (Z1+Z2). "
+        "≥0.75 indicates strong aerobic bias — ideal in base or recovery phases. "
+        "0.60–0.74 = mixed distribution (balanced endurance/tempo). "
+        "<0.60 = intensity-focused (common in build or peak phases). "
+        "Interpret phase context before flagging as 'threshold-heavy'."
     ),
     "FOxI": "FatOx index %; higher values mean more efficient aerobic base.",
     "CUR": "Carbohydrate Utilisation Ratio; 30-80 balanced metabolic use.",
@@ -81,15 +86,16 @@ CHEAT_SHEET["coaching_links"] = {
     "FatigueTrend": "If FatigueTrend is negative (e.g., below -0.2), this indicates a recovering state. Continue with controlled training load and focus on recovery to ensure sustained progress. Avoid aggressive increases in load.",
     "FatOxEfficiency": "If FatOxEfficiency is low (<0.6), focus on improving aerobic base with longer, low-intensity efforts.",
     "Polarisation": (
-        "If Polarisation <0.7, increase low-intensity (Z1) aerobic volume and distinct "
-        "high-intensity (Z3) sessions to achieve ≥1.0. "
-        "Maintain ≥1.0 for a balanced 80/20 distribution. "
-        "Reported as a percentage (e.g., 0.78 → 78%)."
+        "If Polarisation <0.7 and current block = Base, interpret as Z2-dominant "
+        "(✅ aerobic foundation). "
+        "If in Build or Peak, reduce mid-zone volume and restore Z1/Z3 contrast. "
+        "Maintain ≥1.0 for a fully polarised (80/20) structure in race phases."
     ),
     "PolarisationIndex": (
-        "If PolarisationIndex <0.60, training load is too threshold-heavy. "
-        "Rebalance toward greater Z1 endurance and reduced Z2 time. "
-        "Target ≥0.75 for efficient aerobic adaptation and recovery balance."
+        "If PolarisationIndex <0.60 and current block = Base, reduce Z2 time and increase Z1 "
+        "endurance work to maintain aerobic bias. "
+        "If PolarisationIndex <0.60 in Build/Peak, acceptable — reflects higher intensity focus. "
+        "Target ≥0.75 in Base/Recovery for efficient aerobic adaptation."
     ),
     "ZQI": "If ZQI > 20%, review pacing strategy; excessive high-intensity time could indicate erratic pacing or overtraining. Aim for 5-15% ZQI for balanced training.",
     "FOxI": "If FOxI is increasing, continue to prioritize low-intensity work to enhance fat metabolism. If it decreases, consider increasing your Zone 2 training duration.",
@@ -126,8 +132,14 @@ CHEAT_SHEET["advice"] = {
     },
 
     "Polarisation": {
-        "low": "⚠ Polarisation low ({:.0%}) — increase Z1–Z2 share toward ≥70 %. ",
+        "low": "⚠ Polarisation low ({:.0%}) — increase Z1–Z3 contrast unless in base phase.",
+        "z2_base": "🧱 Z2-base dominant ({:.0%}) — appropriate for aerobic foundation phase.",
         "optimal": "✅ Polarisation optimal ({:.0%})."
+    },
+    "PolarisationIndex": {
+        "low": "⚠ Polarisation Index low ({:.2f}) — monitor Z2 dominance; acceptable in build phases.",
+        "z2_base": "🧱 Aerobic bias strong ({:.2f}) — excellent for base or recovery blocks.",
+        "optimal": "✅ Polarisation Index optimal ({:.2f}) — balanced endurance structure."
     },
 
     # --- Recovery Index ---
