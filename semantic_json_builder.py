@@ -410,7 +410,7 @@ def build_semantic_json(context):
     }
 
     # ---------------------------------------------------------
-    # DAILY LOAD (post-build injection, supports both modes)
+    # DAILY LOAD (support both DataFrame + list)
     # ---------------------------------------------------------
     if context.get("df_daily") is not None:
         semantic["daily_load"] = [
