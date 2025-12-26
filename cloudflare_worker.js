@@ -121,6 +121,7 @@ export default {
         newest: isDate(newest) ? newest : getDate(0)
       };
     };
+
     // ================================================================
     // 📆 DEFAULT DATA WINDOWS (centralized config)
     // ================================================================
@@ -449,6 +450,50 @@ export default {
       }
     };
 
+    // ------------------------------------------------------------
+    // Recursive Numeric Normalizer
+    // Converts numeric-looking strings (e.g. "145.0") to numbers
+    // ------------------------------------------------------------
+    function normalizeNumericFields(obj) {
+      if (Array.isArray(obj)) {
+        return obj.map(normalizeNumericFields);
+      }
+      if (obj && typeof obj === "object") {
+        const normalized = {};
+        for (const [key, val] of Object.entries(obj)) {
+          if (val === null || val === undefined) normalized[key] = val;
+          else if (typeof val === "string" && /^[\d\.\-eE]+$/.test(val)) {
+            const num = Number(val);
+            normalized[key] = Number.isNaN(num) ? val : num;
+          } else if (typeof val === "object") {
+            normalized[key] = normalizeNumericFields(val);
+          } else {
+            normalized[key] = val;
+          }
+        }
+        return normalized;
+      }
+      return obj;
+    }
+
+    function normalizeDates(obj) {
+      if (Array.isArray(obj)) return obj.map(normalizeDates);
+      if (obj && typeof obj === "object") {
+        const normalized = {};
+        for (const [key, val] of Object.entries(obj)) {
+          if (typeof val === "string" && /^\d{4}-\d{2}-\d{2}/.test(val)) {
+            normalized[key] = new Date(val).toISOString().split("T")[0]; // standard YYYY-MM-DD
+          } else if (typeof val === "object") {
+            normalized[key] = normalizeDates(val);
+          } else {
+            normalized[key] = val;
+          }
+        }
+        return normalized;
+      }
+      return obj;
+    }
+
 
     // ================================================================
     // INTERNAL DATA ROUTES — UPDATED TO USE /events API
@@ -768,11 +813,11 @@ export default {
       const payload = {
         range: "weekly",
         format: url.searchParams.get("format") || "semantic",
-        activities_light: safeParse(lightTxt, "array"),
-        activities_full: safeParse(fullTxt, "array"),
-        wellness: safeParse(wellTxt, "array"),
-        calendar,
-        athlete
+        activities_light: normalizeNumericFields(safeParse(lightTxt, "array")),
+        activities_full: normalizeNumericFields(safeParse(fullTxt, "array")),
+        wellness: normalizeDates(normalizeNumericFields(safeParse(wellTxt, "array"))),
+        calendar: normalizeNumericFields(calendar),
+        athlete: normalizeNumericFields(athlete)
       };
 
       return await callRailway(payload, "WEEKLY", profTxt);
