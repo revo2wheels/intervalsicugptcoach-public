@@ -401,19 +401,29 @@ def build_semantic_json(context):
             },
         },
 
-        # ---------------------------------------------------------
-        # DAILY LOAD
-        # ---------------------------------------------------------
-        "daily_load": [
-            {"date": row["date"], "tss": float(row["icu_training_load"])}
-            for _, row in getattr(context.get("df_daily"), "iterrows", lambda: [])()
-        ] if context.get("df_daily") is not None else [],
+        # Placeholder — we’ll fill this next
+        "daily_load": [],
 
         "events": [],
         "phases": context.get("phases", []),
         "actions": context.get("actions", []),
     }
 
+    # ---------------------------------------------------------
+    # DAILY LOAD (post-build injection, supports both modes)
+    # ---------------------------------------------------------
+    if context.get("df_daily") is not None:
+        semantic["daily_load"] = [
+            {"date": row["date"], "tss": float(row.get("icu_training_load", 0))}
+            for _, row in context["df_daily"].iterrows()
+        ]
+        debug(context, f"[SEMANTIC] Injected daily_load from df_daily ({len(semantic['daily_load'])} days)")
+    elif isinstance(context.get("daily_load"), list) and context["daily_load"]:
+        semantic["daily_load"] = context["daily_load"]
+        debug(context, f"[SEMANTIC] Injected daily_load from context.daily_load ({len(context['daily_load'])} days)")
+    else:
+        semantic["daily_load"] = []
+        debug(context, "[SEMANTIC] No daily_load or df_daily found — injected empty list")
 
     # ---------------------------------------------------------
     # WELLNESS BLOCK
@@ -484,7 +494,6 @@ def build_semantic_json(context):
         context,
         f"[SEMANTIC] Wellness subjective markers → keys={list(semantic['wellness']['subjective'].keys())}"
     )
-
 
     # ---------------------------------------------------------
     # AUTHORITATIVE TOTALS (Tier-2 ONLY)
