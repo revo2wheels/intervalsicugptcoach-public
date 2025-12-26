@@ -74,10 +74,20 @@ def normalize_prefetched_context(data):
             y = dict(x)
             if "start_date_local" in y:
                 try:
-                    y["start_date_local"] = pd.to_datetime(y["start_date_local"], errors="coerce").isoformat()
+                    y["start_date_local"] = pd.to_datetime(
+                        y["start_date_local"], errors="coerce"
+                    ).isoformat()
                 except Exception:
                     pass
-            for k in ("icu_training_load", "IF", "VO2MaxGarmin", "distance", "moving_time", "average_heartrate"):
+            for k in (
+                "icu_training_load",
+                "IF",
+                "TSS",
+                "VO2MaxGarmin",
+                "distance",
+                "moving_time",
+                "average_heartrate",
+            ):
                 if k in y:
                     try:
                         y[k] = float(y[k])
@@ -94,12 +104,22 @@ def normalize_prefetched_context(data):
             if not isinstance(x, dict):
                 continue
             y = dict(x)
-            for k in ("fatigue", "form", "sleep", "recovery", "readiness"):
+            # rename 'id' to 'date' if needed
+            if "id" in y and "date" not in y:
+                y["date"] = y.pop("id")
+            # coerce date field
+            if "date" in y:
+                try:
+                    y["date"] = pd.to_datetime(y["date"], errors="coerce").isoformat()
+                except Exception:
+                    pass
+            # ensure ctl/atl numeric
+            for k in ("ctl", "atl", "rampRate", "tsb", "fatigue", "form", "recovery"):
                 if k in y:
                     try:
                         y[k] = float(y[k])
                     except Exception:
-                        pass
+                        y[k] = None
             out.append(y)
         return out
 
@@ -124,13 +144,15 @@ def normalize_prefetched_context(data):
             return {}, {}
         profile = dict(a)
         athlete = {k: v for k, v in a.items() if not isinstance(v, dict)}
-        profile.update({
-            "zones_power": a.get("zones_power", {}),
-            "zones_hr": a.get("zones_hr", {}),
-            "ftp": a.get("ftp"),
-            "lt1": a.get("lt1"),
-            "lt2": a.get("lt2"),
-        })
+        profile.update(
+            {
+                "zones_power": a.get("zones_power", {}),
+                "zones_hr": a.get("zones_hr", {}),
+                "ftp": a.get("ftp"),
+                "lt1": a.get("lt1"),
+                "lt2": a.get("lt2"),
+            }
+        )
         return athlete, profile
 
     light = normalize_activities(data.get("activities_light"))
@@ -139,7 +161,11 @@ def normalize_prefetched_context(data):
     calendar = normalize_calendar(data.get("calendar"))
     athlete, profile = normalize_athlete(data.get("athlete", {}))
 
-    debug({}, f"[NORM] ✅ Normalization summary: light={len(light)}, full={len(full)}, wellness={len(wellness)}, calendar={len(calendar)}, athlete={'ok' if athlete else 'none'}")
+    debug(
+        {},
+        f"[NORM] ✅ summary: light={len(light)}, full={len(full)}, "
+        f"wellness={len(wellness)}, calendar={len(calendar)}, athlete={'ok' if athlete else 'none'}",
+    )
 
     return {
         "activities_light": light,
@@ -150,6 +176,7 @@ def normalize_prefetched_context(data):
         "athleteProfile": profile,
         "prefetch_done": True,
     }
+
 
 
 def _run_full_audit(range: str, output_format="markdown", prefetch_context=None):
