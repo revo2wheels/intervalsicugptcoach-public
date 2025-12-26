@@ -372,16 +372,16 @@ def compute_derived_metrics(df_events, context):
         debug(context, "[T2-HRV] No wellness dataframe in context — skipping HRV normalisation.")
 
     # --- ✅ 2. Build daily load time series ---
-    # FIX: handle both millis timestamps and ISO strings safely
-    if pd.api.types.is_numeric_dtype(df_events["start_date_local"]):
-        df_events["start_date_local"] = pd.to_datetime(
-            df_events["start_date_local"], unit="ms", origin="unix", errors="coerce"
-        )
-    else:
-        df_events["start_date_local"] = pd.to_datetime(
-            df_events["start_date_local"], errors="coerce"
-        )
-
+    # FIX: convert millis → proper datetime
+    df_events["start_date_local"] = pd.to_datetime(
+        df_events["start_date_local"], unit="ms", origin="unix", errors="coerce"
+    )
+    df_daily = (
+        df_events.groupby(df_events["start_date_local"].dt.date)["icu_training_load"]
+        .sum(min_count=1)
+        .reset_index()
+        .rename(columns={"start_date_local": "date"})
+    )
     df_daily["date"] = pd.to_datetime(df_daily["date"])
     df_daily = df_daily.sort_values("date")
 
