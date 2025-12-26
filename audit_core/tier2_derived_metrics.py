@@ -636,15 +636,15 @@ def compute_derived_metrics(df_events, context):
     # ======================================================
     # 🧪 Lactate Measurement Integration (context enrichment)
     # ======================================================
-    if "LactateMeasurement" in df_events.columns:
+    if "HRTLNDLT1" in df_events.columns:
         try:
-            df_events["LactateMeasurement"] = pd.to_numeric(df_events["LactateMeasurement"], errors="coerce")
-            valid_lac = df_events["LactateMeasurement"].dropna()
+            df_events["HRTLNDLT1"] = pd.to_numeric(df_events["HRTLNDLT1"], errors="coerce")
+            valid_lac = df_events["HRTLNDLT1"].dropna()
             total_rows = len(df_events)
             valid_count = len(valid_lac)
 
             debug(context, (
-                f"[DERIVED] LactateMeasurement found → total={total_rows}, valid={valid_count}, "
+                f"[DERIVED] HRTLNDLT1 found → total={total_rows}, valid={valid_count}, "
                 f"values={valid_lac.tolist()[:10]}{'...' if valid_count > 10 else ''}"
             ))
 
@@ -664,9 +664,9 @@ def compute_derived_metrics(df_events, context):
 
                 corr_with_power = None
                 if "icu_average_watts" in df_events.columns:
-                    df_lac = df_events.dropna(subset=["LactateMeasurement", "icu_average_watts"])
+                    df_lac = df_events.dropna(subset=["HRTLNDLT1", "icu_average_watts"])
                     if not df_lac.empty:
-                        corr_val = df_lac["LactateMeasurement"].corr(df_lac["icu_average_watts"])
+                        corr_val = df_lac["HRTLNDLT1"].corr(df_lac["icu_average_watts"])
                         if pd.notna(corr_val):
                             corr_with_power = round(float(corr_val), 3)
                         else:
@@ -691,19 +691,19 @@ def compute_derived_metrics(df_events, context):
                 context["lactate_summary"] = lac
 
                 debug(context, (
-                    f"[DERIVED] LactateMeasurement ✓ integrated → mean={mean_lac} mmol/L, "
+                    f"[DERIVED] HRTLNDLT1 ✓ integrated → mean={mean_lac} mmol/L, "
                     f"latest={latest_lac}, samples={samples}, corr_with_power={corr_with_power}, zones={zone_dist}"
                 ))
             else:
                 context["lactate_summary"] = {"available": False}
-                debug(context, "[DERIVED] LactateMeasurement present but no valid numeric values.")
+                debug(context, "[DERIVED] HRTLNDLT1 present but no valid numeric values.")
 
         except Exception as e:
             context["lactate_summary"] = {"available": False}
-            debug(context, f"[DERIVED] ⚠️ LactateMeasurement integration failed → {e}", exc_info=True)
+            debug(context, f"[DERIVED] ⚠️ HRTLNDLT1 integration failed → {e}", exc_info=True)
     else:
         context["lactate_summary"] = {"available": False}
-        debug(context, "[DERIVED] LactateMeasurement column NOT FOUND in df_events.")
+        debug(context, "[DERIVED] HRTLNDLT1 column NOT FOUND in df_events.")
 
 
 
