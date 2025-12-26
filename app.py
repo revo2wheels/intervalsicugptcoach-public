@@ -89,6 +89,7 @@ from audit_core.utils import debug
 
 # Semantic JSON builder
 from semantic_json_builder import build_semantic_json
+from athlete_profile import map_icu_athlete_to_profile
 
 
 print("[DEBUG] Starting IntervalsICU GPTCoach API")
@@ -328,6 +329,23 @@ async def run_audit_with_data(request: Request):
                 raw_athlete = raw_athlete["athlete"]
 
             prefetch_context["athlete"] = raw_athlete
+
+            # -------------------------------------------------
+            # 🧠 Normalize athlete profile (same as Tier-0 local)
+            # -------------------------------------------------
+            try:
+                from athlete_profile import map_icu_athlete_to_profile
+
+                normalized_profile = map_icu_athlete_to_profile(raw_athlete)
+                prefetch_context["athleteProfile"] = normalized_profile
+
+                debug(
+                    prefetch_context,
+                    f"[RAILWAY] Normalized athleteProfile — ftp={normalized_profile.get('ftp')} "
+                    f"indoor_ftp={normalized_profile.get('indoor_ftp')} weight={normalized_profile.get('weight')}"
+                )
+            except Exception as e:
+                debug(prefetch_context, f"[RAILWAY] ⚠️ Failed to normalize athleteProfile: {e}")
 
         # 🔒 CRITICAL RULE:
         # Empty dict means NO prefetch — force canonical fetch path
