@@ -33,6 +33,7 @@ from audit_core.tier2_actions import evaluate_actions
 from audit_core.tier2_render_validator import finalize_and_validate_render
 from audit_core.tier2_extended_metrics import compute_extended_metrics
 from semantic_json_builder import build_semantic_json
+from athlete_profile import map_icu_athlete_to_profile
 
 # --- optional compatibility alias ---
 from intervals_icu__jit_plugin import (
@@ -271,6 +272,25 @@ def run_report(
         context["athlete"] = athlete
         context["athleteProfile"] = athlete
         debug(context, "[ORCH] Bound prefetched athlete → athlete / athleteProfile")
+
+        # --------------------------------------------------------
+        # ✅ NEW: normalize the prefetched athlete just like local Tier-0
+        # --------------------------------------------------------
+        try:
+
+            # Normalized profile
+            normalized_profile = map_icu_athlete_to_profile(athlete)
+
+            # Bind both raw + normalized versions
+            context["athlete"] = athlete
+            context["athleteProfile"] = normalized_profile
+
+            debug(context, "[ORCH] Bound & normalized prefetched athlete → athleteProfile (Tier-0)")
+        except Exception as e:
+            # Fallback to raw if normalization fails
+            context["athlete"] = athlete
+            context["athleteProfile"] = athlete
+            debug(context, f"[ORCH] ⚠️ Failed to normalize prefetched athlete — using raw ({e})")
 
         # --------------------------------------------------------
         # 🔧 HARD GUARD — Tier-0 REQUIRES timezone
