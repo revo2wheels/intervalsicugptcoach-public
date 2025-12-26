@@ -546,7 +546,6 @@ def build_semantic_json(context):
     else:
         debug(context, "[SEMANTIC] No personalized_z2 data available in context")
 
-
     # ---------------------------------------------------------
     # 🔗 ATHLETE: identity + profile + context (UNIVERSAL)
     # ---------------------------------------------------------
@@ -572,6 +571,26 @@ def build_semantic_json(context):
     eftp = eftp or ftp
     lthr = lthr or athlete.get("icu_threshold_hr")
 
+    # --- Resolve max HR from primary sport if not on root
+    max_hr = athlete.get("max_hr")
+    if not max_hr and isinstance(primary_sport, dict):
+        max_hr = primary_sport.get("max_hr")
+
+    # --- Custom physiological fields (now pulled from sportSettings)
+    custom_fields = {}
+    if isinstance(primary_sport, dict):
+        custom_fields = primary_sport.get("custom_field_values", {}) or {}
+
+    vo2max_garmin = custom_fields.get("VO2MaxGarmin")
+    lactate_mmol_l = custom_fields.get("LactateMeasurement")
+
+
+    vo2max_garmin = custom_fields.get("VO2MaxGarmin")
+    lactate_mmol_l = custom_fields.get("LactateMeasurement")
+
+    # -----------------------------------------------------
+    # BUILD SEMANTIC BLOCK
+    # -----------------------------------------------------
     semantic["meta"]["athlete"] = {
         # -----------------------------------------------------
         # 🪪 IDENTITY
@@ -601,21 +620,20 @@ def build_semantic_json(context):
             ),
             "weight": athlete.get("icu_weight"),
             "height": athlete.get("height"),
-            "vo2max": athlete.get("icu_vo2max"),
-            "vo2max_garmin": athlete.get("VO2MaxGarmin"),
-            "vo2max_whoop": athlete.get("VO2MaxWhoop"),           # ✅ new custom field
-            "lactate_measurement": athlete.get("LactateMeasurement"),  # ✅ new custom field
             "lthr": lthr,
             "resting_hr": athlete.get("icu_resting_hr"),
-            "max_hr": athlete.get("icu_max_hr"),
+            "max_hr": max_hr,
             "primary_sport": ",".join(primary_sport.get("types", [])) if isinstance(primary_sport, dict) else None,
+            # --- Extended physiological fields from custom_field_values
+            "vo2max_garmin": vo2max_garmin,
+            "lactate_mmol_l": lactate_mmol_l,
+            "custom_metrics": custom_fields if custom_fields else None,
         },
     
         # -----------------------------------------------------
         # 🧠 CONTEXT (FOR CHATGPT INTENT ANALYSIS)
         # -----------------------------------------------------
         "context": {
-            # 🌐 Data Ecosystem
             "platforms": {
                 "garmin": athlete.get("icu_garmin_training"),
                 "zwift": athlete.get("zwift_sync_activities"),
@@ -626,10 +644,7 @@ def build_semantic_json(context):
                 "coros": athlete.get("coros_sync_activities"),
                 "concept2": athlete.get("concept2_sync_activities"),
             },
-
-            # 💓 Wellness Capabilities (vendor-agnostic)
             "wellness_features": {
-                # Source detection across vendors
                 "sources": {
                     "garmin": bool(athlete.get("icu_garmin_health")),
                     "whoop": bool(athlete.get("whoop_sync_activities")),
@@ -639,25 +654,17 @@ def build_semantic_json(context):
                     "coros": bool(athlete.get("coros_sync_activities")),
                     "suunto": bool(athlete.get("suunto_sync_activities")),
                 },
-
-                # Unified wellness keys — from any platform
                 "wellness_keys": (
                     athlete.get("icu_garmin_wellness_keys")
                     or athlete.get("wellness_keys")
                     or context.get("wellness_keys")
                     or []
                 ),
-
-                # HRV capability inferred dynamically from Tier-1/0
                 "hrv_available": bool(context.get("hrv_available", False)),
                 "hrv_source": context.get("hrv_source", "unknown"),
-
-                # Other common fields
                 "weight_sync": athlete.get("icu_weight_sync") or "NONE",
                 "resting_hr": athlete.get("icu_resting_hr"),
             },
-
-            # ⚙️ Training Environment
             "training_environment": {
                 "plan": athlete.get("plan"),
                 "beta_user": athlete.get("beta_user"),
@@ -665,8 +672,6 @@ def build_semantic_json(context):
                 "language": athlete.get("locale"),
                 "timezone": athlete.get("timezone"),
             },
-
-            # 🚴 Equipment Summary
             "equipment_summary": {
                 "bike_count": len(athlete.get("bikes", [])),
                 "shoe_count": len(athlete.get("shoes", [])),
@@ -677,17 +682,14 @@ def build_semantic_json(context):
                     (b.get("distance", 0) or 0) / 1000 for b in athlete.get("bikes", [])
                 ),
             },
-
-            # 🗓️ Activity Scope
             "activity_scope": {
-                "primary_sports": [
-                    s.get("types", []) for s in athlete.get("sportSettings", [])
-                ],
+                "primary_sports": [s.get("types", []) for s in athlete.get("sportSettings", [])],
                 "active_since": athlete.get("icu_activated"),
                 "last_seen": athlete.get("icu_last_seen"),
             },
         },
     }
+
 
     # ---------------------------------------------------------
     # EVENTS (canonical)
