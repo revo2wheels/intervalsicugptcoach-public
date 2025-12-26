@@ -921,6 +921,14 @@ def run_report(
             if "hr_zones" in primary and not context.get("icu_hr_zones"):
                 context["icu_hr_zones"] = primary["hr_zones"]
 
+        debug(context, f"[PRE-SEMANTIC-DUMP] Keys before semantic: {list(context.keys())[:30]}")
+        debug(context, f"[PRE-SEMANTIC-DUMP] daily_load in context: "
+                    f"{'yes' if 'daily_load' in context else 'no'}, "
+                    f"len={len(context.get('daily_load', [])) if isinstance(context.get('daily_load'), list) else 'n/a'}")
+        debug(context, f"[PRE-SEMANTIC-DUMP] df_daily present: "
+                    f"{isinstance(context.get('df_daily'), pd.DataFrame)}")
+
+
         semantic_output = build_semantic_json(context)  # Ensure semantic_output is generated
 
         # If the output format is "semantic", return the semantic graph
