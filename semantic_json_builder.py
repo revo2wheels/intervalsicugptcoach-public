@@ -410,20 +410,21 @@ def build_semantic_json(context):
     }
 
     # ---------------------------------------------------------
-    # DAILY LOAD (support both DataFrame + list)
+    # DAILY LOAD
     # ---------------------------------------------------------
-    if context.get("df_daily") is not None:
-        semantic["daily_load"] = [
-            {"date": row["date"], "tss": float(row.get("icu_training_load", 0))}
+    if isinstance(context.get("df_daily"), pd.DataFrame):
+        daily_load_list = [
+            {"date": str(row["date"]), "tss": float(row.get("icu_training_load", 0))}
             for _, row in context["df_daily"].iterrows()
         ]
-        debug(context, f"[SEMANTIC] Injected daily_load from df_daily ({len(semantic['daily_load'])} days)")
     elif isinstance(context.get("daily_load"), list) and context["daily_load"]:
-        semantic["daily_load"] = context["daily_load"]
-        debug(context, f"[SEMANTIC] Injected daily_load from context.daily_load ({len(context['daily_load'])} days)")
+        daily_load_list = context["daily_load"]
+        debug(context, f"[SEMANTIC] Using fallback daily_load list ({len(daily_load_list)} days)")
     else:
-        semantic["daily_load"] = []
-        debug(context, "[SEMANTIC] No daily_load or df_daily found — injected empty list")
+        daily_load_list = []
+        debug(context, "[SEMANTIC] No daily load found in context")
+
+    semantic["daily_load"] = daily_load_list
 
     # ---------------------------------------------------------
     # WELLNESS BLOCK
