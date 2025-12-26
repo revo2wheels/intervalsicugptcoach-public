@@ -291,6 +291,46 @@ def build_semantic_json(context):
         else:
             debug(context, "[SEMANTIC-FIX] Could not derive period — no valid dataset found")
 
+    # ---------------------------------------------------------
+    # 🔬 Precompute Zones — Power, HR, Pace + Calibration Metadata
+    # ---------------------------------------------------------
+
+    # --- Extract relevant context
+    lactate_thresholds = context.get("lactate_thresholds")
+    corr = context.get("lactate_summary", {}).get("corr_with_power")
+    zones_source = context.get("zones_calibration_source", "FTP defaulted")
+    zones_reason = context.get("zones_calibration_reason", "No calibration details available")
+
+    # --- Pull defaults from cheat sheet
+    lac_defaults = CHEAT_SHEET["thresholds"].get("Lactate", {})
+    lt1_default = lac_defaults.get("lt1_mmol", 2.0)
+    lt2_default = lac_defaults.get("lt2_mmol", 4.0)
+    corr_threshold = lac_defaults.get("corr_threshold", 0.6)
+    lactate_notes = CHEAT_SHEET["context"].get("Lactate")
+
+    # --- Build lactate thresholds sub-block
+    if isinstance(lactate_thresholds, dict):
+        lactate_thresholds_dict = {
+            "lt1_mmol": lactate_thresholds.get("lt1", lt1_default),
+            "lt2_mmol": lactate_thresholds.get("lt2", lt2_default),
+            "corr_threshold": corr_threshold,
+            "notes": lactate_notes,
+        }
+    else:
+        lactate_thresholds_dict = {
+            "lt1_mmol": lt1_default,
+            "lt2_mmol": lt2_default,
+            "corr_threshold": corr_threshold,
+            "notes": lactate_notes,
+        }
+
+    # --- Compute confidence & method
+    confidence = (
+        round(corr, 3)
+        if isinstance(corr, (int, float)) and not pd.isna(corr)
+        else None
+    )
+    method = "physiological" if zones_source == "lactate_test" else "ftp_based"
 
     # ---------------------------------------------------------
     # BASE SEMANTIC STRUCTURE
@@ -299,8 +339,6 @@ def build_semantic_json(context):
         "meta": {
             "framework": "Unified Reporting Framework v5.1",
             "version": "v16.17",
-
-            # Generate local timestamps (rounded to seconds)
             "generated_at": {
                 "local": (
                     datetime.now(
@@ -315,56 +353,67 @@ def build_semantic_json(context):
                 "end": context.get("period", {}).get("end"),
             },
             "timezone": context.get("timezone"),
-
-            "athlete": {
-                "identity": {},
-                "profile": {}
-            },
+            "athlete": {"identity": {}, "profile": {}},
             "report_header": {
                 "title": None,
                 "scope": None,
                 "data_sources": None,
-                "intended_use": None
-            }
+                "intended_use": None,
+            },
         },
 
-        # Metric containers
         "metrics": {},
         "extended_metrics": {},
         "adaptation_metrics": {},
         "trend_metrics": {},
         "correlation_metrics": {},
 
-        # Zones
+        # ---------------------------------------------------------
+        # 🔬 Zones — Power, HR, Pace + Calibration Metadata
+        # ---------------------------------------------------------
         "zones": {
             "power": {
                 "distribution": context.get("zone_dist_power", {}),
-                "thresholds": context.get("icu_power_zones")
-                    or context.get("athlete_power_zones") or [],
+                "thresholds": (
+                    context.get("icu_power_zones")
+                    or context.get("athlete_power_zones")
+                    or []
+                ),
             },
             "hr": {
                 "distribution": context.get("zone_dist_hr", {}),
-                "thresholds": context.get("icu_hr_zones")
-                    or context.get("athlete_hr_zones") or [],
+                "thresholds": (
+                    context.get("icu_hr_zones")
+                    or context.get("athlete_hr_zones")
+                    or []
+                ),
             },
             "pace": {
                 "distribution": context.get("zone_dist_pace", {}),
                 "thresholds": context.get("icu_pace_zones") or [],
             },
+            "calibration": {
+                "source": zones_source,
+                "method": method,
+                "confidence": confidence,
+                "reason": zones_reason,
+                "lactate_thresholds": lactate_thresholds_dict,
+            },
         },
 
-        # Daily load
+        # ---------------------------------------------------------
+        # DAILY LOAD
+        # ---------------------------------------------------------
         "daily_load": [
             {"date": row["date"], "tss": float(row["icu_training_load"])}
             for _, row in getattr(context.get("df_daily"), "iterrows", lambda: [])()
         ] if context.get("df_daily") is not None else [],
 
-        # Events
         "events": [],
-
         "phases": context.get("phases", []),
         "actions": context.get("actions", []),
     }
+
 
     # ---------------------------------------------------------
     # WELLNESS BLOCK
@@ -467,6 +516,36 @@ def build_semantic_json(context):
         else:
             semantic[k] = {}
 
+    # ---------------------------------------------------------
+    # 🧪 Lactate Measurement & Personalized Endurance Zone (from derived metrics)
+    # ---------------------------------------------------------
+    semantic.setdefault("extended_metrics", {})
+
+    # --- Lactate summary injection
+    if "lactate_summary" in context and context["lactate_summary"]:
+        semantic["extended_metrics"]["lactate"] = context["lactate_summary"]
+        debug(
+            context,
+            f"[SEMANTIC] Injected lactate_summary → mean={context['lactate_summary'].get('mean')}, "
+            f"latest={context['lactate_summary'].get('latest')}, "
+            f"samples={context['lactate_summary'].get('samples')}"
+        )
+    else:
+        debug(context, "[SEMANTIC] No lactate_summary available in context")
+
+    # --- Personalized endurance zone (Z2)
+    if "personalized_z2" in context and context["personalized_z2"]:
+        semantic["extended_metrics"]["personalized_z2"] = context["personalized_z2"]
+        debug(
+            context,
+            f"[SEMANTIC] Injected personalized_z2 → "
+            f"{context['personalized_z2'].get('start_w')}–{context['personalized_z2'].get('end_w')}W "
+            f"({context['personalized_z2'].get('start_pct')}–{context['personalized_z2'].get('end_pct')}%), "
+            f"method={context['personalized_z2'].get('method')}"
+        )
+    else:
+        debug(context, "[SEMANTIC] No personalized_z2 data available in context")
+
 
     # ---------------------------------------------------------
     # 🔗 ATHLETE: identity + profile + context (UNIVERSAL)
@@ -523,6 +602,9 @@ def build_semantic_json(context):
             "weight": athlete.get("icu_weight"),
             "height": athlete.get("height"),
             "vo2max": athlete.get("icu_vo2max"),
+            "vo2max_garmin": athlete.get("VO2MaxGarmin"),
+            "vo2max_whoop": athlete.get("VO2MaxWhoop"),           # ✅ new custom field
+            "lactate_measurement": athlete.get("LactateMeasurement"),  # ✅ new custom field
             "lthr": lthr,
             "resting_hr": athlete.get("icu_resting_hr"),
             "max_hr": athlete.get("icu_max_hr"),

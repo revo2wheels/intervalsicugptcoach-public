@@ -14,6 +14,7 @@ from coaching_profile import COACH_PROFILE
 from coaching_heuristics import HEURISTICS
 from coaching_cheat_sheet import CHEAT_SHEET
 
+
 def normalise_hrv(df_well, context=None):
     """
     Tier-2 HRV Normalisation — vendor-agnostic harmonisation across Garmin, Whoop, Oura, etc.
@@ -359,6 +360,11 @@ def compute_derived_metrics(df_events, context):
     debug(context, f"[T2] Starting derived metric computation on {len(df_events)} events.")
     debug(context, f"[T2] Columns available: {list(df_events.columns)}")
 
+    # ✅ Prefer full dataset if available
+    if "_df_scope_full" in context and isinstance(context["_df_scope_full"], pd.DataFrame):
+        debug(context, f"[DERIVED] Using _df_scope_full (rows={len(context['_df_scope_full'])}, cols={len(context['_df_scope_full'].columns)})")
+        df_events = context["_df_scope_full"].copy()
+
     # --- 🩵 HRV Normalisation (Tier-2 context enrichment) ---
     df_well = context.get("df_wellness")
     if df_well is not None:
@@ -626,6 +632,80 @@ def compute_derived_metrics(df_events, context):
 
     # 9️⃣ Final debug log
     debug(context, f"[DERIVED] Polarisation={polarisation} | PolarisationIndex={polarisation_index}")
+
+    # ======================================================
+    # 🧪 Lactate Measurement Integration (context enrichment)
+    # ======================================================
+    if "LactateMeasurement" in df_events.columns:
+        try:
+            df_events["LactateMeasurement"] = pd.to_numeric(df_events["LactateMeasurement"], errors="coerce")
+            valid_lac = df_events["LactateMeasurement"].dropna()
+            total_rows = len(df_events)
+            valid_count = len(valid_lac)
+
+            debug(context, (
+                f"[DERIVED] LactateMeasurement found → total={total_rows}, valid={valid_count}, "
+                f"values={valid_lac.tolist()[:10]}{'...' if valid_count > 10 else ''}"
+            ))
+
+            if not valid_lac.empty:
+                mean_lac = round(valid_lac.mean(), 2)
+                latest_lac = round(valid_lac.iloc[-1], 2)
+                samples = len(valid_lac)
+                min_lac, max_lac = round(valid_lac.min(), 2), round(valid_lac.max(), 2)
+
+                thresholds = {"aerobic": 2.0, "anaerobic": 4.0}
+                zone_dist = {
+                    "below_2mmol": int((valid_lac < thresholds["aerobic"]).sum()),
+                    "between_2_4mmol": int(((valid_lac >= thresholds["aerobic"]) &
+                                            (valid_lac < thresholds["anaerobic"])).sum()),
+                    "above_4mmol": int((valid_lac >= thresholds["anaerobic"]).sum())
+                }
+
+                corr_with_power = None
+                if "icu_average_watts" in df_events.columns:
+                    df_lac = df_events.dropna(subset=["LactateMeasurement", "icu_average_watts"])
+                    if not df_lac.empty:
+                        corr_val = df_lac["LactateMeasurement"].corr(df_lac["icu_average_watts"])
+                        if pd.notna(corr_val):
+                            corr_with_power = round(float(corr_val), 3)
+                        else:
+                            corr_with_power = 0.0
+                            debug(context, "[DERIVED] Lactate–Power correlation undefined (constant series) → set to 0.0")
+
+                context["lactate_summary"] = {
+                    "mean_mmol": mean_lac,
+                    "latest_mmol": latest_lac,
+                    "samples": samples,
+                    "range_mmol": [min_lac, max_lac],
+                    "zone_distribution": zone_dist,
+                    "corr_with_power": corr_with_power,
+                    "available": True
+                }
+                # Normalize keys for compatibility
+                lac = context["lactate_summary"]
+                if "mean_mmol" in lac and "mean" not in lac:
+                    lac["mean"] = lac["mean_mmol"]
+                if "latest_mmol" in lac and "latest" not in lac:
+                    lac["latest"] = lac["latest_mmol"]
+                context["lactate_summary"] = lac
+
+                debug(context, (
+                    f"[DERIVED] LactateMeasurement ✓ integrated → mean={mean_lac} mmol/L, "
+                    f"latest={latest_lac}, samples={samples}, corr_with_power={corr_with_power}, zones={zone_dist}"
+                ))
+            else:
+                context["lactate_summary"] = {"available": False}
+                debug(context, "[DERIVED] LactateMeasurement present but no valid numeric values.")
+
+        except Exception as e:
+            context["lactate_summary"] = {"available": False}
+            debug(context, f"[DERIVED] ⚠️ LactateMeasurement integration failed → {e}", exc_info=True)
+    else:
+        context["lactate_summary"] = {"available": False}
+        debug(context, "[DERIVED] LactateMeasurement column NOT FOUND in df_events.")
+
+
 
     # --- Other metabolic markers ---
     foxi = round(fat_ox_eff * 100, 1)
