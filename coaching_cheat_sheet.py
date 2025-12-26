@@ -29,6 +29,7 @@ CHEAT_SHEET["thresholds"] = {
     "ZQI": {"green": (5, 15), "amber": (3, 20)},               #% now
     "Durability": {"green": (0.9, 1.2),"amber": (0.7, 0.9),"red": (0.0, 0.7)},
     "IFDrift": {"green": (0.0, 0.05), "amber": (0.05, 0.10), "red": (0.10, 1.0)},
+    "Lactate": {"lt1_mmol": 2.0,"lt2_mmol": 4.0,"corr_threshold": 0.6}
 }
 
 # === Context ===
@@ -64,6 +65,11 @@ CHEAT_SHEET["context"] = {
     "LIR": "Load Intensity Ratio — ratio of total intensity to total duration; 0.8–1.2 indicates balanced training intensity distribution.",
     "EnduranceReserve": "Endurance Reserve — ratio of aerobic durability to fatigue index; >1.2 indicates strong endurance foundation.",
     "IFDrift": "IF Drift — change in Intensity Factor (power vs HR) over time; <5% stable, >10% indicates endurance fatigue or overheating.",
+    "Lactate": (
+        "Standard lab defaults (Mader & Heck, 1986). "
+        "LT1≈2 mmol/L corresponds to the first sustained rise in blood lactate, "
+        "while LT2≈4 mmol/L approximates the maximal lactate steady-state (MLSS). "
+        "Override with athlete-specific testing or field protocols."),
 }
 
 CHEAT_SHEET["coaching_links"] = {
@@ -146,9 +152,32 @@ CHEAT_SHEET["advice"] = {
         "Recovery": "💤 **Recovery phase detected** — active regeneration; target RI ≥ 0.8 and low monotony.",
         "Deload": "🧘 **Deload phase detected** — reduced load, maintain frequency; transition readiness improving.",
         "Continuous Load": "🔁 **Continuous Load** — steady training; insert variation if fatigue rises."
-    }
+    },
+    #Lactate-based training advice and reasoning
+    "Lactate": {
+        "low": (
+            "Average lactate <2 mmol/L — effort likely below LT1. "
+            "Excellent for aerobic base work and fat-oxidation efficiency."
+        ),
+        "moderate": (
+            "Lactate 2–4 mmol/L — around the aerobic-anaerobic transition (Z2–Z3). "
+            "Good for tempo and extensive endurance; monitor fatigue."
+        ),
+        "high": (
+            "Lactate >4 mmol/L — above LT2 (anaerobic). "
+            "Limit sustained exposure; use for threshold or VO₂ intervals."
+        ),
+        "correlation_strong": (
+            "Lactate-power correlation strong (r > 0.6) — physiological calibration reliable."
+        ),
+        "correlation_weak": (
+            "Lactate-power correlation weak — revert to FTP-based zones until more data available."
+        ),
+        "no_data": (
+            "No lactate data detected — FTP defaults used for zone calibration."
+        ),
+    }   
 }
-
 
 # === Labels ===
 CHEAT_SHEET["labels"] = {

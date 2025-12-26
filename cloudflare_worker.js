@@ -471,29 +471,157 @@ export default {
       const queryNewest = url.searchParams.get("newest");
       const queryFields = url.searchParams.get("fields");
 
-      // --- 2️⃣ Default date range (fallback if none provided) ---
+      // --- 2️⃣ Default date range ---
       const { oldest: defaultOldest, newest: defaultNewest } =
         normaliseDateParams(url.searchParams, DATA_WINDOWS.LIGHT_DAYS);
 
       const oldest = bodyOverrides.oldest || queryOldest || defaultOldest;
       const newest = bodyOverrides.newest || queryNewest || defaultNewest;
 
-      // --- 3️⃣ Default field list ---
-      const defaultFields = `
-        id,start_date_local,name,type,sport_type,
-        distance,moving_time,icu_training_load,IF,
-        average_heartrate,average_cadence,icu_average_watts,
-        strain_score,trimp,hr_load,
-        icu_efficiency_factor,icu_intensity,icu_power_hr,
-        decoupling,icu_pm_w_prime,icu_w_prime,
-        icu_max_wbal_depletion,icu_joules_above_ftp,
-        total_elevation_gain,calories,VO2MaxGarmin,
-        source,device_name
-      `.replace(/\s+/g, '');
+      // --- 3️⃣ Canonical field whitelist (Intervals.icu-supported) ---
+      const validFieldSet = new Set([
+        "id","start_date_local","name","type","sport_type",
+        "distance","moving_time","icu_training_load","IF",
+        "average_heartrate","average_cadence","icu_average_watts",
+        "strain_score","trimp","hr_load",
+        "icu_efficiency_factor","icu_intensity","icu_power_hr",
+        "decoupling","icu_pm_w_prime","icu_w_prime",
+        "icu_max_wbal_depletion","icu_joules_above_ftp",
+        "total_elevation_gain","calories","VO2MaxGarmin", "VO2MaxWhoop", "LactateMeasurement",
+        "source","device_name"
+      ]);
 
-      const fields = bodyOverrides.fields || queryFields || defaultFields;
+      // --- 4️⃣ Field alias map (handles ChatGPT and API variances) ---
+      const fieldAliases = {
+        // ───── Core training metrics ─────
+        "tss": "icu_training_load",
+        "load": "icu_training_load",
+        "training_load": "icu_training_load",
+        "stress": "icu_training_load",
 
-      // --- 4️⃣ Build and fetch target URL ---
+        // ───── Duration variants ─────
+        "duration": "moving_time",
+        "time": "moving_time",
+        "elapsed": "moving_time",
+        "moving_time": "moving_time",
+        "duration_seconds": "moving_time",
+        "duration_minutes": "moving_time",   // convert /60 in code
+
+        // ───── Heart-rate variants ─────
+        "hr": "average_heartrate",
+        "heartrate": "average_heartrate",
+        "avg_hr": "average_heartrate",
+        "average_hr": "average_heartrate",
+        "hr_avg": "average_heartrate",
+        "heart_rate": "average_heartrate",
+
+        // ───── Power / Watts ─────
+        "watts": "icu_average_watts",
+        "power": "icu_average_watts",
+        "avg_power": "icu_average_watts",
+        "average_power": "icu_average_watts",
+        "power_avg": "icu_average_watts",
+
+        // ───── Cadence ─────
+        "cadence": "average_cadence",
+        "cad": "average_cadence",
+        "avg_cadence": "average_cadence",
+        "cadence_avg": "average_cadence",
+
+        // ───── Distance ─────
+        "distance": "distance",
+        "distance_m": "distance",
+        "distance_km": "distance",   // divide by 1000
+        "dist": "distance",
+
+        // ───── Elevation / Climb ─────
+        "elevation": "total_elevation_gain",
+        "elevation_gain": "total_elevation_gain",
+        "elev_gain": "total_elevation_gain",
+        "climb": "total_elevation_gain",
+
+        // ───── Intensity / Efficiency ─────
+        "if": "IF",
+        "intensity_factor": "IF",
+        "efficiency": "icu_efficiency_factor",
+        "efficiency_factor": "icu_efficiency_factor",
+        "decoupling": "decoupling",
+
+        // ───── Metadata ─────
+        "title": "name",
+        "name": "name",
+        "activity": "name",
+        "date": "start_date_local",
+        "start": "start_date_local",
+        "sport": "type",
+        "type": "type",
+        "source": "source",
+        "platform": "source",
+        "device": "device_name",
+
+        // ───── Energy / Calories ─────
+        "calories": "calories",
+        "kcal": "calories",
+        "energy": "calories",
+
+        // ───── TRIMP / Strain / HR Load ─────
+        "trimp": "trimp",
+        "strain": "strain_score",
+        "strain_score": "strain_score",
+        "hr_load": "hr_load",
+
+        // ───── VO₂-related ─────
+        "vo2max": "VO2MaxGarmin",
+        "vo2_max": "VO2MaxGarmin",
+        "vo2maxgarmin": "VO2MaxGarmin",
+        "vo2max_garmin": "VO2MaxGarmin",
+        "vo2max_garmin_connect": "VO2MaxGarmin",
+
+        // ───── W′ (anaerobic work capacity) ─────
+        "wprime": "icu_w_prime",
+        "w_prime": "icu_w_prime",
+
+        // ───── Optional Tier-1 / extended ─────
+        "notes": "notes",              // full dataset only
+        "comment": "notes",
+        "description": "notes"
+      };
+
+      const defaultFields = Array.from(validFieldSet).join(",");
+
+      // --- 5️⃣ Resolve requested fields ---
+      let requestedFields = (bodyOverrides.fields || queryFields || defaultFields)
+        .split(",")
+        .map(f => f.trim().toLowerCase())
+        .filter(Boolean)
+        .map(f => fieldAliases[f] || f);
+
+      // --- 6️⃣ Filter to valid ones only ---
+      const filteredFields = requestedFields.filter(f => validFieldSet.has(f));
+      const invalidFields = requestedFields.filter(f => !validFieldSet.has(f));
+
+      // --- 7️⃣ Log alias usage & dropped fields ---
+      if (invalidFields.length > 0) {
+        console.warn(`[T0-LIGHT] ⚠️ Dropping invalid fields: ${invalidFields.join(", ")}`);
+      }
+
+      const appliedAliases = Object.entries(fieldAliases)
+        .filter(([alias, canonical]) => requestedFields.includes(canonical))
+        .map(([alias]) => alias);
+      if (appliedAliases.length > 0) {
+        console.log(`[T0-LIGHT] 🧩 Applied alias mappings for: ${appliedAliases.join(", ")}`);
+      }
+
+      // --- 8️⃣ Always include essential fields for consistency ---
+      const essentialFields = ["id", "start_date_local", "type", "name"];
+      for (const f of essentialFields) {
+        if (!filteredFields.includes(f)) filteredFields.push(f);
+      }
+
+      // --- 9️⃣ Finalize safe field string ---
+      const fields = filteredFields.join(",");
+
+      // --- 🔟 Build & call API ---
       const target =
         `${INTERVALS_API_BASE}/athlete/${athleteId}/activities` +
         `?oldest=${encodeURIComponent(oldest)}` +
@@ -613,7 +741,7 @@ export default {
         // 90d light
         fetch(
           `${INTERVALS_API_BASE}/athlete/0/activities?oldest=${lightOldest}&newest=${lightNewest}` +
-            `&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin`,
+            `&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin,LactateMeasurement`,
           { headers: buildAuthHeaders() }
         ).then((r) => r.text()),
 
