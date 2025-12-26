@@ -320,12 +320,14 @@ async def run_audit_with_data(request: Request):
 
         # Athlete (FLAT ONLY)
         raw_athlete = data.get("athlete")
+
+        # Accept both nested and flat forms
         if isinstance(raw_athlete, dict):
-            if "athlete" in raw_athlete:
+            # Only unwrap if actually nested
+            if "sportSettings" not in raw_athlete and "athlete" in raw_athlete:
                 raw_athlete = raw_athlete["athlete"]
 
-            if isinstance(raw_athlete, dict) and raw_athlete:
-                prefetch_context["athlete"] = raw_athlete
+            prefetch_context["athlete"] = raw_athlete
 
         # 🔒 CRITICAL RULE:
         # Empty dict means NO prefetch — force canonical fetch path
