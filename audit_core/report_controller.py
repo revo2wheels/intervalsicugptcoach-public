@@ -695,27 +695,14 @@ def run_report(
     # Tier-2 EXTENDED METRICS — SINGLE AUTHORITATIVE CALL
     # ============================================================
 
+    context = compute_extended_metrics(context)
+
     # --- Safety rebind for prefetch mode (Railway) ---
     if not context.get("lactate_summary") and "extended_metrics" in context:
         if "lactate" in context["extended_metrics"]:
             context["lactate_summary"] = context["extended_metrics"]["lactate"]
+            debug(context, "[T2-POST] Bound lactate_summary from extended_metrics.lactate (prefetch mode)")
 
-    # --- Diagnostic guards before Tier-2 run ---
-    ftp = context.get("athleteProfile", {}).get("ftp") or context.get("ftp")
-    lac_summary = context.get("lactate_summary")
-
-    if not ftp:
-        debug(context, "[T2-PRECHECK] ⚠️ Missing FTP before extended metrics — lactate personalization will fail.")
-    else:
-        debug(context, f"[T2-PRECHECK] FTP={ftp} (type={type(ftp).__name__})")
-
-    if not lac_summary:
-        debug(context, "[T2-PRECHECK] ⚠️ lactate_summary missing or empty before Tier-2 — expect default FTP-based zones.")
-    else:
-        debug(context, f"[T2-PRECHECK] lactate_summary keys={list(lac_summary.keys())}")
-
-
-    context = compute_extended_metrics(context)
 
     debug(
         context,
