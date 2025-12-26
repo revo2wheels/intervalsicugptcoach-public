@@ -927,7 +927,11 @@ def run_report(
                     f"len={len(context.get('daily_load', [])) if isinstance(context.get('daily_load'), list) else 'n/a'}")
         debug(context, f"[PRE-SEMANTIC-DUMP] df_daily present: "
                     f"{isinstance(context.get('df_daily'), pd.DataFrame)}")
-
+        import pandas as pd
+        dfd = context.get("df_daily")
+        debug(context, f"[VERIFY] df_daily type={type(dfd)} "
+                    f"has_iterrows={hasattr(dfd, 'iterrows')} "
+               f"len={(len(dfd) if hasattr(dfd, '__len__') else 'n/a')}")
 
         semantic_output = build_semantic_json(context)  # Ensure semantic_output is generated
 
