@@ -651,6 +651,8 @@ def run_report(
     context["auditPartial"] = False
     context["fetch_status"] = "complete"
 
+    debug(context, f"[CHECK-T2-PATH] Tier-2 module loaded from: {compute_derived_metrics.__module__}")
+
     # --- Tier-2 core metrics ---
     context = compute_derived_metrics(df_scope, context)
     context = evaluate_actions(context)
