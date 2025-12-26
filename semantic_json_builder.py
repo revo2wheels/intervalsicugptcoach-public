@@ -30,6 +30,7 @@ from audit_core.utils import debug
 import numpy as np
 from math import isnan
 import pytz
+from audit_core.tier2_derived_metrics import classify_marker
 
 # ---------------------------------------------------------
 # Helpers
@@ -89,156 +90,94 @@ def semantic_block_for_metric(name, value, context):
         "related_metrics": profile_desc.get("criteria", {}),
     }
 
-def resolve_authoritative_totals(context):
-    report_type = context.get("report_type")
-
-    # 🔒 HARD AUTHORITY (Tier-2 final lock)
-    if report_type in ("season", "summary"):
-        return {
-            "hours": context.get("locked_totalHours")
-                     or context.get("tier2_enforced_totals", {}).get("hours")
-                     or context.get("totalHours")
-                     or 0,
-            "tss": context.get("locked_totalTss")
-                   or context.get("tier2_enforced_totals", {}).get("tss")
-                   or context.get("totalTss")
-                   or 0,
-            "distance_km": context.get("locked_totalDistance")
-                           or context.get("tier2_enforced_totals", {}).get("distance")
-                           or context.get("totalDistance")
-                           or 0,
-        }
-
-    # Weekly / wellness (unchanged)
-    return {
-        "hours": context.get("totalHours", 0),
-        "tss": context.get("totalTss", 0),
-        "distance_km": context.get("totalDistance", 0),
-    }
-
-
 # ---------------------------------------------------------
 # Insights Builder
 # ---------------------------------------------------------
 
 def build_insights(semantic):
     """
-    Build high-level coaching insights using:
-    - Tier-2 metrics
-    - Coaching Cheat Sheet thresholds
-    - Coaching Profile semantics
+    Build high-level coaching insights using canonical thresholds
+    from Coaching Cheat Sheet + Coaching Profile.
     """
 
     insights = {}
     report_type = semantic.get("meta", {}).get("report_type")
     window = "90d" if report_type in ("season", "summary") else "7d"
-    # Polarisation and load_distribution are always 7-day metrics
     polarisation_window = "7d"
 
     # -------------------------------------------------
-    # 1 — Fatigue Trend (derived from semantic metrics)
+    # 1️⃣ Fatigue Trend (uses semantic block for metric)
     # -------------------------------------------------
-    atl_block = semantic.get("extended_metrics", {}).get("ATL", {})
-    ctl_block = semantic.get("extended_metrics", {}).get("CTL", {})
-
-    atl = atl_block.get("value")
-    ctl = ctl_block.get("value")
-
+    atl = semantic.get("extended_metrics", {}).get("ATL", {}).get("value")
+    ctl = semantic.get("extended_metrics", {}).get("CTL", {}).get("value")
     ft = None
     if isinstance(atl, (int, float)) and isinstance(ctl, (int, float)) and ctl > 0:
         ft = round(((atl - ctl) / ctl) * 100, 1)
 
-    fatigue_metric = semantic_block_for_metric(
-        "FatigueTrend",
-        ft,
-        semantic
-    )
-
+    fatigue_block = semantic_block_for_metric("FatigueTrend", ft, semantic)
     insights["fatigue_trend"] = {
         "value_pct": ft,
         "window": window,
         "basis": "ATL vs CTL",
-        "classification": fatigue_metric.get("classification"),
-        "thresholds": fatigue_metric.get("thresholds"),
-        "interpretation": fatigue_metric.get("interpretation"),
-        "coaching_implication": fatigue_metric.get("coaching_implication"),
+        "classification": fatigue_block.get("classification"),
+        "thresholds": fatigue_block.get("thresholds"),
+        "interpretation": fatigue_block.get("interpretation"),
+        "coaching_implication": fatigue_block.get("coaching_implication"),
     }
 
     # -------------------------------------------------
-    # 2 — Load Distribution (Intensity Bias)
+    # 2️⃣ Load Distribution / Polarisation
     # -------------------------------------------------
     zones = semantic.get("zones", {}).get("power", {}) or {}
-    dist = zones.get("distribution", zones)  # Support new nested structure or flat fallback
+    dist = zones.get("distribution", zones)
 
     z1 = dist.get("power_z1", 0)
     z2 = dist.get("power_z2", 0)
-    z3plus = sum(
-        v for k, v in dist.items()
-        if k not in ("power_z1", "power_z2") and isinstance(v, (int, float))
-    )
+    z3plus = sum(v for k, v in dist.items()
+                 if k not in ("power_z1", "power_z2") and isinstance(v, (int, float)))
 
-    z_low = round(z1 + z2, 1)
-    z_high = round(z3plus, 1)
-
-    if z_low >= 70:
-        dist = "endurance-focused"
-    elif z_high >= 30:
-        dist = "threshold-heavy"
-    elif z1 >= 50 and z_high >= 20:
-        dist = "polarised"
-    else:
-        dist = "mixed"
+    pol_val = round((z1 + z2) / (z1 + z2 + z3plus + 1e-6), 3)
+    pol_block = semantic_block_for_metric("Polarisation", pol_val, semantic)
 
     insights["load_distribution"] = {
-        "zones_pct": {
-            "z1_z2": z_low,
-            "z3_plus": z_high,
-        },
+        "zones_pct": {"z1_z2": round(z1 + z2, 1), "z3_plus": round(z3plus, 1)},
         "window": polarisation_window,
         "basis": "time-in-zone (%)",
-        "classification": dist,
-        "interpretation": CHEAT_SHEET["context"].get("Polarisation"),
+        "classification": pol_block.get("classification"),
+        "interpretation": pol_block.get("interpretation"),
+        "coaching_implication": pol_block.get("coaching_implication"),
     }
 
     # -------------------------------------------------
-    # 3 — Metabolic Drift (FOxI proxy)
+    # 3️⃣ Metabolic Drift (FOxI proxy → cheat-sheet thresholds)
     # -------------------------------------------------
     foxi = semantic.get("metrics", {}).get("FOxI", {}).get("value")
     drift = None
-
     if isinstance(foxi, (int, float)):
         drift = round((70 - foxi) / 70, 3)
 
+    drift_block = semantic_block_for_metric("FOxI", foxi, semantic)
     insights["metabolic_drift"] = {
         "value": drift,
         "window": window,
         "basis": "FOxI proxy",
-        "interpretation": (
-            "Proxy derived from fat oxidation efficiency. "
-            "Interpret trend direction only, not absolute magnitude."
-        ),
+        "classification": drift_block.get("classification"),
+        "interpretation": drift_block.get("interpretation"),
+        "coaching_implication": drift_block.get("coaching_implication"),
     }
 
     # -------------------------------------------------
-    # 4 — Fitness Phase (ACWR)
+    # 4️⃣ Fitness Phase (ACWR classification from profile)
     # -------------------------------------------------
-    acwr = semantic.get("metrics", {}).get("ACWR", {}).get("value")
-    phase = "unknown"
-
-    if isinstance(acwr, (int, float)):
-        if acwr < 0.8:
-            phase = "recovery/deload"
-        elif 0.8 <= acwr <= 1.3:
-            phase = "productive/loading"
-        elif acwr > 1.3:
-            phase = "overreaching"
+    acwr_val = semantic.get("metrics", {}).get("ACWR", {}).get("value")
+    acwr_block = semantic_block_for_metric("ACWR", acwr_val, semantic)
 
     insights["fitness_phase"] = {
-        "phase": phase,
+        "phase": acwr_block.get("classification"),
         "basis": "ACWR",
         "window": "rolling",
-        "interpretation": CHEAT_SHEET["context"].get("ACWR"),
-        "coaching_implication": CHEAT_SHEET["coaching_links"].get("ACWR"),
+        "interpretation": acwr_block.get("interpretation"),
+        "coaching_implication": acwr_block.get("coaching_implication"),
     }
 
     return insights
@@ -291,38 +230,67 @@ def build_semantic_json(context):
         else:
             debug(context, "[SEMANTIC-FIX] Could not derive period — no valid dataset found")
 
-    # ---------------------------------------------------------
-    # 🔬 Precompute Zones — Power, HR, Pace + Calibration Metadata
-    # ---------------------------------------------------------
+    # ------------------------------------------------------------------
+    # 🧬 Lactate, HRV and Threshold Integration (Cheat-Sheet aligned)
+    # ------------------------------------------------------------------
+    try:
+        lactate_profile = COACH_PROFILE.get("markers", {}).get("Lactate", {})
+        lac_defaults = CHEAT_SHEET.get("thresholds", {}).get("Lactate", {})
 
-    # --- Extract relevant context
-    lactate_thresholds = context.get("lactate_thresholds")
-    corr = context.get("lactate_summary", {}).get("corr_with_power")
-    zones_source = context.get("zones_calibration_source", "FTP defaulted")
-    zones_reason = context.get("zones_calibration_reason", "No calibration details available")
+        lt1_default = (
+            lactate_profile.get("criteria", {}).get("lt1_mmol")
+            or lac_defaults.get("lt1_mmol")
+            or 2.0
+        )
+        lt2_default = (
+            lactate_profile.get("criteria", {}).get("lt2_mmol")
+            or lac_defaults.get("lt2_mmol")
+            or 4.0
+        )
+        corr_threshold = lac_defaults.get("corr_threshold") or 0.6
 
-    # --- Pull defaults from cheat sheet
-    lac_defaults = CHEAT_SHEET["thresholds"].get("Lactate", {})
-    lt1_default = lac_defaults.get("lt1_mmol", 2.0)
-    lt2_default = lac_defaults.get("lt2_mmol", 4.0)
-    corr_threshold = lac_defaults.get("corr_threshold", 0.6)
-    lactate_notes = CHEAT_SHEET["context"].get("Lactate")
+        lactate_notes = (
+            CHEAT_SHEET.get("context", {}).get("Lactate")
+            or lactate_profile.get("interpretation", "")
+            or "Lactate thresholds derived from profile."
+        )
 
-    # --- Build lactate thresholds sub-block
-    if isinstance(lactate_thresholds, dict):
-        lactate_thresholds_dict = {
-            "lt1_mmol": lactate_thresholds.get("lt1", lt1_default),
-            "lt2_mmol": lactate_thresholds.get("lt2", lt2_default),
-            "corr_threshold": corr_threshold,
-            "notes": lactate_notes,
-        }
-    else:
-        lactate_thresholds_dict = {
+        hrv_profile = COACH_PROFILE.get("markers", {}).get("HRV", {})
+        hrv_defaults = CHEAT_SHEET.get("thresholds", {}).get("HRV", {})
+
+        hrv_optimal = (
+            hrv_profile.get("criteria", {}).get("optimal")
+            or hrv_defaults.get("optimal")
+            or [60, 90]
+        )
+        hrv_low = (
+            hrv_profile.get("criteria", {}).get("low")
+            or hrv_defaults.get("low")
+            or [0, 40]
+        )
+
+        semantic["lactate_defaults"] = {
             "lt1_mmol": lt1_default,
             "lt2_mmol": lt2_default,
             "corr_threshold": corr_threshold,
             "notes": lactate_notes,
         }
+        semantic["hrv_defaults"] = {
+            "optimal": hrv_optimal,
+            "low": hrv_low,
+        }
+
+        debug(context, f"[SEMANTIC] Lactate defaults → LT1={lt1_default}, LT2={lt2_default}, corr>={corr_threshold}")
+        debug(context, f"[SEMANTIC] HRV defaults → optimal={hrv_optimal}, low={hrv_low}")
+
+    except Exception as e:
+        debug(context, f"[SEMANTIC] ⚠️ Lactate/HRV threshold integration failed: {e}")
+
+    # --- Safe defaults for undefined zone variables ---
+    corr = context.get("zones_corr")
+    zones_source = context.get("zones_source", "ftp_based")
+    zones_reason = context.get("zones_reason", "unknown")
+    lactate_thresholds_dict = context.get("lactate_thresholds_dict", {})
 
     # --- Compute confidence & method
     confidence = (
@@ -580,10 +548,6 @@ def build_semantic_json(context):
     custom_fields = {}
     if isinstance(primary_sport, dict):
         custom_fields = primary_sport.get("custom_field_values", {}) or {}
-
-    vo2max_garmin = custom_fields.get("VO2MaxGarmin")
-    lactate_mmol_l = custom_fields.get("HRTLNDLT1")
-
 
     vo2max_garmin = custom_fields.get("VO2MaxGarmin")
     lactate_mmol_l = custom_fields.get("HRTLNDLT1")
@@ -866,6 +830,88 @@ def build_semantic_json(context):
             "coaching_implication": info.get("coaching_implication", ""),
             "related_metrics": info.get("related_metrics", {}),
         }
+    # ------------------------------------------------------------------
+    # 📊 Load-related metrics (cheat-sheet aligned)
+    # ------------------------------------------------------------------
+    try:
+        metric_keys = ["ACWR", "Monotony", "Strain", "FatigueTrend", "ZQI"]
+
+        semantic.setdefault("metrics", {})
+
+        for key in metric_keys:
+            val = context.get(key)
+            if val is None:
+                debug(context, f"[SEMANTIC] ⚠️ {key}: no value in context")
+                continue
+
+            profile_def = COACH_PROFILE.get("markers", {}).get(key, {})
+            thresholds = CHEAT_SHEET.get("thresholds", {}).get(key, {})
+
+            criteria = profile_def.get("criteria", thresholds)
+            notes = (
+                profile_def.get("interpretation")
+                or CHEAT_SHEET.get("context", {}).get(key)
+                or ""
+            )
+            framework = profile_def.get("framework", "physiological")
+
+            icon, state = classify_marker(val, key, context)
+
+            semantic["metrics"][key] = {
+                "value": round(float(val), 3) if isinstance(val, (int, float)) else val,
+                "criteria": criteria,
+                "state": state,
+                "icon": icon,
+                "framework": framework,
+                "notes": notes,
+            }
+
+            debug(context, f"[SEMANTIC] {key}: {val} → {state} ({framework})")
+
+    except Exception as e:
+        debug(context, f"[SEMANTIC] ⚠️ Load metric integration failed: {e}")
+
+    # ------------------------------------------------------------------
+    # 🧠 Metabolic & Recovery Metrics (cheat-sheet aligned)
+    # ------------------------------------------------------------------
+    try:
+        metric_keys = ["FOxI", "MES", "RecoveryIndex", "StressTolerance"]
+
+        semantic.setdefault("metrics", {})
+
+        for key in metric_keys:
+            val = context.get(key)
+            if val is None:
+                debug(context, f"[SEMANTIC] ⚠️ {key}: no value in context")
+                continue
+
+            profile_def = COACH_PROFILE.get("markers", {}).get(key, {})
+            thresholds = CHEAT_SHEET.get("thresholds", {}).get(key, {})
+            criteria = profile_def.get("criteria", thresholds)
+
+            notes = (
+                profile_def.get("interpretation")
+                or CHEAT_SHEET.get("context", {}).get(key)
+                or ""
+            )
+            framework = profile_def.get("framework", "physiological")
+
+            icon, state = classify_marker(val, key, context)
+
+            semantic["metrics"][key] = {
+                "value": round(float(val), 3) if isinstance(val, (int, float)) else val,
+                "criteria": criteria,
+                "state": state,
+                "icon": icon,
+                "framework": framework,
+                "notes": notes,
+            }
+
+            debug(context, f"[SEMANTIC] {key}: {val} → {state} ({framework})")
+
+    except Exception as e:
+        debug(context, f"[SEMANTIC] ⚠️ Metabolic/Recovery metric integration failed: {e}")
+
     # ---------------------------------------------------------
     # Annotate context windows per metric
     # ---------------------------------------------------------
