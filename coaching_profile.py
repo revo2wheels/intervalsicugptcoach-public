@@ -269,48 +269,41 @@ COACH_PROFILE = {
             "criteria": {
                 "polarised": "≥ 1.0",
                 "mixed": "0.7–0.99",
-                "threshold": "< 0.7"
+                "z2_base": "0.35–0.69",   # Added contextual category
+                "threshold": "< 0.35"
             },
             "interpretation": (
                 "Seiler Polarisation Ratio showing the balance of low- and high-intensity "
                 "training (Z1 + Z3) relative to moderate-intensity work (Z2). "
-                "Values ≥1.0 indicate a well-polarised 80/20 structure; values below 0.7 "
-                "suggest threshold-heavy or pyramidal load distribution."
+                "≥1.0 = polarised (80/20), 0.7–0.99 = mixed, 0.35–0.69 = Z2-base dominant "
+                "(normal in aerobic foundation), <0.35 = true threshold-heavy pattern."
             ),
             "coaching_implication": (
-                "If Polarisation <0.7, increase low-intensity (Z1) aerobic sessions and "
-                "include distinct high-intensity (Z3) efforts. Maintain ≥1.0 for a strong "
-                "polarised distribution. Displayed in reports as a percentage "
-                "(e.g., 0.78 → 78%)."
+                "If Polarisation <0.7 and current block = Base, interpret as Z2-base dominant "
+                "(✅ aerobic focus). If in Build or Peak, reduce mid-zone load and increase Z1 "
+                "and Z3 contrast. Maintain ≥1.0 for fully polarised 80/20 structure in race phases."
             ),
-            "related_metrics": {
-                "polarised": "Z1 ≥ 75% AND Z3 ≥ 15% AND Z2 ≤ 10–15%",
-                "balanced": "Z1 60–74% with moderate Z2",
-                "threshold": "High Z2 proportion"
-            }
         },
-
         "PolarisationIndex": {
             "framework": "Z1+Z2 Normalized Index",
             "formula": "(Z1 + Z2) / Total zone time",
             "criteria": {
-                "polarised": "≥ 0.75",
+                "aerobic": "≥ 0.75",
                 "mixed": "0.6–0.74",
-                "threshold": "< 0.6"
+                "intensity_focused": "< 0.6"
             },
             "interpretation": (
                 "Normalized time-in-zone index (0–1) representing the proportion of training "
-                "time spent in low and moderate intensities (Z1+Z2). "
-                "Higher values indicate strong aerobic bias; lower values indicate threshold "
-                "dominance or insufficient low-intensity volume."
+                "spent in low and moderate intensities (Z1+Z2). ≥0.75 = strong aerobic bias "
+                "(ideal for Base/Recovery), 0.60–0.74 = balanced, <0.60 = intensity-focused "
+                "(typical in Build or Peak phases)."
             ),
             "coaching_implication": (
-                "If PolarisationIndex <0.60, rebalance training toward greater Z1 endurance "
-                "and reduced Z2 duration. Aim for ≥0.75 to support aerobic adaptation and "
-                "recovery efficiency."
-            )
+                "If PolarisationIndex <0.60 and current block = Base, rebalance toward Z1 endurance "
+                "and reduce Z2. If <0.60 in Build/Peak, acceptable due to intensity focus. "
+                "Target ≥0.75 for strong aerobic adaptation in Base/Recovery."
+            ),
         },
-
         "TRIMP": {
             "framework": "Banister Load Model",
             "formula": "Duration × HR_ratio × e^(1.92 × HR_ratio)",
