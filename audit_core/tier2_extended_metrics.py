@@ -76,28 +76,6 @@ def compute_extended_metrics(context):
         f"athlete.sportSettings[0].ftp={context.get('athlete',{}).get('sportSettings',[{}])[0].get('ftp')}"
     )
 
-    if not context.get("athleteProfile", {}).get("ftp"):
-        try:
-            sport = context.get("athlete", {}).get("sportSettings", [{}])[0]
-            ftp_val = sport.get("mmp_model", {}).get("ftp") or sport.get("ftp")
-
-            # 👇 ADD THESE TWO LINES
-            debug(context, f"[T2-FIX-DEBUG] raw ftp_val={ftp_val} ({type(ftp_val).__name__})")
-            if isinstance(ftp_val, str):
-                ftp_val = ftp_val.strip().replace(",", ".")  # tolerate '300' or '300.0' as str
-
-            if ftp_val not in [None, "", "null"]:
-                ftp_val = float(ftp_val)
-                context.setdefault("athleteProfile", {})["ftp"] = ftp_val
-                context["ftp"] = ftp_val
-                debug(context, f"[T2-FIX] Promoted FTP={ftp_val} from sportSettings to athleteProfile")
-            else:
-                debug(context, "[T2-FIX] ⚠️ ftp_val empty or null, promotion skipped")
-
-        except Exception as e:
-            debug(context, f"[T2-FIX] ⚠️ FTP promotion failed: {e}")
-
-
     # ---------------------------------------------------------
     # 🧠 Personalized Endurance (Z2) Calibration via Lactate Context
     # ---------------------------------------------------------
