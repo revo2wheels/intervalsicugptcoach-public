@@ -401,30 +401,19 @@ def build_semantic_json(context):
             },
         },
 
-        # Placeholder — we’ll fill this next
-        "daily_load": [],
+        # ---------------------------------------------------------
+        # DAILY LOAD
+        # ---------------------------------------------------------
+        "daily_load": [
+            {"date": row["date"], "tss": float(row["icu_training_load"])}
+            for _, row in getattr(context.get("df_daily"), "iterrows", lambda: [])()
+        ] if context.get("df_daily") is not None else [],
 
         "events": [],
         "phases": context.get("phases", []),
         "actions": context.get("actions", []),
     }
 
-    # ---------------------------------------------------------
-    # DAILY LOAD
-    # ---------------------------------------------------------
-    if isinstance(context.get("df_daily"), pd.DataFrame):
-        daily_load_list = [
-            {"date": str(row["date"]), "tss": float(row.get("icu_training_load", 0))}
-            for _, row in context["df_daily"].iterrows()
-        ]
-    elif isinstance(context.get("daily_load"), list) and context["daily_load"]:
-        daily_load_list = context["daily_load"]
-        debug(context, f"[SEMANTIC] Using fallback daily_load list ({len(daily_load_list)} days)")
-    else:
-        daily_load_list = []
-        debug(context, "[SEMANTIC] No daily load found in context")
-
-    semantic["daily_load"] = daily_load_list
 
     # ---------------------------------------------------------
     # WELLNESS BLOCK
@@ -495,6 +484,7 @@ def build_semantic_json(context):
         context,
         f"[SEMANTIC] Wellness subjective markers → keys={list(semantic['wellness']['subjective'].keys())}"
     )
+
 
     # ---------------------------------------------------------
     # AUTHORITATIVE TOTALS (Tier-2 ONLY)
