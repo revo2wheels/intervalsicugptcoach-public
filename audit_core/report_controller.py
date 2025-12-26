@@ -675,6 +675,11 @@ def run_report(
     # Tier-2 EXTENDED METRICS — SINGLE AUTHORITATIVE CALL
     # ============================================================
 
+    # --- Safety rebind for prefetch mode (Railway) ---
+    if not context.get("lactate_summary") and "extended_metrics" in context:
+        if "lactate" in context["extended_metrics"]:
+            context["lactate_summary"] = context["extended_metrics"]["lactate"]
+
     context = compute_extended_metrics(context)
 
     debug(
