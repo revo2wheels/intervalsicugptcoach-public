@@ -346,11 +346,15 @@ def compute_derived_metrics(df_events, context):
     Supports both weekly and season contexts (auto-detect via context['report_type']).
     Includes extensive debugging and classification via COACH_PROFILE markers.
     """
-
     import numpy as np
     import pandas as pd
 
     debug = context.get("debug", lambda *args, **kwargs: None)
+
+    debug(context, f"[T2-VERIFY-IN] df_events type={type(df_events)} len={(len(df_events) if hasattr(df_events, '__len__') else 'n/a')}")
+    if hasattr(df_events, "columns"):
+        debug(context, f"[T2-VERIFY-IN] df_events cols={list(df_events.columns)[:10]}")
+
 
     # --- ✅ 1. Input validation and context ---
     if df_events is None or getattr(df_events, "empty", True):
