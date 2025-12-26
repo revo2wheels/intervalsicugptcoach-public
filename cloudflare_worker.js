@@ -799,7 +799,7 @@ export default {
       const [lightTxt, fullTxt, wellTxt, profTxt] = await Promise.all([
         fetch(
           `${INTERVALS_API_BASE}/athlete/0/activities?oldest=${lightOldest}&newest=${lightNewest}` +
-            `&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin`,
+            `&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin,HRTLNDLT1`,
           { headers: buildAuthHeaders() }
         ).then((r) => r.text()),
 
@@ -850,7 +850,7 @@ export default {
       const [lightTxt, fullTxt, wellTxt, profTxt] = await Promise.all([
         fetch(
           `${INTERVALS_API_BASE}/athlete/0/activities?oldest=${lightOldest}&newest=${lightNewest}` +
-            `&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin`,
+            `&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin,HRTLNDLT1`,
           { headers: buildAuthHeaders() }
         ).then((r) => r.text()),
 
@@ -901,7 +901,7 @@ export default {
       const [lightTxt, fullTxt, wellTxt, profTxt] = await Promise.all([
         fetch(
           `${INTERVALS_API_BASE}/athlete/0/activities?oldest=${lightOldest}&newest=${lightNewest}` +
-            `&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin`,
+            `&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,IF,average_heartrate,VO2MaxGarmin,HRTLNDLT1`,
           { headers: buildAuthHeaders() }
         ).then((r) => r.text()),
 
