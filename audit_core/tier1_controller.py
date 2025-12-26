@@ -232,6 +232,29 @@ def collect_zone_distributions(df_master, athlete_profile, context):
     context["zone_dist_hr"]    = compute(hr_cols, "hr")
     context["zone_dist_pace"]  = compute(pace_cols, "pace")
 
+    # --- 🩵 HR Zone Fallback from average_heartrate ---
+    if (not context.get("zone_dist_hr")) and "average_heartrate" in df_master.columns:
+        hr_zones = context.get("icu_hr_zones") or context.get("athlete_hr_zones") or []
+        if hr_zones:
+            try:
+                import pandas as pd
+                df_hr = df_master.copy()
+                df_hr["average_heartrate"] = pd.to_numeric(df_hr["average_heartrate"], errors="coerce")
+                df_hr = df_hr.dropna(subset=["average_heartrate"])
+                if not df_hr.empty:
+                    bins = [0] + hr_zones + [float("inf")]
+                    labels = [f"hr_z{i+1}" for i in range(len(bins)-1)]
+                    dist = (
+                        pd.cut(df_hr["average_heartrate"], bins=bins, labels=labels)
+                        .value_counts(normalize=True)
+                        .mul(100)
+                        .round(1)
+                        .to_dict()
+                    )
+                    context["zone_dist_hr"] = dist
+                    debug(context, f"[ZONES-FALLBACK] Built HR zone distribution from average_heartrate → {dist}")
+            except Exception as e:
+                debug(context, f"[ZONES-FALLBACK] ⚠ Failed HR zone fallback: {e}")
 
     # --- Fallback to athlete profile if truly no zone data ---
     has_zone_cols = any([power_cols, hr_cols, pace_cols])
