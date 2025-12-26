@@ -14,7 +14,6 @@ from coaching_profile import COACH_PROFILE
 from coaching_heuristics import HEURISTICS
 from coaching_cheat_sheet import CHEAT_SHEET
 
-
 def normalise_hrv(df_well, context=None):
     """
     Tier-2 HRV Normalisation — vendor-agnostic harmonisation across Garmin, Whoop, Oura, etc.
@@ -23,7 +22,6 @@ def normalise_hrv(df_well, context=None):
         return None
 
     import pandas as pd, numpy as np
-    debug = context.get("debug", lambda *a, **kw: None)
 
     # --- Find plausible HRV columns ---
     hrv_candidates = [
@@ -106,7 +104,6 @@ def compute_zone_intensity(df, context=None):
     Correctly scaled to 0–100% (not ×100 again) and includes detailed debug logging.
     """
     import pandas as pd, numpy as np
-    debug = context.get("debug", lambda *a, **kw: None) if isinstance(context, dict) else (lambda *a, **kw: None)
 
     if not isinstance(df, pd.DataFrame) or df.empty:
         debug(context, "[ZQI] ❌ Aborted — empty or invalid dataframe.")
@@ -246,7 +243,6 @@ def compute_polarisation_index(context):
 
 def classify_marker(value, marker, context=None):
     """Universal classifier: supports range syntax, inequalities, and aliases."""
-    debug = context.get("debug", lambda *a, **kw: None) if isinstance(context, dict) else (lambda *a, **kw: None)
 
     # --- Guard rails ---
     if value is None or (isinstance(value, float) and np.isnan(value)):
@@ -349,9 +345,8 @@ def compute_derived_metrics(df_events, context):
     import numpy as np
     import pandas as pd
 
-    debug = context.get("debug", lambda *args, **kwargs: None)
-
     debug(context, f"[T2-VERIFY-IN] df_events type={type(df_events)} len={(len(df_events) if hasattr(df_events, '__len__') else 'n/a')}")
+
     if hasattr(df_events, "columns"):
         debug(context, f"[T2-VERIFY-IN] df_events cols={list(df_events.columns)[:10]}")
 
@@ -381,6 +376,8 @@ def compute_derived_metrics(df_events, context):
     df_events["start_date_local"] = pd.to_datetime(
         df_events["start_date_local"], unit="ms", origin="unix", errors="coerce"
     )
+    debug(context, f"[T2-CONVERT] start_date_local sample={df_events['start_date_local'].head(5).tolist()}")
+
     df_daily = (
         df_events.groupby(df_events["start_date_local"].dt.date)["icu_training_load"]
         .sum(min_count=1)
