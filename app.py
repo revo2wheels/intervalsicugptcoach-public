@@ -3,82 +3,13 @@
 # Base URL: https://intervalsicugptcoach-public-production.up.railway.app
 # ─────────────────────────────────────────────
 
-# ─────────────────────────────────────────────
-# 📡 Railway Deployment API Endpoints
-# Base URL: https://intervalsicugptcoach-public-production.up.railway.app
-# ─────────────────────────────────────────────
-
-# ROOT
-# https://intervalsicugptcoach-public-production.up.railway.app/
-
-# ENV DEBUG
-# https://intervalsicugptcoach-public-production.up.railway.app/debug_env
-
-# MAIN RUN ENDPOINTS (markdown, json, semantic)
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=weekly&format=markdown
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=weekly&format=semantic
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=weekly&format=json
-
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=season&format=markdown
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=season&format=semantic
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=season&format=json
-
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=wellness&format=markdown
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=wellness&format=semantic
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=wellness&format=json
-
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=summary&format=markdown
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=summary&format=semantic
-# https://intervalsicugptcoach-public-production.up.railway.app/run?range=summary&format=json
-
-# DEBUG ENDPOINT (logs + markdown OR semantic)
-# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=weekly&format=markdown
-# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=weekly&format=semantic
-
-# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=season&format=markdown
-# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=season&format=semantic
-
-# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=wellness&format=markdown
-# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=wellness&format=semantic
-
-# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=summary&format=markdown
-# https://intervalsicugptcoach-public-production.up.railway.app/debug?range=summary&format=semantic
-
-# SEMANTIC REPORT (semantic JSON)
-# https://intervalsicugptcoach-public-production.up.railway.app/semantic?range=weekly
-# https://intervalsicugptcoach-public-production.up.railway.app/semantic?range=season
-# https://intervalsicugptcoach-public-production.up.railway.app/semantic?range=wellness
-# https://intervalsicugptcoach-public-production.up.railway.app/semantic?range=summary
-
-# METRICS ONLY
-# https://intervalsicugptcoach-public-production.up.railway.app/metrics?range=weekly
-# https://intervalsicugptcoach-public-production.up.railway.app/metrics?range=season
-# https://intervalsicugptcoach-public-production.up.railway.app/metrics?range=wellness
-# https://intervalsicugptcoach-public-production.up.railway.app/metrics?range=summary
-
-# PHASES (Periodisation)
-# https://intervalsicugptcoach-public-production.up.railway.app/phases?range=weekly
-# https://intervalsicugptcoach-public-production.up.railway.app/phases?range=season
-# https://intervalsicugptcoach-public-production.up.railway.app/phases?range=wellness
-# https://intervalsicugptcoach-public-production.up.railway.app/phases?range=summary
-
-# COMPARE (trend/delta metrics)
-# https://intervalsicugptcoach-public-production.up.railway.app/compare?range=weekly
-# https://intervalsicugptcoach-public-production.up.railway.app/compare?range=season
-# https://intervalsicugptcoach-public-production.up.railway.app/compare?range=wellness
-# https://intervalsicugptcoach-public-production.up.railway.app/compare?range=summary
-
-# INSIGHTS (AI-ready coaching flags)
-# https://intervalsicugptcoach-public-production.up.railway.app/insights?range=weekly
-# https://intervalsicugptcoach-public-production.up.railway.app/insights?range=season
-# https://intervalsicugptcoach-public-production.up.railway.app/insights?range=wellness
-# https://intervalsicugptcoach-public-production.up.railway.app/insights?range=summary
-
-
 from fastapi import FastAPI, Query, Request
 from fastapi.responses import JSONResponse
 import io, os, sys, json
 from contextlib import redirect_stdout
+import pandas as pd
+import numpy as np
+from datetime import datetime, date
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "audit_core"))
@@ -98,86 +29,128 @@ if icuoauth:
 else:
     print("[WARN] ICU_OAUTH ENV VAR missing — Intervals.icu calls may fail!")
 
-app = FastAPI(title="IntervalsICU GPTCoach API", version="1.3")
+app = FastAPI(title="IntervalsICU GPTCoach API", version="1.4")
+
+# ─────────────────────────────────────────────
+# PREFETCH NORMALIZATION
+# ─────────────────────────────────────────────
+
+def normalize_prefetched_context(prefetch_context: dict):
+    """Normalize prefetched datasets to match tier0_pre_audit structure."""
+
+    def normalize_dates(df, col_names=("date", "start_date_local", "start_date")):
+        for c in col_names:
+            if c in df.columns:
+                df[c] = pd.to_datetime(df[c], errors="coerce")
+        return df
+
+    def normalize_numeric(df, cols=None):
+        if cols is None:
+            cols = df.columns
+        for c in cols:
+            if c in df.columns:
+                df[c] = pd.to_numeric(df[c], errors="ignore")
+        return df
+
+    # --- Wellness normalization ---
+    if "wellness" in prefetch_context and isinstance(prefetch_context["wellness"], list):
+        df_well = pd.DataFrame(prefetch_context["wellness"])
+        df_well = normalize_dates(df_well)
+        for col in ("ctl", "atl", "tsb"):
+            if col in df_well.columns:
+                df_well[col] = pd.to_numeric(
+                    df_well[col].apply(
+                        lambda v: v.get("value") if isinstance(v, dict) and "value" in v else v
+                    ),
+                    errors="coerce"
+                )
+        prefetch_context["wellness"] = df_well.to_dict(orient="records")
+
+    # --- Activities (light + full) ---
+    def normalize_activities(data):
+        if not isinstance(data, list):
+            return data
+        df = pd.DataFrame(data)
+        df = normalize_dates(df, ["start_date_local", "date", "start_date"])
+        for col in ["tss", "icu_training_load", "distance", "moving_time", "average_heartrate", "IF"]:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+        return df.to_dict(orient="records")
+
+    for key in ("activities_light", "activities_full"):
+        if key in prefetch_context:
+            prefetch_context[key] = normalize_activities(prefetch_context[key])
+
+    # --- Calendar normalization ---
+    if "calendar" in prefetch_context and isinstance(prefetch_context["calendar"], list):
+        df_cal = pd.DataFrame(prefetch_context["calendar"])
+        df_cal = normalize_dates(df_cal, ["date", "start_date_local"])
+        prefetch_context["calendar"] = df_cal.to_dict(orient="records")
+
+    # --- Optional debug: verify shapes after normalization ---
+    try:
+        debug(
+            {"debug_trace": []},
+            "[NORM] ✅ Normalization summary → "
+            f"wellness={len(prefetch_context.get('wellness', []))} rows, "
+            f"activities_light={len(prefetch_context.get('activities_light', []))}, "
+            f"activities_full={len(prefetch_context.get('activities_full', []))}, "
+            f"calendar={len(prefetch_context.get('calendar', []))}"
+        )
+        if "wellness" in prefetch_context:
+            import json
+            sample = json.dumps(prefetch_context["wellness"][:2], indent=2, default=str)
+            debug({"debug_trace": []}, f"[NORM] wellness sample (first 2 rows):\n{sample}")
+    except Exception as e:
+        print(f"[NORM] Debug normalization preview failed: {e}")
+
+    return prefetch_context
 
 
 # ─────────────────────────────────────────────
-#  SANITISER — FINAL VERSION
+# SANITISER
 # ─────────────────────────────────────────────
+
 def sanitize(obj, seen=None):
-    """
-    Safe JSON sanitation:
-    - prevents recursion
-    - handles pandas, numpy, timestamps
-    - normalises NaN/Inf
-    - ONLY marks circular on containers
-    """
+    """Safe JSON sanitation."""
     import math
-    import pandas as pd
-    import numpy as np
-    from datetime import datetime, date
-
-    # ----- PRIMITIVES -----
     if isinstance(obj, (str, int, float, bool)) or obj is None:
         if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
             return None
         return obj
-
-    # ----- DATETIME -----
     if isinstance(obj, (datetime, date, pd.Timestamp)):
-        try:
-            return obj.isoformat()
-        except:
-            return str(obj)
-
-    # ----- NUMPY -----
+        return obj.isoformat()
     if isinstance(obj, (np.integer, np.floating)):
         return float(obj)
-
-    # ----- INIT SEEN -----
     if seen is None:
         seen = set()
-
-    container_types = (dict, list, tuple, pd.DataFrame, pd.Series)
-
-    if isinstance(obj, container_types):
+    if isinstance(obj, (dict, list, tuple, pd.DataFrame, pd.Series)):
         oid = id(obj)
         if oid in seen:
             return "<circular>"
         seen.add(oid)
-
-    # ----- PANDAS -----
     if isinstance(obj, pd.DataFrame):
         return sanitize(obj.to_dict(orient="records"), seen)
-
     if isinstance(obj, pd.Series):
         return sanitize(obj.to_dict(), seen)
-
-    # ----- DICT -----
     if isinstance(obj, dict):
-        out = {}
-        for k, v in obj.items():
-            out[sanitize(k, seen)] = sanitize(v, seen)
-        return out
-
-    # ----- LIST / TUPLE -----
+        return {sanitize(k, seen): sanitize(v, seen) for k, v in obj.items()}
     if isinstance(obj, (list, tuple)):
         return [sanitize(i, seen) for i in obj]
-
-    # ----- FALLBACK -----
     return str(obj)
 
 
 # ─────────────────────────────────────────────
-#  RUN FULL AUDIT — CLEAN VERSION
+# RUN FULL AUDIT
 # ─────────────────────────────────────────────
-def _run_full_audit(range: str, output_format="markdown", prefetch_context=None):
 
+def _run_full_audit(range: str, output_format="markdown", prefetch_context=None):
     os.environ["REPORT_TYPE"] = range.lower()
     buffer = io.StringIO()
 
     with redirect_stdout(buffer):
         if prefetch_context:
+            prefetch_context = normalize_prefetched_context(prefetch_context)
             report, compliance = run_report(
                 reportType=range,
                 output_format=output_format,
@@ -193,28 +166,17 @@ def _run_full_audit(range: str, output_format="markdown", prefetch_context=None)
 
     logs = buffer.getvalue()
 
-    if isinstance(report, dict):
-        context = report.get("context", {}) or {}
-        markdown = report.get("markdown", "")
-    else:
-        context = {}
-        markdown = str(report)
+    context = report.get("context", {}) if isinstance(report, dict) else {}
+    markdown = report.get("markdown", "") if isinstance(report, dict) else str(report)
 
-    # -----------------------------------------------------------------
-    # 🔧 Force semantic builder options (verbose event listing, etc.)
-    # -----------------------------------------------------------------
     context["render_options"] = {
         "verbose_events": True,
         "include_all_events": True,
-        "return_format": "markdown",  # or "semantic"
+        "return_format": "markdown",
     }
 
-    # Build semantic graph (after options injected)
     semantic_graph = build_semantic_json(context)
-
-
     return report, compliance, logs, context, semantic_graph, markdown
-
 
 
 # ─────────────────────────────────────────────
@@ -226,113 +188,58 @@ def root():
     return {"message": "IntervalsICU GPTCoach API running 🚴"}
 
 
-# -----------------------------
-# GET /run (markdown / semantic) / CURL / DIRECT
-# -----------------------------
 @app.get("/run")
 def run_audit(
     range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"]),
     format: str = Query("markdown", enum=["markdown", "json", "semantic"]),
 ):
     try:
-        report, compliance, logs, context, sg, markdown = _run_full_audit(
-            range=range,
-            output_format=format.lower()
-        )
-
+        report, compliance, logs, context, sg, markdown = _run_full_audit(range, format)
         if format.lower() in ("json", "semantic"):
-            return JSONResponse(content={
+            return JSONResponse({
                 "status": "ok",
                 "report_type": range,
                 "output_format": "semantic_json",
                 "semantic_graph": sanitize(sg),
                 "compliance": compliance,
-                "logs": logs[:20000]
+                "logs": logs[-20000:]
             })
-
-        return JSONResponse(content={
+        return JSONResponse({
             "status": "ok",
             "report_type": range,
             "output_format": "markdown",
             "markdown": markdown,
             "compliance": compliance,
-            "logs": logs[:20000]
+            "logs": logs[-20000:]
         })
-
     except Exception as e:
         return error_response(e)
 
-# --- HELPER FOR LIST ----
-def require_list(name, value):
-    if value is None:
-        return None
-    if isinstance(value, list):
-        return value
-    raise ValueError(f"{name} must be a list, got {type(value).__name__}")
 
-
-# -----------------------------
-# POST /run (Worker / ChatGPT mode)
-# -----------------------------
 @app.post("/run")
 async def run_audit_with_data(request: Request):
     buffer = io.StringIO()
-
     try:
         raw = await request.body()
         if not raw:
             raise ValueError("Empty request body received")
-
-        try:
-            data = json.loads(raw)
-        except Exception as e:
-            raise ValueError(f"JSON parse failed: {e}, raw={raw[:200]}")
+        data = json.loads(raw)
 
         report_range = data.get("range", "weekly")
         fmt = data.get("format", "markdown").lower()
 
-        # -----------------------------
-        # Canonical prefetch builder
-        # -----------------------------
-        prefetch_context = {}
+        prefetch_context = {
+            k: v for k, v in {
+                "activities_light": data.get("activities_light"),
+                "activities_full": data.get("activities_full"),
+                "wellness": data.get("wellness"),
+                "calendar": data.get("calendar"),
+                "athlete": data.get("athlete"),
+            }.items() if v is not None
+        }
 
-        def require_list(name, value):
-            if value is None:
-                return None
-            if isinstance(value, list):
-                return value
-            raise ValueError(f"{name} must be a list, got {type(value).__name__}")
-
-        # Activities
-        activities_light = require_list("activities_light", data.get("activities_light"))
-        activities_full  = require_list("activities_full",  data.get("activities_full"))
-        wellness          = require_list("wellness",          data.get("wellness"))
-        calendar          = require_list("calendar",          data.get("calendar"))
-
-        if activities_light:
-            prefetch_context["activities_light"] = activities_light
-        if activities_full:
-            prefetch_context["activities_full"] = activities_full
-        if wellness:
-            prefetch_context["wellness"] = wellness
-        if calendar:
-            prefetch_context["calendar"] = calendar
-
-        # Athlete (FLAT ONLY)
-        raw_athlete = data.get("athlete")
-
-        # Accept both nested and flat forms
-        if isinstance(raw_athlete, dict):
-            # Only unwrap if actually nested
-            if "sportSettings" not in raw_athlete and "athlete" in raw_athlete:
-                raw_athlete = raw_athlete["athlete"]
-
-            prefetch_context["athlete"] = raw_athlete
-
-        # 🔒 CRITICAL RULE:
-        # Empty dict means NO prefetch — force canonical fetch path
-        if not prefetch_context:
-            prefetch_context = None
+        if prefetch_context:
+            prefetch_context = normalize_prefetched_context(prefetch_context)
 
         with redirect_stdout(buffer):
             report, compliance = run_report(
@@ -343,20 +250,17 @@ async def run_audit_with_data(request: Request):
             )
 
         logs = buffer.getvalue()
+        context = report.get("context", {}) if isinstance(report, dict) else {}
 
         if fmt in ("json", "semantic"):
-            context = report.get("context", {}) if isinstance(report, dict) else {}
             return JSONResponse({
                 "status": "ok",
                 "report_type": report_range,
                 "output_format": "semantic_json",
-                # ✅ Use the context returned from _run_full_audit()
                 "semantic_graph": sanitize(build_semantic_json(context)),
                 "compliance": compliance,
                 "logs": logs[-20000:],
             })
-
-
         return JSONResponse({
             "status": "ok",
             "report_type": report_range,
@@ -365,16 +269,12 @@ async def run_audit_with_data(request: Request):
             "compliance": compliance,
             "logs": logs[-20000:],
         })
-
     except Exception as e:
         return error_response(e, buffer)
 
-# -----------------------------
-# /ERROR HANDLING
-# -----------------------------
+
 def error_response(e: Exception, buffer=None, status_code: int = 500):
     import traceback
-
     return JSONResponse(
         status_code=status_code,
         content={
@@ -382,95 +282,6 @@ def error_response(e: Exception, buffer=None, status_code: int = 500):
             "message": str(e),
             "exception_type": type(e).__name__,
             "trace": traceback.format_exc(),
-            "logs": (
-                buffer.getvalue()[-20000:]
-                if buffer is not None
-                else None
-            ),
+            "logs": buffer.getvalue()[-20000:] if buffer else None,
         },
     )
-
-
-# -----------------------------
-# /semantic — full semantic JSON
-# -----------------------------
-@app.get("/semantic")
-def get_semantic(range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"])):
-    _, compliance, logs, _, sg, _ = _run_full_audit(range=range)
-    return JSONResponse(content={
-        "status": "ok",
-        "report_type": range,
-        "output_format": "semantic_json",
-        "semantic_graph": sanitize(sg),
-        "compliance": compliance,
-        "logs": logs[:20000]
-    })
-
-
-# -----------------------------
-# /metrics — sanitized subgraph
-# -----------------------------
-@app.get("/metrics")
-def get_metrics(range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"])):
-    _, compliance, logs, _, sg, _ = _run_full_audit(range=range)
-    return JSONResponse(content={
-        "status": "ok",
-        "report_type": range,
-        "metrics": sanitize(sg.get("metrics", {})),
-        "extended_metrics": sanitize(sg.get("extended_metrics", {})),
-        "trend_metrics": sanitize(sg.get("trend_metrics", {})),
-        "adaptation_metrics": sanitize(sg.get("adaptation_metrics", {})),
-        "correlation_metrics": sanitize(sg.get("correlation_metrics", {})),
-        "compliance": compliance,
-        "logs": logs[:20000]
-    })
-
-
-# -----------------------------
-# /phases — sanitized
-# -----------------------------
-@app.get("/phases")
-def get_phases(range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"])):
-    _, compliance, logs, _, sg, _ = _run_full_audit(range=range)
-    return JSONResponse(content={
-        "status": "ok",
-        "report_type": range,
-        "phases": sanitize(sg.get("phases", [])),
-        "actions": sanitize(sg.get("actions", [])),
-        "compliance": compliance,
-        "logs": logs[:20000]
-    })
-
-
-# -----------------------------
-# /compare — sanitized
-# -----------------------------
-@app.get("/compare")
-def compare_periods(range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"])):
-    _, compliance, logs, _, sg, _ = _run_full_audit(range=range)
-    return JSONResponse(content={
-        "status": "ok",
-        "report_type": range,
-        "trend_metrics": sanitize(sg.get("trend_metrics", {})),
-        "core_metrics": sanitize(sg.get("metrics", {})),
-        "compliance": compliance,
-        "logs": logs[:20000]
-    })
-
-
-# -----------------------------
-# /insights — sanitized
-# -----------------------------
-@app.get("/insights")
-def get_insights(range: str = Query("weekly", enum=["weekly", "season", "wellness", "summary"])):
-    _, compliance, logs, _, sg, _ = _run_full_audit(range=range)
-
-    return JSONResponse(content={
-        "status": "ok",
-        "report_type": range,
-        "insights": sanitize(sg.get("insight_view", {})),
-        "compliance": compliance,
-        "logs": logs[:20000]
-    })
-
-
