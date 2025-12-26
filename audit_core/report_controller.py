@@ -651,8 +651,6 @@ def run_report(
     context["auditPartial"] = False
     context["fetch_status"] = "complete"
 
-    debug(context, f"[CHECK-T2-PATH] Tier-2 module loaded from: {compute_derived_metrics.__module__}")
-
     # --- Tier-2 core metrics ---
     context = compute_derived_metrics(df_scope, context)
     context = evaluate_actions(context)
@@ -922,18 +920,6 @@ def run_report(
                 context["icu_power_zones"] = primary["power_zones"]
             if "hr_zones" in primary and not context.get("icu_hr_zones"):
                 context["icu_hr_zones"] = primary["hr_zones"]
-
-        debug(context, f"[PRE-SEMANTIC-DUMP] Keys before semantic: {list(context.keys())[:30]}")
-        debug(context, f"[PRE-SEMANTIC-DUMP] daily_load in context: "
-                    f"{'yes' if 'daily_load' in context else 'no'}, "
-                    f"len={len(context.get('daily_load', [])) if isinstance(context.get('daily_load'), list) else 'n/a'}")
-        debug(context, f"[PRE-SEMANTIC-DUMP] df_daily present: "
-                    f"{isinstance(context.get('df_daily'), pd.DataFrame)}")
-        import pandas as pd
-        dfd = context.get("df_daily")
-        debug(context, f"[VERIFY] df_daily type={type(dfd)} "
-                    f"has_iterrows={hasattr(dfd, 'iterrows')} "
-               f"len={(len(dfd) if hasattr(dfd, '__len__') else 'n/a')}")
 
         semantic_output = build_semantic_json(context)  # Ensure semantic_output is generated
 
