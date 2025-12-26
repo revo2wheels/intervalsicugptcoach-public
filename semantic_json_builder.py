@@ -582,11 +582,11 @@ def build_semantic_json(context):
         custom_fields = primary_sport.get("custom_field_values", {}) or {}
 
     vo2max_garmin = custom_fields.get("VO2MaxGarmin")
-    lactate_mmol_l = custom_fields.get("LactateMeasurement")
+    lactate_mmol_l = custom_fields.get("HRTLNDLT1")
 
 
     vo2max_garmin = custom_fields.get("VO2MaxGarmin")
-    lactate_mmol_l = custom_fields.get("LactateMeasurement")
+    lactate_mmol_l = custom_fields.get("HRTLNDLT1")
 
     # -----------------------------------------------------
     # BUILD SEMANTIC BLOCK
