@@ -769,7 +769,7 @@ def build_semantic_json(context):
     # ---------------------------------------------------------
     # 🪜 Weekly Load Aggregation (Season Summary)
     # ---------------------------------------------------------
-    if semantic["meta"]["report_type"] == "season":
+    if semantic["meta"]["report_type"] in ("season", "summary"):
         df_src = None
         for candidate_name in ["df_light_slice", "activities_light", "_df_scope_full"]:
             candidate = context.get(candidate_name)
@@ -784,21 +784,21 @@ def build_semantic_json(context):
             for col in ["icu_training_load", "moving_time", "distance"]:
                 if col in df_src.columns:
                     df_src[col] = pd.to_numeric(df_src[col], errors="coerce").fillna(0)
-
-            df_src["week"] = df_src["start_date_local"].dt.isocalendar().week
-            df_week = (
-                df_src.groupby("week", as_index=False)
+                iso = df_src["start_date_local"].dt.isocalendar()
+                df_src["year_week"] = iso["year"].astype(str) + "-W" + iso["week"].astype(str)
+                df_week = (
+                    df_src.groupby("year_week", as_index=False)
                 .agg({
                     "distance": "sum",
                     "moving_time": "sum",
                     "icu_training_load": "sum"
                 })
-                .sort_values("week")
+                .sort_values("year_week")
             )
 
             semantic["phases_weekly"] = [
                 {
-                    "phase": f"Week {int(r['week'])}",
+                    "phase": f"{r['year_week']}",
                     "distance_km": round(r["distance"] / 1000, 1),
                     "hours": round(r["moving_time"] / 3600, 1),
                     "tss": round(r["icu_training_load"], 0)
