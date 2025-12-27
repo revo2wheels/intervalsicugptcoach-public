@@ -342,7 +342,7 @@ def evaluate_actions(context):
     # 🪜 SEASONAL PHASE ANALYSIS (Aligned with Coaching Cheat Sheet)
     # ===================================================================
     report_type = str(context.get("report_type", "")).lower()
-    if report_type == "season" and "phases" in context:
+    if report_type in ("season", "summary") and "phases" in context:
         actions.append("---")
         actions.append("🪜 **Seasonal Phase Analysis**")
 
