@@ -1223,6 +1223,7 @@ def apply_report_type_contract(semantic: dict) -> dict:
             "wellness": semantic.get("wellness", {}),
         }
         return semantic
+
     # ---------------- SUMMARY ----------------
     if report_type == "summary":
         return {
@@ -1232,8 +1233,10 @@ def apply_report_type_contract(semantic: dict) -> dict:
             "distance_km": semantic.get("distance_km"),
             "wellness": semantic.get("wellness"),
             "insights": semantic.get("insights"),
-            "actions": semantic.get("actions"),
+            "phases": semantic.get("phases", []),
+            "phases_weekly": semantic.get("phases_weekly", []),
         }
+
 
     return semantic
 
