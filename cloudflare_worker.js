@@ -131,7 +131,8 @@ export default {
       LIGHT_DAYS: 90,    // historical light summary range
       FULL_DAYS: 7,      // detailed full activity window
       WELLNESS_DAYS: 42, // wellness tracking window
-      CALENDAR_DAYS: 14  // future planned event lookahead
+      CALENDAR_DAYS: 14,  // future planned event lookahead
+      ANNUAL_DAYS: 365 // for full annual summary
     };
     // ================================================================
     // 📅 FUTURE CALENDAR RANGE HELPER
@@ -936,7 +937,7 @@ export default {
       console.log("[RUN_SUMMARY] Fetching datasets…");
 
       const { oldest: lightOldest, newest: lightNewest } =
-        normaliseDateParams(url.searchParams, DATA_WINDOWS.LIGHT_DAYS);
+        normaliseDateParams(url.searchParams, DATA_WINDOWS.ANNUAL_DAYS);
       const { oldest: fullOldest, newest: fullNewest } =
         normaliseDateParams(url.searchParams, DATA_WINDOWS.FULL_DAYS);
       const { oldest: wellOldest, newest: wellNewest } =

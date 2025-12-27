@@ -202,26 +202,6 @@ def build_semantic_json(context):
         df_full = context.get("df_events", pd.DataFrame())
         debug(context, f"[SEMANTIC-FORCE] Fallback to df_events ({len(df_full)} rows)")
 
-
-    # --- Derive report period if missing ---
-    if "period" not in context or not context["period"]:
-        df_ref = None
-
-        # Prefer authoritative full dataset
-        if isinstance(context.get("activities_full"), list) and len(context["activities_full"]) > 0:
-
-            df_ref = pd.DataFrame(context["activities_full"])
-        elif "_df_scope_full" in context and isinstance(context["_df_scope_full"], pd.DataFrame):
-            df_ref = context["_df_scope_full"]
-
-        if df_ref is not None and not df_ref.empty and "start_date_local" in df_ref.columns:
-            start_date = pd.to_datetime(df_ref["start_date_local"]).min().strftime("%Y-%m-%d")
-            end_date = pd.to_datetime(df_ref["start_date_local"]).max().strftime("%Y-%m-%d")
-            context["period"] = {"start": start_date, "end": end_date}
-            debug(context, f"[SEMANTIC-FIX] Derived period from full dataset → {start_date} → {end_date}")
-        else:
-            debug(context, "[SEMANTIC-FIX] Could not derive period — no valid dataset found")
-
     # ------------------------------------------------------------------
     # 🧬 Lactate, HRV and Threshold Integration (Cheat-Sheet aligned)
     # ------------------------------------------------------------------
@@ -387,7 +367,76 @@ def build_semantic_json(context):
         "phases": context.get("phases", []),
     }
 
+    # --- Derive report period and meta window ---
+    report_type = context.get("report_type", "weekly").lower()
+    df_ref = None
 
+    # --- Select dataset based on report type ---
+    if report_type in ("season", "summary"):
+        df_light = context.get("df_light")
+        if isinstance(df_light, pd.DataFrame) and not df_light.empty:
+            df_ref = df_light
+        else:
+            acts_light = context.get("activities_light")
+            if isinstance(acts_light, list) and len(acts_light) > 0:
+                df_ref = pd.DataFrame(acts_light)
+
+    elif report_type == "wellness":
+        df_well = context.get("df_wellness")
+        if isinstance(df_well, pd.DataFrame) and not df_well.empty:
+            df_ref = df_well
+        else:
+            acts_well = context.get("wellness")
+            if isinstance(acts_well, list) and len(acts_well) > 0:
+                df_ref = pd.DataFrame(acts_well)
+
+    else:
+        df_master = context.get("df_master")
+        if isinstance(df_master, pd.DataFrame) and not df_master.empty:
+            df_ref = df_master
+        else:
+            acts_full = context.get("activities_full")
+            if isinstance(acts_full, list) and len(acts_full) > 0:
+                df_ref = pd.DataFrame(acts_full)
+
+    # --- Fallback: preserved df_scope_full (Railway safe)
+    if df_ref is None and "_df_scope_full" in context and isinstance(context["_df_scope_full"], pd.DataFrame):
+        df_ref = context["_df_scope_full"]
+
+    # --- Compute report period from reference dataset ---
+    if isinstance(df_ref, pd.DataFrame) and not df_ref.empty:
+        date_col = "date" if "date" in df_ref.columns else "start_date_local" if "start_date_local" in df_ref.columns else df_ref.columns[0]
+        start_date = pd.to_datetime(df_ref[date_col], errors="coerce").min().strftime("%Y-%m-%d")
+        end_date = pd.to_datetime(df_ref[date_col], errors="coerce").max().strftime("%Y-%m-%d")
+        context["period"] = {"start": start_date, "end": end_date}
+        debug(context, f"[SEMANTIC-FIX] Derived period from {report_type} dataset → {start_date} → {end_date}")
+    else:
+        start_date = datetime.now() - timedelta(days=7)
+        end_date = datetime.now()
+        context["period"] = {"start": start_date.strftime("%Y-%m-%d"), "end": end_date.strftime("%Y-%m-%d")}
+        debug(context, "[SEMANTIC-FIX] Could not derive period — defaulted to last 7 days")
+
+    # --- Enrich meta block with descriptive scope ---
+    semantic.setdefault("meta", {})
+    window_days = (pd.to_datetime(context["period"]["end"]) - pd.to_datetime(context["period"]["start"])).days
+
+    scope_map = {
+        "weekly": "Short-term microcycle — acute load and fatigue balance",
+        "season": "Medium-term fitness, fatigue and progression trends",
+        "summary": "Annual review of training load, adaptation and performance",
+        "wellness": "6-week rolling recovery and readiness snapshot",
+    }
+
+    semantic["meta"]["report_type"] = report_type
+    semantic["meta"]["window_days"] = window_days
+    semantic["meta"]["period"] = f"{context['period']['start']} → {context['period']['end']}"
+    semantic["meta"]["scope"] = scope_map.get(report_type, "Custom analysis window")
+    semantic["meta"]["data_sources"] = (
+        f"{window_days}-day light activities, "
+        f"{'42-day wellness' if report_type != 'wellness' else 'wellness only'}"
+    )
+
+    
     # ---------------------------------------------------------
     # WELLNESS BLOCK
     # ---------------------------------------------------------
