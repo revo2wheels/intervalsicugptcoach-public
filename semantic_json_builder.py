@@ -1125,6 +1125,16 @@ def build_semantic_json(context):
     if "render_options" in context:
         semantic["options"] = context["render_options"]
 
+    # --- Generate annual summary image for summary reports ---
+    if semantic.get("meta", {}).get("report_type") == "summary":
+        debug(context, "[SEMANTIC] Generating annual summary image card ...")
+        try:
+            prompt_used = generate_summary_image(semantic)
+            debug(context, f"[SEMANTIC] ✅ Summary image generation triggered with prompt: {prompt_used[:120]}...")
+        except Exception as e:
+            debug(context, f"[SEMANTIC] ⚠️ Failed to generate summary image: {e}")
+
+
     return apply_report_type_contract(semantic)
 
 
@@ -1227,3 +1237,51 @@ def apply_report_type_contract(semantic: dict) -> dict:
 
     return semantic
 
+# ==========================================================
+# 🎨 ANNUAL SUMMARY IMAGE GENERATOR
+# ==========================================================
+def generate_summary_image(semantic):
+    """
+    Generates an annual summary card image from semantic data.
+    Uses ChatGPT image generator (image_gen.text2im) to create a
+    minimalist 1024x512 visual summary card.
+    """
+
+    from image_gen import text2im
+
+    meta = semantic.get("meta", {})
+    wellness = semantic.get("wellness", {})
+    metrics = semantic.get("metrics", {})
+    insights = semantic.get("insight_view", {}).get("summary", {})
+
+    # --- Basic fields
+    period = meta.get("period", "Unknown period")
+    ctl = wellness.get("CTL")
+    atl = wellness.get("ATL")
+    tsb = wellness.get("TSB")
+    acwr = metrics.get("ACWR", {}).get("value")
+    pol = metrics.get("Polarisation", {}).get("value")
+    tss = semantic.get("tss")
+    hours = semantic.get("hours")
+    distance = semantic.get("distance_km")
+
+    # --- Insights (optional)
+    fatigue = insights.get("fatigue_trend", {}).get("classification", "—")
+    foxi = insights.get("metabolic_drift", {}).get("classification", "—")
+    fitness = insights.get("fitness_phase", {}).get("classification", "—")
+
+    prompt = (
+        f"Design a clean, minimalist summary card showing annual cycling training stats for {period}. "
+        f"Display total {hours} hours, {distance} km, {tss} TSS. "
+        f"Show CTL {ctl}, ATL {atl}, TSB {tsb}, ACWR {acwr}, Polarisation {pol}. "
+        f"Include key insight icons: Fatigue {fatigue}, FOxI {foxi}, Fitness {fitness}. "
+        f"Typography modern and clear, light theme, soft gradients, similar to Strava annual review. "
+        f"Include small cycling iconography and label 'Annual Training Summary'."
+    )
+
+    text2im({
+        "prompt": prompt,
+        "size": "1024x512"
+    })
+
+    return prompt  # return for debug/logging

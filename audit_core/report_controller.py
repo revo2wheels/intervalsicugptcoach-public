@@ -81,12 +81,14 @@ def orchestrate_fetch_context(report_type: str = "weekly", today: date | None = 
     ctx["profile"] = getAthleteProfile()
 
     # --- Date range config ---
-    if rtype in ("weekly", "summary"):
+    if rtype in ("weekly"):
         light_days, full_days, wellness_days = 90, 7, 42
     elif rtype in ("season", "season_phases", "season_summary"):
         light_days, full_days, wellness_days = 90, 7, 42
     elif rtype == "wellness":
         light_days, full_days, wellness_days = 90, 7, 42
+    elif rtype == "summary":
+        light_days, full_days, wellness_days = 365, 7, 42
     else:
         raise ValueError(f"Unknown report type '{report_type}'")
 
