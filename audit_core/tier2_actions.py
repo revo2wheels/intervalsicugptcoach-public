@@ -4,11 +4,11 @@ Infers phase segments from validated event-level load data.
 Derived directly from legacy v15.4 inline logic.
 """
 import numpy as np
+import pandas as pd
 from audit_core.utils import debug
 from datetime import datetime, timedelta
 from coaching_cheat_sheet import CHEAT_SHEET
 METRIC_ACTION_MAP = CHEAT_SHEET.get("coaching_links", {})
-
 
 def metric_value(context, key, default=0.0):
     """Return numeric metric value, handling None, NaN, and dict forms safely."""
@@ -23,83 +23,151 @@ def metric_value(context, key, default=0.0):
         return default
 
 
-
 def detect_phases(context, events):
     """
-    Tier-2 Phase Detection (URF v5.3)
+    Tier-2 Phase Detection (URF v5.4)
     Derives macrocycle phases: Base, Build, Peak, Taper, Recovery
-    using 7-day rolling TSS averages and ACWR thresholds.
+    using *weekly-aggregated* TSS trends across the entire dataset
+    (90-day or 365-day "light" activity feed).
+
+    Rationale:
+    ----------
+    - Aggregates activity TSS (icu_training_load) by ISO week
+    - Detects major week-to-week deltas (growth/decline patterns)
+    - Modulates classification using ACWR and RecoveryIndex if present
+    - Works for variable durations (season or annual)
+    - Never outputs "No Data" unless dataset truly empty
     """
 
-    loads = [(e["start_date"], e.get("icu_training_load", 0)) for e in events if "icu_training_load" in e]
-    loads.sort(key=lambda x: x[0])
-    if not loads:
+    debug(context, "[PHASES] ---- Phase detection start ----")
+
+    # --- Validate input
+    if not events or not isinstance(events, (list, tuple)):
+        debug(context, "[PHASES] No event list provided")
         context["phases"] = [{"phase": "No Data", "start": None, "end": None, "delta": 0.0}]
         return context
 
-    # --- Compute rolling 7-day mean TSS ---
-    avg7 = []
-    for i in range(len(loads)):
-        current_date = datetime.fromisoformat(loads[i][0].replace("Z", "+00:00"))
-        window = [
-            v for d, v in loads
-            if 0 <= (current_date - datetime.fromisoformat(d.replace("Z", "+00:00"))).days <= 7
-        ]
-        avg7.append(sum(window) / max(len(window), 1))
+    # --- Extract load + timestamp
+    df = pd.DataFrame(events)
+    if df.empty or "icu_training_load" not in df.columns:
+        debug(context, "[PHASES] Empty DataFrame or no icu_training_load field")
+        context["phases"] = [{"phase": "No Data", "start": None, "end": None, "delta": 0.0}]
+        return context
 
-    # --- Detect transitions using load delta + ACWR heuristics ---
-    phases = []
-    start_idx = 0
+    # --- Normalize timestamps
+    date_col = "start_date_local" if "start_date_local" in df.columns else "start_date"
+    df["date"] = pd.to_datetime(df[date_col], errors="coerce")
+    df = df.dropna(subset=["date"])
+    df = df.sort_values("date")
+
+    # --- Aggregate by ISO week
+    df["week_start"] = df["date"].dt.to_period("W").apply(lambda r: r.start_time)
+    df_week = (
+        df.groupby("week_start")
+          .agg({"icu_training_load": "sum"})
+          .reset_index()
+          .rename(columns={"icu_training_load": "tss"})
+    )
+    debug(context, f"[PHASES] Aggregated {len(df_week)} weekly points from {len(df)} activities")
+
+    if df_week.empty:
+        context["phases"] = [{"phase": "No Data", "start": None, "end": None, "delta": 0.0}]
+        return context
+
+    # --- Compute week-to-week deltas
+    df_week["delta"] = df_week["tss"].pct_change().fillna(0)
+    df_week["delta"] = df_week["delta"].clip(-1, 2)  # prevent crazy spikes
+
+    # --- Contextual modifiers
     acwr = context.get("ACWR", 1.0)
     ri = context.get("RecoveryIndex", 0.8)
 
-    for i in range(1, len(avg7)):
-        prev = avg7[i - 1]
-        delta = (avg7[i] - prev) / max(prev, 1)
+    # --- Dynamic threshold scaling (auto-adjust for dataset variance)
+    var_tss = df_week["tss"].std() / max(df_week["tss"].mean(), 1)
+    scale = 0.20 if var_tss > 0.3 else 0.15 if var_tss > 0.15 else 0.10
 
-        if delta > 0.20 and acwr <= 1.3:
+    debug(context, f"[PHASES] Variability={round(var_tss,3)} → Δ threshold scale={scale}")
+
+    # --- Classify each transition
+    phases = []
+    start_idx = 0
+
+    for i in range(1, len(df_week)):
+        delta = df_week.iloc[i]["delta"]
+        label = None
+
+        if delta > scale and acwr <= 1.3:
             label = "Build"
-        elif delta > 0.20 and acwr > 1.3:
+        elif delta > scale and acwr > 1.3:
             label = "Overreach"
-        elif delta < -0.20 and ri >= 0.8:
+        elif delta < -scale and ri >= 0.8:
             label = "Recovery"
-        elif delta < -0.20 and ri < 0.6:
+        elif delta < -scale and ri < 0.6:
             label = "Taper"
-        elif 0.05 < delta <= 0.20:
+        elif abs(delta) <= scale / 2:
             label = "Base"
-        else:
-            label = None
 
         if label:
+            start = df_week.iloc[start_idx]["week_start"]
+            end = df_week.iloc[i]["week_start"]
             phases.append({
                 "phase": label,
-                "start": loads[start_idx][0],
-                "end": loads[i][0],
-                "delta": round(delta, 2)
+                "start": start.strftime("%Y-%m-%d"),
+                "end": end.strftime("%Y-%m-%d"),
+                "delta": round(float(delta), 3)
             })
+            debug(context, f"[PHASES] Δ{round(delta,3)} → {label} ({start} → {end})")
             start_idx = i
 
-    # --- Assign Peak if late-season sustained high load ---
-    if phases and phases[-1]["phase"] in ["Build", "Overreach"]:
-        last_delta = phases[-1]["delta"]
-        if abs(last_delta) <= 0.05 and acwr >= 1.0 and ri >= 0.7:
-            phases.append({
-                "phase": "Peak",
-                "start": loads[-7][0] if len(loads) > 7 else loads[-1][0],
-                "end": loads[-1][0],
-                "delta": 0.0
-            })
+    # --- Detect sustained plateau (Peak)
+    if phases:
+        last_phase = phases[-1]["phase"]
+        if last_phase in ["Build", "Overreach"]:
+            mean_recent = df_week["tss"].tail(4).mean()
+            mean_prior = df_week["tss"].head(4).mean()
+            if abs(mean_recent - mean_prior) / max(mean_prior, 1) < 0.05:
+                phases.append({
+                    "phase": "Peak",
+                    "start": df_week["week_start"].iloc[-4].strftime("%Y-%m-%d")
+                            if len(df_week) >= 4 else df_week["week_start"].iloc[-1].strftime("%Y-%m-%d"),
+                    "end": df_week["week_start"].iloc[-1].strftime("%Y-%m-%d"),
+                    "delta": 0.0
+                })
+                debug(context, "[PHASES] Added Peak phase at stable high-load region")
 
-    # --- Fallback continuous load pattern ---
+    # --- Fallback
     if not phases:
+        debug(context, "[PHASES] No distinct transitions — continuous pattern assumed")
         phases.append({
             "phase": "Continuous Load",
-            "start": loads[0][0],
-            "end": loads[-1][0],
+            "start": df_week["week_start"].iloc[0].strftime("%Y-%m-%d"),
+            "end": df_week["week_start"].iloc[-1].strftime("%Y-%m-%d"),
             "delta": 0.0
         })
 
+    # --- Add duration metadata for interpretability ---
+    for p in phases:
+        try:
+            start_dt = pd.to_datetime(p.get("start"))
+            end_dt = pd.to_datetime(p.get("end"))
+            if pd.notna(start_dt) and pd.notna(end_dt):
+                p["duration_days"] = int((end_dt - start_dt).days)
+                p["duration_weeks"] = round(p["duration_days"] / 7, 1)
+            else:
+                p["duration_days"] = None
+                p["duration_weeks"] = None
+        except Exception as e:
+            debug(context, f"[PHASES] Duration calc failed for {p}: {e}")
+            p["duration_days"] = None
+            p["duration_weeks"] = None
+
+    # --- Finalize
     context["phases"] = phases
+    debug(context, f"[PHASES] Completed detection → {len(phases)} phases")
+    for p in phases:
+        debug(context, f"[PHASES] → {p}")
+    debug(context, "[PHASES] ---- Phase detection end ----")
+
     return context
 
 

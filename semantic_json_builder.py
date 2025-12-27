@@ -99,17 +99,20 @@ def build_insights(semantic):
     Build high-level coaching insights using canonical thresholds
     from Coaching Cheat Sheet + Coaching Profile.
     """
-
     insights = {}
     report_type = semantic.get("meta", {}).get("report_type")
     window = "90d" if report_type in ("season", "summary") else "7d"
     polarisation_window = "7d"
 
-    # -------------------------------------------------
-    # 1️⃣ Fatigue Trend (uses semantic block for metric)
-    # -------------------------------------------------
-    atl = semantic.get("extended_metrics", {}).get("ATL", {}).get("value")
-    ctl = semantic.get("extended_metrics", {}).get("CTL", {}).get("value")
+    # --- Fatigue Trend ---
+    atl = (
+        semantic.get("extended_metrics", {}).get("ATL", {}).get("value")
+        or semantic.get("wellness", {}).get("ATL")
+    )
+    ctl = (
+        semantic.get("extended_metrics", {}).get("CTL", {}).get("value")
+        or semantic.get("wellness", {}).get("CTL")
+    )
     ft = None
     if isinstance(atl, (int, float)) and isinstance(ctl, (int, float)) and ctl > 0:
         ft = round(((atl - ctl) / ctl) * 100, 1)
@@ -125,20 +128,15 @@ def build_insights(semantic):
         "coaching_implication": fatigue_block.get("coaching_implication"),
     }
 
-    # -------------------------------------------------
-    # 2️⃣ Load Distribution / Polarisation
-    # -------------------------------------------------
+    # --- Polarisation ---
     zones = semantic.get("zones", {}).get("power", {}) or {}
     dist = zones.get("distribution", zones)
-
     z1 = dist.get("power_z1", 0)
     z2 = dist.get("power_z2", 0)
     z3plus = sum(v for k, v in dist.items()
                  if k not in ("power_z1", "power_z2") and isinstance(v, (int, float)))
-
     pol_val = round((z1 + z2) / (z1 + z2 + z3plus + 1e-6), 3)
     pol_block = semantic_block_for_metric("Polarisation", pol_val, semantic)
-
     insights["load_distribution"] = {
         "zones_pct": {"z1_z2": round(z1 + z2, 1), "z3_plus": round(z3plus, 1)},
         "window": polarisation_window,
@@ -148,14 +146,11 @@ def build_insights(semantic):
         "coaching_implication": pol_block.get("coaching_implication"),
     }
 
-    # -------------------------------------------------
-    # 3️⃣ Metabolic Drift (FOxI proxy → cheat-sheet thresholds)
-    # -------------------------------------------------
+    # --- Metabolic Drift (FOxI proxy) ---
     foxi = semantic.get("metrics", {}).get("FOxI", {}).get("value")
     drift = None
     if isinstance(foxi, (int, float)):
         drift = round((70 - foxi) / 70, 3)
-
     drift_block = semantic_block_for_metric("FOxI", foxi, semantic)
     insights["metabolic_drift"] = {
         "value": drift,
@@ -166,12 +161,9 @@ def build_insights(semantic):
         "coaching_implication": drift_block.get("coaching_implication"),
     }
 
-    # -------------------------------------------------
-    # 4️⃣ Fitness Phase (ACWR classification from profile)
-    # -------------------------------------------------
+    # --- Fitness Phase (ACWR classification) ---
     acwr_val = semantic.get("metrics", {}).get("ACWR", {}).get("value")
     acwr_block = semantic_block_for_metric("ACWR", acwr_val, semantic)
-
     insights["fitness_phase"] = {
         "phase": acwr_block.get("classification"),
         "basis": "ACWR",
@@ -300,6 +292,20 @@ def build_semantic_json(context):
     )
     method = "physiological" if zones_source == "lactate_test" else "ftp_based"
 
+    # ------------------------------------------------------------------
+    # 🧭 Phase Detection (Base → Build → Peak → Taper → Recovery)
+    # ------------------------------------------------------------------
+    try:
+        from audit_core.tier2_actions import detect_phases
+        if not context.get("phases"):
+            events = context.get("activities_full") or context.get("df_events") or []
+            if isinstance(events, pd.DataFrame):
+                events = events.to_dict(orient="records")
+            context = detect_phases(context, events)
+            debug(context, f"[SEMANTIC] Injected detected phases → {len(context.get('phases', []))}")
+    except Exception as e:
+        debug(context, f"[SEMANTIC] ⚠️ Phase detection failed: {e}")
+
     # ---------------------------------------------------------
     # BASE SEMANTIC STRUCTURE
     # ---------------------------------------------------------
@@ -379,7 +385,6 @@ def build_semantic_json(context):
 
         "events": [],
         "phases": context.get("phases", []),
-        "actions": context.get("actions", []),
     }
 
 
@@ -702,6 +707,50 @@ def build_semantic_json(context):
     else:
         debug(context, "[SEMANTIC] EVENTS: no df_events available or empty DataFrame")
 
+    # ---------------------------------------------------------
+    # 🪜 Weekly Load Aggregation (Season Summary)
+    # ---------------------------------------------------------
+    if semantic["meta"]["report_type"] == "season":
+        df_src = None
+        for candidate_name in ["df_light_slice", "activities_light", "_df_scope_full"]:
+            candidate = context.get(candidate_name)
+            if isinstance(candidate, pd.DataFrame) and not candidate.empty:
+                df_src = candidate.copy()
+                break
+
+        if df_src is not None and "start_date_local" in df_src.columns:
+            df_src["start_date_local"] = pd.to_datetime(df_src["start_date_local"], errors="coerce")
+            df_src = df_src.dropna(subset=["start_date_local"])
+
+            for col in ["icu_training_load", "moving_time", "distance"]:
+                if col in df_src.columns:
+                    df_src[col] = pd.to_numeric(df_src[col], errors="coerce").fillna(0)
+
+            df_src["week"] = df_src["start_date_local"].dt.isocalendar().week
+            df_week = (
+                df_src.groupby("week", as_index=False)
+                .agg({
+                    "distance": "sum",
+                    "moving_time": "sum",
+                    "icu_training_load": "sum"
+                })
+                .sort_values("week")
+            )
+
+            semantic["phases_weekly"] = [
+                {
+                    "phase": f"Week {int(r['week'])}",
+                    "distance_km": round(r["distance"] / 1000, 1),
+                    "hours": round(r["moving_time"] / 3600, 1),
+                    "tss": round(r["icu_training_load"], 0)
+                }
+                for _, r in df_week.iterrows()
+            ]
+        else:
+            semantic["phases_weekly"] = [
+                {"phase": "No Data", "start": None, "end": None, "delta": 0.0}
+            ]
+
 
     # ---------------------------------------------------------
     # DERIVED EVENT SUMMARIES — W' Balance & Performance
@@ -745,6 +794,8 @@ def build_semantic_json(context):
 
                 if perf_summary:
                     semantic["performance_summary"] = perf_summary
+
+    
 
     # ---------------------------------------------------------
     # 🗓️ PLANNED EVENTS — Grouped by Date (Calendar Context)
@@ -966,29 +1017,6 @@ def build_semantic_json(context):
             "Polarisation", computed_val, context
         )
 
-
-    # ---------------------------------------------------------
-    # CTL / ATL / TSB RESOLUTION (AUTHORITATIVE + FALLBACK)
-    # ---------------------------------------------------------
-    semantic.setdefault("wellness", {})
-
-    # Prefer already-injected semantic extended metrics (AUTHORITATIVE)
-    ext = semantic.get("extended_metrics", {})
-
-    if isinstance(ext, dict) and all(k in ext for k in ("CTL", "ATL", "TSB")):
-        semantic["wellness"]["CTL"] = ext["CTL"].get("value")
-        semantic["wellness"]["ATL"] = ext["ATL"].get("value")
-        semantic["wellness"]["TSB"] = ext["TSB"].get("value")
-        debug(context, "[SEM] CTL/ATL/TSB sourced from semantic.extended_metrics")
-
-    # Fallback: wellness-derived (Intervals native)
-    else:
-        ws = context.get("wellness_summary", {})
-        semantic["wellness"]["CTL"] = ws.get("ctl")
-        semantic["wellness"]["ATL"] = ws.get("atl")
-        semantic["wellness"]["TSB"] = ws.get("tsb")
-        debug(context, "[SEM] CTL/ATL/TSB sourced from wellness_summary fallback")
-
     # ---------------------------------------------------------
     # SECONDARY METRICS
     # ---------------------------------------------------------
@@ -1003,34 +1031,53 @@ def build_semantic_json(context):
                 k, context.get(k), context
             )
 
+  
     # ---------------------------------------------------------
-    # INSIGHTS
+    # 🧮 CTL / ATL / TSB RESOLUTION (AUTHORITATIVE + FALLBACK)
     # ---------------------------------------------------------
+    semantic.setdefault("wellness", {})
+    ext = semantic.get("extended_metrics", {})
 
-    semantic["insights"] = build_insights(semantic)
-    semantic["insight_view"] = build_insight_view(semantic)
+    if isinstance(ext, dict) and all(k in ext for k in ("CTL", "ATL", "TSB")):
+        semantic["wellness"]["CTL"] = ext["CTL"].get("value")
+        semantic["wellness"]["ATL"] = ext["ATL"].get("value")
+        semantic["wellness"]["TSB"] = ext["TSB"].get("value")
+        debug(context, "[SEM] CTL/ATL/TSB sourced from semantic.extended_metrics")
+    else:
+        ws = context.get("wellness_summary", {})
+        semantic["wellness"]["CTL"] = ws.get("ctl")
+        semantic["wellness"]["ATL"] = ws.get("atl")
+        semantic["wellness"]["TSB"] = ws.get("tsb")
+        debug(context, "[SEM] CTL/ATL/TSB sourced from wellness_summary fallback")
 
     # ---------------------------------------------------------
     # 🔮 FUTURE FORECAST (Tier-3 projections)
     # ---------------------------------------------------------
-    if "future_forecast" in context and isinstance(context["future_forecast"], dict):
-        semantic["future_forecast"] = context["future_forecast"]
-    else:
-        semantic["future_forecast"] = {}
-
+    semantic["future_forecast"] = context.get("future_forecast", {}) or {}
     if "actions_future" in context and isinstance(context["actions_future"], list):
         semantic["actions_future"] = context["actions_future"]
     else:
         semantic["actions_future"] = []
 
+    # ---------------------------------------------------------
+    # 🧭 COACHING ACTIONS (Tier-2 guidance)
+    # ---------------------------------------------------------
+    semantic["actions"] = context.get("actions", [])
 
-    # -----------------------------------------------------------------
-    # 🧩 Echo render options so ChatGPT can see how report was rendered
-    # -----------------------------------------------------------------
+    # ---------------------------------------------------------
+    # 🧠 INSIGHTS (computed once, after all metrics resolved)
+    # ---------------------------------------------------------
+    semantic["insights"] = build_insights(semantic)
+    semantic["insight_view"] = build_insight_view(semantic)
+
+    # ---------------------------------------------------------
+    # 🧩 Echo render options for transparency
+    # ---------------------------------------------------------
     if "render_options" in context:
         semantic["options"] = context["render_options"]
 
     return apply_report_type_contract(semantic)
+
 
 def build_insight_view(semantic):
     """
@@ -1067,19 +1114,15 @@ def build_insight_view(semantic):
         else:
             positive.append(entry)
 
+    # ✅ Cleaned return (no nested copy of insights)
     return {
-        # rich, domain-level insights (your existing output)
-        "summary": semantic.get("insights", {}),
-
-        # UI / API grouped view
         "critical": critical,
         "watch": watch,
         "positive": positive,
-
-        # pass-throughs
         "actions": actions,
         "phases": phases,
     }
+
 
 
 def apply_report_type_contract(semantic: dict) -> dict:
@@ -1095,10 +1138,9 @@ def apply_report_type_contract(semantic: dict) -> dict:
     # promote header for rendering
     semantic["header"] = semantic["meta"]["report_header"]
 
-        # ---------------- WEEKLY ----------------
-    if report_type == "weekly":
-        semantic["phases"] = []
-        return semantic  # full fidelity (minus phases)
+    # ---------------- WEEKLY ----------------
+    if report_type == "weekly" and not semantic.get("phases"):
+        semantic["phases"] = [{"phase": "No Data", "start": None, "end": None, "delta": 0.0}]
 
     # ---------------- SEASON ----------------
     if report_type == "season":
@@ -1121,7 +1163,7 @@ def apply_report_type_contract(semantic: dict) -> dict:
             "meta": semantic["meta"],
             "wellness": semantic.get("wellness", {}),
         }
-
+        return semantic
     # ---------------- SUMMARY ----------------
     if report_type == "summary":
         return {

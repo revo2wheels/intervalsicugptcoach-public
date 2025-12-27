@@ -244,7 +244,6 @@ def compute_polarisation_index(context):
 def classify_marker(value, marker, context=None):
     """Universal classifier: supports range syntax, inequalities, and aliases."""
 
-    # --- Guard rails ---
     if value is None or (isinstance(value, float) and np.isnan(value)):
         debug(context, f"[CLASSIFY] {marker}: no data")
         return "⚪", "undefined"
@@ -255,7 +254,7 @@ def classify_marker(value, marker, context=None):
         debug(context, f"[CLASSIFY] {marker}: non-numeric value={value}")
         return "⚪", "undefined"
 
-    # --- Canonical aliases ---
+    # Canonical aliases
     marker_aliases = {
         "Polarisation": "PolarisationIndex",
         "FatOx": "FatOxEfficiency",
@@ -264,14 +263,13 @@ def classify_marker(value, marker, context=None):
     }
     marker = marker_aliases.get(marker, marker)
 
-    # --- HARD EXCLUSION: multi-dimensional markers ---
+    # Skip multi-dimensional markers
     MULTI_DIMENSIONAL = {"Polarisation", "PolarisationIndex"}
-
     if marker in MULTI_DIMENSIONAL:
         debug(context, f"[CLASSIFY] {marker}: skipped (multi-dimensional metric)")
         return "—", "computed"
 
-    # --- Marker definition ---
+    # Marker definition
     marker_def = COACH_PROFILE.get("markers", {}).get(marker, {})
     criteria = marker_def.get("criteria")
 
@@ -282,41 +280,26 @@ def classify_marker(value, marker, context=None):
     # --- Rule parsing ---
     def parse_rule(rule):
         rule = str(rule).replace(" ", "")
-
         if "–" in rule:
             lo, hi = map(float, rule.split("–"))
             return lambda x: lo <= x <= hi
-
         if "or" in rule:
-            parts = rule.split("or")
-            funcs = [parse_rule(p) for p in parts]
+            funcs = [parse_rule(p) for p in rule.split("or")]
             return lambda x: any(f(x) for f in funcs)
-
         if rule.startswith(">="): return lambda x: x >= float(rule[2:])
         if rule.startswith("<="): return lambda x: x <= float(rule[2:])
         if rule.startswith(">"):  return lambda x: x > float(rule[1:])
         if rule.startswith("<"):  return lambda x: x < float(rule[1:])
-
         return lambda x: False
 
     # --- Icon mapping ---
     icon_map = {
-        "optimal": "🟢",
-        "productive": "🟢",
-        "balanced": "🟢",
-        "polarised": "🟢",
-        "moderate": "🟠",
-        "borderline": "🟠",
-        "mixed": "🟠",
-        "recovering": "🟠",
-        "low": "🔴",
-        "high": "🔴",
-        "overload": "🔴",
-        "accumulating": "🔴",
-        "threshold": "🔴",
+        "optimal": "🟢", "productive": "🟢", "balanced": "🟢", "polarised": "🟢",
+        "moderate": "🟠", "borderline": "🟠", "mixed": "🟠", "recovering": "🟠",
+        "low": "🔴", "high": "🔴", "overload": "🔴", "accumulating": "🔴", "threshold": "🔴"
     }
 
-    # --- Evaluation (ordered) ---
+    # --- Evaluation ---
     for state, rule in criteria.items():
         if parse_rule(rule)(v):
             icon = icon_map.get(state, "⚪")
@@ -325,6 +308,7 @@ def classify_marker(value, marker, context=None):
 
     debug(context, f"[CLASSIFY] {marker}: {v} no rule matched")
     return "⚪", "undefined"
+
 
 
 
