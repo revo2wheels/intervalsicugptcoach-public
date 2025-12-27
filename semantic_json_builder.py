@@ -769,13 +769,21 @@ def build_semantic_json(context):
     # ---------------------------------------------------------
     # 🪜 Weekly Load Aggregation (Season Summary)
     # ---------------------------------------------------------
+
     if semantic["meta"]["report_type"] in ("season", "summary"):
+        # ✅ Reuse df_ref if available
         df_src = None
-        for candidate_name in ["df_light_slice", "activities_light", "_df_scope_full"]:
-            candidate = context.get(candidate_name)
-            if isinstance(candidate, pd.DataFrame) and not candidate.empty:
-                df_src = candidate.copy()
-                break
+        if "df_ref" in locals() and isinstance(df_ref, pd.DataFrame) and not df_ref.empty:
+            df_src = df_ref.copy()
+            debug(context, f"[PHASES_WEEKLY] Using df_ref with {len(df_src)} rows for weekly aggregation")
+        else:
+            for candidate_name in ["df_light", "activities_light", "df_light_slice", "_df_scope_full"]:
+                candidate = context.get(candidate_name)
+                if isinstance(candidate, pd.DataFrame) and not candidate.empty:
+                    df_src = candidate.copy()
+                    debug(context, f"[PHASES_WEEKLY] Using fallback dataset: {candidate_name} ({len(df_src)} rows)")
+                    break
+
 
         if df_src is not None and "start_date_local" in df_src.columns:
             df_src["start_date_local"] = pd.to_datetime(df_src["start_date_local"], errors="coerce")
