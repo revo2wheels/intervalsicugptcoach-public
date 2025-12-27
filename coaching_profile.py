@@ -343,7 +343,52 @@ COACH_PROFILE = {
             "framework": "Friel Aging Adaptation",
             "formula": "ATL_adj = ATL × (1 - 0.005 × (Age - 40))",
         },
-
+        # --- Supplemental markers synced from CHEAT_SHEET thresholds ---
+        "Durability": {
+            "framework": "Sandbakk Durability",
+            "formula": "Power_stability under fatigue",
+            "criteria": {
+                "optimal": ">=0.90",
+                "moderate": "0.70–0.89",
+                "low": "<0.70"
+            }
+        },
+        "LIR": {
+            "framework": "Load Intensity Ratio",
+            "formula": "Intensity / Duration",
+            "criteria": {
+                "balanced": "0.8–1.2",
+                "high": ">1.2",
+                "low": "<0.8"
+            }
+        },
+        "EnduranceReserve": {
+            "framework": "Durability Reserve Index",
+            "formula": "AerobicDurability / FatigueIndex",
+            "criteria": {
+                "strong": ">=1.2",
+                "moderate": "0.8–1.19",
+                "depleted": "<0.8"
+            }
+        },
+        "IFDrift": {
+            "framework": "Efficiency Drift",
+            "formula": "ΔIF over time",
+            "criteria": {
+                "stable": "0.0–0.05",
+                "moderate": "0.05–0.10",
+                "high": ">0.10"
+            }
+        },
+        "Lactate": {
+            "framework": "Mader-Heck 1986",
+            "formula": "LT1/LT2 correlation threshold",
+            "criteria": {
+                "low": "<2.0",
+                "moderate": "2.0–4.0",
+                "high": ">4.0"
+            }
+        },
     },
 
     "metadata": {

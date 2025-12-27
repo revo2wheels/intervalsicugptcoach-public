@@ -34,6 +34,7 @@ from audit_core.tier2_render_validator import finalize_and_validate_render
 from audit_core.tier2_extended_metrics import compute_extended_metrics
 from semantic_json_builder import build_semantic_json
 from athlete_profile import map_icu_athlete_to_profile
+from audit_core.tier2_actions import detect_phases
 
 # --- optional compatibility alias ---
 from intervals_icu__jit_plugin import (
@@ -920,6 +921,28 @@ def run_report(
                 context["icu_power_zones"] = primary["power_zones"]
             if "hr_zones" in primary and not context.get("icu_hr_zones"):
                 context["icu_hr_zones"] = primary["hr_zones"]
+
+        # --- Safe event source selection
+        events = []
+
+        if isinstance(context.get("activities_light"), pd.DataFrame):
+            df = context["activities_light"]
+            if not df.empty:
+                events = df.to_dict(orient="records")
+
+        elif isinstance(context.get("activities_full"), pd.DataFrame):
+            df = context["activities_full"]
+            if not df.empty:
+                events = df.to_dict(orient="records")
+
+        elif isinstance(context.get("activities_light"), list):
+            events = context["activities_light"]
+
+        elif isinstance(context.get("activities_full"), list):
+            events = context["activities_full"]
+
+        # --- Now safely detect phases
+        context = detect_phases(context, events)
 
         semantic_output = build_semantic_json(context)  # Ensure semantic_output is generated
 
