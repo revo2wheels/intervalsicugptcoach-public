@@ -100,9 +100,20 @@ def build_insights(semantic):
     from Coaching Cheat Sheet + Coaching Profile.
     """
     insights = {}
-    report_type = semantic.get("meta", {}).get("report_type")
-    window = "90d" if report_type in ("season", "summary") else "7d"
+    report_type = semantic.get("meta", {}).get("report_type", "weekly")
+
+    # 🧠 Adaptive window duration by report type
+    window_map = {
+        "weekly": "7d",
+        "wellness": "42d",
+        "season": "90d",
+        "summary": "365d"
+    }
+    window = window_map.get(report_type, "7d")
+
+    # Polarisation and load-distribution metrics are short-term (7-day)
     polarisation_window = "7d"
+
 
     # --- Fatigue Trend ---
     atl = (
@@ -416,25 +427,18 @@ def build_semantic_json(context):
         context["period"] = {"start": start_date.strftime("%Y-%m-%d"), "end": end_date.strftime("%Y-%m-%d")}
         debug(context, "[SEMANTIC-FIX] Could not derive period — defaulted to last 7 days")
 
-    # --- Enrich meta block with descriptive scope ---
+    # --- Enrich meta block from authoritative REPORT_HEADERS ---
     semantic.setdefault("meta", {})
     window_days = (pd.to_datetime(context["period"]["end"]) - pd.to_datetime(context["period"]["start"])).days
 
-    scope_map = {
-        "weekly": "Short-term microcycle — acute load and fatigue balance",
-        "season": "Medium-term fitness, fatigue and progression trends",
-        "summary": "Annual review of training load, adaptation and performance",
-        "wellness": "6-week rolling recovery and readiness snapshot",
-    }
-
+    header = REPORT_HEADERS.get(report_type, {})
     semantic["meta"]["report_type"] = report_type
     semantic["meta"]["window_days"] = window_days
     semantic["meta"]["period"] = f"{context['period']['start']} → {context['period']['end']}"
-    semantic["meta"]["scope"] = scope_map.get(report_type, "Custom analysis window")
-    semantic["meta"]["data_sources"] = (
-        f"{window_days}-day light activities, "
-        f"{'42-day wellness' if report_type != 'wellness' else 'wellness only'}"
-    )
+    semantic["meta"]["scope"] = header.get("scope", "Custom analysis window")
+    semantic["meta"]["data_sources"] = header.get("data_sources", f"{window_days}-day mixed dataset")
+    semantic["meta"]["report_header"] = header
+
 
     # --- Mark summary reports as image-ready for ChatGPT ---
     if report_type == "summary":
