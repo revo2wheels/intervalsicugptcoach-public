@@ -35,17 +35,17 @@ Weekly Report:
 
 Season (90-day Block):
 - Cloudflare Action: run_season_report_fetch
-- Dataset: 90d light, 42d wellness, 90d full
+- Dataset: 90d light, 42d wellness, 7d full
 - Renderer: POST /run with range=season
 
 Wellness Report:
 - Cloudflare Action: run_wellness_report_fetch
-- Dataset: 42d wellness only
+- Dataset: 90d activities, 42d wellness, 7d full
 - Renderer: POST /run with range=wellness
 
-Summary Report:
+Summary Report (Anuual):
 - Cloudflare Action: run_summary_report_fetch
-- Dataset: profile only
+- Dataset: 365d activities, 42d wellness
 - Renderer: POST /run with range=summary
 
 3. Renderer Enforcement (Externalized)

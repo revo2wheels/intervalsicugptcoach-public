@@ -1131,6 +1131,24 @@ def build_semantic_json(context):
     if "render_options" in context:
         semantic["options"] = context["render_options"]
 
+    try:
+        if semantic.get("meta", {}).get("summary_card_ready"):
+            from image_gen import text2im
+            text2im({
+                "prompt": (
+                    f"Create a modern annual cycling summary card for {semantic['meta'].get('period', 'Unknown period')}. "
+                    f"Show total {semantic.get('hours')} hours, {semantic.get('distance_km')} km, {semantic.get('tss')} TSS, "
+                    f"CTL {semantic.get('wellness', {}).get('CTL')}, ATL {semantic.get('wellness', {}).get('ATL')}, "
+                    f"TSB {semantic.get('wellness', {}).get('TSB')}, "
+                    f"ACWR {semantic.get('metrics', {}).get('ACWR', {}).get('value')}, "
+                    f"and Polarisation {semantic.get('metrics', {}).get('Polarisation', {}).get('value')}. "
+                    f"Use clean typography, a soft gradient background, and a subtle Garmin-style design."
+                ),
+                "size": "1024x512"
+            })
+    except Exception as e:
+        debug(context, f"[SUMMARY_CARD] Failed to generate summary card: {e}")
+
     return apply_report_type_contract(semantic)
 
 
