@@ -65,29 +65,77 @@ def convert_to_str(value):
 
 
 def semantic_block_for_metric(name, value, context):
-    """Builds semantic envelope for a single metric."""
-    thresholds = CHEAT_SHEET["thresholds"].get(name, {})
-    interpretation = CHEAT_SHEET["context"].get(name)
-    coaching_link = CHEAT_SHEET["coaching_links"].get(name)
-    profile_desc = COACH_PROFILE["markers"].get(name, {})
+    """
+    Builds semantic envelope for a single metric.
+    - Uses Cheat Sheet thresholds when available.
+    - Falls back to Coach Profile marker criteria if not.
+    - Supports numeric range classification (🟢🟡🔴).
+    """
+    import math
 
-    classification = None
-    if thresholds:
-        try:
+    # --- Normalization ---
+    metric_name = str(name).strip()
+    thresholds = CHEAT_SHEET["thresholds"].get(metric_name, {})
+    profile_desc = COACH_PROFILE["markers"].get(metric_name, {})
+    interpretation = (
+        CHEAT_SHEET["context"].get(metric_name)
+        or profile_desc.get("interpretation")
+    )
+    coaching_link = (
+        CHEAT_SHEET["coaching_links"].get(metric_name)
+        or profile_desc.get("coaching_implication")
+    )
+
+    # --- Classification logic ---
+    classification = "unknown"
+    try:
+        if value is None or (isinstance(value, (float, int)) and math.isnan(value)):
+            classification = "undefined"
+
+        elif thresholds:
             green = thresholds.get("green")
             amber = thresholds.get("amber")
+            v = float(value)
 
-            if green and green[0] <= float(value) <= green[1]:
+            if green and green[0] <= v <= green[1]:
                 classification = "green"
-            elif amber and amber[0] <= float(value) <= amber[1]:
+            elif amber and amber[0] <= v <= amber[1]:
                 classification = "amber"
             else:
                 classification = "red"
-        except Exception:
-            classification = "unknown"
 
+        elif "criteria" in profile_desc:
+            crit = profile_desc["criteria"]
+            v = float(value)
+
+            # Fuzzy string-based evaluation for profile criteria
+            def check(expr):
+                try:
+                    expr = str(expr).replace("–", "-").replace(" ", "")
+                    if ">" in expr or "<" in expr:
+                        return eval(f"{v}{expr}")
+                    if "-" in expr:
+                        low, high = [float(x) for x in expr.split("-")]
+                        return low <= v <= high
+                except Exception:
+                    return False
+                return False
+
+            if "optimal" in crit and check(crit["optimal"]):
+                classification = "green"
+            elif "moderate" in crit and check(crit["moderate"]):
+                classification = "amber"
+            elif "low" in crit and check(crit["low"]):
+                classification = "red"
+            elif "high" in crit and check(crit["high"]):
+                classification = "green"
+
+    except Exception:
+        classification = "unknown"
+
+    # --- Output block ---
     return {
-        "name": name,
+        "name": metric_name,
         "value": convert_to_str(value),
         "framework": profile_desc.get("framework") or "Unknown",
         "formula": profile_desc.get("formula"),
@@ -97,6 +145,7 @@ def semantic_block_for_metric(name, value, context):
         "coaching_implication": coaching_link,
         "related_metrics": profile_desc.get("criteria", {}),
     }
+
 
 # ---------------------------------------------------------
 # Insights Builder
@@ -190,6 +239,38 @@ def build_insights(semantic):
         "interpretation": acwr_block.get("interpretation"),
         "coaching_implication": acwr_block.get("coaching_implication"),
     }
+
+    # ======================================================
+    # 🔬 Adaptation Metrics (Fatigue Resistance, Efficiency)
+    # ======================================================
+    adaptation = semantic.get("adaptation_metrics", {})
+
+    # --- Fatigue Resistance ---
+    if "Fatigue Resistance" in adaptation:
+        fr_val = adaptation.get("Fatigue Resistance")
+        fr_block = semantic_block_for_metric("FatigueResistance", fr_val, semantic)
+        insights["fatigue_resistance"] = {
+            "value": fr_val,
+            "window": window,
+            "basis": "EndurancePower / ThresholdPower",
+            "classification": fr_block.get("classification"),
+            "interpretation": fr_block.get("interpretation"),
+            "coaching_implication": fr_block.get("coaching_implication"),
+        }
+
+    # --- Efficiency Factor ---
+    if "Efficiency Factor" in adaptation:
+        ef_val = adaptation.get("Efficiency Factor")
+        ef_block = semantic_block_for_metric("EfficiencyFactor", ef_val, semantic)
+        insights["efficiency_factor"] = {
+            "value": ef_val,
+            "window": window,
+            "basis": "Power / HeartRate",
+            "classification": ef_block.get("classification"),
+            "interpretation": ef_block.get("interpretation"),
+            "coaching_implication": ef_block.get("coaching_implication"),
+        }
+
 
     return insights
 

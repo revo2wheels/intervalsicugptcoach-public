@@ -211,6 +211,40 @@ COACH_PROFILE = {
                 "high": ">6"
             }
         },
+        "FatigueResistance": {
+            "framework": "Durability / Endurance Resilience Model",
+            "formula": "EndurancePower / ThresholdPower",
+            "criteria": {
+                "low": "<0.9",
+                "stable": "0.9–1.0",
+                "high": ">1.0"
+            },
+            "interpretation": (
+                "Ratio of endurance to threshold power. "
+                "High values indicate preserved performance over long durations."
+            ),
+            "coaching_implication": (
+                "If below 0.9, increase steady endurance work; maintain 0.95–1.0 for optimal durability."
+            ),
+        },
+        "EfficiencyFactor": {
+            "framework": "Aerobic Efficiency Index",
+            "formula": "Power / HeartRate",
+            "criteria": {
+                "low": "<1.6",
+                "moderate": "1.6–1.8",
+                "optimal": "1.8–2.2",
+                "high": ">2.2"
+            },
+            "interpretation": (
+                "Power-to-HR ratio indicating aerobic conditioning. "
+                "Higher EF suggests improved aerobic efficiency and cardiac economy."
+            ),
+            "coaching_implication": (
+                "If EF decreases, focus on aerobic base and recovery. "
+                "Stable or rising EF = strong aerobic fitness trend."
+            ),
+        },
         "RecoveryIndex": {
             "framework": "Noakes Central Governor",
             "formula": "HRV / RestHR × readiness",

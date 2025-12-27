@@ -29,7 +29,9 @@ CHEAT_SHEET["thresholds"] = {
     "ZQI": {"green": (5, 15), "amber": (3, 20)},               #% now
     "Durability": {"green": (0.9, 1.2),"amber": (0.7, 0.9),"red": (0.0, 0.7)},
     "IFDrift": {"green": (0.0, 0.05), "amber": (0.05, 0.10), "red": (0.10, 1.0)},
-    "Lactate": {"lt1_mmol": 2.0,"lt2_mmol": 4.0,"corr_threshold": 0.6}
+    "Lactate": {"lt1_mmol": 2.0,"lt2_mmol": 4.0,"corr_threshold": 0.6},
+    "FatigueResistance": {"green": (0.9, 1.1), "amber": (0.8, 1.2)},  # ratio of long vs short power
+    "EfficiencyFactor": {"green": (1.8, 2.2), "amber": (1.5, 2.5)},   # Power-to-HR ratio
 }
 
 # === Context ===
@@ -75,6 +77,16 @@ CHEAT_SHEET["context"] = {
         "LT1≈2 mmol/L corresponds to the first sustained rise in blood lactate, "
         "while LT2≈4 mmol/L approximates the maximal lactate steady-state (MLSS). "
         "Override with athlete-specific testing or field protocols."),
+    "FatigueResistance": (
+        "Ratio of endurance (long-duration) power to threshold (short-duration) power. "
+        "Values near 1.0 indicate strong fatigue resistance — ability to sustain output under fatigue. "
+        "<0.9 suggests drop-off under endurance load."
+    ),
+    "EfficiencyFactor": (
+        "Ratio of power to heart rate, representing aerobic efficiency. "
+        "Higher values indicate improved aerobic conditioning and cardiovascular economy. "
+        "Values between 1.8–2.2 are typical for trained endurance athletes."
+    ),
 }
 
 CHEAT_SHEET["coaching_links"] = {
@@ -103,6 +115,8 @@ CHEAT_SHEET["coaching_links"] = {
     "GR": "If GR exceeds 2.0, focus on reducing glycolytic intensity and increase aerobic work. Ensure sufficient recovery to avoid over-reliance on carbs.",
     "MES": "If MES is below 20, work on improving metabolic efficiency by increasing endurance training with a focus on aerobic base and fat metabolism.",
     "StressTolerance": "If StressTolerance is high (>8), reduce overall load and increase recovery time. If it's low (<2), ensure proper training load progression.",
+    "FatigueResistance": "If FatigueResistance <0.9, add longer sub-threshold intervals or extended endurance sessions. Maintain >0.95 to support long-duration performance.",
+    "EfficiencyFactor": "If EfficiencyFactor is declining, focus on aerobic conditioning and recovery. Stable or increasing EF indicates improving endurance efficiency.",
 }
 
 CHEAT_SHEET["advice"] = {
