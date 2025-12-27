@@ -436,6 +436,12 @@ def build_semantic_json(context):
         f"{'42-day wellness' if report_type != 'wellness' else 'wellness only'}"
     )
 
+    # --- Mark summary reports as image-ready for ChatGPT ---
+    if report_type == "summary":
+        semantic["meta"]["summary_card_ready"] = True
+        debug(context, "[SEMANTIC] Marked summary report as summary_card_ready=True")
+    else:
+        semantic["meta"]["summary_card_ready"] = False
     
     # ---------------------------------------------------------
     # WELLNESS BLOCK
@@ -1124,16 +1130,6 @@ def build_semantic_json(context):
     # ---------------------------------------------------------
     if "render_options" in context:
         semantic["options"] = context["render_options"]
-
-    # --- Generate annual summary image for summary reports ---
-    if semantic.get("meta", {}).get("report_type") == "summary":
-        debug(context, "[SEMANTIC] Generating annual summary image card ...")
-        try:
-            prompt_used = generate_summary_image(semantic)
-            debug(context, f"[SEMANTIC] ✅ Summary image generation triggered with prompt: {prompt_used[:120]}...")
-        except Exception as e:
-            debug(context, f"[SEMANTIC] ⚠️ Failed to generate summary image: {e}")
-
 
     return apply_report_type_contract(semantic)
 
