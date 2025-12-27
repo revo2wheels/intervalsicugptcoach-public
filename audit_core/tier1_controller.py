@@ -167,11 +167,13 @@ def collect_zone_distributions(df_master, athlete_profile, context):
     # --- Detect columns ---
     power_cols = detect(["power_z", "icu_power_z", "zones_power_z"])
     hr_cols    = detect(["hr_z", "icu_hr_zone", "zones_hr_z"])
-    pace_cols  = detect(["pace_z", "zones_pace_z", "gap_zone"])
+    pace_cols  = detect(["pace_z", "zones_pace_z", "gap_zone", "gap_zone_times", "pace_zone_times"])
+    swim_cols = detect(["swim_z", "zones_swim_z", "swim_pace_z"])
 
     debug(context, f"[DEBUG-ZONES] Power cols={power_cols}")
     debug(context, f"[DEBUG-ZONES] HR cols={hr_cols}")
     debug(context, f"[DEBUG-ZONES] Pace cols={pace_cols}")
+    debug(context, f"[DEBUG-ZONES] Swim cols={swim_cols}")
 
     # --- 🧮 Compute zone distributions ---
     def compute(cols, label):
@@ -231,6 +233,7 @@ def collect_zone_distributions(df_master, athlete_profile, context):
     context["zone_dist_power"] = compute(power_cols, "power")
     context["zone_dist_hr"]    = compute(hr_cols, "hr")
     context["zone_dist_pace"]  = compute(pace_cols, "pace")
+    context["zone_dist_swim"] = compute(swim_cols, "swim")
 
     # --- 🩵 HR Zone Fallback from average_heartrate ---
     if (not context.get("zone_dist_hr")) and "average_heartrate" in df_master.columns:
@@ -293,20 +296,101 @@ def collect_zone_distributions(df_master, athlete_profile, context):
         f"power={len(context['zones']['power'])}, "
         f"hr={len(context['zones']['hr'])}, "
         f"pace={len(context['zones']['pace'])}"
-    )
-
-    # ✅ Extract from athlete profile if missing
+    )    # ✅ Extract from athlete profile (multi-sport aware)
     athlete = context.get("athlete_raw", {}) or context.get("athlete", {})
     sport_settings = athlete.get("sportSettings", [])
 
+    context["icu_zones"] = {}  # unified multi-sport container
+
     if sport_settings:
-        primary = sport_settings[0]  # pick first sport
-        if "power_zones" in primary and isinstance(primary["power_zones"], list):
-            context["icu_power_zones"] = primary["power_zones"]
-            debug(context, f"[ZONE-CONTEXT] Pulled icu_power_zones from athlete profile → {primary['power_zones']}")
-        if "hr_zones" in primary and isinstance(primary["hr_zones"], list):
-            context["icu_hr_zones"] = primary["hr_zones"]
-            debug(context, f"[ZONE-CONTEXT] Pulled icu_hr_zones from athlete profile → {primary['hr_zones']}")
+        for sport in sport_settings:
+            # --- Normalize sport identification ---
+            sport_name = str(sport.get("sport") or sport.get("name") or "").strip().lower()
+            sport_types = [t.lower() for t in sport.get("types", []) if isinstance(t, str)]
+            type_set = set(sport_types + [sport_name])
+
+            if any(t in type_set for t in ["ride", "virtualride", "gravelride"]):
+                sport_key = "ride"
+            elif any(t in type_set for t in ["run", "trailrun", "virtualrun"]):
+                sport_key = "run"
+            elif any(t in type_set for t in ["swim", "openwaterswim"]):
+                sport_key = "swim"
+            else:
+                sport_key = "other"
+
+            # --- Extract zone sets ---
+            sport_entry = {}
+            if "power_zones" in sport and isinstance(sport["power_zones"], list):
+                sport_entry["power"] = sport["power_zones"]
+            if "hr_zones" in sport and isinstance(sport["hr_zones"], list):
+                sport_entry["hr"] = sport["hr_zones"]
+            if "pace_zones" in sport and isinstance(sport["pace_zones"], list):
+                sport_entry["pace"] = sport["pace_zones"]
+            if "paceZones" in sport and isinstance(sport["paceZones"], list):
+                sport_entry["pace"] = sport["paceZones"]
+
+            if sport_entry:
+                context["icu_zones"][sport_key] = sport_entry
+                debug(context, f"[ZONE-CONTEXT] Added zones for {sport_key} → {sport_entry}")
+
+        # --- Backward compatibility for single-sport context ---
+        report_type = (context.get("report_sport") or "ride").lower()
+        fallback_sport = "run" if report_type == "run" else "ride"
+        active_zones = (
+            context["icu_zones"].get(report_type)
+            or context["icu_zones"].get(fallback_sport)
+            or {}
+        )
+
+        context["icu_power_zones"] = active_zones.get("power", [])
+        context["icu_hr_zones"] = active_zones.get("hr", [])
+        context["icu_pace_zones"] = active_zones.get("pace", [])
+
+    else:
+        debug(context, "[ZONE-CONTEXT] ⚠️ No sportSettings found in athlete profile.")
+
+    # ✅ Extract from athlete profile (multi-sport aware)
+    athlete = context.get("athlete_raw", {}) or context.get("athlete", {})
+    sport_settings = athlete.get("sportSettings", [])
+
+    context["icu_zones"] = {}  # new multi-sport container
+
+    if sport_settings:
+        for sport in sport_settings:
+            types = [t.lower() for t in sport.get("types", [])]
+            sport_key = "ride" if any(t in types for t in ["ride", "virtualride"]) else \
+                        "run" if any(t in types for t in ["run", "virtualrun", "trailrun"]) else \
+                        "swim" if any(t in types for t in ["swim", "openwaterswim"]) else \
+                        "other"
+
+            sport_entry = {}
+
+            if "power_zones" in sport and isinstance(sport["power_zones"], list):
+                sport_entry["power"] = sport["power_zones"]
+            if "hr_zones" in sport and isinstance(sport["hr_zones"], list):
+                sport_entry["hr"] = sport["hr_zones"]
+            if "pace_zones" in sport and isinstance(sport["pace_zones"], list):
+                sport_entry["pace"] = sport["pace_zones"]
+            if "paceZones" in sport and isinstance(sport["paceZones"], list):
+                sport_entry["pace"] = sport["paceZones"]
+
+            if sport_entry:
+                context["icu_zones"][sport_key] = sport_entry
+                debug(context, f"[ZONE-CONTEXT] Added zones for {sport_key} → {sport_entry}")
+
+        # --- Backward compatibility for flat context fields
+        # Pick dominant sport type for current report
+        report_type = (context.get("report_sport") or "ride").lower()
+        fallback_sport = "run" if report_type == "run" else "ride"
+        active_zones = context["icu_zones"].get(report_type) or context["icu_zones"].get(fallback_sport) or {}
+
+        context["icu_power_zones"] = active_zones.get("power", [])
+        context["icu_hr_zones"] = active_zones.get("hr", [])
+        context["icu_pace_zones"] = active_zones.get("pace", [])
+
+    else:
+        debug(context, "[ZONE-CONTEXT] ⚠️ No sportSettings found in athlete profile.")
+
 
     # --- 🧹 Context-aware cleanup of raw nested zone columns ---
     import os

@@ -677,6 +677,47 @@ def compute_derived_metrics(df_events, context):
                     f"[DERIVED] HRTLNDLT1 ✓ integrated → mean={mean_lac} mmol/L, "
                     f"latest={latest_lac}, samples={samples}, corr_with_power={corr_with_power}, zones={zone_dist}"
                 ))
+                # ======================================================
+                # 🔄 Lactate Calibration Context Alignment (URF v5.1)
+                # ======================================================
+
+                try:
+                    lac_thresholds = CHEAT_SHEET["thresholds"].get("Lactate", {})
+                    lt1_default = lac_thresholds.get("lt1_mmol", 2.0)
+                    lt2_default = lac_thresholds.get("lt2_mmol", 4.0)
+                    corr_threshold = lac_thresholds.get("corr_threshold", 0.6)
+                    corr_val = context["lactate_summary"].get("corr_with_power")
+
+                    # Store correlation value directly for calibration confidence
+                    context["zones_corr"] = corr_val
+
+                    if isinstance(corr_val, (int, float)) and corr_val >= corr_threshold:
+                        context["zones_source"] = "lactate_test"
+                        context["zones_reason"] = (
+                            f"Lactate–power correlation strong (r={corr_val:.2f}≥{corr_threshold})"
+                        )
+                        context["lactate_thresholds_dict"] = {
+                            "lt1_mmol": lt1_default,
+                            "lt2_mmol": lt2_default,
+                        }
+                        debug(context, f"[DERIVED] ✅ Lactate calibration active → LT1={lt1_default}, LT2={lt2_default}, r={corr_val:.2f}")
+                    else:
+                        context["zones_source"] = "ftp_based"
+                        context["zones_reason"] = (
+                            f"Lactate–power correlation weak or missing (r={corr_val}) → FTP defaults"
+                        )
+                        context["lactate_thresholds_dict"] = {
+                            "lt1_mmol": lt1_default,
+                            "lt2_mmol": lt2_default,
+                        }
+                        debug(context, f"[DERIVED] ⚠️ Lactate correlation below threshold ({corr_val}) → FTP-based calibration")
+
+                except Exception as e:
+                    context["zones_source"] = "ftp_based"
+                    context["zones_reason"] = f"Lactate calibration error: {e}"
+                    context["lactate_thresholds_dict"] = {}
+                    debug(context, f"[DERIVED] ⚠️ Lactate calibration context alignment failed → {e}")
+
             else:
                 context["lactate_summary"] = {"available": False}
                 debug(context, "[DERIVED] HRTLNDLT1 present but no valid numeric values.")

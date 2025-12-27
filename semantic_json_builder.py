@@ -5,27 +5,35 @@ semantic_json_builder.py
 Builds a FULL semantic DICT coaching graph based on the Unified Reporting
 Framework v5.1, Coaching Profile, Coaching Cheat Sheet, and all Tier-2 modules.
 
-Includes:
- - Authoritative totals
- - Derived metrics
- - Extended metrics
+Includes (URF v5.1 Canonical Layout):
+ - Authoritative totals (hours, TSS, distance)
+ - Derived metrics (Tier-2 + contextual)
+ - Extended metrics (e.g., lactate, endurance zones)
  - Adaptation metrics
  - Trend metrics
- - Correlations
- - Wellness (sanitised)
+ - Correlation metrics
+ - Wellness (sanitised + HRV integration)
  - Thresholds / interpretations / coaching links
- - Actions
- - Phase detection
- - Event previews (stable)
- - Daily load summaries
+ - Insights (aggregated + classification)
+ - Insight view (UI-ready grouping)
+ - Coaching actions (Tier-2 guidance + future actions)
+ - Phase detection (Base → Build → Peak → Taper → Recovery)
+ - Phases weekly summary (for seasonal and summary reports)
+ - Event previews (stable canonical structure)
+ - Planned events + daily load summaries
+ - Future forecast (Tier-3 projections)
+ - Athlete identity / profile / context (flattened Intervals.icu schema)
+ - Zones (power / HR / pace + calibration metadata)
+ - Meta header (URF v5.1 framework + reporting window + scope)
 """
+
 
 import json
 from datetime import datetime, date, timezone
 import pandas as pd
 from math import isnan
 from coaching_cheat_sheet import CHEAT_SHEET
-from coaching_profile import COACH_PROFILE, REPORT_HEADERS, REPORT_RESOLUTION
+from coaching_profile import COACH_PROFILE, REPORT_HEADERS, REPORT_RESOLUTION, REPORT_CONTRACT
 from audit_core.utils import debug
 import numpy as np
 from math import isnan
@@ -213,62 +221,6 @@ def build_semantic_json(context):
         df_full = context.get("df_events", pd.DataFrame())
         debug(context, f"[SEMANTIC-FORCE] Fallback to df_events ({len(df_full)} rows)")
 
-    # ------------------------------------------------------------------
-    # 🧬 Lactate, HRV and Threshold Integration (Cheat-Sheet aligned)
-    # ------------------------------------------------------------------
-    try:
-        lactate_profile = COACH_PROFILE.get("markers", {}).get("Lactate", {})
-        lac_defaults = CHEAT_SHEET.get("thresholds", {}).get("Lactate", {})
-
-        lt1_default = (
-            lactate_profile.get("criteria", {}).get("lt1_mmol")
-            or lac_defaults.get("lt1_mmol")
-            or 2.0
-        )
-        lt2_default = (
-            lactate_profile.get("criteria", {}).get("lt2_mmol")
-            or lac_defaults.get("lt2_mmol")
-            or 4.0
-        )
-        corr_threshold = lac_defaults.get("corr_threshold") or 0.6
-
-        lactate_notes = (
-            CHEAT_SHEET.get("context", {}).get("Lactate")
-            or lactate_profile.get("interpretation", "")
-            or "Lactate thresholds derived from profile."
-        )
-
-        hrv_profile = COACH_PROFILE.get("markers", {}).get("HRV", {})
-        hrv_defaults = CHEAT_SHEET.get("thresholds", {}).get("HRV", {})
-
-        hrv_optimal = (
-            hrv_profile.get("criteria", {}).get("optimal")
-            or hrv_defaults.get("optimal")
-            or [60, 90]
-        )
-        hrv_low = (
-            hrv_profile.get("criteria", {}).get("low")
-            or hrv_defaults.get("low")
-            or [0, 40]
-        )
-
-        semantic["lactate_defaults"] = {
-            "lt1_mmol": lt1_default,
-            "lt2_mmol": lt2_default,
-            "corr_threshold": corr_threshold,
-            "notes": lactate_notes,
-        }
-        semantic["hrv_defaults"] = {
-            "optimal": hrv_optimal,
-            "low": hrv_low,
-        }
-
-        debug(context, f"[SEMANTIC] Lactate defaults → LT1={lt1_default}, LT2={lt2_default}, corr>={corr_threshold}")
-        debug(context, f"[SEMANTIC] HRV defaults → optimal={hrv_optimal}, low={hrv_low}")
-
-    except Exception as e:
-        debug(context, f"[SEMANTIC] ⚠️ Lactate/HRV threshold integration failed: {e}")
-
     # --- Safe defaults for undefined zone variables ---
     corr = context.get("zones_corr")
     zones_source = context.get("zones_source", "ftp_based")
@@ -354,8 +306,20 @@ def build_semantic_json(context):
                 ),
             },
             "pace": {
-                "distribution": context.get("zone_dist_pace", {}),
-                "thresholds": context.get("icu_pace_zones") or [],
+                "distribution": context.get("zone_dist_pace", {}) or context.get("athlete_pace_zones", {}),
+                "thresholds": (
+                    context.get("icu_pace_zones")
+                    or context.get("athlete_pace_zones")
+                    or []
+                ),
+            },
+            "swim": {
+                "distribution": context.get("zone_dist_swim", {}) or context.get("athlete_swim_zones", {}),
+                "thresholds": (
+                    context.get("icu_swim_zones")
+                    or context.get("athlete_swim_zones")
+                    or []
+                ),
             },
             "calibration": {
                 "source": zones_source,
@@ -377,6 +341,42 @@ def build_semantic_json(context):
         "events": [],
         "phases": context.get("phases", []),
     }
+
+    # ------------------------------------------------------------------
+    # 🧬 Lactate, HRV and Threshold Integration (Cheat-Sheet aligned)
+    # ------------------------------------------------------------------
+    try:
+        # --- Lactate defaults (only if derived metrics didn't set them)
+        if "lactate_thresholds_dict" not in context:
+            lac_defaults = CHEAT_SHEET["thresholds"].get("Lactate", {})
+            context["lactate_thresholds_dict"] = {
+                "lt1_mmol": lac_defaults.get("lt1_mmol", 2.0),
+                "lt2_mmol": lac_defaults.get("lt2_mmol", 4.0),
+                "corr_threshold": lac_defaults.get("corr_threshold", 0.6),
+                "notes": CHEAT_SHEET.get("context", {}).get("Lactate", "Lactate thresholds derived from cheat-sheet."),
+            }
+
+        # --- HRV defaults (always safe to include)
+        hrv_profile = COACH_PROFILE.get("markers", {}).get("HRV", {})
+        hrv_defaults = CHEAT_SHEET["thresholds"].get("HRV", {})
+        semantic["hrv_defaults"] = {
+            "optimal": hrv_profile.get("criteria", {}).get("optimal")
+                        or hrv_defaults.get("optimal")
+                        or [60, 90],
+            "low": hrv_profile.get("criteria", {}).get("low")
+                        or hrv_defaults.get("low")
+                        or [0, 40],
+        }
+
+        debug(context,
+            f"[SEMANTIC] Lactate defaults (fallback) → LT1={context['lactate_thresholds_dict'].get('lt1_mmol')}, "
+            f"LT2={context['lactate_thresholds_dict'].get('lt2_mmol')}, "
+            f"corr≥{context['lactate_thresholds_dict'].get('corr_threshold')}")
+        debug(context,
+            f"[SEMANTIC] HRV defaults → optimal={semantic['hrv_defaults']['optimal']}, low={semantic['hrv_defaults']['low']}")
+
+    except Exception as e:
+        debug(context, f"[SEMANTIC] ⚠️ Lactate/HRV threshold integration failed: {e}")
 
     # --- Derive report period and meta window ---
     report_type = context.get("report_type", "weekly").lower()
@@ -1063,7 +1063,8 @@ def build_semantic_json(context):
 
     for name, metric in semantic["metrics"].items():
         metric["context_window"] = metric_windows.get(name, "unknown")
-        
+
+    # ---------------------------------------------------------
     # SAFETY PATCH: ensure Polarisation is numeric and preserved
     # ---------------------------------------------------------
     pol_block = semantic["metrics"].get("Polarisation", {})
@@ -1190,62 +1191,26 @@ def build_insight_view(semantic):
         "phases": phases,
     }
 
-
-
 def apply_report_type_contract(semantic: dict) -> dict:
     """
-    Enforce report-type-specific semantic exposure.
-    Does NOT recompute anything.
+    Enforce report-type-specific semantic exposure (URF v5.1).
+    Filters top-level keys based on REPORT_CONTRACT in coaching_profile.py.
     """
-
-    report_type = semantic.get("meta", {}).get("report_type")
+    report_type = semantic.get("meta", {}).get("report_type", "weekly")
     semantic["meta"]["report_header"] = REPORT_HEADERS.get(report_type, {})
     semantic["meta"]["resolution"] = REPORT_RESOLUTION.get(report_type, {})
-
-    # promote header for rendering
     semantic["header"] = semantic["meta"]["report_header"]
 
-    # ---------------- WEEKLY ----------------
-    if report_type == "weekly" and not semantic.get("phases"):
-        semantic["phases"] = [{"phase": "No Data", "start": None, "end": None, "delta": 0.0}]
+    allowed_keys = REPORT_CONTRACT.get(report_type, semantic.keys())
+    filtered = {k: v for k, v in semantic.items() if k in allowed_keys}
 
-    # ---------------- SEASON ----------------
-    if report_type == "season":
-        semantic["events"] = []
-        semantic["zones"] = {}
-        semantic["daily_load"] = []
-        semantic["metrics"] = {
-            k: v for k, v in semantic["metrics"].items()
-            if k in ("ACWR", "RampRate", "TSB")
-        }
-        semantic["insights"] = {
-            k: v for k, v in semantic["insights"].items()
-            if k not in ("load_distribution",)
-        }
-        return semantic
+    # 🧠 Contract drift detection (optional)
+    unexpected = set(semantic.keys()) - set(allowed_keys)
+    if unexpected:
+        from audit_core.utils import debug
+        debug({}, f"[CONTRACT] ⚠️ Unexpected keys in '{report_type}' report: {unexpected}")
 
-    # ---------------- WELLNESS ----------------
-    if report_type == "wellness":
-        return {
-            "meta": semantic["meta"],
-            "wellness": semantic.get("wellness", {}),
-        }
-        return semantic
-
-    # ---------------- SUMMARY ----------------
-    if report_type == "summary":
-        return {
-            "meta": semantic["meta"],
-            "hours": semantic.get("hours"),
-            "tss": semantic.get("tss"),
-            "distance_km": semantic.get("distance_km"),
-            "wellness": semantic.get("wellness"),
-            "insights": semantic.get("insights"),
-            "phases": semantic.get("phases", []),
-            "phases_weekly": semantic.get("phases_weekly", []),
-        }
+    return filtered
 
 
-    return semantic
 
-    return prompt  # return for debug/logging

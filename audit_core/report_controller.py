@@ -914,15 +914,56 @@ def run_report(
             bool(context.get("correlation_metrics")),
         ))
 
-        # Patch: inject athlete thresholds into context if missing
-        athlete = context.get("athlete_raw", {})
+        # ✅ Inject athlete thresholds (multi-sport aware, includes swim + pace)
+        athlete = context.get("athlete_raw", {}) or context.get("athlete", {})
         sport_settings = athlete.get("sportSettings", [])
+
         if sport_settings:
-            primary = sport_settings[0]
-            if "power_zones" in primary and not context.get("icu_power_zones"):
-                context["icu_power_zones"] = primary["power_zones"]
-            if "hr_zones" in primary and not context.get("icu_hr_zones"):
-                context["icu_hr_zones"] = primary["hr_zones"]
+            report_sport = (context.get("report_sport") or "").lower()
+
+            def classify_sport(sport):
+                name = str(sport.get("sport") or sport.get("name") or "").lower()
+                if any(k in name for k in ["ride", "bike", "cycling", "gravel"]):
+                    return "ride"
+                if any(k in name for k in ["run", "trailrun", "virtualrun"]):
+                    return "run"
+                if any(k in name for k in ["swim", "openwater"]):
+                    return "swim"
+                return "other"
+
+            # Pick the most relevant block
+            matched = None
+            for s in sport_settings:
+                if classify_sport(s) == report_sport:
+                    matched = s
+                    break
+            if not matched:
+                matched = sport_settings[0]
+
+            # Inject per-sport thresholds
+            if "power_zones" in matched:
+                context["icu_power_zones"] = matched["power_zones"]
+            if "hr_zones" in matched:
+                context["icu_hr_zones"] = matched["hr_zones"]
+            if "pace_zones" in matched:
+                context["icu_pace_zones"] = matched["pace_zones"]
+            if "swim_zones" in matched:
+                context["icu_swim_zones"] = matched["swim_zones"]
+            elif "paceZones" in matched and report_sport == "swim":
+                context["icu_swim_zones"] = matched["paceZones"]
+
+            debug(
+                context,
+                f"[REPORT-ZONES] Injected thresholds for {report_sport or 'default'} → "
+                f"power={bool(context.get('icu_power_zones'))}, "
+                f"hr={bool(context.get('icu_hr_zones'))}, "
+                f"pace={bool(context.get('icu_pace_zones'))}, "
+                f"swim={bool(context.get('icu_swim_zones'))}"
+            )
+
+        else:
+            debug(context, "[REPORT-ZONES] ⚠️ No sportSettings in athlete profile — using flat athleteProfile fallback.")
+
 
         # --- Safe event source selection
         events = []

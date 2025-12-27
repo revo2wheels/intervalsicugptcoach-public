@@ -100,6 +100,36 @@ REPORT_HEADERS = {
     },
 }
 
+REPORT_CONTRACT = {
+    "weekly": [
+        "meta", "hours", "tss", "distance_km",
+        "metrics", "extended_metrics",
+        "zones", "daily_load",
+        "wellness", "insights", "insight_view",
+        "events", "phases", "actions",
+        "planned_events", "planned_summary_by_date",
+        "future_forecast"
+    ],
+    "season": [
+        "meta", "hours", "tss", "distance_km",
+        "metrics", "extended_metrics",
+        "adaptation_metrics", "trend_metrics",
+        "phases", "phases_weekly",
+        "wbal_summary", "performance_summary",
+        "insights", "actions", "future_forecast"
+    ],
+    "wellness": [
+        "meta", "wellness", "insights", "insight_view"
+    ],
+    "summary": [
+        "meta", "hours", "tss", "distance_km",
+        "wellness", "insights", "insight_view",
+        "phases", "phases_weekly",
+        "wbal_summary", "performance_summary",
+        "actions"
+    ]
+}
+
 
 
 COACH_PROFILE = {
