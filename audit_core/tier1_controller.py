@@ -702,6 +702,90 @@ def run_tier1_controller(df_master, wellness, context):
     else:
         debug(context, "[T1] No valid wellness data found pre-merge; skipping normalization.")
 
+    # ======================================================================
+    # 🌿 WELLNESS METRICS (42-day context enrichment for insights builder)
+    # ======================================================================
+    try:
+        import pandas as pd, numpy as np
+
+        # Accept multiple input formats
+        if isinstance(wellness, pd.DataFrame):
+            dfw = wellness.copy()
+        elif isinstance(wellness, list):
+            dfw = pd.DataFrame(wellness)
+        elif isinstance(wellness, dict) and "series" in wellness:
+            dfw = pd.DataFrame(wellness["series"])
+        else:
+            dfw = None
+
+        # --------------------------------------------------------------
+        # 🩵 Resting HR Delta (7d vs 28d)
+        # --------------------------------------------------------------
+        if dfw is not None and "restingHR" in dfw.columns:
+            dfw["restingHR"] = pd.to_numeric(dfw["restingHR"], errors="coerce")
+            dfw = dfw.dropna(subset=["restingHR"])
+            if "date" in dfw.columns:
+                dfw = dfw.sort_values("date")
+            elif "id" in dfw.columns:
+                dfw = dfw.sort_values("id")
+
+            if len(dfw) >= 14:
+                recent_7d = dfw.tail(7)["restingHR"].mean()
+                baseline_28d = dfw.tail(28)["restingHR"].mean()
+                resting_hr_delta = round(recent_7d - baseline_28d, 1)
+
+                context.setdefault("wellness", {})
+                context["wellness"]["resting_hr_delta"] = resting_hr_delta
+                context["wellness"]["rest_hr"] = float(dfw["restingHR"].iloc[-1])
+
+                debug(
+                    context,
+                    f"[T1-WELLNESS] ✅ Derived resting_hr_delta={resting_hr_delta} "
+                    f"(7d={recent_7d:.1f}, 28d={baseline_28d:.1f})"
+                )
+
+        # --------------------------------------------------------------
+        # 💓 HRV Metrics Normalization
+        # --------------------------------------------------------------
+        hrv_mean = None
+        hrv_latest = None
+        hrv_series = []
+
+        if isinstance(wellness, dict):
+            hrv_mean = wellness.get("hrv_mean") or wellness.get("HRV_mean")
+            hrv_latest = wellness.get("hrv_latest") or wellness.get("HRV_latest")
+            hrv_series = wellness.get("hrv_series", [])
+        elif dfw is not None and "hrv" in dfw.columns:
+            hrv_series = dfw[["date", "hrv"]].to_dict(orient="records")
+            hrv_latest = float(dfw["hrv"].iloc[-1])
+            hrv_mean = float(dfw["hrv"].mean())
+
+        if hrv_mean and hrv_latest:
+            # normalize to ratio (1.0 = normal, >1.0 = above baseline)
+            hrv_ratio = round(hrv_latest / hrv_mean, 2)
+            context["wellness"]["hrv_ratio"] = hrv_ratio
+            debug(context, f"[T1-WELLNESS] HRV ratio computed → {hrv_ratio:.2f}")
+
+        # --------------------------------------------------------------
+        # 🔁 Recovery Index (HRV × TSB composite)
+        # --------------------------------------------------------------
+        tsb = None
+        if isinstance(wellness, dict):
+            tsb = wellness.get("tsb") or wellness.get("TSB")
+
+        if hrv_mean and hrv_latest and tsb is not None:
+            # normalised index: (HRV ratio * (1 + TSB/100))
+            rec_index = round((hrv_latest / hrv_mean) * (1 + (tsb / 100.0)), 2)
+            context["wellness"]["recovery_index"] = rec_index
+            debug(
+                context,
+                f"[T1-WELLNESS] Recovery index computed → {rec_index:.2f} (HRV {hrv_latest}/{hrv_mean}, TSB={tsb:.1f})"
+            )
+
+    except Exception as e:
+        debug(context, f"[T1-WELLNESS] ⚠️ Wellness processing failed: {e}")
+
+
 
     # --- Step 5: Wellness alignment check ---
     if wellness is None or (isinstance(wellness, pd.DataFrame) and wellness.empty):

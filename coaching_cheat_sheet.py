@@ -32,6 +32,15 @@ CHEAT_SHEET["thresholds"] = {
     "Lactate": {"lt1_mmol": 2.0,"lt2_mmol": 4.0,"corr_threshold": 0.6},
     "FatigueResistance": {"green": (0.9, 1.1), "amber": (0.8, 1.2)},  # ratio of long vs short power
     "EfficiencyFactor": {"green": (1.8, 2.2), "amber": (1.5, 2.5)},   # Power-to-HR ratio
+    # === Wellness Metrics ===
+    "HRV": {"green": (60, 90), "amber": (40, 60)},  # ms
+    "RestingHR": {"green": (40, 55), "amber": (56, 65)},  # bpm
+    "SleepQuality": {"green": (80, 100), "amber": (65, 80)},  # score out of 100
+    "RecoveryIndex": {"green": [0.9, 1.3],"amber": [0.8, 0.9],"red": [0.0, 0.8]},
+    # --- HRV family ---
+    "HRVBalance": {"green": [1.0, 1.3],"amber": [0.9, 1.0],"red": [0.0, 0.9]},
+    "HRVStability": {"green": (0.85, 1.0), "amber": (0.7, 0.85)},
+    "HRVTrend": {"green": (0.0, 5.0), "amber": (-2.0, 0.0)},
 }
 
 # === Context ===
@@ -87,6 +96,14 @@ CHEAT_SHEET["context"] = {
         "Higher values indicate improved aerobic conditioning and cardiovascular economy. "
         "Values between 1.8–2.2 are typical for trained endurance athletes."
     ),
+    "HRV": "Heart-rate variability balance — indicator of parasympathetic recovery.",
+    "RestingHR": "Resting heart rate trend — elevated HR indicates fatigue or stress.",
+    "SleepQuality": "Average Garmin sleep score — proxy for sleep recovery and readiness.",
+    "RecoveryIndex": "Composite of HRV and TSB to reflect overall readiness to train.",
+    "HRVBalance": "HRV compared to 42-day mean — shows short-term recovery status.",
+    "HRVStability": "Consistency of HRV — lower variability = better physiological stability.",
+    "HRVTrend": "Direction of HRV change — rising indicates improving recovery.",
+
 }
 
 CHEAT_SHEET["coaching_links"] = {
@@ -117,6 +134,7 @@ CHEAT_SHEET["coaching_links"] = {
     "StressTolerance": "If StressTolerance is high (>8), reduce overall load and increase recovery time. If it's low (<2), ensure proper training load progression.",
     "FatigueResistance": "If FatigueResistance <0.9, add longer sub-threshold intervals or extended endurance sessions. Maintain >0.95 to support long-duration performance.",
     "EfficiencyFactor": "If EfficiencyFactor is declining, focus on aerobic conditioning and recovery. Stable or increasing EF indicates improving endurance efficiency.",
+    "RecoveryIndex": "If RecoveryIndex is low, ensure adequate rest and recovery. If high, maintain load and monitor for overreaching.",
 }
 
 CHEAT_SHEET["advice"] = {

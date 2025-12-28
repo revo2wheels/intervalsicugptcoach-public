@@ -453,6 +453,42 @@ COACH_PROFILE = {
                 "high": ">4.0"
             }
         },
+        "HRV": {
+            "framework": "Autonomic Recovery Model",
+            "formula": "Mean vs Latest HRV (ms)",
+            "criteria": {"low": "<40", "optimal": "60–90"},
+        },
+        "RestingHR": {
+            "framework": "Cardiac Recovery Model",
+            "formula": "Δ7–28 day Resting HR",
+            "criteria": {"low": ">5", "optimal": "<=0"},
+        },
+        "SleepQuality": {
+            "framework": "Sleep Hygiene & Recovery Model",
+            "formula": "Average Sleep Score (14 days)",
+            "criteria": {"low": "<70", "optimal": ">=80"},
+        },
+        "RecoveryIndex": {
+            "framework": "TSB–HRV Composite Index",
+            "formula": "(HRV / HRV_mean) × (TSB / 10)",
+            "criteria": {"low": "<0.5", "optimal": "0.6–0.9"},
+        },
+        "HRVBalance": {
+        "framework": "Autonomic Recovery Model",
+        "formula": "Latest HRV / Mean HRV × 100",
+        "criteria": {"low": "<90", "optimal": "100–125"},
+        },
+        "HRVStability": {
+            "framework": "Variability Index",
+            "formula": "1 - (std / mean) (14d)",
+            "criteria": {"low": "<0.7", "optimal": ">0.85"},
+        },
+        "HRVTrend": {
+            "framework": "Short-Term HRV Trend",
+            "formula": "Linear slope (7d)",
+            "criteria": {"low": "<0", "optimal": ">=0"},
+        },
+
     },
 
     "metadata": {
