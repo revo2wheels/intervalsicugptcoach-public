@@ -639,6 +639,38 @@ def finalize_and_validate_render(context, reportType="weekly"):
     else:
         report_for_validation = context
 
+    # =========================================================
+    # 🧱 SAFETY PATCH — Ensure numeric totals for validator
+    # =========================================================
+    for key in ("totalTss", "totalHours", "totalDistance", "totalElevation"):
+        try:
+            val = context.get(key, 0)
+            if val in (None, "", "nan", "None"):
+                context[key] = 0.0
+            else:
+                context[key] = float(val)
+        except Exception:
+            context[key] = 0.0
+
+    if "eventTotals" in context:
+        et = context["eventTotals"]
+        for key in ("tss", "hours", "distance", "elevation"):
+            try:
+                val = et.get(key, 0)
+                if val in (None, "", "nan", "None"):
+                    et[key] = 0.0
+                else:
+                    et[key] = float(val)
+            except Exception:
+                et[key] = 0.0
+        context["eventTotals"] = et
+
+    debug(context, (
+        f"[VALIDATOR] ✅ Normalized numeric totals before validation → "
+        f"TSS={context.get('totalTss')}, Hr={context.get('totalHours')}, "
+        f"Dist={context.get('totalDistance')}"
+    ))
+
     compliance = validate_report_output(context, report_for_validation)
        
     # --- Season mode: force full markdown render ---

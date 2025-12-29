@@ -223,6 +223,29 @@ CHEAT_SHEET["advice"] = {
     }   
 }
 
+# =========================================================
+# 🏷️ SPORT GROUP CANONICAL MAPS (for zone, polarisation, etc.)
+# =========================================================
+CHEAT_SHEET["sport_groups"] = {
+    "Ride": [
+        "Ride", "VirtualRide", "GravelRide", "MountainBikeRide",
+        "TrackRide", "EBikeRide", "EMountainBikeRide", "Velomobile", "Handcycle"
+    ],
+    "Run": [
+        "Run", "TrailRun", "VirtualRun", "Hike", "Walk"
+    ],
+    "Swim": [
+        "Swim", "OpenWaterSwim", "VirtualSwim"
+    ],
+    "Excluded": [
+        "WeightTraining", "Crossfit", "Yoga", "Pilates", "Golf", "Workout",
+        "Rowing", "VirtualRow", "Kayaking", "StandUpPaddling", "Surfing",
+        "TableTennis", "Tennis", "Squash", "Padel", "Pickleball", "Badminton",
+        "Soccer", "Hockey", "Rugby", "RockClimbing", "Snowboard", "Ski",
+        "BackcountrySki", "NordicSki", "RollerSki", "Snowshoe"
+    ]
+}
+
 # === Labels ===
 CHEAT_SHEET["labels"] = {
     "acwr_risk": "EWMA Acute:Chronic Load Ratio",
