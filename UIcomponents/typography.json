@@ -1,6 +1,0 @@
-{
-  "title": { "font_size": "xl", "font_weight": "bold" },
-  "subtitle": { "font_size": "lg", "font_weight": "semibold" },
-  "table_header": { "font_weight": "medium" },
-  "text": { "font_size": "base" }
-}
