@@ -50,6 +50,31 @@ def enforce_event_only_totals(df_events, context):
     else:
         debug(context, "⚠️  'moving_time' column missing")
 
+    # =========================================================
+    # 🩵 SAFETY PATCH — Ensure moving_time column integrity
+    # =========================================================
+    if "moving_time" not in df_source.columns:
+        debug(context, "[T2-PATCH] ⚠️ 'moving_time' column completely missing → injecting zeros.")
+        df_source["moving_time"] = 0.0
+    else:
+        # Coerce to numeric and fill any nulls or strings
+        df_source["moving_time"] = pd.to_numeric(df_source["moving_time"], errors="coerce").fillna(0.0)
+        # If all values are zero, warn so the audit log can show it
+        if (df_source["moving_time"] == 0).all():
+            debug(context, "[T2-PATCH] ⚠️ 'moving_time' present but all zeros — likely HR-only or manual activities.")
+
+    # Always enforce numeric dtype
+    if not pd.api.types.is_numeric_dtype(df_source["moving_time"]):
+        df_source["moving_time"] = pd.to_numeric(df_source["moving_time"], errors="coerce").fillna(0.0)
+
+    debug(context, (
+        f"[T2-PATCH] ✅ moving_time validated → "
+        f"non-null={df_source['moving_time'].notna().sum()}, "
+        f"min={df_source['moving_time'].min()}, "
+        f"max={df_source['moving_time'].max()}, "
+        f"mean={df_source['moving_time'].mean():.1f}"
+    ))
+
     # --- Step 3: Adaptive event-only enforcement ----------------------------
     if report_type == "season":
         debug(context, "🧩 Tier-2 override: retaining full df_source for season summary (no 7-day enforcement).")
