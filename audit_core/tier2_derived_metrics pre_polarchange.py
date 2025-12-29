@@ -163,17 +163,12 @@ def compute_polarisation_index(context):
     # 1. PRIMARY — zone distributions
     # =========================================================
 
-#original non combined logic
-#    zones = context.get("zone_dist_power") or {}
-#    src = "power"
-#
-#    if not zones:
-#        zones = context.get("zone_dist_hr") or {}
-#        src = "hr"
-#new combined fusion power and hr for same sport
-    zones = fuse_zone_distributions(context)
-    src = "fused" if context.get("zone_fusion", {}).get("available") else "single"
-#upto here
+    zones = context.get("zone_dist_power") or {}
+    src = "power"
+ 
+    if not zones:
+         zones = context.get("zone_dist_hr") or {}
+         src = "hr"
 
     if zones:
         try:

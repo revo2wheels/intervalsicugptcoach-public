@@ -144,217 +144,102 @@ def compute_zone_intensity(df, context=None):
 
 def compute_polarisation_index(context):
     """
-    Computes both PolarisationIndex (Z1+Z2)/Total and Polarisation (Z1+Z3)/(2×Z2)
-    per sport, and promotes the *dominant sport* (highest total zone time)
-    to define global Polarisation metrics.
+    Polarisation Index (0.0–1.0)
 
-    | Source                                         | Practice summary                                                                 |
-    | ---------------------------------------------- | -------------------------------------------------------------------------------- |
-    | Seiler (2010), *Int J Sports Physiol Perform.* | Computed per discipline, not mixed                                               |
-    | Stöggl & Sperlich (2015)                       | Reported per modality                                                            |
-    | Intervals.icu / TrainingPeaks / INSCYD         | Per-sport polarisation; global summaries are hour-weighted                      |
-    | Olympic Endurance Programs (NOR/GBR/AUS)       | Dominant-sport principle — main load driver defines overall ratios              |
+    Primary:
+      (Z1 + Z2) / Total from zone distributions
+      (power preferred, else HR)
 
-    Returns:
-        float — PolarisationIndex from dominant sport
+    Fallback:
+      IF-based proxy weighted by moving_time
+      (low intensity defined as IF < 0.85)
 
-    Populates context:
-        ["PolarisationIndex", "Polarisation",
-         "polarisation_per_sport", "polarisation_dominant_sport",
-         "semantic_flags"]["polarisation_status"]
+    Always returns a numeric float (validator-safe).
     """
 
-    import pandas as pd
     debug_fn = context.get("debug", lambda *a, **kw: None)
-    context.setdefault("semantic_flags", {})
 
     # =========================================================
-    # 🧠 1️⃣ Validate dataset
-    # =========================================================
-    df = context.get("df_events")
-    if df is None or getattr(df, "empty", True) or "sport" not in df.columns:
-        debug_fn(context, "[POL] ❌ No df_events with 'sport' column → cannot compute per-sport polarisation.")
-        context.update({
-            "polarisation_per_sport": {},
-            "PolarisationIndex": None,
-            "Polarisation": None,
-            "polarisation_dominant_sport": None,
-        })
-        context["semantic_flags"]["polarisation_status"] = {
-            "possible": False,
-            "reason": "Missing 'sport' column or empty dataset.",
-            "source": "none",
-            "dominant_sport": None,
-        }
-        return None
-
-
-    # =========================================================
-    # ♻️ Restore zone_dist_* from Tier-1 zones if missing
-    # =========================================================
-    if not context.get("zone_dist_power") or not context.get("zone_dist_hr"):
-        z = context.get("zones", {})
-        if isinstance(z, dict):
-            if not context.get("zone_dist_power") and "power" in z:
-                context["zone_dist_power"] = z["power"].get("distribution", {})
-            if not context.get("zone_dist_hr") and "hr" in z:
-                context["zone_dist_hr"] = z["hr"].get("distribution", {})
-        debug_fn(
-            context,
-            f"[POL] ♻️ Rehydrated zone_dist_* from Tier-1 zones → "
-            f"power={bool(context.get('zone_dist_power'))}, hr={bool(context.get('zone_dist_hr'))}"
-        )
-
-
-    # =========================================================
-    # 🧭 2️⃣ Normalise sport types (Cheat-Sheet driven)
-    # =========================================================
-    groups = context.get("CHEAT_SHEET", CHEAT_SHEET).get("sport_groups", {})
-    reverse_map = {sub: canonical for canonical, subs in groups.items() for sub in subs}
-    if "sport" in df.columns:
-        df["sport"] = df["sport"].replace(reverse_map)
-    debug_fn(context, f"[POL] Normalised sport groups → {sorted(df['sport'].unique())}")
-
-    results = {}
-
-    # =========================================================
-    # 🚴 3️⃣ Compute Polarisation per sport
+    # 1. PRIMARY — zone distributions
     # =========================================================
 
-    for sport, df_sub in df.groupby("sport"):
-        sub_context = context.copy()
-        sub_context["df_events"] = df_sub
+    zones = context.get("zone_dist_power") or {}
+    src = "power"
+ 
+    if not zones:
+         zones = context.get("zone_dist_hr") or {}
+         src = "hr"
 
-        # --- Try to extract or rehydrate zones
-        zones, src = {}, "none"
-
-        # Ensure each sub_context inherits Tier-1 global zones if missing
-        if not sub_context.get("zone_dist_power") and context.get("zone_dist_power"):
-            sub_context["zone_dist_power"] = context["zone_dist_power"]
-        if not sub_context.get("zone_dist_hr") and context.get("zone_dist_hr"):
-            sub_context["zone_dist_hr"] = context["zone_dist_hr"]
-
-        # Fallbacks from context
-        if sub_context.get("zone_dist_power"):
-            zones = sub_context["zone_dist_power"]
-            src = "power (context)"
-        elif sub_context.get("zone_dist_hr"):
-            zones = sub_context["zone_dist_hr"]
-            src = "hr (context)"
-
-        # Rehydrate from Tier-1 'zones' block if empty
-        if (not zones or all(v == 0 for v in zones.values())) and "zones" in sub_context:
-            zblock = sub_context["zones"]
-            if "power" in zblock:
-                zones = zblock["power"]
-                src = "power (zones)"
-            elif "hr" in zblock:
-                zones = zblock["hr"]
-                src = "hr (zones)"
-
-        # As a last resort, derive from df_sub columns
-        if not zones or all(v == 0 for v in zones.values()):
-            power_cols = [c for c in df_sub.columns if c.lower().startswith("power_z")]
-            hr_cols = [c for c in df_sub.columns if c.lower().startswith("hr_z")]
-            if power_cols:
-                zones = {c: float(df_sub[c].sum()) for c in power_cols}
-                src = "power (df)"
-            elif hr_cols:
-                zones = {c: float(df_sub[c].sum()) for c in hr_cols}
-                src = "hr (df)"
-
-        # Bail out if still empty
-        if not zones or all(v == 0 for v in zones.values()):
-            reason = "No valid HR or Power zone data."
-            results[sport] = {
-                "index": None,
-                "ratio": None,
-                "possible": False,
-                "reason": reason,
-                "source": src,
-                "total": 0.0,
-            }
-            debug_fn(context, f"[POL] {sport}: ❌ {reason}")
-            continue
-
+    if zones:
         try:
-            # --- Extract Z1–Z3 safely
             z1 = float(zones.get("power_z1", zones.get("hr_z1", 0.0)))
             z2 = float(zones.get("power_z2", zones.get("hr_z2", 0.0)))
-            z3 = float(zones.get("power_z3", zones.get("hr_z3", 0.0)))
             total = sum(float(v) for v in zones.values())
 
-            if total <= 0:
-                raise ValueError("Total zone duration = 0")
+            if total > 0:
+                pol = round((z1 + z2) / total, 3)
+                debug_fn(
+                    context,
+                    f"[POL] ({src}) Z1={z1:.1f} Z2={z2:.1f} "
+                    f"Total={total:.1f} → PolarisationIndex={pol}"
+                )
+                return float(pol)
 
-            # --- Compute Seiler metrics
-            pol_index = round((z1 + z2) / total, 3)
-            pol_ratio = round((z1 + z3) / (2 * z2), 2) if z2 > 0 else None
-
-            results[sport] = {
-                "index": pol_index,
-                "ratio": pol_ratio,
-                "possible": True,
-                "reason": "Valid zone data.",
-                "source": src,
-                "total": total,
-            }
-            debug_fn(context, f"[POL] {sport}: ✅ index={pol_index}, ratio={pol_ratio}, total={total:.1f}, src={src}")
+            debug_fn(context, f"[POL] ({src}) total zone time = 0 → fallback")
 
         except Exception as e:
-            reason = f"Computation failed ({e})"
-            results[sport] = {
-                "index": None,
-                "ratio": None,
-                "possible": False,
-                "reason": reason,
-                "source": src,
-                "total": 0.0,
-            }
-            debug_fn(context, f"[POL] {sport}: ❌ {reason}")
+            debug_fn(context, f"[POL] ({src}) zone calc failed → fallback ({e})")
 
     # =========================================================
-    # 🥇 4️⃣ Promote dominant sport → global context
+    # 2. FALLBACK — IF proxy (weighted by moving_time)
     # =========================================================
-    valid_sports = {k: v for k, v in results.items() if v.get("possible") and v.get("total", 0) > 0}
-    if valid_sports:
-        dominant = max(valid_sports.items(), key=lambda kv: kv[1]["total"])[0]
-        dom_entry = valid_sports[dominant]
-        context.update({
-            "PolarisationIndex": dom_entry["index"],
-            "Polarisation": dom_entry["ratio"],
-            "polarisation_dominant_sport": dominant,
-            "polarisation_per_sport": results,
-        })
-        reason = f"Derived from dominant sport ({dominant})."
-        context["semantic_flags"]["polarisation_status"] = {
-            "possible": True,
-            "reason": reason,
-            "source": "dominant",
-            "dominant_sport": dominant,
-        }
-        debug_fn(context, f"[POL] 🌍 Dominant sport={dominant}, PI={dom_entry['index']}, PR={dom_entry['ratio']}")
-    else:
-        dominant, reason = None, "No valid zone data for any sport."
-        context.update({
-            "PolarisationIndex": None,
-            "Polarisation": None,
-            "polarisation_dominant_sport": None,
-            "polarisation_per_sport": results,
-        })
-        context["semantic_flags"]["polarisation_status"] = {
-            "possible": False,
-            "reason": reason,
-            "source": "none",
-            "dominant_sport": None,
-        }
-        debug_fn(context, "[POL] ⚠️ No valid polarisation metrics found.")
+    df = context.get("df_events")
+    if df is None or getattr(df, "empty", True):
+        debug_fn(context, "[POL] ⚠ No df_events for IF fallback → 0.0")
+        return 0.0
 
-    # =========================================================
-    # ✅ Return dominant sport PolarisationIndex
-    # =========================================================
-    debug_fn(context, f"[POL] ✅ Global Polarisation via {reason}")
-    return context.get("PolarisationIndex")
+    if "IF" not in df.columns or "moving_time" not in df.columns:
+        debug_fn(context, "[POL] ⚠ Missing IF or moving_time → 0.0")
+        return 0.0
+
+    try:
+        tmp = df[["IF", "moving_time"]].copy()
+
+        tmp["IF"] = pd.to_numeric(tmp["IF"], errors="coerce")
+        tmp["moving_time"] = pd.to_numeric(tmp["moving_time"], errors="coerce").fillna(0)
+
+        tmp = tmp.dropna(subset=["IF"])
+        tmp = tmp[tmp["moving_time"] > 0]
+
+        if tmp.empty:
+            debug_fn(context, "[POL] ⚠ IF fallback has no valid rows → 0.0")
+            return 0.0
+
+        # Normalise IF if stored as 70 instead of 0.70
+        tmp.loc[tmp["IF"] > 10, "IF"] = tmp["IF"] / 100.0
+
+        total_time = float(tmp["moving_time"].sum())
+        if total_time <= 0:
+            return 0.0
+
+        # Low-intensity proxy: IF < 0.85
+        low_time = float(tmp.loc[tmp["IF"] < 0.85, "moving_time"].sum())
+
+        pol = round(low_time / total_time, 3)
+        debug_fn(
+            context,
+            f"[POL] (IF-fallback) low_time={low_time:.1f}s "
+            f"total={total_time:.1f}s → PolarisationIndex={pol}"
+        )
+        return float(pol)
+
+    except Exception as e:
+        debug_fn(context, f"[POL] ⚠ IF fallback failed ({e}) → 0.0")
+        return 0.0
+
+
+
+
 
 
 def classify_marker(value, marker, context=None):
@@ -660,41 +545,67 @@ def compute_derived_metrics(df_events, context):
         if_proxy = 0.7  # assume aerobic bias if missing
 
     fat_ox_eff = round(np.clip((if_proxy or 0.5) * 0.9, 0.3, 0.8), 3)
-
     # ---------------------------------------------------------
-    # 🧩 Polarisation Metrics (sport-aware unified computation)
+    # 🧩 Polarisation Metrics (Seiler ratio + normalized index)
     # ---------------------------------------------------------
+    # Ensure classification dictionaries exist
     if "to_classify" not in locals():
         to_classify = {}
     if "classified" not in locals():
         classified = {}
 
-    context["df_events"] = context.get("_df_scope_full", context.get("df_events"))
+    # 🩹 Railway safety: ensure zone_dist_* are JSON-safe dicts
+    for key in ("zone_dist_power", "zone_dist_hr"):
+        if key in context and not isinstance(context[key], dict):
+            try:
+                if hasattr(context[key], "to_dict"):
+                    context[key] = context[key].to_dict()
+                else:
+                    context[key] = dict(context[key])
+                debug(context, f"[T2] Rehydrated {key} to dict with {len(context[key])} keys.")
+            except Exception as e:
+                debug(context, f"[T2] ⚠️ Failed to rehydrate {key}: {e}")
+                context[key] = {}
 
-    # 🧠 Compute sport-aware Polarisation metrics
-    polarisation_index = compute_polarisation_index(context)  # now returns both index + ratio + per-sport
-    polarisation = context.get("Polarisation")
+    # 1️⃣ Compute normalized Polarisation Index (0–1)
+    polarisation_index = compute_polarisation_index(context)  # (Z1+Z2)/total, normalized
 
-    # 🩵 Retrieve per-sport diagnostic results for semantic builder
-    polarisation_per_sport = context.get("polarisation_per_sport", {})
+    # 2️⃣ Try to retrieve existing zone distributions
+    zones = context.get("zone_dist_power") or context.get("zone_dist_hr") or {}
 
-    if polarisation_index is None or polarisation is None:
-        debug(context, "[POL] ❌ Polarisation unavailable (no valid sport zone data).")
+    # 3️⃣ Fallback — rehydrate from context["zones"] if missing
+    if not zones and "zones" in context:
+        zblock = context["zones"]
+        if "power" in zblock and isinstance(zblock["power"], dict):
+            zones = zblock["power"]
+        elif "hr" in zblock and isinstance(zblock["hr"], dict):
+            zones = zblock["hr"]
+        debug(context, f"[POL] 🩹 Using 'zones' block for polarisation: keys={list(zones.keys())}")
+
+    # 4️⃣ Extract Z1–Z3 values
+    z1 = float(zones.get("power_z1", zones.get("hr_z1", 0.0)))
+    z2 = float(zones.get("power_z2", zones.get("hr_z2", 0.0)))
+    z3 = float(zones.get("power_z3", zones.get("hr_z3", 0.0)))
+
+    # 5️⃣ Compute Seiler-style ratio safely
+    if z2 > 0 and (z1 > 0 or z3 > 0):
+        polarisation = round((z1 + z3) / (2 * z2), 2)
+        debug(context, f"[POL] ✅ Seiler ratio computed → (Z1+Z3)/(2×Z2)={polarisation}")
     else:
-        debug(context, f"[POL] ✅ PolarisationIndex={polarisation_index}, Polarisation={polarisation}")
+        polarisation = round(float(polarisation_index or 0.0), 2)
+        debug(context, f"[POL] ⚠️ Missing Z2 or empty zones — fallback to PolarisationIndex={polarisation}")
 
-    # Register into context (ensure downstream visibility)
-    context["PolarisationIndex"] = polarisation_index
+    # 6️⃣ Register into context so builder sees it
     context["Polarisation"] = polarisation
-    context["polarisation_per_sport"] = polarisation_per_sport
+    context["PolarisationIndex"] = polarisation_index
 
-    # Add to classification pool
+    # 7️⃣ Add to classification set
     to_classify.update({
         "Polarisation": polarisation,
         "PolarisationIndex": polarisation_index,
     })
 
-    # Classify both metrics
+    # 8️⃣ Perform classification for these two metrics
     for marker in ["Polarisation", "PolarisationIndex"]:
         val = to_classify.get(marker)
         if val is not None:
@@ -704,12 +615,8 @@ def compute_derived_metrics(df_events, context):
         else:
             debug(context, f"[CLASSIFY] ⚠️ Skipped {marker} — no value")
 
-    debug(context, (
-        f"[DERIVED] Polarisation={polarisation}, "
-        f"PolarisationIndex={polarisation_index}, "
-        f"PerSport={list(polarisation_per_sport.keys())}"
-    ))
-
+    # 9️⃣ Final debug log
+    debug(context, f"[DERIVED] Polarisation={polarisation} | PolarisationIndex={polarisation_index}")
 
     # ======================================================
     # 🧪 Lactate Measurement Integration (context enrichment)

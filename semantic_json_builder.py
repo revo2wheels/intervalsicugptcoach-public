@@ -197,41 +197,41 @@ def build_insights(semantic):
     }
 
     # --- 🧩 Polarisation (Renderer — read-only exposure) ---
-    ctx = semantic.get("context_ref", {}) 
-    pol_meta = ctx.get("semantic_flags", {}).get("polarisation_status", {})
-    per_sport = ctx.get("polarisation_per_sport", {})
-    pol_index = ctx.get("PolarisationIndex")
-    pol_ratio = ctx.get("Polarisation")
-    dominant_sport = pol_meta.get("dominant_sport")
-    reason = pol_meta.get("reason", "No valid data.")
-    possible = pol_meta.get("possible", False)
+   # ctx = semantic.get("context_ref", {}) 
+   # pol_meta = ctx.get("semantic_flags", {}).get("polarisation_status", {})
+   # per_sport = ctx.get("polarisation_per_sport", {})
+   # pol_index = ctx.get("PolarisationIndex")
+   # pol_ratio = ctx.get("Polarisation")
+   # dominant_sport = pol_meta.get("dominant_sport")
+   # reason = pol_meta.get("reason", "No valid data.")
+   # possible = pol_meta.get("possible", False)
 
-    if possible and pol_index is not None:
-        pol_block = semantic_block_for_metric("PolarisationIndex", pol_index, semantic)
-        insights["polarisation"] = {
-            "value": pol_index,
-            "ratio": pol_ratio,
-            "basis": reason,
-            "dominant_sport": dominant_sport,
-            "classification": pol_block.get("classification"),
-            "interpretation": pol_block.get("interpretation"),
-            "coaching_implication": pol_block.get("coaching_implication"),
-        }
-        debug(ctx, f"[SEM] Polarisation exposed (dominant={dominant_sport})")
+   # if possible and pol_index is not None:
+   #     pol_block = semantic_block_for_metric("PolarisationIndex", pol_index, semantic)
+   #     insights["polarisation"] = {
+   #         "value": pol_index,
+   #         "ratio": pol_ratio,
+   #         "basis": reason,
+   #         "dominant_sport": dominant_sport,
+   #         "classification": pol_block.get("classification"),
+   #         "interpretation": pol_block.get("interpretation"),
+   #         "coaching_implication": pol_block.get("coaching_implication"),
+   #     }
+   #     debug(ctx, f"[SEM] Polarisation exposed (dominant={dominant_sport})")
 
-    else:
-        insights["polarisation"] = {
-            "value": None,
-            "basis": reason,
-            "dominant_sport": dominant_sport,
-            "classification": "undefined",
-            "interpretation": "Polarisation unavailable — Tier-2 did not compute valid data.",
-            "coaching_implication": "Cannot evaluate intensity distribution for this window.",
-        }
-        debug(ctx, f"[SEM] Polarisation unavailable → {reason}")
+    #else:
+    #    insights["polarisation"] = {
+    #        "value": None,
+    #        "basis": reason,
+    #        "dominant_sport": dominant_sport,
+    #        "classification": "undefined",
+    #        "interpretation": "Polarisation unavailable — Tier-2 did not compute valid data.",
+    #        "coaching_implication": "Cannot evaluate intensity distribution for this window.",
+    #    }
+    #    debug(ctx, f"[SEM] Polarisation unavailable → {reason}")
 
-    if per_sport:
-        insights["polarisation"]["per_sport"] = per_sport
+#    if per_sport:
+ #       insights["polarisation"]["per_sport"] = per_sport
 
 
     # --- Metabolic Drift (FOxI proxy) ---
