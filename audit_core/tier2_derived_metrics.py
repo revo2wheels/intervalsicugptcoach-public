@@ -143,32 +143,24 @@ def compute_zone_intensity(df, context=None):
     return zqi_percent
 
 def compute_polarisation_index(context):
-    """
-    Polarisation Index (0.0–1.0)
-    ------------------------------------
-    Corrected canonical form:
-        (Z1 + Z2) / (Z1 + Z2 + Z3)
-    Uses Power zones when available, else HR.
-    Falls back to IF-based proxy when no zone data exists.
-    """
-
     debug_fn = context.get("debug", lambda *a, **kw: None)
 
-    # =========================================================
-    # 1️⃣ Primary — zone-based computation
-    # =========================================================
     zones = context.get("zone_dist_power") or {}
     src = "power"
-
     if not zones:
         zones = context.get("zone_dist_hr") or {}
         src = "hr"
 
     if zones:
         try:
-            z1 = float(zones.get("power_z1", zones.get("hr_z1", 0.0)))
-            z2 = float(zones.get("power_z2", zones.get("hr_z2", 0.0)))
-            z3 = float(zones.get("power_z3", zones.get("hr_z3", 0.0)))
+            def get_zone(z):
+                return float(
+                    zones.get(f"power_{z}",
+                    zones.get(f"hr_{z}",
+                    zones.get(z, 0.0)))
+                )
+
+            z1, z2, z3 = get_zone("z1"), get_zone("z2"), get_zone("z3")
 
             denom = z1 + z2 + z3
             if denom > 0:
@@ -181,6 +173,7 @@ def compute_polarisation_index(context):
 
         except Exception as e:
             debug_fn(context, f"[POL] ({src}) zone PI computation failed → fallback ({e})")
+
 
     # =========================================================
     # 2️⃣ Fallback — IF proxy (weighted by moving_time)
@@ -648,13 +641,12 @@ def compute_derived_metrics(df_events, context):
     # ---------------------------------------------------------
     # 🧩 Polarisation Metrics (Seiler ratio + normalized index)
     # ---------------------------------------------------------
-    # Ensure classification dictionaries exist
     if "to_classify" not in locals():
         to_classify = {}
     if "classified" not in locals():
         classified = {}
 
-    # 🩹 Railway safety: ensure zone_dist_* are JSON-safe dicts
+    # 🩹 Ensure zone_dist_* are dicts
     for key in ("zone_dist_power", "zone_dist_hr"):
         if key in context and not isinstance(context[key], dict):
             try:
@@ -667,45 +659,51 @@ def compute_derived_metrics(df_events, context):
                 debug(context, f"[T2] ⚠️ Failed to rehydrate {key}: {e}")
                 context[key] = {}
 
-    # 1️⃣ Compute normalized Polarisation Index (0–1)
-    polarisation_index = compute_polarisation_index(context)  # (Z1+Z2)/total, normalized
+    # 1️⃣ Normalized Polarisation Index
+    polarisation_index = compute_polarisation_index(context)
 
-    # 2️⃣ Try to retrieve existing zone distributions
-    zones = context.get("zone_dist_power") or context.get("zone_dist_hr") or {}
+    # 2️⃣ Get zone dictionary
+    zones = (
+        context.get("zone_dist_power")
+        or context.get("zone_dist_hr")
+        or context.get("zones", {}).get("power", {})
+        or context.get("zones", {}).get("hr", {})
+        or {}
+    )
 
-    # 3️⃣ Fallback — rehydrate from context["zones"] if missing
-    if not zones and "zones" in context:
-        zblock = context["zones"]
-        if "power" in zblock and isinstance(zblock["power"], dict):
-            zones = zblock["power"]
-        elif "hr" in zblock and isinstance(zblock["hr"], dict):
-            zones = zblock["hr"]
-        debug(context, f"[POL] 🩹 Using 'zones' block for polarisation: keys={list(zones.keys())}")
+    # 3️⃣ Helper for flexible key access
+    def get_zone(z):
+        if not isinstance(zones, dict):
+            return 0.0
+        return float(
+            zones.get(f"power_{z}",
+            zones.get(f"hr_{z}",
+            zones.get(z, 0.0)))
+        )
 
-    # 4️⃣ Extract Z1–Z3 values
-    z1 = float(zones.get("power_z1", zones.get("hr_z1", 0.0)))
-    z2 = float(zones.get("power_z2", zones.get("hr_z2", 0.0)))
-    z3 = float(zones.get("power_z3", zones.get("hr_z3", 0.0)))
+    # 4️⃣ Extract and compute Seiler ratio safely
+    try:
+        z1, z2, z3 = get_zone("z1"), get_zone("z2"), get_zone("z3")
+        if z2 > 0 and (z1 > 0 or z3 > 0):
+            polarisation = round((z1 + z3) / (2 * z2), 3)
+            debug(context, f"[POL] ✅ Seiler ratio computed → (Z1+Z3)/(2×Z2)={polarisation}")
+        else:
+            polarisation = round(float(polarisation_index or 0.0), 3)
+            debug(context, f"[POL] ⚠️ Missing Z2 or empty zones — fallback to PI={polarisation}")
+    except Exception as e:
+        debug(context, f"[POL] ⚠️ Seiler ratio computation failed → fallback ({e})")
+        polarisation = round(float(polarisation_index or 0.0), 3)
 
-    # 5️⃣ Compute Seiler-style ratio safely
-    if z2 > 0 and (z1 > 0 or z3 > 0):
-        polarisation = round((z1 + z3) / (2 * z2), 2)
-        debug(context, f"[POL] ✅ Seiler ratio computed → (Z1+Z3)/(2×Z2)={polarisation}")
-    else:
-        polarisation = round(float(polarisation_index or 0.0), 2)
-        debug(context, f"[POL] ⚠️ Missing Z2 or empty zones — fallback to PolarisationIndex={polarisation}")
-
-    # 6️⃣ Register into context so builder sees it
+    # 5️⃣ Register metrics
     context["Polarisation"] = polarisation
     context["PolarisationIndex"] = polarisation_index
 
-    # 7️⃣ Add to classification set
+    # 6️⃣ Classify
     to_classify.update({
         "Polarisation": polarisation,
         "PolarisationIndex": polarisation_index,
     })
 
-    # 8️⃣ Perform classification for these two metrics
     for marker in ["Polarisation", "PolarisationIndex"]:
         val = to_classify.get(marker)
         if val is not None:
@@ -715,8 +713,8 @@ def compute_derived_metrics(df_events, context):
         else:
             debug(context, f"[CLASSIFY] ⚠️ Skipped {marker} — no value")
 
-    # 9️⃣ Final debug log
     debug(context, f"[DERIVED] Polarisation={polarisation} | PolarisationIndex={polarisation_index}")
+
 
     # ======================================================
     # 🧪 Lactate Measurement Integration (context enrichment)
