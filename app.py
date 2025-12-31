@@ -134,6 +134,19 @@ def normalize_prefetched_context(data):
         context["prefetch_done"] = True
         context["semantic_mode"] = True
 
+        # --- NEW: Normalize Intervals zone arrays (for HR and Power) ---
+        def normalize_zone_fields(df):
+            if df.empty:
+                return df
+            for col in df.columns:
+                if "zone_times" in col or "zones" in col:
+                    df[col] = df[col].apply(lambda x: json.loads(x) if isinstance(x, str) and x.startswith("[") else x)
+            return df
+
+        df_full = normalize_zone_fields(df_full)
+        df_light = normalize_zone_fields(df_light)
+        debug(context, "[NORM] ✅ Normalized zone fields in prefetched context")
+
         debug(context, f"[NORM] activities_light={len(df_light)} full={len(df_full)} wellness={len(df_well)} athlete_keys={list(athlete.keys()) if athlete else 'none'}")
     except Exception as e:
         debug(context, f"[NORM] ❌ Normalization failed: {e}")
