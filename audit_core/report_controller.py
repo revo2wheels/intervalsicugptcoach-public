@@ -655,6 +655,7 @@ def run_report(
     context["fetch_status"] = "complete"
 
     # --- Tier-2 core metrics ---
+    debug(context, f"[CHECK] zone columns in df_events: {[c for c in context['df_events'].columns if 'z' in c.lower()]}")
     context = compute_derived_metrics(df_scope, context)
     context = evaluate_actions(context)
 
