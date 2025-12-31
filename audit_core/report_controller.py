@@ -986,6 +986,10 @@ def run_report(
 
         # --- Now safely detect phases
         context = detect_phases(context, events)
+        debug(context, f"[CHECKPOINT] Keys in context before semantic build: {list(context.keys())}")
+        debug(context, f"[CHECKPOINT] zone_dist_power exists: {bool(context.get('zone_dist_power'))}")
+        debug(context, f"[CHECKPOINT] zone_dist_fused exists: {bool(context.get('zone_dist_fused'))}")
+
 
         semantic_output = build_semantic_json(context)  # Ensure semantic_output is generated
 
