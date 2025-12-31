@@ -351,39 +351,7 @@ def fetch_activities_chunked(
     # ✅ ZONE EXPANSION — FULL MODE ONLY
     # =================================================
     if not light_mode:
-
-        def expand_zones(df, field, prefix):
-            def safe_parse(x):
-                if x in [None, "null", "None", np.nan]:
-                    return []
-                if isinstance(x, str):
-                    try:
-                        x = json.loads(x)
-                    except Exception:
-                        return []
-                if isinstance(x, list):
-                    flat = []
-                    for z in x:
-                        if isinstance(z, dict):
-                            flat.append(z.get("secs", 0))
-                        elif isinstance(z, (int, float)):
-                            flat.append(z)
-                    return flat
-                return []
-
-            if field not in df.columns:
-                return df
-
-            parsed = df[field].apply(safe_parse)
-            max_len = parsed.map(len).max() if not parsed.empty else 0
-            if max_len == 0:
-                return df
-
-            z = pd.DataFrame(parsed.tolist(), index=df.index)
-            z = z.reindex(columns=range(max_len)).fillna(0).astype(float)
-            z.columns = [f"{prefix}_z{i+1}" for i in range(max_len)]
-
-            return pd.concat([df.drop(columns=[field]), z], axis=1)
+        from audit_core.tier0_pre_audit import expand_zones
 
         df_activities = expand_zones(df_activities, "icu_zone_times", "power")
         df_activities = expand_zones(df_activities, "icu_hr_zone_times", "hr")
@@ -1058,3 +1026,43 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         context.get("auditPartial"),
         context.get("auditFinal"),
     )
+
+# ============================================================
+# 🔄 EXPORTED: expand_zones (public helper for zone expansion)
+# ============================================================
+def expand_zones(df, field, prefix):
+    """Public export of the internal expand_zones() used in fetch_activities_chunked()."""
+    import numpy as np, pandas as pd, json
+
+    def safe_parse(x):
+        if x in [None, "null", "None", np.nan]:
+            return []
+        if isinstance(x, str):
+            try:
+                x = json.loads(x)
+            except Exception:
+                return []
+        if isinstance(x, list):
+            flat = []
+            for z in x:
+                if isinstance(z, dict):
+                    flat.append(z.get("secs", 0))
+                elif isinstance(z, (int, float)):
+                    flat.append(z)
+            return flat
+        return []
+
+    if field not in df.columns or df.empty:
+        return df
+
+    parsed = df[field].apply(safe_parse)
+    max_len = parsed.map(len).max() if not parsed.empty else 0
+    if max_len == 0:
+        return df
+
+    z = pd.DataFrame(parsed.tolist(), index=df.index)
+    z = z.reindex(columns=range(max_len)).fillna(0).astype(float)
+    z.columns = [f"{prefix}_z{i+1}" for i in range(max_len)]
+
+    return pd.concat([df.drop(columns=[field]), z], axis=1)
+

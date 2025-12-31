@@ -18,6 +18,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "audit_
 from audit_core.report_controller import run_report
 from audit_core.utils import debug
 from semantic_json_builder import build_semantic_json
+from audit_core.tier0_pre_audit import expand_zones
 
 
 print("[BOOT] 🚀 Starting IntervalsICU GPTCoach Railway API")
@@ -154,7 +155,6 @@ def normalize_prefetched_context(data):
 
         # --- Expand HR/Power/Pace zones to match Tier-0 local parity ---
         try:
-            from audit_core.tier0_pre_audit import expand_zones
             df_full = expand_zones(df_full, "icu_zone_times", "power")
             df_full = expand_zones(df_full, "icu_hr_zone_times", "hr")
             df_full = expand_zones(df_full, "pace_zone_times", "pace")
