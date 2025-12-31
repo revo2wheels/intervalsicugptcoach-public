@@ -5,7 +5,7 @@ Final Unified Version with Prefetch Normalization
 Parses prefetched data into identical Tier-0 format as local Python
 Ensures parity for daily_load, zone distributions, derived metrics, etc.
 """
-
+import re
 from fastapi import FastAPI, Query, Request
 from fastapi.responses import JSONResponse
 import os, sys, io, json, math, pandas as pd, numpy as np
