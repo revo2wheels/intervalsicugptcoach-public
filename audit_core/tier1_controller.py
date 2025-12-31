@@ -155,6 +155,64 @@ def collect_zone_distributions(df_master, athlete_profile, context):
             except Exception as e:
                 debug(context, f"[DEBUG-ZONES] ⚠️ Failed to expand icu_zone_times ({e})")
 
+        # --- 🩵 Expand icu_hr_zone_times if present ---
+        if "hr_z1" not in df_master.columns and "icu_hr_zone_times" in df_master.columns:
+            debug(context, "[DEBUG-ZONES] Found icu_hr_zone_times — attempting to expand.")
+            import pandas as pd, numpy as np, json, ast
+
+            def safe_parse_hr(x):
+                if isinstance(x, list):
+                    return x
+                if isinstance(x, str):
+                    s = x.strip()
+                    if s.startswith("[") and s.endswith("]"):
+                        for parser in (json.loads, ast.literal_eval):
+                            try:
+                                val = parser(s)
+                                if isinstance(val, list):
+                                    return val
+                            except Exception:
+                                continue
+                return []
+
+            parsed = df_master["icu_hr_zone_times"].dropna().apply(safe_parse_hr)
+            parsed = parsed.dropna()
+
+            if not parsed.empty:
+                sample = parsed.iloc[0]
+                debug(context, f"[DEBUG-ZONES] HR sample type={type(sample)} content={str(sample)[:1000]}")
+
+                # ✅ CASE 1: List of dicts — Intervals-style [{'secs':123}, ...]
+                if isinstance(sample, list) and all(isinstance(z, dict) for z in sample):
+                    def expand_hr_row(zlist):
+                        row = {}
+                        for i, z in enumerate(zlist, start=1):
+                            row[f"hr_z{i}"] = float(z.get("secs", 0))
+                        return row
+
+                    expanded = df_master["icu_hr_zone_times"].apply(expand_hr_row)
+                    hr_df = pd.DataFrame(list(expanded)).fillna(0)
+                    hr_df.reset_index(drop=True, inplace=True)
+                    df_master.reset_index(drop=True, inplace=True)
+                    df_master = pd.concat([df_master, hr_df], axis=1)
+
+                    debug(context, f"[DEBUG-ZONES] ✅ Expanded icu_hr_zone_times → {len(hr_df.columns)} HR cols")
+                    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+                        debug(context, f"[DEBUG-ZONES] FULL HR dataset:\n{df_master[[c for c in hr_df.columns]].to_string(index=True)}")
+
+                # ✅ CASE 2: List of numbers — simplified Intervals HR array
+                elif isinstance(sample, list) and all(isinstance(z, (int, float)) for z in sample):
+                    cols = [f"hr_z{i+1}" for i in range(len(sample))]
+                    hr_df = pd.DataFrame(parsed.tolist(), columns=cols).fillna(0)
+                    df_master = pd.concat([df_master.reset_index(drop=True), hr_df.reset_index(drop=True)], axis=1)
+                    debug(context, f"[DEBUG-ZONES] ✅ Expanded numeric icu_hr_zone_times → {len(cols)} HR cols")
+
+                else:
+                    debug(context, f"[DEBUG-ZONES] ⚠️ Unrecognized HR zone structure: {type(sample)}")
+
+            else:
+                debug(context, "[DEBUG-ZONES] ⚠️ No HR data found to expand.")
+
 
     # --- 🔍 Helper: detect zone columns by prefix ---
     def detect(prefixes):
