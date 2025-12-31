@@ -134,13 +134,18 @@ def normalize_prefetched_context(data):
         context["prefetch_done"] = True
         context["semantic_mode"] = True
 
-        # --- NEW: Normalize Intervals zone arrays (for HR and Power) ---
+        # --- Normalize Intervals zone arrays (for HR and Power) ---
         def normalize_zone_fields(df):
+            """Convert zone strings to JSON lists if needed (Intervals-prefetched data)."""
             if df.empty:
                 return df
             for col in df.columns:
                 if "zone_times" in col or "zones" in col:
-                    df[col] = df[col].apply(lambda x: json.loads(x) if isinstance(x, str) and x.startswith("[") else x)
+                    # Convert JSON-encoded strings (e.g., '[{"secs":120},...]') to lists
+                    if df[col].dtype == object:
+                        df[col] = df[col].apply(
+                            lambda x: json.loads(x) if isinstance(x, str) and x.strip().startswith("[") else x
+                        )
             return df
 
         df_full = normalize_zone_fields(df_full)
@@ -157,52 +162,15 @@ def normalize_prefetched_context(data):
         except Exception as e:
             debug(context, f"[NORM] ⚠️ Zone expansion skipped: {e}")
 
-        # keep these after expansion
+        # --- Update context after expansion ---
         context["df_full"] = df_full
         context["activities_full"] = df_full.to_dict(orient="records")
-        debug(context, f"[NORM] activities_light={len(df_light)} full={len(df_full)} wellness={len(df_well)} athlete_keys={list(athlete.keys()) if athlete else 'none'}")
+        debug(
+            context,
+            f"[NORM] activities_light={len(df_light)} full={len(df_full)} wellness={len(df_well)} "
+            f"athlete_keys={list(athlete.keys()) if athlete else 'none'}"
+        )
 
-        # --- NEW: Expand HR/Power zone lists into numeric columns (match Tier-0 behaviour) ---
-        def expand_zones(df, field, prefix):
-            """Expand JSON/list zone arrays into separate z1..zN numeric columns."""
-            import numpy as np
-            if field not in df.columns or df.empty:
-                return df
-
-            def safe_parse(x):
-                if x in [None, "null", "None", np.nan]:
-                    return []
-                if isinstance(x, str):
-                    try:
-                        x = json.loads(x)
-                    except Exception:
-                        return []
-                if isinstance(x, list):
-                    flat = []
-                    for z in x:
-                        if isinstance(z, dict):
-                            flat.append(z.get("secs", 0))
-                        elif isinstance(z, (int, float)):
-                            flat.append(z)
-                    return flat
-                return []
-
-            parsed = df[field].apply(safe_parse)
-            max_len = parsed.map(len).max() if not parsed.empty else 0
-            if max_len == 0:
-                return df
-
-            z = pd.DataFrame(parsed.tolist(), index=df.index)
-            z = z.reindex(columns=range(max_len)).fillna(0).astype(float)
-            z.columns = [f"{prefix}_z{i+1}" for i in range(max_len)]
-
-            debug(context, f"[NORM-EXPAND] Expanded {field} → {len(z.columns)} cols")
-            return pd.concat([df.drop(columns=[field]), z], axis=1)
-
-        df_full = expand_zones(df_full, "icu_zone_times", "power")
-        df_full = expand_zones(df_full, "icu_hr_zone_times", "hr")
-        df_full = expand_zones(df_full, "pace_zone_times", "pace")
-        debug(context, "[NORM] ✅ Zone columns expanded in prefetched dataset (Tier-0 parity)")
 
         debug(context, f"[NORM] activities_light={len(df_light)} full={len(df_full)} wellness={len(df_well)} athlete_keys={list(athlete.keys()) if athlete else 'none'}")
     except Exception as e:
