@@ -381,9 +381,9 @@ def evaluate_actions(context):
                 phase,
                 f"ℹ {phase} phase ({start} → {end}) Δ {delta*100:.0f}%."
             )
-            msg = (msg.replace("{start}", start)
-                        .replace("{end}", end)
-                        .replace("{delta}", f"{delta*100:.0f}%"))
+            msg = (msg.replace("{start}", str(start or ""))
+                    .replace("{end}", str(end or ""))
+                    .replace("{delta}", f"{delta*100:.0f}%"))
             actions.append(msg)
         actions.append("")
         actions.append("📘 **Coach Note:** Phase logic aligned with Seiler / Friel periodisation heuristics.")

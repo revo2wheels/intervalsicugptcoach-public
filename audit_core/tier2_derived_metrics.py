@@ -515,17 +515,18 @@ def compute_derived_metrics(df_events, context):
             # --- Identify zone columns
             pcols = [c for c in sub.columns if c.startswith("power_z")]
             hcols = [c for c in sub.columns if c.startswith("hr_z")]
-            debug(context, f"[T2-FUSED] {sport_group}: power cols={len(pcols)}, hr cols={len(hcols)}")
 
-            if not (pcols or hcols):
-                debug(context, f"[T2-FUSED] ⚠️ {sport_group}: no power/hr zone columns → skipped")
-                continue
+            # --- Filter rows: if power exists for this activity, ignore HR for that row
+            sub_power = sub[sub[pcols].sum(axis=1) > 0] if pcols else pd.DataFrame()
+            sub_hr = sub[sub[pcols].sum(axis=1) == 0] if pcols else sub  # only HR if no power
 
+            # --- Combine the two sets (power-priority)
+            sub_filtered = pd.concat([sub_power, sub_hr])
+
+            # --- Normalize
             zone_cols = sorted(set(pcols + hcols))
-            sub_num = sub[zone_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
+            sub_num = sub_filtered[zone_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
             total = sub_num.sum().sum()
-            debug(context, f"[T2-FUSED] {sport_group}: total zone sum={total}")
-
             if total <= 0:
                 debug(context, f"[T2-FUSED] ⚠️ {sport_group}: total<=0 → skipped")
                 continue
