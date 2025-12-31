@@ -495,86 +495,122 @@ def compute_derived_metrics(df_events, context):
         groups = CHEAT_SHEET.get("sport_groups", {})
         fused = {}
 
-        if "type" not in df_events.columns:
-            df_events["type"] = context.get("sport_type", "Unknown")
+        debug(context, f"[T2-FUSED] 🔍 Starting fused zone computation")
+        debug(context, f"[T2-FUSED] df_events shape={df_events.shape}")
+        debug(context, f"[T2-FUSED] df_events cols sample: {list(df_events.columns)[:30]}")
 
+        # --- Ensure sport type column present
+        if "type" not in df_events.columns:
+            context.setdefault("sport_type", "Unknown")
+            df_events["type"] = context["sport_type"]
+            debug(context, f"[T2-FUSED] Injected missing 'type' column → default='{context['sport_type']}'")
+
+        debug(context, f"[T2-FUSED] Unique types before fusion: {df_events['type'].unique().tolist()}")
+        debug(context, f"[T2-FUSED] sport_groups available: {list(groups.keys())}")
+
+        # --- Iterate sport groups from cheat sheet
         for sport_group, members in groups.items():
             if sport_group == "Excluded":
                 continue
+
             sub = df_events[df_events["type"].isin(members)]
+            debug(context, f"[T2-FUSED] Group '{sport_group}' members={members} → rows={len(sub)}")
+
             if sub.empty:
                 continue
 
+            # --- Identify zone columns
             pcols = [c for c in sub.columns if c.startswith("power_z")]
             hcols = [c for c in sub.columns if c.startswith("hr_z")]
+            debug(context, f"[T2-FUSED] {sport_group}: power cols={len(pcols)}, hr cols={len(hcols)}")
+
             if not (pcols or hcols):
+                debug(context, f"[T2-FUSED] ⚠️ {sport_group}: no power/hr zone columns → skipped")
                 continue
 
             zone_cols = sorted(set(pcols + hcols))
             sub_num = sub[zone_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
             total = sub_num.sum().sum()
+            debug(context, f"[T2-FUSED] {sport_group}: total zone sum={total}")
+
             if total <= 0:
+                debug(context, f"[T2-FUSED] ⚠️ {sport_group}: total<=0 → skipped")
                 continue
 
             fused[sport_group] = (sub_num.sum() / total * 100).round(1).to_dict()
 
+        # --- Outcome
         if fused:
-            context["zone_dist_fused"] = fused
             dominant = max(fused.keys(), key=lambda k: sum(fused[k].values()))
+            context["zone_dist_fused"] = fused
             context["polarisation_sport"] = dominant
-            debug(context, f"[T2] ✅ Fused zones computed → sports={list(fused.keys())}, dominant={dominant}")
+            debug(context, f"[T2-FUSED] ✅ Fused zones computed → sports={list(fused.keys())}, dominant={dominant}")
         else:
-            debug(context, "[T2] ⚠️ No valid power/hr zone columns for fusion.")
+            debug(context, "[T2-FUSED] ⚠️ No valid power/hr zone columns or groups produced fusion output.")
 
     except Exception as e:
-        debug(context, f"[T2] ⚠️ Zone fusion failed → {e}")
+        import traceback
+        debug(context, f"[T2-FUSED] ❌ Zone fusion failed: {e}\n{traceback.format_exc()}")
+
 
     # ---------------------------------------------------------
-    # 🧩 Inject Combined Zones (global HR+Power blend)
+    # 🧩 Combined Zones (global HR+Power blend across all sports)
     # ---------------------------------------------------------
     try:
+        debug(context, "[T2-COMBINED] 🔍 Starting combined zone computation")
+
         fused = context.get("zone_dist_fused", {})
         combined = {}
 
-        if fused:
-            # Aggregate all sports’ fused distributions
+        if not fused:
+            debug(context, "[T2-COMBINED] ⚠️ No fused zones in context → skipping combination.")
+        else:
+            debug(context, f"[T2-COMBINED] Found fused sports: {list(fused.keys())}")
+
+            # --- Aggregate all sports’ fused distributions
             all_keys = set()
             for sport_data in fused.values():
                 all_keys.update(sport_data.keys())
+
+            debug(context, f"[T2-COMBINED] All zone keys across sports: {sorted(all_keys)}")
 
             for key in all_keys:
                 combined[key] = np.mean([
                     sport_data.get(key, 0.0) for sport_data in fused.values()
                 ])
 
-            # Optional: compute Polarisation Index (Z1 vs. Z3+)
+            # --- Optional sanity report
+            debug(context, f"[T2-COMBINED] Combined mean zones → sample: "
+                           f"{ {k: round(v,1) for k,v in list(combined.items())[:6]} }")
+
+            # --- Compute Polarisation Index (Z1 vs. Z3+)
             z1 = combined.get("hr_z1", 0) + combined.get("power_z1", 0)
-            z3p = sum(v for k, v in combined.items() if "z3" in k or "z4" in k or "z5" in k)
+            z3p = sum(v for k, v in combined.items()
+                      if any(zone in k for zone in ["z3", "z4", "z5"]))
             polarisation_index = round(z1 / (z1 + z3p + 1e-9), 3)
 
-            semantic["zones"]["combined"] = {
+            # --- Simple model classification
+            if polarisation_index >= 0.8:
+                model = "polarised"
+            elif 0.65 <= polarisation_index < 0.8:
+                model = "pyramidal"
+            else:
+                model = "threshold"
+
+            context["zone_dist_combined"] = {
                 "distribution": {k: round(v, 2) for k, v in combined.items()},
-                "basis": "Power for power-available, HR otherwise (time-weighted)",
+                "basis": "Power where available, HR otherwise (multi-sport weighted)",
                 "polarisation_index": polarisation_index,
-                "model": (
-                    "polarised" if polarisation_index >= 0.8
-                    else "pyramidal" if 0.65 <= polarisation_index < 0.8
-                    else "threshold"
-                ),
+                "model": model,
             }
 
-            debug(context, f"[SEMANTIC] Combined zones computed → PI={polarisation_index}")
-
-        else:
-            semantic["zones"]["combined"] = {
-                "distribution": {},
-                "basis": "unavailable",
-                "polarisation_index": None,
-                "model": "undefined"
-            }
+            debug(context,
+                  f"[T2-COMBINED] ✅ Combined zones computed → PI={polarisation_index}, model={model}")
 
     except Exception as e:
-        debug(context, f"[SEMANTIC] ⚠️ Failed to compute combined zones: {e}")
+        import traceback
+        debug(context, f"[T2-COMBINED] ❌ Failed to compute combined zones: {e}\n{traceback.format_exc()}")
+
 
 
     # --- ✅ 8. ZQI (Zone Quality Index) ---
