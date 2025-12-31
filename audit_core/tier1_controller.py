@@ -485,14 +485,14 @@ def collect_zone_distributions(df_master, athlete_profile, context):
     # --- 🧹 Context-aware cleanup of raw nested zone columns ---
     import os
 
-    is_railway = os.environ.get("RAILWAY_ENVIRONMENT", "").lower() in ("production", "staging")
-    if is_railway:
-        for col in ["icu_power_zones", "icu_zone_times", "icu_hr_zone_times", "pace_zone_times"]:
-            if col in df_master.columns:
-                df_master.drop(columns=[col], inplace=True, errors="ignore")
-                debug(context, f"[T1-ZONES] Dropped raw nested zone column (Railway): {col}")
-    else:
-        debug(context, "[T1-ZONES] Local mode — keeping raw nested zone columns for expansion.")
+#    is_railway = os.environ.get("RAILWAY_ENVIRONMENT", "").lower() in ("production", "staging")
+#    if is_railway:
+#        for col in ["icu_power_zones", "icu_zone_times", "icu_hr_zone_times", "pace_zone_times"]:
+#            if col in df_master.columns:
+#                df_master.drop(columns=[col], inplace=True, errors="ignore")
+#                debug(context, f"[T1-ZONES] Dropped raw nested zone column (Railway): {col}")
+#    else:
+#        debug(context, "[T1-ZONES] Local mode — keeping raw nested zone columns for expansion.")
 
     debug(context, f"[ZONE-FINAL] icu_power_zones={context.get('icu_power_zones')}")
     debug(context, f"[ZONE-FINAL] icu_hr_zones={context.get('icu_hr_zones')}")
