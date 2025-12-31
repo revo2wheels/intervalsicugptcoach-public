@@ -155,12 +155,18 @@ def normalize_prefetched_context(data):
 
         # --- Expand HR/Power/Pace zones to match Tier-0 local parity ---
         try:
-            df_full = expand_zones(df_full, "icu_zone_times", "power")
-            df_full = expand_zones(df_full, "icu_hr_zone_times", "hr")
-            df_full = expand_zones(df_full, "pace_zone_times", "pace")
-
-            # NEW: unify column names for Tier-2 fusion parity
-            df_full.rename(columns=lambda c: re.sub(r'^(power_|hr_)', '', c), inplace=True)
+            for field, prefix in [
+                ("icu_zone_times", "power"),
+                ("icu_hr_zone_times", "hr"),
+                ("pace_zone_times", "pace"),
+            ]:
+                if field in df_full.columns and not df_full.empty:
+                    expanded = expand_zones(df_full[[field]].copy(), field, prefix)
+                    for col in expanded.columns:
+                        if col not in df_full.columns:
+                            df_full[col] = expanded[col]
+                    # 💡 keep the original columns for Tier-1 fusion
+            debug(context, "[NORM] ✅ Expanded HR/Power/Pace zones (non-destructive)")
 
             debug(context, "[NORM] ✅ Expanded HR/Power/Pace zones for Tier-0 parity")
         except Exception as e:
