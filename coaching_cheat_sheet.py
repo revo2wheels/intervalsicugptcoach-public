@@ -8,14 +8,19 @@ import pandas as pd
 # --- Global Coaching Cheat Sheet Dictionary ---
 CHEAT_SHEET = {}
 
+CHEAT_SHEET["meta"] = {
+    "version": "v16.17",
+    "last_updated": "2025-12-30",
+    "source": "Unified Coaching Reference (Intervals + Seiler + Banister)"
+}
+
 # === Thresholds ===
 CHEAT_SHEET["thresholds"] = {
     "ACWR": {"green": (0.8, 1.3), "amber": (0.6, 1.5)},
     "Monotony": {"green": (1.0, 2.0), "amber": (0.8, 2.5)},
     "Strain": {"green": (0, 3000), "amber": (3000, 4000)},
-    "RecoveryIndex": {"green": (0.6, 1.0), "amber": (0.4, 0.6)},
-    "Polarisation": {"green": (0.75, 0.90), "amber": (0.65, 0.95)},   # Seiler ratio (% displayed)
-    "PolarisationIndex": {"green": (0.75, 1.00), "amber": (0.60, 0.75)},  # Normalized index (0–1)
+#    "Polarisation": {"green": (0.75, 0.90), "amber": (0.65, 0.95)},   # Seiler ratio (% displayed)
+#    "PolarisationIndex": {"green": (0.75, 1.00), "amber": (0.60, 0.75)},  # Normalized index (0–1)
     "FatigueTrend": {"green": (-10, 10), "amber": (-20, 20)},  # Updated to percentage scale
     "StressTolerance": {"green": (2.0, 8.0), "amber": (1.0, 10.0)},
     "LIR": {"green": (0.8, 1.2), "amber": (0.6, 1.4), "red": (0.0, 0.6)},
@@ -41,7 +46,53 @@ CHEAT_SHEET["thresholds"] = {
     "HRVBalance": {"green": [1.0, 1.3],"amber": [0.9, 1.0],"red": [0.0, 0.9]},
     "HRVStability": {"green": (0.85, 1.0), "amber": (0.7, 0.85)},
     "HRVTrend": {"green": (0.0, 5.0), "amber": (-2.0, 0.0)},
+    # --- Power-based (Seiler) ---
+    "Polarisation": {"green": (0.75, 0.90), "amber": (0.65, 0.95)},  # Seiler ratio (Power only)
+    "PolarisationIndex": {"green": (0.75, 1.00), "amber": (0.60, 0.75)},  # Normalized Power Index
+
+    # --- Fused HR+Power (sport-specific) ---
+    "Polarisation_fused": {"green": (0.80, 1.00), "amber": (0.65, 0.80)},  # Slightly higher tolerance
+
+    # --- Combined HR+Power (multi-sport) ---
+    "Polarisation_combined": {"green": (0.78, 1.00), "amber": (0.60, 0.78)},  # Slightly looser due to sport mix
+    "TSB": {
+        "transition": [10, 999],     # Very fresh, low load (fitness declining)
+        "fresh": [5, 10],            # Race-ready freshness
+        "grey": [-5, 5],             # Balanced / neutral training
+        "optimal": [-30, -5],        # Productive training fatigue (good zone)
+        "high_risk": [-999, -30],    # Overreached / excessive fatigue
+    },
 }
+
+# === Phase-Aware Threshold Adjustments (optional overrides) ===
+CHEAT_SHEET["phase_thresholds"] = {
+    "Polarisation": {
+        "base":  {"green": (0.60, 0.80), "amber": (0.50, 0.90)},
+        "build": {"green": (0.75, 1.00), "amber": (0.60, 0.75)},
+        "peak":  {"green": (0.80, 1.00), "amber": (0.65, 0.80)},
+        "recovery": {"green": (0.70, 0.95), "amber": (0.55, 0.75)},
+    },
+    "PolarisationIndex": {
+        "base":  {"green": (0.60, 0.80), "amber": (0.50, 0.90)},
+        "build": {"green": (0.75, 1.00), "amber": (0.60, 0.75)},
+        "peak":  {"green": (0.80, 1.00), "amber": (0.65, 0.80)},
+        "recovery": {"green": (0.70, 0.95), "amber": (0.55, 0.75)},
+    },
+}
+# === Polarisation Model Mapping (canonical) ===
+CHEAT_SHEET["polarisation_models"] = {
+    "PolarisationIndex": [
+        {"label": "polarised", "range": (0.75, 1.00), "description": "80/20 intensity structure — strong aerobic bias"},
+        {"label": "pyramidal", "range": (0.65, 0.75), "description": "Mixed Z2/Z3 structure — transitional base conditioning"},
+        {"label": "threshold", "range": (0.00, 0.65), "description": "Threshold-heavy distribution — higher anaerobic load"},
+    ],
+    "Polarisation": [
+        {"label": "polarised", "range": (1.00, 9.99), "description": "Classic Seiler ratio (Z1+Z3)/(2×Z2) ≥1 — clear 80/20 split"},
+        {"label": "pyramidal", "range": (0.70, 1.00), "description": "Moderate-intensity dominant — typical base adaptation phase"},
+        {"label": "threshold", "range": (0.00, 0.70), "description": "Z2-heavy structure — use intentionally for aerobic foundation"},
+    ],
+}
+
 
 # === Context ===
 CHEAT_SHEET["context"] = {
@@ -54,22 +105,6 @@ CHEAT_SHEET["context"] = {
     "FatigueTrend": "FatigueTrend is calculated as the percentage change between the 7-day and 28-day moving averages. A 0% change indicates balance, while a positive percentage change indicates accumulating fatigue, and a negative percentage change indicates recovery.",
     "ZQI": "Zone Quality Index (%) 5-15 high-intensity time is normal <3% too easy, >20% too intense or erratic pacing.",
     "FatOxEfficiency": "0.4–0.8 means balanced fat oxidation; lower = carb dependence.",
-    "Polarisation": (
-        "Seiler Polarisation Ratio (Z1 + Z3) / (2 × Z2) showing the balance between low- and "
-        "high-intensity work relative to moderate-intensity (Z2) training. "
-        "≥1.0 = polarised (80/20), 0.7–0.99 = mixed, <0.7 = Z2-dominant. "
-        "Note: Z2-dominant patterns are normal during aerobic base or conditioning phases. "
-        "Interpretation depends on training phase — low ratios may indicate healthy base structure "
-        "rather than threshold overuse."
-    ),
-    "PolarisationIndex": (
-        "Normalized Polarisation Index (0–1) showing the proportion of total training spent in "
-        "low and moderate intensities (Z1+Z2). "
-        "≥0.75 indicates strong aerobic bias — ideal in base or recovery phases. "
-        "0.60–0.74 = mixed distribution (balanced endurance/tempo). "
-        "<0.60 = intensity-focused (common in build or peak phases). "
-        "Interpret phase context before flagging as 'threshold-heavy'."
-    ),
     "FOxI": "FatOx index %; higher values mean more efficient aerobic base.",
     "CUR": "Carbohydrate Utilisation Ratio; 30-80 balanced metabolic use.",
     "GR": "Glucose Ratio; >2 indicates excess glycolytic bias.",
@@ -103,7 +138,30 @@ CHEAT_SHEET["context"] = {
     "HRVBalance": "HRV compared to 42-day mean — shows short-term recovery status.",
     "HRVStability": "Consistency of HRV — lower variability = better physiological stability.",
     "HRVTrend": "Direction of HRV change — rising indicates improving recovery.",
-
+    # --- Polarisation Variants (clarified sources) ---
+    "Polarisation": (
+        "Power-based Seiler Polarisation Ratio (Z1 + Z3) / (2 × Z2), showing the balance "
+        "between low- and high-intensity work relative to moderate (Z2) training. "
+        "≥1.0 = polarised (80/20), 0.7–0.99 = mixed, <0.7 = Z2-dominant. "
+        "⚙️ *Power-only metric — HR ignored.* Use primarily during power-measured cycling phases."
+    ),
+    "PolarisationIndex": (
+        "Power-based normalized Polarisation Index (0–1). Reflects the proportion of total training "
+        "time in Z1 + Z2 relative to total. ≥0.75 = strong aerobic bias, <0.60 = intensity-heavy. "
+        "⚙️ *Power-only metric; dependent on accurate FTP calibration.*"
+    ),
+    "Polarisation_fused": (
+        "Dominant-sport Polarisation Index derived from fused HR+Power data. "
+        "Represents how the athlete distributes intensity within the primary discipline. "
+        "≥0.80 = polarised, 0.65–0.79 = pyramidal, <0.65 = threshold-dominant. "
+        "⚙️ *HR fills gaps when power unavailable.*"
+    ),
+    "Polarisation_combined": (
+        "Global HR+Power combined Polarisation Index across all sports. "
+        "Reflects total weekly distribution and load balance for multi-sport athletes. "
+        "≥0.80 = polarised, 0.65–0.79 = pyramidal, <0.65 = threshold-heavy. "
+        "⚙️ *Cross-discipline index — lower precision, but best overall summary of load contrast.*"
+    ),
 }
 
 CHEAT_SHEET["coaching_links"] = {
@@ -114,18 +172,6 @@ CHEAT_SHEET["coaching_links"] = {
     "RecoveryIndex": "If RecoveryIndex is low (<0.7), ensure adequate rest and recovery, and avoid heavy training loads.",
     "FatigueTrend": "If FatigueTrend is negative (e.g., below -0.2), this indicates a recovering state. Continue with controlled training load and focus on recovery to ensure sustained progress. Avoid aggressive increases in load.",
     "FatOxEfficiency": "If FatOxEfficiency is low (<0.6), focus on improving aerobic base with longer, low-intensity efforts.",
-    "Polarisation": (
-        "If Polarisation <0.7 and current block = Base, interpret as Z2-dominant "
-        "(✅ aerobic foundation). "
-        "If in Build or Peak, reduce mid-zone volume and restore Z1/Z3 contrast. "
-        "Maintain ≥1.0 for a fully polarised (80/20) structure in race phases."
-    ),
-    "PolarisationIndex": (
-        "If PolarisationIndex <0.60 and current block = Base, reduce Z2 time and increase Z1 "
-        "endurance work to maintain aerobic bias. "
-        "If PolarisationIndex <0.60 in Build/Peak, acceptable — reflects higher intensity focus. "
-        "Target ≥0.75 in Base/Recovery for efficient aerobic adaptation."
-    ),
     "ZQI": "If ZQI > 20%, review pacing strategy; excessive high-intensity time could indicate erratic pacing or overtraining. Aim for 5-15% ZQI for balanced training.",
     "FOxI": "If FOxI is increasing, continue to prioritize low-intensity work to enhance fat metabolism. If it decreases, consider increasing your Zone 2 training duration.",
     "CUR": "If CUR is outside the green zone (30-70), adjust carbohydrate intake and fueling strategy to ensure balanced metabolic use during long sessions.",
@@ -135,6 +181,34 @@ CHEAT_SHEET["coaching_links"] = {
     "FatigueResistance": "If FatigueResistance <0.9, add longer sub-threshold intervals or extended endurance sessions. Maintain >0.95 to support long-duration performance.",
     "EfficiencyFactor": "If EfficiencyFactor is declining, focus on aerobic conditioning and recovery. Stable or increasing EF indicates improving endurance efficiency.",
     "RecoveryIndex": "If RecoveryIndex is low, ensure adequate rest and recovery. If high, maintain load and monitor for overreaching.",
+    # --- Polarisation Variants Coaching Links ---
+    "Polarisation": (
+        "If Polarisation <0.7 during base, this reflects aerobic Z2 dominance (✅ normal). "
+        "If in Build/Peak, reduce Z2 time and increase Z1/Z3 contrast. "
+        "Maintain ≥1.0 for ideal 80/20 balance in power-measured disciplines."
+    ),
+    "PolarisationIndex": (
+        "If PolarisationIndex <0.60 during base, increase Z1 time to reinforce aerobic bias. "
+        "If low in Build, acceptable for intensity focus. "
+        "Target ≥0.75 in base and recovery blocks for efficient endurance adaptation."
+    ),
+    "Polarisation_fused": (
+        "If fused Polarisation Index <0.65, the dominant sport is intensity-heavy — "
+        "increase Z1/Z2 duration or insert a recovery microcycle. "
+        "Maintain ≥0.80 for a robust endurance foundation."
+    ),
+    "Polarisation_combined": (
+        "If combined Polarisation Index <0.65, total weekly load is intensity-heavy. "
+        "Add endurance-focused sessions or recovery days to preserve a healthy 80/20 ratio. "
+        "Ideal global range ≥0.78 for mixed-sport athletes."
+    ),
+}
+
+CHEAT_SHEET["display_names"] = {
+    "Polarisation": "Polarisation (Power-based, Seiler ratio)",
+    "PolarisationIndex": "Polarisation Index (Power-based, normalized)",
+    "Polarisation_fused": "Polarisation Index (Fused HR+Power, sport-specific)",
+    "Polarisation_combined": "Polarisation Index (Combined HR+Power, multi-sport)",
 }
 
 CHEAT_SHEET["advice"] = {
@@ -158,22 +232,48 @@ CHEAT_SHEET["advice"] = {
     },
 
     # --- Efficiency Drift ---
-    "EfficiencyDrift": {
-        "high": "⚠ Efficiency drift high ({:.2%}) — improve aerobic durability or reduce fatigue load.",
-        "stable": "✅ Efficiency drift stable ({:.2%})."
+    "IFDrift": {
+        "stable": "✅ IF Drift stable ({:.2%}) — aerobic durability solid.",
+        "high": "⚠ IF Drift high ({:.2%}) — improve aerobic durability or reduce fatigue load."
     },
-
+    # Base metric: Polarisation (Power-only)
     "Polarisation": {
-        "low": "⚠ Polarisation low ({:.0%}) — increase Z1–Z3 contrast unless in base phase.",
-        "z2_base": "🧱 Z2-base dominant ({:.0%}) — appropriate for aerobic foundation phase.",
-        "optimal": "✅ Polarisation optimal ({:.0%})."
+        "low": "⚠ Polarisation low ({:.2f}) — increase Z1–Z3 contrast unless in base phase.",
+        "z2_base": "🧱 Z2-base dominant ({:.2f}) — appropriate for aerobic foundation phase.",
+        "optimal": "✅ Polarisation optimal ({:.2f}) — strong 80/20 intensity structure."
     },
+    # Power-normalized index variant
     "PolarisationIndex": {
-        "low": "⚠ Polarisation Index low ({:.2f}) — monitor Z2 dominance; acceptable in build phases.",
+        "low": "⚠ Polarisation Index low ({:.2f}) — intensity-heavy pattern; monitor Zone 2 volume.",
         "z2_base": "🧱 Aerobic bias strong ({:.2f}) — excellent for base or recovery blocks.",
-        "optimal": "✅ Polarisation Index optimal ({:.2f}) — balanced endurance structure."
+        "optimal": "✅ Polarisation Index optimal ({:.2f}) — balanced endurance distribution."
     },
-
+    # Fused HR+Power variant (sport-specific)
+    "Polarisation_fused": {
+        "low": "⚠ Fused Polarisation Index low ({:.2f}) — dominant sport intensity heavy; add endurance work.",
+        "z2_base": "🧱 Fused Polarisation Index ({:.2f}) — Z2-base dominant, normal for aerobic development.",
+        "optimal": "✅ Fused Polarisation Index optimal ({:.2f}) — maintain current intensity mix."
+    },
+    # Multi-sport combined variant
+    "Polarisation_combined": {
+        "low": "⚠ Combined Polarisation Index low ({:.2f}) — total weekly load intensity-heavy; increase endurance ratio.",
+        "z2_base": "🧱 Combined Polarisation Index ({:.2f}) — pyramidal distribution, acceptable in build weeks.",
+        "optimal": "✅ Combined Polarisation Index optimal ({:.2f}) — balanced global load contrast."
+    },
+        # --- Multi-variant Polarisation summary ---
+    "Polarisation_summary": {
+        "low": (
+            "⚠ Polarisation metrics low ({}) — review endurance–intensity balance across sports. "
+            "Multiple discipline indices below target indicate overall Z2 dominance or insufficient intensity contrast."
+        ),
+        "mixed": (
+            "🟠 Polarisation mixed ({}) — sport-specific imbalances detected; "
+            "ensure HR and power distributions align with phase goals."
+        ),
+        "balanced": (
+            "✅ Polarisation balanced ({}) — endurance and intensity distribution consistent across sports."
+        )
+    },
     # --- Recovery Index ---
     "RecoveryIndex": {
         "poor": "⚠ Recovery Index poor ({:.2f}) — insert deload or reduce intensity.",
@@ -252,6 +352,57 @@ CHEAT_SHEET["labels"] = {
     "strain": "Load × Monotony",
     "fatigue_trend": "EMA(Load, decay=0.2) (Percentage change)",
 }
+
+CHEAT_SHEET["future_actions"] = {
+    "transition": {
+        "title": "Transition / Recovery",
+        "reason": "Training load is low; focus on maintaining activity and recovery.",
+        "priority": "low"
+    },
+    "fresh": {
+        "title": "Freshness high",
+        "reason": "You are well recovered; training is going well.",
+        "priority": "normal"
+    },
+    "grey": {
+        "title": "Grey Zone / Balanced Training",
+        "reason": "Training stimulus and recovery are balanced; neutral load trend.",
+        "priority": "normal"
+    },
+    "optimal": {
+        "title": "Optimal training zone",
+        "reason": "Form indicates productive training load; continue structured progression.",
+        "priority": "normal"
+    },
+    "high_risk": {
+        "title": "High Risk / Overreaching",
+        "reason": "Form suggests significant fatigue; consider recovery actions.",
+        "priority": "high"
+    },
+}
+
+CHEAT_SHEET["future_labels"] = {
+    "transition": "Very fresh — light training phase",
+    "fresh": "Fresh — well recovered",
+    "grey": "Neutral — balanced load",
+    "optimal": "Optimal — productive training zone",
+    "high_risk": "High fatigue — risk of overreaching"
+}
+
+CHEAT_SHEET["future_colors"] = {
+    "transition": "#66ccff",
+    "fresh": "#99ff99",
+    "grey": "#cccccc",
+    "optimal": "#ffcc66",
+    "high_risk": "#ff6666"
+}
+
+# --- Backward compatibility aliases ---
+if "IFDrift" in CHEAT_SHEET["advice"]:
+    CHEAT_SHEET["advice"]["EfficiencyDrift"] = CHEAT_SHEET["advice"]["IFDrift"]
+if "IFDrift" in CHEAT_SHEET["thresholds"]:
+    CHEAT_SHEET["thresholds"]["EfficiencyDrift"] = CHEAT_SHEET["thresholds"]["IFDrift"]
+
 
 # === Cheat Sheet Accessor ===
 def summarize_load_block(context):

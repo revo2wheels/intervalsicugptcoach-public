@@ -67,16 +67,16 @@ def convert_to_str(value):
 def semantic_block_for_metric(name, value, context):
     """
     Builds semantic envelope for a single metric.
-    100% data-driven: thresholds, phase overrides, and interpretations
-    are all defined in coaching_cheat_sheet.py.
+    - Uses Cheat Sheet thresholds when available.
+    - Falls back to Coach Profile marker criteria if not.
+    - Supports numeric range classification (🟢🟡🔴).
     """
     import math
 
+    # --- Normalization ---
     metric_name = str(name).strip()
     thresholds = CHEAT_SHEET["thresholds"].get(metric_name, {})
-    phase_thresholds = CHEAT_SHEET.get("phase_thresholds", {}).get(metric_name, {})
     profile_desc = COACH_PROFILE["markers"].get(metric_name, {})
-
     interpretation = (
         CHEAT_SHEET["context"].get(metric_name)
         or profile_desc.get("interpretation")
@@ -85,31 +85,17 @@ def semantic_block_for_metric(name, value, context):
         CHEAT_SHEET["coaching_links"].get(metric_name)
         or profile_desc.get("coaching_implication")
     )
-    display_name = CHEAT_SHEET.get("display_names", {}).get(metric_name, metric_name)
 
-    phase = (
-        context.get("current_phase")
-        or context.get("phase_name")
-        or ""
-    ).lower()
-
+    # --- Classification logic ---
     classification = "unknown"
-
     try:
         if value is None or (isinstance(value, (float, int)) and math.isnan(value)):
             classification = "undefined"
-        else:
+
+        elif thresholds:
+            green = thresholds.get("green")
+            amber = thresholds.get("amber")
             v = float(value)
-
-            # Pull the correct thresholds dynamically
-            active_thresholds = (
-                phase_thresholds.get(phase)
-                if metric_name in phase_thresholds and phase in phase_thresholds
-                else thresholds
-            )
-
-            green = active_thresholds.get("green")
-            amber = active_thresholds.get("amber")
 
             if green and green[0] <= v <= green[1]:
                 classification = "green"
@@ -118,23 +104,47 @@ def semantic_block_for_metric(name, value, context):
             else:
                 classification = "red"
 
+        elif "criteria" in profile_desc:
+            crit = profile_desc["criteria"]
+            v = float(value)
+
+            # Fuzzy string-based evaluation for profile criteria
+            def check(expr):
+                try:
+                    expr = str(expr).replace("–", "-").replace(" ", "")
+                    if ">" in expr or "<" in expr:
+                        return eval(f"{v}{expr}")
+                    if "-" in expr:
+                        low, high = [float(x) for x in expr.split("-")]
+                        return low <= v <= high
+                except Exception:
+                    return False
+                return False
+
+            if "optimal" in crit and check(crit["optimal"]):
+                classification = "green"
+            elif "moderate" in crit and check(crit["moderate"]):
+                classification = "amber"
+            elif "low" in crit and check(crit["low"]):
+                classification = "red"
+            elif "high" in crit and check(crit["high"]):
+                classification = "green"
+
     except Exception:
         classification = "unknown"
 
+    # --- Output block ---
     return {
         "name": metric_name,
-        "display_name": display_name,
         "value": convert_to_str(value),
         "framework": profile_desc.get("framework") or "Unknown",
         "formula": profile_desc.get("formula"),
         "thresholds": thresholds,
-        "phase_context": phase,
         "classification": classification,
         "interpretation": interpretation,
         "coaching_implication": coaching_link,
         "related_metrics": profile_desc.get("criteria", {}),
     }
-
 
 
 # ---------------------------------------------------------
@@ -571,6 +581,7 @@ def build_semantic_json(context):
         combined = {}
 
         if fused:
+            # Collect all zone keys
             all_keys = set()
             for sport_data in fused.values():
                 all_keys.update(sport_data.keys())
@@ -580,176 +591,84 @@ def build_semantic_json(context):
                     sport_data.get(key, 0.0) for sport_data in fused.values()
                 ])
 
+            # --- Group HR and Power zones separately
             grouped = {
                 "power": {k.replace("power_", ""): round(v, 2) for k, v in combined.items() if k.startswith("power_")},
                 "hr": {k.replace("hr_", ""): round(v, 2) for k, v in combined.items() if k.startswith("hr_")},
             }
 
-            # --- Compute Polarisation Index (weighted HR+Power)
+            # --- Compute Polarisation Index
             z1 = grouped["hr"].get("z1", 0) + grouped["power"].get("z1", 0)
             z3p = sum(v for k, v in {**grouped["hr"], **grouped["power"]}.items() if k in ["z3", "z4", "z5"])
             polarisation_index = round(z1 / (z1 + z3p + 1e-9), 3)
 
-            # --- Lookup model from cheat sheet
-            model_info = next(
-                (
-                    m for m in CHEAT_SHEET.get("polarisation_models", {}).get("PolarisationIndex", [])
-                    if m["range"][0] <= polarisation_index <= m["range"][1]
-                ),
-                {"label": "undefined", "description": "Outside defined range"}
-            )
-
+            # --- Store cleanly
             semantic["zones"]["combined"] = {
                 "distribution": grouped,
                 "basis": "Power where available, HR otherwise (time-weighted)",
                 "polarisation_index": polarisation_index,
-                "model": model_info["label"],
-                "model_description": model_info["description"],
-                "_render": {
-                    "polarisation_index": False,
-                    "model": False,
-                    "model_description": False
-                }
+                "model": (
+                    "polarised" if polarisation_index >= 0.8
+                    else "pyramidal" if 0.65 <= polarisation_index < 0.8
+                    else "threshold"
+                ),
             }
 
-            debug(
-                context,
-                f"[SEMANTIC] ✅ Combined zones computed → PI={polarisation_index}, model={model_info['label']}"
-            )
-
+            debug(context, f"[SEMANTIC] ✅ Combined zones computed → PI={polarisation_index}, model={semantic['zones']['combined']['model']}")
         else:
             semantic["zones"]["combined"] = {
                 "distribution": {"power": {}, "hr": {}},
                 "basis": "unavailable",
                 "polarisation_index": None,
                 "model": "undefined",
-                "model_description": "No valid data",
             }
 
     except Exception as e:
         debug(context, f"[SEMANTIC] ⚠️ Failed to compute combined zones: {e}")
 
-
-    # ---------------------------------------------------------
-    # 🧭 Derived Polarisation Variants (canonical, cheat-sheet driven)
-    # ---------------------------------------------------------
-
+    # --- 🧭 Derived Polarisation Variants (for transparency, canonical-driven)
     try:
         polarisation_variants = {}
-        cs = CHEAT_SHEET  # alias for brevity
+        display_names = CHEAT_SHEET.get("display_names", {})
 
-        def build_variant(metric_key: str, value: float, basis: str, source: str):
-            """
-            Universal polarisation variant builder.
-            Pulls *everything* (display name, thresholds, interpretation, coaching)
-            from CHEAT_SHEET — no literals.
-            """
-            block = semantic_block_for_metric(metric_key, value, context)
-
-            # canonical enrichment — merge with COACH_PROFILE definitions
-            profile_def = COACH_PROFILE["markers"].get(metric_key, {})
-
-            block.update({
-                "display_name": cs["display_names"].get(metric_key, metric_key),
-                "basis": basis,
-                "source": source,
-                "framework": profile_def.get("framework", "Physiological"),
-                "formula": profile_def.get("formula"),
-                "thresholds": (
-                    cs["thresholds"].get(metric_key)
-                    or profile_def.get("criteria")
-                ),
-                "interpretation": (
-                    cs["context"].get(metric_key)
-                    or profile_def.get("interpretation")
-                ),
-                "coaching_implication": (
-                    cs["coaching_links"].get(metric_key)
-                    or profile_def.get("coaching_implication")
-                ),
-                "related_metrics": profile_def.get("criteria", {}),
-            })
-
-            # model label + description from canonical map
-            model_map = cs.get("polarisation_models", {}).get(metric_key)
-            if model_map and isinstance(value, (int, float)):
-                for m in model_map:
-                    lo, hi = m["range"]
-                    if lo <= value < hi:
-                        block["model"] = m["label"]
-                        block["model_description"] = m["description"]
-                        break
-
-            # 🔗 Map variant keys to canonical profile metric definitions
-            canonical_key = {
-                "Polarisation_fused": "Polarisation",
-                "Polarisation_combined": "PolarisationIndex",
-            }.get(metric_key, metric_key)
-
-            # --- Retrieve canonical definition
-            profile_def = COACH_PROFILE["markers"].get(canonical_key, {})
-            cs_context = CHEAT_SHEET["context"].get(canonical_key, "")
-
-            # ✅ Inject canonical framework, formula, criteria, and contextual fallback
-            block.update({
-                # Framework & formula from COACH_PROFILE (primary source)
-                "framework": profile_def.get("framework") or block.get("framework") or "Unknown",
-                "formula": profile_def.get("formula") or block.get("formula") or "Not defined",
-                "related_metrics": (
-                    profile_def.get("criteria")
-                    or block.get("related_metrics")
-                    or {}
-                ),
-                # Interpretation fallback from CHEAT_SHEET (secondary source)
-                "interpretation": (
-                    block.get("interpretation")
-                    or cs_context
-                    or "No contextual description available."
-                ),
-            })
-
-            # 🧭 Phase-awareness injection (ensure each metric inherits current phase)
-            block["phase_context"] = (
-                context.get("current_phase")
-                or (semantic.get("phases", [{}])[-1].get("phase") if semantic.get("phases") else "")
-                or ""
-            )
-
-            return block
-
-        # --- Fused variant (sport-specific HR+Power)
+        # 1️⃣ Fused (dominant sport)
         fused = context.get("zone_dist_fused", {})
         dom_sport = context.get("polarisation_sport")
         if fused and dom_sport in fused:
             dist = fused[dom_sport]
             z1 = dist.get("hr_z1", 0) + dist.get("power_z1", 0)
             z3p = sum(v for k, v in dist.items() if any(z in k for z in ["z3", "z4", "z5"]))
-            pi_fused = round(z1 / (z1 + z3p + 1e-9), 3)
-            polarisation_variants["fused"] = build_variant(
-                "Polarisation_fused",
-                pi_fused,
-                f"Fused HR+Power (dominant sport: {dom_sport})",
-                "zones.fused",
-            )
+            pi_fused = round((z1 / (z1 + z3p + 1e-9)), 3)
 
-        # --- Combined variant (multi-sport HR+Power)
-        combined = context.get("zone_dist_combined") or semantic.get("zones", {}).get("combined", {})
+            # Build semantic block using canonical profile + cheat sheet
+            block = semantic_block_for_metric("PolarisationIndex", pi_fused, context)
+            block.update({
+                "display_name": display_names.get("Polarisation_fused", "Fused Polarisation (Dominant Sport)"),
+                "basis": f"Fused HR+Power (dominant sport: {dom_sport})",
+                "source": "zones.fused",
+            })
+            polarisation_variants["fused"] = block
+
+        # 2️⃣ Combined (HR+Power all sports)
+        combined = context.get("zone_dist_combined") or context.get("zones", {}).get("combined", {})
         if combined:
             pi_combined = combined.get("polarisation_index")
-            polarisation_variants["combined"] = build_variant(
-                "Polarisation_combined",
-                pi_combined,
-                "Power where available, HR otherwise (multi-sport weighted)",
-                "zones.combined",
-            )
+            block = semantic_block_for_metric("PolarisationIndex", pi_combined, context)
+            block.update({
+                "display_name": display_names.get("Polarisation_combined", "Combined Polarisation (All Sports)"),
+                "basis": "HR+Power combined distribution (multi-sport weighted)",
+                "source": "zones.combined",
+            })
+            polarisation_variants["combined"] = block
 
-        # inject into semantic
+        # ✅ Inject the canonical variant block
         semantic.setdefault("metrics", {})
         semantic["metrics"]["Polarisation_variants"] = polarisation_variants
         debug(context, f"[SEMANTIC] Injected polarisation variants → {list(polarisation_variants.keys())}")
 
     except Exception as e:
         debug(context, f"[SEMANTIC] ⚠️ Could not build polarisation variants: {e}")
+
 
 
     # ------------------------------------------------------------------
@@ -1529,68 +1448,25 @@ def build_semantic_json(context):
         debug(context, "[SEM] CTL/ATL/TSB sourced from wellness_summary fallback")
 
     # ---------------------------------------------------------
-    # 🔮 Tier-3 FUTURE FORECAST (inline execution if not already injected)
+    # 🔮 FUTURE FORECAST (Tier-3 projections)
     # ---------------------------------------------------------
-    try:
-        if "future_forecast" not in context or not context.get("future_forecast"):
-            from audit_core.tier3_future_forecast import run_future_forecast
-            forecast_output = run_future_forecast(context)
-            if isinstance(forecast_output, dict):
-                context.update(forecast_output)
-                debug(context, "[SEMANTIC] Injected Tier-3 forecast output into context.")
-            else:
-                debug(context, "[SEMANTIC] ⚠️ Tier-3 forecast returned unexpected type.")
-        else:
-            debug(context, "[SEMANTIC] Skipped Tier-3 forecast — already present in context.")
-    except Exception as e:
-        debug(context, f"[SEMANTIC] ⚠️ Tier-3 forecast execution failed: {e}")
-
-    # ---------------------------------------------------------
-    # 🌤️ Copy future actions to semantic structure
-    # ---------------------------------------------------------
-    if context.get("actions_future"):
-        semantic["future_actions"] = context["actions_future"]
-        debug(context, f"[SEMANTIC] 🌤️ Added {len(context['actions_future'])} future actions to semantic JSON.")
+    semantic["future_forecast"] = context.get("future_forecast", {}) or {}
+    if "actions_future" in context and isinstance(context["actions_future"], list):
+        semantic["actions_future"] = context["actions_future"]
     else:
-        semantic["future_actions"] = []
-        debug(context, "[SEMANTIC] ⚠️ No future actions found for semantic JSON.")
-
+        semantic["actions_future"] = []
 
     # ---------------------------------------------------------
     # 🧭 COACHING ACTIONS (Tier-2 guidance)
     # ---------------------------------------------------------
     semantic["actions"] = context.get("actions", [])
-    
-    # ---------------------------------------------------------
-    # 🧩 Merge Tier-3 Future Actions (if available)
-    # ---------------------------------------------------------
-    if context.get("actions_future"):
-        debug(
-            context,
-            f"[SEMANTIC] 🔮 Merging {len(context['actions_future'])} future actions into canonical list."
-        )
-        semantic.setdefault("actions", [])
-        semantic["actions"].extend(context["actions_future"])
-    else:
-        debug(context, "[SEMANTIC] ⚠️ No actions_future found after Tier-3 injection.")
 
-     # ---------------------------------------------------------
+    # ---------------------------------------------------------
     # 🧠 INSIGHTS (computed once, after all metrics resolved)
     # ---------------------------------------------------------
     semantic["insights"] = build_insights(semantic)
     semantic["insight_view"] = build_insight_view(semantic)
     semantic["context_ref"] = context
-
-    # ---------------------------------------------------------
-    # 🧹 CLEANUP — ensure only one authoritative actions section
-    # ---------------------------------------------------------
-    if "insight_view" in semantic and isinstance(semantic["insight_view"], dict):
-        if "actions" in semantic["insight_view"]:
-            del semantic["insight_view"]["actions"]
-
-    if "actions" in semantic and isinstance(semantic["actions"], list):
-        semantic.setdefault("meta", {})
-        semantic["meta"]["has_actions"] = bool(semantic["actions"])
 
     # ---------------------------------------------------------
     # 🧩 Echo render options for transparency
@@ -1599,6 +1475,7 @@ def build_semantic_json(context):
         semantic["options"] = context["render_options"]
 
     return apply_report_type_contract(semantic)
+
 
 def build_insight_view(semantic):
     """
@@ -1616,10 +1493,6 @@ def build_insight_view(semantic):
     critical, watch, positive = [], [], []
 
     for name, m in metrics.items():
-        # 🧩 Skip variant or composite containers (e.g. Polarisation_variants)
-        if isinstance(m, dict) and any(isinstance(v, dict) for v in m.values()):
-            continue  # skip nested dicts like {"fused": {...}, "combined": {...}}
-
         cls = m.get("classification")
         if cls not in ("red", "amber", "green"):
             continue

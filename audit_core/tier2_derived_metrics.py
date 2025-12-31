@@ -145,53 +145,45 @@ def compute_zone_intensity(df, context=None):
 def compute_polarisation_index(context):
     """
     Polarisation Index (0.0–1.0)
-
-    Primary:
-      (Z1 + Z2) / Total from zone distributions
-      (power preferred, else HR)
-
-    Fallback:
-      IF-based proxy weighted by moving_time
-      (low intensity defined as IF < 0.85)
-
-    Always returns a numeric float (validator-safe).
+    ------------------------------------
+    Corrected canonical form:
+        (Z1 + Z2) / (Z1 + Z2 + Z3)
+    Uses Power zones when available, else HR.
+    Falls back to IF-based proxy when no zone data exists.
     """
 
     debug_fn = context.get("debug", lambda *a, **kw: None)
 
     # =========================================================
-    # 1. PRIMARY — zone distributions
+    # 1️⃣ Primary — zone-based computation
     # =========================================================
-
     zones = context.get("zone_dist_power") or {}
     src = "power"
- 
+
     if not zones:
-         zones = context.get("zone_dist_hr") or {}
-         src = "hr"
+        zones = context.get("zone_dist_hr") or {}
+        src = "hr"
 
     if zones:
         try:
             z1 = float(zones.get("power_z1", zones.get("hr_z1", 0.0)))
             z2 = float(zones.get("power_z2", zones.get("hr_z2", 0.0)))
-            total = sum(float(v) for v in zones.values())
+            z3 = float(zones.get("power_z3", zones.get("hr_z3", 0.0)))
 
-            if total > 0:
-                pol = round((z1 + z2) / total, 3)
-                debug_fn(
-                    context,
-                    f"[POL] ({src}) Z1={z1:.1f} Z2={z2:.1f} "
-                    f"Total={total:.1f} → PolarisationIndex={pol}"
-                )
-                return float(pol)
-
-            debug_fn(context, f"[POL] ({src}) total zone time = 0 → fallback")
+            denom = z1 + z2 + z3
+            if denom > 0:
+                pol = round((z1 + z2) / denom, 3)
+                debug_fn(context, f"[POL] ({src}) Z1={z1:.1f} Z2={z2:.1f} Z3={z3:.1f} "
+                                  f"→ PI={(z1 + z2):.1f}/{denom:.1f} = {pol:.3f}")
+                return pol
+            else:
+                debug_fn(context, f"[POL] ({src}) Z1–Z3 sum=0 → fallback")
 
         except Exception as e:
-            debug_fn(context, f"[POL] ({src}) zone calc failed → fallback ({e})")
+            debug_fn(context, f"[POL] ({src}) zone PI computation failed → fallback ({e})")
 
     # =========================================================
-    # 2. FALLBACK — IF proxy (weighted by moving_time)
+    # 2️⃣ Fallback — IF proxy (weighted by moving_time)
     # =========================================================
     df = context.get("df_events")
     if df is None or getattr(df, "empty", True):
@@ -204,42 +196,27 @@ def compute_polarisation_index(context):
 
     try:
         tmp = df[["IF", "moving_time"]].copy()
-
         tmp["IF"] = pd.to_numeric(tmp["IF"], errors="coerce")
         tmp["moving_time"] = pd.to_numeric(tmp["moving_time"], errors="coerce").fillna(0)
-
         tmp = tmp.dropna(subset=["IF"])
         tmp = tmp[tmp["moving_time"] > 0]
-
         if tmp.empty:
             debug_fn(context, "[POL] ⚠ IF fallback has no valid rows → 0.0")
             return 0.0
 
-        # Normalise IF if stored as 70 instead of 0.70
-        tmp.loc[tmp["IF"] > 10, "IF"] = tmp["IF"] / 100.0
-
+        tmp.loc[tmp["IF"] > 10, "IF"] /= 100.0
         total_time = float(tmp["moving_time"].sum())
         if total_time <= 0:
             return 0.0
 
-        # Low-intensity proxy: IF < 0.85
         low_time = float(tmp.loc[tmp["IF"] < 0.85, "moving_time"].sum())
-
         pol = round(low_time / total_time, 3)
-        debug_fn(
-            context,
-            f"[POL] (IF-fallback) low_time={low_time:.1f}s "
-            f"total={total_time:.1f}s → PolarisationIndex={pol}"
-        )
-        return float(pol)
+        debug_fn(context, f"[POL] (IF-fallback) low_time={low_time:.1f}s total={total_time:.1f}s → PI={pol}")
+        return pol
 
     except Exception as e:
         debug_fn(context, f"[POL] ⚠ IF fallback failed ({e}) → 0.0")
         return 0.0
-
-
-
-
 
 
 def classify_marker(value, marker, context=None):
@@ -309,9 +286,6 @@ def classify_marker(value, marker, context=None):
 
     debug(context, f"[CLASSIFY] {marker}: {v} no rule matched")
     return "⚪", "undefined"
-
-
-
 
 
 def safe(df, col, fn="sum"):
@@ -512,6 +486,96 @@ def compute_derived_metrics(df_events, context):
         if hr_zone_cols:
             df_events.loc[:, hr_zone_cols] = df_events[hr_zone_cols].apply(lambda col: col * factor)
             debug(context, f"[T2] ⚙️ Applied HR→Power scaling ×{factor} to HR zones ({len(hr_zone_cols)} cols)")
+
+    # ======================================================
+    # 🧩 Fuse Power + HR zones per sport (URF v5.1 addition)
+    # ======================================================
+    try:
+        from coaching_cheat_sheet import CHEAT_SHEET
+        groups = CHEAT_SHEET.get("sport_groups", {})
+        fused = {}
+
+        if "type" not in df_events.columns:
+            df_events["type"] = context.get("sport_type", "Unknown")
+
+        for sport_group, members in groups.items():
+            if sport_group == "Excluded":
+                continue
+            sub = df_events[df_events["type"].isin(members)]
+            if sub.empty:
+                continue
+
+            pcols = [c for c in sub.columns if c.startswith("power_z")]
+            hcols = [c for c in sub.columns if c.startswith("hr_z")]
+            if not (pcols or hcols):
+                continue
+
+            zone_cols = sorted(set(pcols + hcols))
+            sub_num = sub[zone_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
+            total = sub_num.sum().sum()
+            if total <= 0:
+                continue
+
+            fused[sport_group] = (sub_num.sum() / total * 100).round(1).to_dict()
+
+        if fused:
+            context["zone_dist_fused"] = fused
+            dominant = max(fused.keys(), key=lambda k: sum(fused[k].values()))
+            context["polarisation_sport"] = dominant
+            debug(context, f"[T2] ✅ Fused zones computed → sports={list(fused.keys())}, dominant={dominant}")
+        else:
+            debug(context, "[T2] ⚠️ No valid power/hr zone columns for fusion.")
+
+    except Exception as e:
+        debug(context, f"[T2] ⚠️ Zone fusion failed → {e}")
+
+    # ---------------------------------------------------------
+    # 🧩 Inject Combined Zones (global HR+Power blend)
+    # ---------------------------------------------------------
+    try:
+        fused = context.get("zone_dist_fused", {})
+        combined = {}
+
+        if fused:
+            # Aggregate all sports’ fused distributions
+            all_keys = set()
+            for sport_data in fused.values():
+                all_keys.update(sport_data.keys())
+
+            for key in all_keys:
+                combined[key] = np.mean([
+                    sport_data.get(key, 0.0) for sport_data in fused.values()
+                ])
+
+            # Optional: compute Polarisation Index (Z1 vs. Z3+)
+            z1 = combined.get("hr_z1", 0) + combined.get("power_z1", 0)
+            z3p = sum(v for k, v in combined.items() if "z3" in k or "z4" in k or "z5" in k)
+            polarisation_index = round(z1 / (z1 + z3p + 1e-9), 3)
+
+            semantic["zones"]["combined"] = {
+                "distribution": {k: round(v, 2) for k, v in combined.items()},
+                "basis": "Power for power-available, HR otherwise (time-weighted)",
+                "polarisation_index": polarisation_index,
+                "model": (
+                    "polarised" if polarisation_index >= 0.8
+                    else "pyramidal" if 0.65 <= polarisation_index < 0.8
+                    else "threshold"
+                ),
+            }
+
+            debug(context, f"[SEMANTIC] Combined zones computed → PI={polarisation_index}")
+
+        else:
+            semantic["zones"]["combined"] = {
+                "distribution": {},
+                "basis": "unavailable",
+                "polarisation_index": None,
+                "model": "undefined"
+            }
+
+    except Exception as e:
+        debug(context, f"[SEMANTIC] ⚠️ Failed to compute combined zones: {e}")
+
 
     # --- ✅ 8. ZQI (Zone Quality Index) ---
     zqi = compute_zone_intensity(df_events, context)

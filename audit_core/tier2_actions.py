@@ -5,10 +5,26 @@ Derived directly from legacy v15.4 inline logic.
 """
 import numpy as np
 import pandas as pd
-from audit_core.utils import debug
 from datetime import datetime, timedelta
+from audit_core.utils import debug
 from coaching_cheat_sheet import CHEAT_SHEET
-METRIC_ACTION_MAP = CHEAT_SHEET.get("coaching_links", {})
+from coaching_profile import COACH_PROFILE
+
+# === Dynamic Heuristics from Cheat Sheet ===
+def get_dynamic_heuristics():
+    th = CHEAT_SHEET["thresholds"]
+    return {
+        "polarisation_target":
+            sum(th["Polarisation"]["green"]) / 2,
+        "recovery_floor":
+            th["RecoveryIndex"]["amber"][1],
+        "fatigue_delta_green":
+            th["FatigueTrend"]["green"],
+        "acwr_upper":
+            th["ACWR"]["green"][1],
+        "fatigue_decay_const": 0.2,
+        "efficiency_smoothing": 0.15,
+    }
 
 def metric_value(context, key, default=0.0):
     """Return numeric metric value, handling None, NaN, and dict forms safely."""
@@ -180,47 +196,43 @@ Now includes automatic phase detection from event-level data.
 
 
 def evaluate_actions(context):
+    """
+    Tier-2 Step 4 — Evaluate Coaching Actions (v17 dynamic)
+    Fully dynamic thresholds and phase advice integration.
+    """
     events = context.get("events", [])
     context = detect_phases(context, events)
+    heur = get_dynamic_heuristics()
 
-    # --- Integrate Derived + Extended Metrics (URF v5.1) ---
     derived = context.get("derived_metrics", {})
     extended = context.get("extended_metrics", {})
 
-    # Promote metrics only if context lacks a scalar version
+    # Promote metrics
     for k in ["ACWR", "Monotony", "Strain", "Polarisation", "RecoveryIndex"]:
         if k not in context or isinstance(context[k], dict):
             if k in derived and isinstance(derived[k], dict):
                 val = derived[k].get("value", np.nan)
                 if isinstance(val, (int, float)) and not np.isnan(val):
                     context[k] = float(val)
-
     for k in ["Durability", "LoadIntensityRatio", "EnduranceReserve", "IFDrift", "FatOxidation"]:
         if k in extended:
             context[k] = extended[k]
 
-    debug(context, f"[DEBUG-T2-ACTIONS] Integrated derived metrics sample type={type(derived)} content={str(derived)[:200]}")
-    debug(context, f"[DEBUG-T2-ACTIONS] Integrated extended metrics sample type={type(extended)} content={str(extended)[:200]}")
+    debug(context, "[T2-ACTIONS] Derived metrics integrated")
 
     actions = []
 
-    # --- Metric Context Summary (link metrics to coaching relevance) ---
-    from coaching_cheat_sheet import CHEAT_SHEET
+    # ---------------- Metric Context Summary ----------------
     metric_links = CHEAT_SHEET.get("coaching_links", {})
     derived = context.get("derived_metrics", {})
     adapt = context.get("adaptation_metrics", {})
-
     metric_contexts = []
 
     def summarize_metric(k, v):
-        """Generate human-readable, context-aware recommendation for each metric."""
         if not isinstance(v, dict):
             return None
-        val = v.get("value")
-        icon = v.get("icon", "")
-        status = v.get("status", "")
+        val, status = v.get("value"), v.get("status", "")
         desc = metric_links.get(k, "")
-
         if status in ["out of range", "borderline"]:
             return f"⚠ {k} ({val}) — {desc}"
         elif status == "optimal":
@@ -232,45 +244,84 @@ def evaluate_actions(context):
             rec = summarize_metric(k, v)
             if rec:
                 metric_contexts.append(rec)
-
     context["metric_contexts"] = metric_contexts
 
-    # --- Polarisation / Intensity Balance ---
-    if metric_value(context, "Polarisation") >= 0.7:
-        actions.append("✅ Maintain ≥70 % Z1–Z2 volume (Seiler 80/20).")
-    else:
-        actions.append("⚠ Increase Z1–Z2 share to ≥70 % (Seiler 80/20).")
+    # ---------------- Polarisation / Intensity Balance (fully dynamic via Cheat Sheet) ----------------
+    adv = CHEAT_SHEET["advice"]
+    thr = CHEAT_SHEET["thresholds"]
 
-    # --- Metabolic Efficiency ---
-    if metric_value(context, "FatOxidation") >= 0.8 and metric_value(context, "Decoupling", 1.0) <= 0.05:
-        actions.append("✅ Metabolic efficiency maintained (San Millán Zone 2).")
-    else:
-        actions.append("⚠ Improve Zone 2 efficiency: extend duration or adjust IF.")
+    # Collect all metrics whose names begin with "Polarisation"
+    polarisation_keys = [
+        k for k in adv.keys() if k.startswith("Polarisation") and not k.endswith("_summary")
+    ]
 
-    # --- Recovery and Load Balance ---
-    if metric_value(context, "RecoveryIndex", 1.0) < 0.6:
-        if metric_value(context, "ACWR", 1.0) > 1.2:
-            actions.append("⚠ Apply 30–40 % deload (Friel microcycle logic).")
+    polarisations = {
+        key: metric_value(context, key, 0.0)
+        for key in polarisation_keys
+        if metric_value(context, key, 0.0) > 0
+    }
+
+    # Evaluate individual metrics with cheat-sheet thresholds + advice
+    for key, val in polarisations.items():
+        th = thr.get(key, thr.get("Polarisation", {}))
+        adv_block = adv.get(key, {})
+        if not th or not adv_block:
+            continue
+
+        if val < th.get("amber", (0, 1))[0]:
+            msg = adv_block.get("low", "").format(val)
+        elif val < th.get("green", (0, 1))[0]:
+            msg = adv_block.get("z2_base", adv_block.get("low", "")).format(val)
         else:
-            actions.append("⚠ Apply 10–15 % deload (Friel microcycle logic).")
+            msg = adv_block.get("optimal", "").format(val)
 
-    # --- FatigueTrend (Action based on recovery status) ---
-    fatigue_trend = metric_value(context, "FatigueTrend", 0.0)
-    if fatigue_trend < -0.2:
-        actions.append(f"⚠ FatigueTrend ({fatigue_trend}%) — Recovery phase detected. Maintain steady training load and prioritize recovery.")
-    elif fatigue_trend >= 0.2:
-        actions.append(f"✅ FatigueTrend ({fatigue_trend}%) — Increasing fatigue trend. Consider adjusting intensity or recovery.")
+        if msg:
+            actions.append(msg)
 
-    # --- Benchmark Maintenance ---
+    # Multi-variant summary message (cross-discipline check)
+    low_keys = [
+        k for k, v in polarisations.items()
+        if v < thr.get(k, thr.get("Polarisation", {})).get("amber", (0, 1))[0]
+    ]
+
+    if len(low_keys) >= 2 and "Polarisation_summary" in adv:
+        vals_fmt = ", ".join(f"{k}:{v:.2f}" for k, v in polarisations.items())
+        actions.append(
+            adv["Polarisation_summary"]["low"].format(vals_fmt)
+        )
+
+    # ---------------- Metabolic Efficiency ----------------
+    fox = context.get("FatOxidation", 0.0)
+    decoup = context.get("Decoupling", 1.0)
+    if fox >= 0.8 and decoup <= 0.05:
+        actions.append("✅ Metabolic efficiency maintained (San Millán Z2).")
+    else:
+        actions.append("⚠ Improve Zone 2 efficiency — extend duration or adjust IF.")
+
+    # ---------------- Recovery / Load Balance ----------------
+    ri = context.get("RecoveryIndex", 1.0)
+    acwr = context.get("ACWR", 1.0)
+    if ri < heur["recovery_floor"]:
+        if acwr > heur["acwr_upper"]:
+            actions.append(f"⚠ Apply 30–40 % deload (ACWR={acwr:.2f}).")
+        else:
+            actions.append(f"⚠ Apply 10–15 % deload (ACWR={acwr:.2f}).")
+
+    # ---------------- Fatigue Trend ----------------
+    ft_range = heur["fatigue_delta_green"]
+    ft = context.get("FatigueTrend", 0.0)
+    if ft < ft_range[0]/100:
+        actions.append(f"⚠ FatigueTrend {ft:.2f} — recovery phase, maintain steady load.")
+    elif ft > ft_range[1]/100:
+        actions.append(f"✅ FatigueTrend {ft:.2f} — rising fatigue, monitor intensity.")
+
+    # ---------------- Benchmark / FatMax ----------------
     if context.get("weeks_since_last_FTP", 0) >= 6:
         actions.append("🔄 Retest FTP/LT1 for updated benchmarks.")
-
-    # --- FatMax Verification ---
-    if abs(metric_value(context, "FatMaxDeviation", 1.0)) <= 0.05 and metric_value(context, "Decoupling", 1.0) <= 0.05:
+    if abs(context.get("FatMaxDeviation", 1.0)) <= 0.05 and decoup <= 0.05:
         actions.append("✅ FatMax calibration verified (±5 %).")
 
-    # --- Visual Fatigue Flag (legacy cosmetic) ---
-    ri = metric_value(context, "RecoveryIndex", 1.0)
+    # ---------------- UI Flag ----------------
     if ri < 0.6:
         context["ui_flag"] = "🔴 Overreached"
     elif ri < 0.8:
@@ -278,122 +329,70 @@ def evaluate_actions(context):
     else:
         context["ui_flag"] = "🟢 Normal"
 
-    # --- New Heuristics (URF v5.1 enhancement) ---
-    dur = metric_value(context, "Durability", 1.0)
-    if "LoadIntensityRatio" not in context:
-        context["LoadIntensityRatio"] = context.get("StressTolerance", 0.0)
+    # ---------------- Derived Metric Feedback ----------------
+    th = CHEAT_SHEET["thresholds"]
+    adv = CHEAT_SHEET["advice"]
+    dur = context.get("Durability", 1.0)
+    lir = context.get("LoadIntensityRatio", 0.0)
+    er = context.get("EnduranceReserve", 1.0)
+    drift = context.get("IFDrift", 0.0)
 
-    lir = metric_value(context, "LoadIntensityRatio", 0.0)
-    er = metric_value(context, "EnduranceReserve", 1.0)
-    drift = metric_value(context, "IFDrift", 0.0)
-    pol = metric_value(context, "Polarisation", None)
-    if not pol:
-        pol = metric_value(context, "PolarisationIndex", 0.0)
-    context["Polarisation"] = pol  # ensure key exists for validator
-    debug(context, f"[T2-ACTIONS] Polarisation value (safe) = {pol}")
-    ri = metric_value(context, "RecoveryIndex", 1.0)
-
-    ri = metric_value(context, "RecoveryIndex", 1.0)
-
-    from coaching_cheat_sheet import CHEAT_SHEET
-
-    # --- Durability ---
-    if dur < CHEAT_SHEET["thresholds"]["Durability"]["amber"][0]:
-        actions.append(CHEAT_SHEET["advice"]["Durability"]["low"].format(dur))
-    elif dur >= CHEAT_SHEET["thresholds"]["Durability"]["green"][0]:
-        actions.append(CHEAT_SHEET["advice"]["Durability"]["improving"].format(dur))
-
-    # --- Load Intensity Ratio (LIR) ---
-    if lir > CHEAT_SHEET["thresholds"]["LIR"]["amber"][0]:
-        actions.append(CHEAT_SHEET["advice"]["LIR"]["high"].format(lir))
-    elif lir < CHEAT_SHEET["thresholds"]["LIR"]["green"][0]:
-        actions.append(CHEAT_SHEET["advice"]["LIR"]["low"].format(lir))
+    # Durability
+    if dur < th["Durability"]["amber"][0]:
+        actions.append(adv["Durability"]["low"].format(dur))
+    elif dur >= th["Durability"]["green"][0]:
+        actions.append(adv["Durability"]["improving"].format(dur))
+    # LIR
+    if lir > th["LIR"]["amber"][0]:
+        actions.append(adv["LIR"]["high"].format(lir))
+    elif lir < th["LIR"]["green"][0]:
+        actions.append(adv["LIR"]["low"].format(lir))
     else:
-        actions.append(CHEAT_SHEET["advice"]["LIR"]["balanced"].format(lir))
-
-    # --- Endurance Reserve ---
-    if er < CHEAT_SHEET["thresholds"]["EnduranceReserve"]["amber"][0]:
-        actions.append(CHEAT_SHEET["advice"]["EnduranceReserve"]["depleted"].format(er))
-    elif er >= CHEAT_SHEET["thresholds"]["EnduranceReserve"]["green"][0]:
-        actions.append(CHEAT_SHEET["advice"]["EnduranceReserve"]["strong"].format(er))
-
-    # --- Efficiency Drift ---
-    if drift > CHEAT_SHEET["thresholds"]["IFDrift"]["amber"][0]:
-        actions.append(CHEAT_SHEET["advice"]["EfficiencyDrift"]["high"].format(drift))
+        actions.append(adv["LIR"]["balanced"].format(lir))
+    # Endurance Reserve
+    if er < th["EnduranceReserve"]["amber"][0]:
+        actions.append(adv["EnduranceReserve"]["depleted"].format(er))
+    elif er >= th["EnduranceReserve"]["green"][0]:
+        actions.append(adv["EnduranceReserve"]["strong"].format(er))
+    # Efficiency Drift
+    if drift > th["IFDrift"]["amber"][0]:
+        actions.append(adv["EfficiencyDrift"]["high"].format(drift))
     else:
-        actions.append(CHEAT_SHEET["advice"]["EfficiencyDrift"]["stable"].format(drift))
-
-    # --- Polarisation ---
-    if pol < CHEAT_SHEET["thresholds"]["Polarisation"]["amber"][0]:
-        actions.append(CHEAT_SHEET["advice"]["Polarisation"]["low"].format(pol))
+        actions.append(adv["EfficiencyDrift"]["stable"].format(drift))
+    # Recovery Index
+    if ri < th["RecoveryIndex"]["amber"][0]:
+        actions.append(adv["RecoveryIndex"]["poor"].format(ri))
+    elif ri < th["RecoveryIndex"]["green"][0]:
+        actions.append(adv["RecoveryIndex"]["moderate"].format(ri))
     else:
-        actions.append(CHEAT_SHEET["advice"]["Polarisation"]["optimal"].format(pol))
+        actions.append(adv["RecoveryIndex"]["healthy"].format(ri))
 
-    # --- Recovery Index ---
-    if ri < CHEAT_SHEET["thresholds"]["RecoveryIndex"]["amber"][0]:
-        actions.append(CHEAT_SHEET["advice"]["RecoveryIndex"]["poor"].format(ri))
-    elif ri < CHEAT_SHEET["thresholds"]["RecoveryIndex"]["green"][0]:
-        actions.append(CHEAT_SHEET["advice"]["RecoveryIndex"]["moderate"].format(ri))
-    else:
-        actions.append(CHEAT_SHEET["advice"]["RecoveryIndex"]["healthy"].format(ri))
-
-
-    # ===================================================================
-    # 🪜 SEASONAL PHASE ANALYSIS (Aligned with Coaching Cheat Sheet)
-    # ===================================================================
+    # ---------------- Seasonal Phase Analysis ----------------
+    phase_adv = adv.get("PhaseAdvice", {})
     report_type = str(context.get("report_type", "")).lower()
     if report_type in ("season", "summary") and "phases" in context:
         actions.append("---")
         actions.append("🪜 **Seasonal Phase Analysis**")
-
         for ph in context["phases"]:
             phase = ph.get("phase", "Unknown")
+            start, end = ph.get("start", ""), ph.get("end", "")
             delta = ph.get("delta", 0)
-            start = ph.get("start", "")
-            end = ph.get("end", "")
-            acwr = context.get("ACWR", 1.0)
-            ri = context.get("RecoveryIndex", 0.8)
-
-            # --- Map phase to coaching heuristic ---
-            if phase == "Base":
-                actions.append(f"🧱 **Base phase detected** ({start} → {end}) — focus on aerobic volume (Z1–Z2 ≥ 70%), maintain ACWR ≤ 1.0.")
-            elif phase == "Build":
-                actions.append(f"📈 **Build phase detected** ({start} → {end}, Δ+{delta*100:.0f}%) — progressive overload active; maintain ACWR ≤ 1.3.")
-            elif phase == "Peak":
-                actions.append(f"🏁 **Peak phase detected** ({start} → {end}) — high-intensity emphasis; monitor fatigue (RI ≥ 0.6).")
-            elif phase == "Taper":
-                actions.append(f"📉 **Taper phase detected** ({start} → {end}) — reduce ATL by 30–50%, maintain intensity; expected RI ↑.")
-            elif phase == "Recovery":
-                actions.append(f"💤 **Recovery phase detected** ({start} → {end}) — active regeneration; target RI ≥ 0.8 and low monotony.")
-            elif phase == "Deload":
-                actions.append(f"🧘 **Deload phase detected** ({start} → {end}) — reduced load, maintain frequency; transition readiness improving.")
-            else:
-                actions.append(f"🔁 **Continuous Load** ({start} → {end}) — steady training; insert variation if fatigue rises.")
-
-        # --- Summary coach note (directly from cheat sheet logic) ---
+            msg = phase_adv.get(
+                phase,
+                f"ℹ {phase} phase ({start} → {end}) Δ {delta*100:.0f}%."
+            )
+            msg = (msg.replace("{start}", start)
+                        .replace("{end}", end)
+                        .replace("{delta}", f"{delta*100:.0f}%"))
+            actions.append(msg)
         actions.append("")
-        actions.append("📘 **Coach Note:**")
-        actions.append(
-            "Phases correspond to the macrocycle model (Base → Build → Peak → Taper → Recovery). "
-            "Maintain ACWR ≤ 1.3, positive TSB for freshness, and use taper reduction of ATL by 30–50%. "
-            "Derived from Friel / Seiler / Bannister periodisation heuristics."
-        )
+        actions.append("📘 **Coach Note:** Phase logic aligned with Seiler / Friel periodisation heuristics.")
 
-        actions.append("✅ Reference: Coaching Cheat Sheet — Periodisation & Load Ratios (Section 9–11)")
+    # ---------------- Append metric feedback ----------------
+    if metric_contexts:
+        actions.extend(["---", "📊 Metric-based Feedback:"] + metric_contexts)
 
-    # --- Merge metric-based feedback ---
-    if "metric_contexts" in context and context["metric_contexts"]:
-        actions.extend([
-            "---",
-            "📊 Metric-based Feedback:"
-        ] + context["metric_contexts"])
-
-    # Sync derived_metrics with latest scalar values
-    for k in ["ACWR", "Monotony", "Strain", "Polarisation", "RecoveryIndex"]:
-        if k in derived and isinstance(derived[k], dict):
-            derived[k]["value"] = context.get(k, derived[k].get("value", np.nan))
     context["derived_metrics"] = derived
-
-    # --- Finalize ---
     context["actions"] = actions
     return context
+
