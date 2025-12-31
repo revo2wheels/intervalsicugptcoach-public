@@ -602,9 +602,31 @@ def run_report(
 
 
     # --- Enforce totals and sync df_events for validator ---
-    context = enforce_event_only_totals(df_scope, context)
-    debug(context, f"[CHECK] zone columns in df_events after enforce: "
-               f"{[c for c in df_events.columns if 'z' in c.lower()]}")
+    # --- Defensive guard for Railway async init
+    df_events = context.get("df_events")
+    if df_events is None:
+        debug(context, "[CHECK] ⚠️ df_events not present yet — falling back to df_master or df_full.")
+        df_events = (
+            context.get("df_master")
+            or context.get("df_full")
+            or context.get("activities_full")
+        )
+
+    # Optional sanity check
+    if df_events is not None and hasattr(df_events, "columns"):
+        debug(context, f"[CHECK] zone columns in df_events (before enforce): "
+                    f"{[c for c in df_events.columns if 'z' in c.lower()]}")
+    else:
+        debug(context, "[CHECK] ❌ df_events is still None or not a DataFrame.")
+
+    # --- Now enforce totals safely using the guarded df_events
+    context = enforce_event_only_totals(df_events, context)
+
+    # --- Post-check to confirm zone integrity
+    if df_events is not None and hasattr(df_events, "columns"):
+        debug(context, f"[CHECK] zone columns in df_events (after enforce): "
+                    f"{[c for c in df_events.columns if 'z' in c.lower()]}")
+
     if "tier2_enforced_totals" in context:
         et = context["tier2_enforced_totals"]
         context["totalHours"] = et.get("time_h", 0)
