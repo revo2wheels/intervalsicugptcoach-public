@@ -93,6 +93,41 @@ CHEAT_SHEET["polarisation_models"] = {
     ],
 }
 
+# ------------------------------------------------------------
+# Qualitative → Traffic-light classification aliases
+# ------------------------------------------------------------
+# These map descriptive metric "state" or "status" labels
+# (e.g. "productive", "optimal", "fatigued") to UI colors.
+# Used by build_insight_view() and other semantic builders.
+# ------------------------------------------------------------
+
+CLASSIFICATION_ALIASES = {
+    # --- Green (good / optimal states)
+    "productive": "green",
+    "optimal": "green",
+    "recovering": "green",
+    "good": "green",
+    "balanced": "green",
+    "healthy": "green",
+    "normal": "green",
+
+    # --- Amber (watch / moderate / caution)
+    "amber": "amber",
+    "moderate": "amber",
+    "borderline": "amber",
+    "watch": "amber",
+    "fatigued": "amber",
+    "pyramidal": "amber",
+
+    # --- Red (critical / bad)
+    "red": "red",
+    "poor": "red",
+    "overreached": "red",
+    "critical": "red",
+    "threshold": "red",      # For low polarisation
+    "intensity-focused": "red"
+}
+
 
 # === Context ===
 CHEAT_SHEET["context"] = {

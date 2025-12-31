@@ -1600,13 +1600,30 @@ def build_semantic_json(context):
 
     return apply_report_type_contract(semantic)
 
+# ==============================================================
+# build_insight_view (URF v5.2+)
+# Data-driven insight grouping for API/UI layer
+# ==============================================================
+from coaching_cheat_sheet import CHEAT_SHEET
+
 def build_insight_view(semantic):
     """
-    Build API/UI-ready insight view.
-    NO calculations.
-    NO thresholds.
-    NO recomputation.
-    Pure grouping only.
+    Build API/UI-ready insight view (data-driven).
+    Uses CHEAT_SHEET['thresholds'] and ['classification_aliases'].
+    Produces consistent 'critical', 'watch', and 'positive' groupings.
+
+    Inputs:
+        semantic (dict) — full semantic_graph block from URF output
+
+    Returns:
+        dict with:
+        {
+            "critical": [ ... ],
+            "watch": [ ... ],
+            "positive": [ ... ],
+            "actions": [...],
+            "phases": [...]
+        }
     """
 
     metrics = semantic.get("metrics", {})
@@ -1615,13 +1632,80 @@ def build_insight_view(semantic):
 
     critical, watch, positive = [], [], []
 
-    for name, m in metrics.items():
-        # 🧩 Skip variant or composite containers (e.g. Polarisation_variants)
-        if isinstance(m, dict) and any(isinstance(v, dict) for v in m.values()):
-            continue  # skip nested dicts like {"fused": {...}, "combined": {...}}
+    thresholds = CHEAT_SHEET.get("thresholds", {})
+    aliases = CHEAT_SHEET.get("classification_aliases", {})
 
-        cls = m.get("classification")
-        if cls not in ("red", "amber", "green"):
+    # ----------------------------------------------------------
+    # Internal helper: classify metric dynamically
+    # ----------------------------------------------------------
+    def classify_metric(name, metric):
+        """Resolve classification -> traffic-light color dynamically."""
+        if not isinstance(metric, dict):
+            return None
+
+        val = metric.get("value")
+        cls = (metric.get("classification")
+               or metric.get("state")
+               or metric.get("status")
+               or "").lower()
+
+        # 1️⃣ If explicit classification or alias exists
+        if cls:
+            if cls in ("red", "amber", "green"):
+                return cls
+            if cls in aliases:
+                return aliases[cls]
+
+        # 2️⃣ Fallback: use numeric thresholds
+        th = thresholds.get(name)
+        if th and isinstance(val, (int, float)):
+            try:
+                green_range = th.get("green", [])
+                amber_range = th.get("amber", [])
+                if green_range and val >= min(green_range):
+                    return "green"
+                elif amber_range and val >= min(amber_range):
+                    return "amber"
+                else:
+                    return "red"
+            except Exception:
+                pass
+
+        return None
+
+    # ----------------------------------------------------------
+    # Iterate over all metrics in semantic_graph
+    # ----------------------------------------------------------
+    for name, m in metrics.items():
+
+        # 🧩 Skip nested variant containers (already rendered in metrics table)
+        if "polarisation" in name.lower():
+            continue
+
+        # 🩻 Flatten nested variant metrics (e.g. Polarisation_variants)
+        if isinstance(m, dict) and any(isinstance(v, dict) for v in m.values()):
+            for subname, submetric in m.items():
+                if not isinstance(submetric, dict):
+                    continue
+                # ⛔ Skip Polarisation submetrics entirely
+                if "polarisation" in subname.lower():
+                    continue
+                cls = classify_metric(f"{name}_{subname}", submetric)
+                if not cls:
+                    continue
+                entry = {
+                    "name": f"{name}_{subname}",
+                    "value": submetric.get("value"),
+                    "framework": submetric.get("framework"),
+                    "interpretation": submetric.get("interpretation"),
+                    "coaching_implication": submetric.get("coaching_implication"),
+                }
+                {"red": critical, "amber": watch, "green": positive}[cls].append(entry)
+            continue
+
+        # 🔹 Flat metric case
+        cls = classify_metric(name, m)
+        if not cls:
             continue
 
         entry = {
@@ -1631,15 +1715,11 @@ def build_insight_view(semantic):
             "interpretation": m.get("interpretation"),
             "coaching_implication": m.get("coaching_implication"),
         }
+        {"red": critical, "amber": watch, "green": positive}[cls].append(entry)
 
-        if cls == "red":
-            critical.append(entry)
-        elif cls == "amber":
-            watch.append(entry)
-        else:
-            positive.append(entry)
-
-    # ✅ Cleaned return (no nested copy of insights)
+    # ----------------------------------------------------------
+    # Return grouped view
+    # ----------------------------------------------------------
     return {
         "critical": critical,
         "watch": watch,
@@ -1647,6 +1727,7 @@ def build_insight_view(semantic):
         "actions": actions,
         "phases": phases,
     }
+
 
 def apply_report_type_contract(semantic: dict) -> dict:
     """
