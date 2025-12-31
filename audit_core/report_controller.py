@@ -603,6 +603,8 @@ def run_report(
 
     # --- Enforce totals and sync df_events for validator ---
     context = enforce_event_only_totals(df_scope, context)
+    debug(context, f"[CHECK] zone columns in df_events after enforce: "
+               f"{[c for c in df_events.columns if 'z' in c.lower()]}")
     if "tier2_enforced_totals" in context:
         et = context["tier2_enforced_totals"]
         context["totalHours"] = et.get("time_h", 0)
