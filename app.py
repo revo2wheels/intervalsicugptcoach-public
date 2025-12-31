@@ -147,7 +147,22 @@ def normalize_prefetched_context(data):
         df_light = normalize_zone_fields(df_light)
         debug(context, "[NORM] ✅ Normalized zone fields in prefetched context")
 
-                # --- NEW: Expand HR/Power zone lists into numeric columns (match Tier-0 behaviour) ---
+        # --- Expand HR/Power/Pace zones to match Tier-0 local parity ---
+        try:
+            from audit_core.tier0_pre_audit import expand_zones
+            df_full = expand_zones(df_full, "icu_zone_times", "power")
+            df_full = expand_zones(df_full, "icu_hr_zone_times", "hr")
+            df_full = expand_zones(df_full, "pace_zone_times", "pace")
+            debug(context, "[NORM] ✅ Expanded HR/Power/Pace zones for Tier-0 parity")
+        except Exception as e:
+            debug(context, f"[NORM] ⚠️ Zone expansion skipped: {e}")
+
+        # keep these after expansion
+        context["df_full"] = df_full
+        context["activities_full"] = df_full.to_dict(orient="records")
+        debug(context, f"[NORM] activities_light={len(df_light)} full={len(df_full)} wellness={len(df_well)} athlete_keys={list(athlete.keys()) if athlete else 'none'}")
+
+        # --- NEW: Expand HR/Power zone lists into numeric columns (match Tier-0 behaviour) ---
         def expand_zones(df, field, prefix):
             """Expand JSON/list zone arrays into separate z1..zN numeric columns."""
             import numpy as np
