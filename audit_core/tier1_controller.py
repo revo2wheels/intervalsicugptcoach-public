@@ -494,6 +494,22 @@ def collect_zone_distributions(df_master, athlete_profile, context):
     else:
         debug(context, "[ZONE-CONTEXT] ⚠️ No sportSettings found in athlete profile.")
 
+    # --- Ensure Tier-2 sees flat zone_dist_* dicts ---
+    zones = context.get("zones", {})
+
+    if "zone_dist_power" not in context:
+        context["zone_dist_power"] = zones.get("power", {}).get("distribution", {})
+    if "zone_dist_hr" not in context:
+        context["zone_dist_hr"] = zones.get("hr", {}).get("distribution", {})
+
+    # --- Enforce numeric and strip prefixes (idempotent) ---
+    import re
+    def strip_prefix_keys(d):
+        return {re.sub(r'^(power_|hr_)', '', k): float(v) for k, v in d.items() if v is not None}
+
+    context["zone_dist_power"] = strip_prefix_keys(context["zone_dist_power"])
+    context["zone_dist_hr"]    = strip_prefix_keys(context["zone_dist_hr"])
+
     debug(context, f"[ZONE-FINAL] icu_power_zones={context.get('icu_power_zones')}")
     debug(context, f"[ZONE-FINAL] icu_hr_zones={context.get('icu_hr_zones')}")
     debug(context, f"[ZONE-FINAL] power_dist={context.get('zone_dist_power')}")
