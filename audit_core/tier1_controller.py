@@ -325,6 +325,19 @@ def collect_zone_distributions(df_master, athlete_profile, context):
     context["zone_dist_pace"]  = compute(pace_cols, "pace")
     context["zone_dist_swim"] = compute(swim_cols, "swim")
 
+    # --- ✅ Normalize zone keys for Tier-2 fusion parity ---
+    import re
+
+    def strip_prefix_keys(dist):
+        """Remove power_/hr_ prefixes so Tier-2 fusion can align keys."""
+        if not isinstance(dist, dict):
+            return dist
+        return {re.sub(r'^(power_|hr_)', '', k): v for k, v in dist.items()}
+
+    context["zone_dist_power"] = strip_prefix_keys(context.get("zone_dist_power", {}))
+    context["zone_dist_hr"]    = strip_prefix_keys(context.get("zone_dist_hr", {}))
+
+
     # --- 🩵 HR Zone Fallback from average_heartrate ---
     if (not context.get("zone_dist_hr")) and "average_heartrate" in df_master.columns:
         hr_zones = context.get("icu_hr_zones") or context.get("athlete_hr_zones") or []
