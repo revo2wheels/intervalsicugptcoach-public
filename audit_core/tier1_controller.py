@@ -186,18 +186,50 @@ def collect_zone_distributions(df_master, athlete_profile, context):
 
         # Function to extract seconds from zones, handling missing or None data
         def extract_secs(value):
-            if isinstance(value, list):  # If it's a list (like the railway data)
-                #debug(context, f"[DEBUG-ZONES] Extracting 'secs' from list: {value}")
-                # Handle missing or invalid entries inside the list
-                total_secs = 0
-                for entry in value:
-                    if isinstance(entry, dict) and "secs" in entry:
-                        total_secs += entry["secs"]
-#                    else:
-#                       debug(context, f"[DEBUG-ZONES] Invalid entry in zone: {entry}")
-                return total_secs
-#           debug(context, f"[DEBUG-ZONES] Value is not a list: {value}")
-            return value if isinstance(value, (int, float)) else 0  # Default to 0 for non-numeric values
+            """
+            Extract seconds from Intervals zone structures, handling both:
+            - List of dicts (local JSON shape)
+            - Flat numeric lists (Railway JSON shape)
+            Includes detailed debug output for data visualization and auditing.
+            """
+            try:
+                # Case 1: list structures (dicts or numeric)
+                if isinstance(value, list):
+                    # Log small preview to debug pipeline data shape
+                    preview = value[:5] if len(value) > 5 else value
+                    debug(context, f"[DEBUG-ZONES] extract_secs() input type={type(value[0]) if value else None}, sample={preview}")
+
+                    # Case 1a: list of dicts with 'secs' key
+                    if len(value) > 0 and isinstance(value[0], dict) and "secs" in value[0]:
+                        total = sum(int(entry.get("secs", 0)) for entry in value)
+                        debug(context, f"[DEBUG-ZONES] ✅ Parsed dict-style zones → total_secs={total}")
+                        return total
+
+                    # Case 1b: flat numeric list (Railway case)
+                    elif all(isinstance(x, (int, float)) for x in value):
+                        total = sum(value)
+                        debug(context, f"[DEBUG-ZONES] ✅ Parsed numeric-style zones → total_secs={total}")
+                        return total
+
+                    # Case 1c: malformed or unexpected
+                    else:
+                        debug(context, f"[DEBUG-ZONES] ⚠️ Unexpected zone entry shape: {preview}")
+                        return 0
+
+                # Case 2: single numeric fallback
+                elif isinstance(value, (int, float)):
+                    debug(context, f"[DEBUG-ZONES] Single numeric input={value}")
+                    return float(value)
+
+                # Case 3: completely invalid
+                else:
+                    debug(context, f"[DEBUG-ZONES] ⚠️ Non-list, non-numeric input={value}")
+                    return 0
+
+            except Exception as e:
+                debug(context, f"[DEBUG-ZONES] ⚠️ extract_secs() exception: {e}")
+                return 0
+
 
         # Apply the function to handle the lists and convert all data to numeric
         subset = df_master[cols].applymap(extract_secs).apply(pd.to_numeric, errors="coerce").fillna(0)
