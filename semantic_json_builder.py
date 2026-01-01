@@ -585,26 +585,13 @@ def build_semantic_json(context):
                 "hr": {k.replace("hr_", ""): round(v, 2) for k, v in combined.items() if k.startswith("hr_")},
             }
 
-            # --- Compute Polarisation Index (weighted HR+Power)
-            z1 = grouped["hr"].get("z1", 0) + grouped["power"].get("z1", 0)
-            z3p = sum(v for k, v in {**grouped["hr"], **grouped["power"]}.items() if k in ["z3", "z4", "z5"])
-            polarisation_index = round(z1 / (z1 + z3p + 1e-9), 3)
-
-            # --- Lookup model from cheat sheet
-            model_info = next(
-                (
-                    m for m in CHEAT_SHEET.get("polarisation_models", {}).get("PolarisationIndex", [])
-                    if m["range"][0] <= polarisation_index <= m["range"][1]
-                ),
-                {"label": "undefined", "description": "Outside defined range"}
-            )
-
+            # ✅ Do not recompute polarisation index here — Tier-2 already provides it
             semantic["zones"]["combined"] = {
                 "distribution": grouped,
                 "basis": "Power where available, HR otherwise (time-weighted)",
-                "polarisation_index": polarisation_index,
-                "model": model_info["label"],
-                "model_description": model_info["description"],
+                "polarisation_index": context.get("Polarisation_combined") or context.get("PolarisationIndex"),
+                "model": None,
+                "model_description": None,
                 "_render": {
                     "polarisation_index": False,
                     "model": False,
@@ -612,10 +599,7 @@ def build_semantic_json(context):
                 }
             }
 
-            debug(
-                context,
-                f"[SEMANTIC] ✅ Combined zones computed → PI={polarisation_index}, model={model_info['label']}"
-            )
+            debug(context, "[SEMANTIC] ✅ Combined zones injected (using Tier-2 polarisation values)")
 
         else:
             semantic["zones"]["combined"] = {
@@ -627,13 +611,11 @@ def build_semantic_json(context):
             }
 
     except Exception as e:
-        debug(context, f"[SEMANTIC] ⚠️ Failed to compute combined zones: {e}")
-
+        debug(context, f"[SEMANTIC] ⚠️ Failed to inject combined zones: {e}")
 
     # ---------------------------------------------------------
-    # 🧭 Derived Polarisation Variants (canonical, cheat-sheet driven)
+    # 🧭 Polarisation Variants (Tier-2 authoritative values only)
     # ---------------------------------------------------------
-
     try:
         polarisation_variants = {}
         cs = CHEAT_SHEET  # alias for brevity
@@ -641,8 +623,7 @@ def build_semantic_json(context):
         def build_variant(metric_key: str, value: float, basis: str, source: str):
             """
             Universal polarisation variant builder.
-            Pulls *everything* (display name, thresholds, interpretation, coaching)
-            from CHEAT_SHEET — no literals.
+            Purely interpretative — no math. Uses Tier-2 values.
             """
             block = semantic_block_for_metric(metric_key, value, context)
 
@@ -670,45 +651,7 @@ def build_semantic_json(context):
                 "related_metrics": profile_def.get("criteria", {}),
             })
 
-            # model label + description from canonical map
-            model_map = cs.get("polarisation_models", {}).get(metric_key)
-            if model_map and isinstance(value, (int, float)):
-                for m in model_map:
-                    lo, hi = m["range"]
-                    if lo <= value < hi:
-                        block["model"] = m["label"]
-                        block["model_description"] = m["description"]
-                        break
-
-            # 🔗 Map variant keys to canonical profile metric definitions
-            canonical_key = {
-                "Polarisation_fused": "Polarisation",
-                "Polarisation_combined": "PolarisationIndex",
-            }.get(metric_key, metric_key)
-
-            # --- Retrieve canonical definition
-            profile_def = COACH_PROFILE["markers"].get(canonical_key, {})
-            cs_context = CHEAT_SHEET["context"].get(canonical_key, "")
-
-            # ✅ Inject canonical framework, formula, criteria, and contextual fallback
-            block.update({
-                # Framework & formula from COACH_PROFILE (primary source)
-                "framework": profile_def.get("framework") or block.get("framework") or "Unknown",
-                "formula": profile_def.get("formula") or block.get("formula") or "Not defined",
-                "related_metrics": (
-                    profile_def.get("criteria")
-                    or block.get("related_metrics")
-                    or {}
-                ),
-                # Interpretation fallback from CHEAT_SHEET (secondary source)
-                "interpretation": (
-                    block.get("interpretation")
-                    or cs_context
-                    or "No contextual description available."
-                ),
-            })
-
-            # 🧭 Phase-awareness injection (ensure each metric inherits current phase)
+            # 🧭 Phase-awareness
             block["phase_context"] = (
                 context.get("current_phase")
                 or (semantic.get("phases", [{}])[-1].get("phase") if semantic.get("phases") else "")
@@ -717,49 +660,41 @@ def build_semantic_json(context):
 
             return block
 
-        # --- Fused variant (sport-specific HR+Power)
-        fused = context.get("zone_dist_fused", {})
-        dom_sport = context.get("polarisation_sport")
-        if fused and dom_sport in fused:
-            dist = fused[dom_sport]
-
-            # 🧹 Prevent double-counting: if power zones exist, drop HR ones
-            if any(v > 0 for k, v in dist.items() if k.startswith("power_z")):
-                for k in list(dist.keys()):
-                    if k.startswith("hr_z"):
-                        dist[k] = 0
-
-            z1 = dist.get("hr_z1", 0) + dist.get("power_z1", 0)
-            z3p = sum(v for k, v in dist.items() if any(z in k for z in ["z3", "z4", "z5"]))
-            pi_fused = round(z1 / (z1 + z3p + 1e-9), 3)
-
+        # --- Fused (sport-specific HR+Power)
+        pi_fused = context.get("Polarisation_fused") or context.get("Polarisation")
+        if pi_fused is not None:
             polarisation_variants["fused"] = build_variant(
                 "Polarisation_fused",
                 pi_fused,
-                f"Fused HR+Power (dominant sport: {dom_sport})",
+                f"Fused HR+Power (dominant sport: {context.get('polarisation_sport', 'Unknown')})",
                 "zones.fused",
             )
+            debug(context, f"[SEMANTIC] Polarisation_fused={pi_fused}")
 
-
-        # --- Combined variant (multi-sport HR+Power)
-        combined = context.get("zone_dist_combined") or semantic.get("zones", {}).get("combined", {})
-        if combined:
-            pi_combined = combined.get("polarisation_index")
+        # --- Combined (multi-sport HR+Power)
+        pi_combined = context.get("Polarisation_combined") or context.get("PolarisationIndex")
+        if pi_combined is not None:
             polarisation_variants["combined"] = build_variant(
                 "Polarisation_combined",
                 pi_combined,
                 "Power where available, HR otherwise (multi-sport weighted)",
                 "zones.combined",
             )
+            debug(context, f"[SEMANTIC] Polarisation_combined={pi_combined}")
 
-        # inject into semantic
-        semantic.setdefault("metrics", {})
-        semantic["metrics"]["Polarisation_variants"] = polarisation_variants
-        debug(context, f"[SEMANTIC] Injected polarisation variants → {list(polarisation_variants.keys())}")
+        # --- Inject into semantic
+        if polarisation_variants:
+            semantic.setdefault("metrics", {})
+            semantic["metrics"]["Polarisation_variants"] = polarisation_variants
+            debug(
+                context,
+                f"[SEMANTIC] ✅ Injected Polarisation variants → {list(polarisation_variants.keys())}"
+            )
+        else:
+            debug(context, "[SEMANTIC] ⚠️ No valid Polarisation variants found in context")
 
     except Exception as e:
         debug(context, f"[SEMANTIC] ⚠️ Could not build polarisation variants: {e}")
-
 
     # ------------------------------------------------------------------
     # 🧬 Lactate, HRV and Threshold Integration (Cheat-Sheet aligned)
@@ -1484,25 +1419,56 @@ def build_semantic_json(context):
         metric["context_window"] = metric_windows.get(name, "unknown")
 
     # ---------------------------------------------------------
-    # SAFETY PATCH: ensure Polarisation is numeric and preserved
+    # ✅ SAFETY PATCH — Ensure Polarisation metric uses CHEAT_SHEET metadata only
     # ---------------------------------------------------------
-    pol_block = semantic["metrics"].get("Polarisation", {})
-    pol_val = pol_block.get("value")
-
     try:
-        # Convert safely to float
-        pol_val_f = float(pol_val)
-        # Clamp absurd values only
-        if pol_val_f < 0 or pol_val_f > 5:
-            raise ValueError
-        # Preserve computed Tier-2 value
-        semantic["metrics"]["Polarisation"]["value"] = round(pol_val_f, 3)
-    except Exception:
-        computed_val = context.get("Polarisation") or 0.0
-        debug(context, f"[SEMANTIC] Polarisation invalid ({pol_val}) — using computed {computed_val}")
-        semantic["metrics"]["Polarisation"] = semantic_block_for_metric(
-            "Polarisation", computed_val, context
+        # Prefer most specific Tier-2 values in priority order
+        value = (
+            context.get("Polarisation_seiler")
+            or context.get("Polarisation")
+            or context.get("Polarisation_fused")
+            or context.get("Polarisation_combined")
         )
+
+        # Detect which variant name is available in context
+        variant = next(
+            (k for k in [
+                "Polarisation_seiler",
+                "Polarisation",
+                "Polarisation_fused",
+                "Polarisation_combined"
+            ] if k in context),
+            "Polarisation"
+        )
+
+        if value is not None:
+            # --- Build metric block dynamically ---
+            metric_block = semantic_block_for_metric("Polarisation", value, context)
+
+            # All metadata dynamically pulled from CHEAT_SHEET
+            display_name = CHEAT_SHEET["display_names"].get(variant, variant)
+            thresholds = CHEAT_SHEET["thresholds"].get(variant, CHEAT_SHEET["thresholds"].get("Polarisation", {}))
+            context_text = CHEAT_SHEET["context"].get(variant, CHEAT_SHEET["context"].get("Polarisation"))
+            coaching_text = CHEAT_SHEET["coaching_links"].get(variant, CHEAT_SHEET["coaching_links"].get("Polarisation"))
+
+            metric_block.update({
+                "display_name": display_name,
+                "framework": "Seiler 80/20 Model",
+                "thresholds": thresholds,
+                "interpretation": context_text,
+                "coaching_implication": coaching_text,
+            })
+
+            semantic["metrics"]["Polarisation"] = metric_block
+            debug(context, f"[SEMANTIC] ✅ Polarisation ({variant}) injected = {value}")
+
+        else:
+            debug(context, "[SEMANTIC] ⚠️ No Polarisation value found in context")
+
+    except Exception as e:
+        debug(context, f"[SEMANTIC] ❌ Polarisation patch failed: {e}")
+
+
 
     # ---------------------------------------------------------
     # SECONDARY METRICS

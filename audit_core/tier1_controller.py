@@ -213,7 +213,6 @@ def collect_zone_distributions(df_master, athlete_profile, context):
             else:
                 debug(context, "[DEBUG-ZONES] ⚠️ No HR data found to expand.")
 
-
     # --- 🔍 Helper: detect zone columns by prefix ---
     def detect(prefixes):
         cols = []
@@ -233,14 +232,53 @@ def collect_zone_distributions(df_master, athlete_profile, context):
     debug(context, f"[DEBUG-ZONES] Pace cols={pace_cols}")
     debug(context, f"[DEBUG-ZONES] Swim cols={swim_cols}")
 
+    # ======================================================
+    # 🧩 Sensor Exclusivity Enforcement (Power > HR Priority)
+    # ======================================================
+    try:
+        pcols = [c for c in df_master.columns if c.startswith("power_z")]
+        hcols = [c for c in df_master.columns if c.startswith("hr_z")]
+
+        debug(context, f"[ZONES-FIX] 🔧 Enforcing per-activity sensor exclusivity → "
+                       f"Power cols={len(pcols)}, HR cols={len(hcols)}")
+
+        if not pcols and not hcols:
+            debug(context, "[ZONES-FIX] ⚠️ No zone columns found — skipping exclusivity check")
+        else:
+            for idx, row in df_master.iterrows():
+                has_power = pcols and pd.to_numeric(row[pcols], errors="coerce").fillna(0).sum() > 0
+                has_hr = hcols and pd.to_numeric(row[hcols], errors="coerce").fillna(0).sum() > 0
+
+                # Apply rule: Power data dominates
+                if has_power:
+                    for h in hcols:
+                        df_master.at[idx, h] = 0.0
+                    source = "power"
+                elif has_hr:
+                    for p in pcols:
+                        df_master.at[idx, p] = 0.0
+                    source = "hr"
+                else:
+                    for h in hcols + pcols:
+                        df_master.at[idx, h] = 0.0
+                    source = "none"
+
+                debug(context, f"[ZONES-FIX] Row {idx}: has_power={has_power}, has_hr={has_hr}, using={source}")
+
+        debug(context, "[ZONES-FIX] ✅ Sensor exclusivity successfully enforced (no double counting)")
+
+    except Exception as e:
+        import traceback
+        debug(context, f"[ZONES-FIX] ❌ Sensor exclusivity enforcement failed: {e}\n{traceback.format_exc()}")
+
     # --- 🧮 Compute zone distributions ---
     def compute(cols, label):
         if not cols:
             debug(context, f"[DEBUG-ZONES] ❌ No {label} columns found — skipping.")
             return {}
 
-        # 🩹 Optional cleanup: remove any non-time columns like icu_power_zones
-        cols = [c for c in cols if c.lower() != "icu_power_zones"]
+        # 🩹 Remove non-zone config keys (e.g., icu_hr_zones, thresholds)
+        cols = [c for c in cols if re.match(r'.*_z\d+$', c)]
 
         # Function to extract seconds from zones, handling missing or None data
         def extract_secs(value):
@@ -319,7 +357,7 @@ def collect_zone_distributions(df_master, athlete_profile, context):
     )
     debug(context, f"[ZONE-DEBUG] Power cols detected → {power_cols}")
 
-    # --- Compute all three ---
+    # --- Compute all four ---
     context["zone_dist_power"] = compute(power_cols, "power")
     context["zone_dist_hr"]    = compute(hr_cols, "hr")
     context["zone_dist_pace"]  = compute(pace_cols, "pace")

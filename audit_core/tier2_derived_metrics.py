@@ -481,7 +481,7 @@ def compute_derived_metrics(df_events, context):
             debug(context, f"[T2] ⚙️ Applied HR→Power scaling ×{factor} to HR zones ({len(hr_zone_cols)} cols)")
 
     # ======================================================
-    # 🧩 Fuse Power + HR zones per sport (URF v5.1+ corrected)
+    # 🧩 Fuse Power + HR zones per sport (URF v5.1 addition)
     # ======================================================
     try:
         from coaching_cheat_sheet import CHEAT_SHEET
@@ -512,43 +512,61 @@ def compute_derived_metrics(df_events, context):
             if sub.empty:
                 continue
 
-            # --- Identify zone columns
+            # Identify possible zone columns
             pcols = [c for c in sub.columns if c.startswith("power_z")]
             hcols = [c for c in sub.columns if c.startswith("hr_z")]
-
-            if not (pcols or hcols):
-                debug(context, f"[T2-FUSED] ⚠️ {sport_group}: no zone columns found → skipped")
+            if not pcols and not hcols:
+                debug(context, f"[T2-FUSED] ⚠️ No zone columns found for {sport_group}")
                 continue
 
-            # --- Filter rows: if power data exists for this activity, ignore HR for that row
-            if pcols:
-                sub_power = sub[sub[pcols].sum(axis=1) > 0]
-                sub_hr = sub[sub[pcols].sum(axis=1) == 0]  # HR-only when no power data
-            else:
-                sub_power, sub_hr = pd.DataFrame(), sub
+            fused_rows = []
+            for idx, row in sub.iterrows():
+                # Check availability
+                has_power = pcols and pd.to_numeric(row[pcols], errors="coerce").fillna(0).sum() > 0
+                has_hr = hcols and pd.to_numeric(row[hcols], errors="coerce").fillna(0).sum() > 0
 
-            # --- Combine both sets
-            sub_filtered = pd.concat([sub_power, sub_hr])
+                # Enforce per-activity exclusivity
+                if has_power:
+                    chosen = {k: row[k] for k in pcols if pd.notna(row[k])}
+                    for h in hcols:  # zero HR values
+                        chosen[h] = 0.0
+                    source = "power"
+                elif has_hr:
+                    chosen = {k: row[k] for k in hcols if pd.notna(row[k])}
+                    for p in pcols:  # zero power values
+                        chosen[p] = 0.0
+                    source = "hr"
+                else:
+                    continue
 
-            # --- Zero-out HR zones in rows that contain power (to avoid double-counting)
-            if not sub_power.empty and not sub_hr.empty:
-                for hcol in hcols:
-                    sub_filtered.loc[sub_filtered[pcols].sum(axis=1) > 0, hcol] = 0
+                fused_rows.append(chosen)
+                debug(context, f"[T2-FUSED] Row {idx}: source={source}, has_power={has_power}, has_hr={has_hr}")
 
-            # --- Compute numeric and normalize
-            zone_cols = sorted(set(pcols + hcols))
-            sub_num = sub_filtered[zone_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
+            if not fused_rows:
+                debug(context, f"[T2-FUSED] ⚠️ No usable zone rows for {sport_group}")
+                continue
 
-            total = sub_num.sum().sum()
+            fused_df = pd.DataFrame(fused_rows).fillna(0)
+            total = fused_df.sum().sum()
             if total <= 0:
-                debug(context, f"[T2-FUSED] ⚠️ {sport_group}: total<=0 → skipped")
+                debug(context, f"[T2-FUSED] ⚠️ {sport_group}: total zone sum <= 0, skipping.")
                 continue
 
-            fused_dist = (sub_num.sum() / total * 100).round(1).to_dict()
-            total_sum = round(sum(fused_dist.values()), 1)
-            debug(context, f"[T2-FUSED] {sport_group}: ✅ total={total_sum} (should ≈100)")
+            # Aggregate and normalize
+            dist = (fused_df.sum() / total * 100).round(1).to_dict()
+            fused[sport_group] = dist
 
-            fused[sport_group] = fused_dist
+            # --- Sanity check: warn if both HR and Power > 0
+            hr_sum = sum(v for k, v in dist.items() if k.startswith("hr_z"))
+            pw_sum = sum(v for k, v in dist.items() if k.startswith("power_z"))
+            if hr_sum > 0 and pw_sum > 0:
+                debug(context, f"[T2-FUSED] ⚠️ Double-count detected for {sport_group} (HR={hr_sum:.1f}, Power={pw_sum:.1f})")
+
+            # Debug summary
+            z1 = dist.get("power_z1", 0) + dist.get("hr_z1", 0)
+            z2 = dist.get("power_z2", 0) + dist.get("hr_z2", 0)
+            z3p = sum(v for k, v in dist.items() if any(z in k for z in ["z3", "z4", "z5"]))
+            debug(context, f"[T2-FUSED] ✅ {sport_group}: Z1={z1:.1f}% Z2={z2:.1f}% Z3+={z3p:.1f}% total=100%")
 
         # --- Outcome
         if fused:
@@ -557,11 +575,12 @@ def compute_derived_metrics(df_events, context):
             context["polarisation_sport"] = dominant
             debug(context, f"[T2-FUSED] ✅ Fused zones computed → sports={list(fused.keys())}, dominant={dominant}")
         else:
-            debug(context, "[T2-FUSED] ⚠️ No valid power/hr zone columns or groups produced fusion output.")
+            debug(context, "[T2-FUSED] ⚠️ No valid fused data produced.")
 
     except Exception as e:
         import traceback
         debug(context, f"[T2-FUSED] ❌ Zone fusion failed: {e}\n{traceback.format_exc()}")
+
 
 
     # ---------------------------------------------------------
