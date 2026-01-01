@@ -481,7 +481,7 @@ def compute_derived_metrics(df_events, context):
             debug(context, f"[T2] ⚙️ Applied HR→Power scaling ×{factor} to HR zones ({len(hr_zone_cols)} cols)")
 
     # ======================================================
-    # 🧩 Fuse Power + HR zones per sport (URF v5.1 addition)
+    # 🧩 Fuse Power + HR zones per sport (URF v5.1+ corrected)
     # ======================================================
     try:
         from coaching_cheat_sheet import CHEAT_SHEET
@@ -516,22 +516,39 @@ def compute_derived_metrics(df_events, context):
             pcols = [c for c in sub.columns if c.startswith("power_z")]
             hcols = [c for c in sub.columns if c.startswith("hr_z")]
 
-            # --- Filter rows: if power exists for this activity, ignore HR for that row
-            sub_power = sub[sub[pcols].sum(axis=1) > 0] if pcols else pd.DataFrame()
-            sub_hr = sub[sub[pcols].sum(axis=1) == 0] if pcols else sub  # only HR if no power
+            if not (pcols or hcols):
+                debug(context, f"[T2-FUSED] ⚠️ {sport_group}: no zone columns found → skipped")
+                continue
 
-            # --- Combine the two sets (power-priority)
+            # --- Filter rows: if power data exists for this activity, ignore HR for that row
+            if pcols:
+                sub_power = sub[sub[pcols].sum(axis=1) > 0]
+                sub_hr = sub[sub[pcols].sum(axis=1) == 0]  # HR-only when no power data
+            else:
+                sub_power, sub_hr = pd.DataFrame(), sub
+
+            # --- Combine both sets
             sub_filtered = pd.concat([sub_power, sub_hr])
 
-            # --- Normalize
+            # --- Zero-out HR zones in rows that contain power (to avoid double-counting)
+            if not sub_power.empty and not sub_hr.empty:
+                for hcol in hcols:
+                    sub_filtered.loc[sub_filtered[pcols].sum(axis=1) > 0, hcol] = 0
+
+            # --- Compute numeric and normalize
             zone_cols = sorted(set(pcols + hcols))
             sub_num = sub_filtered[zone_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
+
             total = sub_num.sum().sum()
             if total <= 0:
                 debug(context, f"[T2-FUSED] ⚠️ {sport_group}: total<=0 → skipped")
                 continue
 
-            fused[sport_group] = (sub_num.sum() / total * 100).round(1).to_dict()
+            fused_dist = (sub_num.sum() / total * 100).round(1).to_dict()
+            total_sum = round(sum(fused_dist.values()), 1)
+            debug(context, f"[T2-FUSED] {sport_group}: ✅ total={total_sum} (should ≈100)")
+
+            fused[sport_group] = fused_dist
 
         # --- Outcome
         if fused:
