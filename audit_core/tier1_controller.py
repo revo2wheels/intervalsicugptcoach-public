@@ -314,7 +314,7 @@ def collect_zone_distributions(df_master, athlete_profile, context):
 
                 # Case 2: single numeric fallback
                 elif isinstance(value, (int, float)):
-                    debug(context, f"[DEBUG-ZONES] Single numeric input={value}")
+                    #debug(context, f"[DEBUG-ZONES] Single numeric input={value}")
                     return float(value)
 
                 # Case 3: completely invalid
