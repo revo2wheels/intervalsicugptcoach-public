@@ -345,10 +345,20 @@ def run_report(
     # --- Tier-0 Range Configuration (aligned with worker) ---
     today = datetime.now().date()
 
+    # ----------------------------------------------------------
+    # 🧩 Range Context (preserve user-specified for summary/custom)
+    # ----------------------------------------------------------
     if reportType.lower() == "season":
-        context["range"] = {"lightDays": 90, "fullDays": 42, "wellnessDays": 90, "chunk": True}
-    else:  # weekly / wellness / summary
-        context["range"] = {"lightDays": 90, "fullDays": 7, "wellnessDays": 42, "chunk": False}
+        context.setdefault("range", {"lightDays": 90, "fullDays": 42, "wellnessDays": 90, "chunk": True})
+    elif reportType.lower() in ["summary", "custom"]:
+        # Keep user-provided range if start/end exist
+        if "start" in context and "end" in context:
+            debug(context, f"[RUN_REPORT] Using user range {context['start']} → {context['end']}")
+        else:
+            # fallback to 365d default
+            context["range"] = {"lightDays": 365, "fullDays": 90, "wellnessDays": 90, "chunk": False}
+    else:
+        context.setdefault("range", {"lightDays": 90, "fullDays": 7, "wellnessDays": 42, "chunk": False})
 
     # Local variable bindings for convenience
     light_days = context["range"]["lightDays"]
