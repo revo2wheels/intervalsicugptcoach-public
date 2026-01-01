@@ -105,7 +105,7 @@ def fetch_remote_report(report_type, fmt="semantic", staging=False, owner=None):
 # MAIN REPORT GENERATION
 # ─────────────────────────────────────────────
 def generate_full_report(report_type="weekly", output_path=None, output_format="markdown",
-                         prefetch=False, staging=False, owner=None):
+                         prefetch=False, staging=False, owner=None, start=None, end=None):
     """Run report and capture logs and output into one file."""
     buffer = io.StringIO()
     os.environ["REPORT_TYPE"] = report_type.lower()
@@ -141,11 +141,24 @@ def generate_full_report(report_type="weekly", output_path=None, output_format="
 
     else:
         debug({}, f"🧭 Generating {report_type.title()} Report (local mode)")
+
+        # 🧩 Optional: inject custom start/end date range into context
+        context = {}
+        if start and end:
+            debug(context, f"[CLI] ⏱️ Custom date range provided: {start} → {end}")
+            context["range"] = {
+                "light_start": start,
+                "light_end": end
+            }
+        else:
+            debug(context, "[CLI] Using default auto-window (today-365 for summary, etc.)")
+
         with redirect_stdout(buffer):
             result = run_report(
                 reportType=report_type,
                 include_coaching_metrics=True,
                 output_format=output_format,
+                context=context,       # ← pass through to controller
             )
 
         if isinstance(result, tuple):
@@ -243,15 +256,21 @@ def main():
                         help="Request staging environment (Worker will decide access)")
     parser.add_argument("--owner", type=str, default=None,
                         help="Optional owner identifier (e.g., 'xyz' for staging access)")
+    parser.add_argument("--start", type=str, help="Custom start date (YYYY-MM-DD)")
+    parser.add_argument("--end", type=str, help="Custom end date (YYYY-MM-DD)")
 
     args = parser.parse_args()
 
-    generate_full_report(report_type=args.range,
-                         output_path=args.output,
-                         output_format=args.format,
-                         prefetch=args.prefetch,
-                         staging=args.staging,
-                         owner=args.owner)
+    generate_full_report(
+        report_type=args.range,
+        output_path=args.output,
+        output_format=args.format,
+        prefetch=args.prefetch,
+        staging=args.staging,
+        owner=args.owner,
+        start=args.start,
+        end=args.end
+    )
 
 if __name__ == "__main__":
     main()

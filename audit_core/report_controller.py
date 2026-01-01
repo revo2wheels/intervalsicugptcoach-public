@@ -349,35 +349,65 @@ def run_report(
     # 🧩 Range Context (preserve user-specified for summary/custom)
     # ----------------------------------------------------------
     if reportType.lower() == "season":
-        context.setdefault("range", {"lightDays": 90, "fullDays": 42, "wellnessDays": 90, "chunk": True})
+        context.setdefault("range", {
+            "lightDays": 90,
+            "fullDays": 42,
+            "wellnessDays": 90,
+            "chunk": True
+        })
+
     elif reportType.lower() in ["summary", "custom"]:
-        # Keep user-provided range if start/end exist
-        if "start" in context and "end" in context:
-            debug(context, f"[RUN_REPORT] Using user range {context['start']} → {context['end']}")
+        # 🧩 Support CLI or API-provided explicit date range
+        custom_range = context.get("custom_date_range", {})
+        if custom_range and "start" in custom_range and "end" in custom_range:
+            context["range"] = {
+                "light_start": custom_range["start"],
+                "light_end": custom_range["end"],
+                "custom": True,
+                "chunk": False
+            }
+            debug(context, f"[RUN_REPORT] 🧭 Using user-provided range: {custom_range['start']} → {custom_range['end']}")
         else:
             # fallback to 365d default
-            context["range"] = {"lightDays": 365, "fullDays": 90, "wellnessDays": 90, "chunk": False}
+            context["range"] = {
+                "lightDays": 365,
+                "fullDays": 90,
+                "wellnessDays": 90,
+                "chunk": False
+            }
+            debug(context, "[RUN_REPORT] Using default 365-day summary window")
+
     else:
-        context.setdefault("range", {"lightDays": 90, "fullDays": 7, "wellnessDays": 42, "chunk": False})
+        context.setdefault("range", {
+            "lightDays": 90,
+            "fullDays": 7,
+            "wellnessDays": 42,
+            "chunk": False
+        })
 
     # Local variable bindings for convenience
-    light_days = context["range"]["lightDays"]
-    full_days = context["range"]["fullDays"]
-    chunk = context["range"]["chunk"]
+    light_days = context["range"].get("lightDays")
+    full_days = context["range"].get("fullDays")
+    chunk = context["range"].get("chunk")
+
 
     debug(context, f"[T0] Config → light={light_days}d full={full_days}d chunk={chunk}")
 
     # --- Tier-0 Full Audit (canonical, single execution) ---
     import pandas as pd
 
-    try:
+    # 🧩 CLI override for explicit start/end dates
+    if "range" in context and "light_start" in context["range"] and "light_end" in context["range"]:
+        full_start = pd.to_datetime(context["range"]["light_start"])
+        full_end = pd.to_datetime(context["range"]["light_end"])
+        debug(context, f"[RUN_REPORT] 🧭 Using CLI override range {full_start.date()} → {full_end.date()}")
+    else:
         full_start = today - timedelta(days=full_days)
         full_end = today
+        debug(context, f"[RUN_REPORT] Using default computed window {full_start} → {full_end}")
 
-        debug(
-            context,
-            f"[T0-FULL] Executing Tier-0 canonical path → {full_start} → {full_end}"
-        )
+    try:
+        debug(context, f"[T0-FULL] Executing Tier-0 canonical path → {full_start} → {full_end}")
 
         df_master, wellness, context, auditPartial, auditFinal = run_tier0_pre_audit(
             str(full_start),
@@ -390,6 +420,7 @@ def run_report(
     except Exception as e:
         debug(context, f"[T0-FULL] Tier-0 execution failed: {e}")
         raise
+
 
     # ============================================================
     # 🔒 LOCK Tier-0 90-day dataset (authoritative for Tier-3)

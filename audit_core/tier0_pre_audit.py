@@ -487,6 +487,16 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     report_type = context["report_type"].lower()
     debug(context, f"[T0] report_type resolved → {report_type}")
     headers = {}
+    # 🧩 Enforce CLI explicit date range (authoritative override)
+    if (
+        "range" in context
+        and "light_start" in context["range"]
+        and "light_end" in context["range"]
+    ):
+        start = str(pd.to_datetime(context["range"]["light_start"]).date())
+        end = str(pd.to_datetime(context["range"]["light_end"]).date())
+        debug(context, f"[T0-FORCE] CLI override enforced → start={start} end={end}")
+
     # If Railway has a token, send it; otherwise rely on Worker env.ICU_OAUTH
     if ICU_TOKEN and ICU_TOKEN.strip():
         headers["Authorization"] = f"Bearer {ICU_TOKEN.strip()}"
@@ -559,13 +569,19 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         oldest = pd.to_datetime(start).strftime("%Y-%m-%d")
         newest = pd.to_datetime(end).strftime("%Y-%m-%d")
 
-        # 🚀 OVERRIDE: Force 90-day window when force_light=True
-        if context.get("force_light", False):
+        # 🚀 OVERRIDE: Force 90-day window when force_light=True (but NOT if user provided custom range)
+        if context.get("force_light", False) and not (
+            "range" in context
+            and "light_start" in context["range"]
+            and "light_end" in context["range"]
+        ):
             newest_date = datetime.now().date()
             oldest_date = newest_date - timedelta(days=context.get("range", {}).get("lightDays", 90))
             oldest = oldest_date.strftime("%Y-%m-%d")
             newest = newest_date.strftime("%Y-%m-%d")
             debug(context, f"[T0-FORCE-LIGHT] Overriding controller range → {oldest} → {newest}")
+        else:
+            debug(context, f"[T0-FORCE-LIGHT] 🧭 Retaining CLI override range {start} → {end}")
 
         debug(context, f"[T0-LIGHT] Using range oldest={oldest} newest={newest}")
 
@@ -709,15 +725,37 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     debug(context, f"[CHECK] athlete name = {context.get('athleteProfile', {}).get('name')}")
 
     # --- Step 2: Define canonical date window (metadata only) ---
-    if context.get("report_type", "").lower() == "season":
+    def fmt_date(x):
+        """Safe formatter for date/timestamp objects."""
+        try:
+            if hasattr(x, "date"):
+                return x.date()
+            return x
+        except Exception:
+            return x
+
+    if (
+        "range" in context
+        and "light_start" in context["range"]
+        and "light_end" in context["range"]
+    ):
+        mode = "custom"
+        oldest = pd.to_datetime(context["range"]["light_start"])
+        newest = pd.to_datetime(context["range"]["light_end"])
+        debug(context, f"[T0-FIX] 🧭 Using explicit user range {fmt_date(oldest)} → {fmt_date(newest)}")
+
+    elif context.get("report_type", "").lower() == "season":
         mode = "season"
         oldest = pd.Timestamp.now() - pd.Timedelta(days=90)
         newest = pd.Timestamp.now()
         debug(context, f"🧩 Tier-0: defining 90-day window context for season mode (no data reslice).")
+
     else:
         mode, oldest, newest = resolve_report_trigger("weekly", context["timezone"])
+        debug(context, f"[T0-FIX] Defaulting to weekly/rolling window {fmt_date(oldest)} → {fmt_date(newest)}")
 
     context.update({"report_mode": mode, "window_start": oldest, "window_end": newest})
+
 
     # --- Step 3: Fetch activities (canonical Tier-0 behaviour) ---
     report_type = str(context.get("report_type", "")).lower()
