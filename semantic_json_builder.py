@@ -722,15 +722,24 @@ def build_semantic_json(context):
         dom_sport = context.get("polarisation_sport")
         if fused and dom_sport in fused:
             dist = fused[dom_sport]
+
+            # 🧹 Prevent double-counting: if power zones exist, drop HR ones
+            if any(v > 0 for k, v in dist.items() if k.startswith("power_z")):
+                for k in list(dist.keys()):
+                    if k.startswith("hr_z"):
+                        dist[k] = 0
+
             z1 = dist.get("hr_z1", 0) + dist.get("power_z1", 0)
             z3p = sum(v for k, v in dist.items() if any(z in k for z in ["z3", "z4", "z5"]))
             pi_fused = round(z1 / (z1 + z3p + 1e-9), 3)
+
             polarisation_variants["fused"] = build_variant(
                 "Polarisation_fused",
                 pi_fused,
                 f"Fused HR+Power (dominant sport: {dom_sport})",
                 "zones.fused",
             )
+
 
         # --- Combined variant (multi-sport HR+Power)
         combined = context.get("zone_dist_combined") or semantic.get("zones", {}).get("combined", {})
