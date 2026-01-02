@@ -1788,7 +1788,7 @@ def build_semantic_json(context):
                         "descriptor": advice.get(current_phase, f"{current_phase} phase — maintain adaptive consistency."),
                         # 🔽 Add this line to keep calc provenance
                         "calc_method": seg["calc_method"].iloc[-1] if "calc_method" in seg else None,
-                        "calc_context": seg["calc_context"].iloc[-1] if "calc_context" in seg else None
+                        "calc_context": seg["calc_context"].iloc[-1] if "calc_context" in seg else None,
                     })
                     # Start new segment
                     current_phase = wk["phase"]
@@ -1796,7 +1796,7 @@ def build_semantic_json(context):
                 else:
                     segment_rows.append(wk)
 
-            # Final segment
+            # Final open segment
             if segment_rows:
                 seg = pd.DataFrame(segment_rows)
                 summaries.append({
@@ -1808,12 +1808,21 @@ def build_semantic_json(context):
                     "tss_total": round(seg["tss"].sum(), 1),
                     "hours_total": round(seg["hours"].sum(), 1),
                     "distance_km_total": round(seg["distance_km"].sum(), 1),
-                    "descriptor": advice.get(current_phase, f"{current_phase} phase — maintain adaptive consistency.")
+                    "descriptor": advice.get(
+                        current_phase, f"{current_phase} phase — maintain adaptive consistency."
+                    ),
+                    "calc_method": seg["calc_method"].iloc[-1] if "calc_method" in seg else None,
+                    "calc_context": seg["calc_context"].iloc[-1] if "calc_context" in seg else None,
                 })
 
-            semantic["phases_summary"] = summaries
+            # Save to semantic
+            semantic["meta"]["phases_summary"] = {
+                "is_phase_block": True,
+                "phase_block_count": len(summaries),
+                "notes": "Macro-level sequential phase summary, intended for ChatGPT / structured UI rendering."
+            }
             debug(context, f"[PHASES] ✅ Created {len(summaries)} sequential phase blocks (no overlaps)")
-
+            semantic["phases_summary"] = summaries
             # -----------------------------------------------------
             # 🧩 Weekly-level detail (phases, cleaned for output)
             # -----------------------------------------------------
