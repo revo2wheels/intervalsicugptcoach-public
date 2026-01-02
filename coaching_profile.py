@@ -100,6 +100,22 @@ REPORT_HEADERS = {
     },
 }
 
+
+"""
+Scientific alignment (URF v5.3)
+-------------------------------
+• Issurin, V. (2008) – Block Periodization of Training Cycles
+• Seiler, S. (2010, 2019) – Hierarchical Organization of Endurance Training
+• Mujika & Padilla (2003) – Tapering and Peaking for Performance
+• Banister, E.W. (1975) – Impulse–Response Model of Training
+• Foster, C. et al. (2001) – Monitoring Training Load with Session RPE
+
+Summary:
+✅ phases         → macro-level blocks (Base, Build, Peak, etc.)
+✅ phases_detail  → weekly micro-level metrics (TSS, hours, distance)
+"""
+
+
 REPORT_CONTRACT = {
     "weekly": [
         "meta", "hours", "tss", "distance_km",
@@ -110,23 +126,26 @@ REPORT_CONTRACT = {
         "planned_events", "planned_summary_by_date",
         "future_forecast"
     ],
+
     "season": [
         "meta", "hours", "tss", "distance_km",
         "metrics", "extended_metrics",
         "adaptation_metrics", "trend_metrics",
-        "phases", "phases_weekly",
+        "phases", "phases_summary",
         "wbal_summary", "performance_summary",
         "insights", "actions", "future_forecast"
     ],
-    "wellness": [
-        "meta", "wellness", "insights", "insight_view"
-    ],
+
     "summary": [
         "meta", "hours", "tss", "distance_km",
         "wellness", "insights", "insight_view",
-        "phases", "phases_weekly",
+        "phases", "phases_summary",
         "wbal_summary", "performance_summary",
         "actions"
+    ],
+
+    "wellness": [
+        "meta", "wellness", "insights", "insight_view"
     ]
 }
 

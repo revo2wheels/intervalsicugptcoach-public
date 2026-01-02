@@ -186,43 +186,6 @@ def build_insights(semantic):
         "coaching_implication": fatigue_block.get("coaching_implication"),
     }
 
-    # --- 🧩 Polarisation (Renderer — read-only exposure) ---
-   # ctx = semantic.get("context_ref", {}) 
-   # pol_meta = ctx.get("semantic_flags", {}).get("polarisation_status", {})
-   # per_sport = ctx.get("polarisation_per_sport", {})
-   # pol_index = ctx.get("PolarisationIndex")
-   # pol_ratio = ctx.get("Polarisation")
-   # dominant_sport = pol_meta.get("dominant_sport")
-   # reason = pol_meta.get("reason", "No valid data.")
-   # possible = pol_meta.get("possible", False)
-
-   # if possible and pol_index is not None:
-   #     pol_block = semantic_block_for_metric("PolarisationIndex", pol_index, semantic)
-   #     insights["polarisation"] = {
-   #         "value": pol_index,
-   #         "ratio": pol_ratio,
-   #         "basis": reason,
-   #         "dominant_sport": dominant_sport,
-   #         "classification": pol_block.get("classification"),
-   #         "interpretation": pol_block.get("interpretation"),
-   #         "coaching_implication": pol_block.get("coaching_implication"),
-   #     }
-   #     debug(ctx, f"[SEM] Polarisation exposed (dominant={dominant_sport})")
-
-    #else:
-    #    insights["polarisation"] = {
-    #        "value": None,
-    #        "basis": reason,
-    #        "dominant_sport": dominant_sport,
-    #        "classification": "undefined",
-    #        "interpretation": "Polarisation unavailable — Tier-2 did not compute valid data.",
-    #        "coaching_implication": "Cannot evaluate intensity distribution for this window.",
-    #    }
-    #    debug(ctx, f"[SEM] Polarisation unavailable → {reason}")
-
-#    if per_sport:
- #       insights["polarisation"]["per_sport"] = per_sport
-
     # --- Metabolic Drift (FOxI proxy) ---
     foxi = semantic.get("metrics", {}).get("FOxI", {}).get("value")
     drift = None
@@ -539,7 +502,20 @@ def build_semantic_json(context):
         ] if context.get("df_daily") is not None else [],
 
         "events": [],
-        "phases": context.get("phases", []),
+        #PHASE BASED APPROACH
+        #Issurin (2008) — macro/micro distinction between period blocks and load cycles.
+        #Seiler (2019) — mesocycle-level trend and micro-level workload separation.
+        #Mujika & Padilla (2003) — tapering and recovery phases as distinct block summaries.
+        "phases": [
+            {
+                "phase": p.get("phase"),
+                "start": p.get("start"),
+                "end": p.get("end"),
+                "duration_days": p.get("duration_days"),
+                "duration_weeks": p.get("duration_weeks"),
+            }
+            for p in context.get("phases", [])
+        ],
     }
 
     # ---------------------------------------------------------
@@ -1121,23 +1097,20 @@ def build_semantic_json(context):
         debug(context, "[SEMANTIC] EVENTS: no df_events available or empty DataFrame")
 
     # ---------------------------------------------------------
-    # 🪜 Weekly Load Aggregation (Season Summary)
+    # 🪜 Weekly Phases Summary (URF v5.2 canonical)
     # ---------------------------------------------------------
-
     if semantic["meta"]["report_type"] in ("season", "summary"):
-        # ✅ Reuse df_ref if available
         df_src = None
         if "df_ref" in locals() and isinstance(df_ref, pd.DataFrame) and not df_ref.empty:
             df_src = df_ref.copy()
-            debug(context, f"[PHASES_WEEKLY] Using df_ref with {len(df_src)} rows for weekly aggregation")
+            debug(context, f"[WEEKLY] Using df_ref with {len(df_src)} rows for weekly aggregation")
         else:
-            for candidate_name in ["df_light", "activities_light", "df_light_slice", "_df_scope_full"]:
+            for candidate_name in ["df_light", "activities_light", "_df_scope_full"]:
                 candidate = context.get(candidate_name)
                 if isinstance(candidate, pd.DataFrame) and not candidate.empty:
                     df_src = candidate.copy()
-                    debug(context, f"[PHASES_WEEKLY] Using fallback dataset: {candidate_name} ({len(df_src)} rows)")
+                    debug(context, f"[WEEKLY] Using fallback dataset: {candidate_name} ({len(df_src)} rows)")
                     break
-
 
         if df_src is not None and "start_date_local" in df_src.columns:
             df_src["start_date_local"] = pd.to_datetime(df_src["start_date_local"], errors="coerce")
@@ -1146,32 +1119,53 @@ def build_semantic_json(context):
             for col in ["icu_training_load", "moving_time", "distance"]:
                 if col in df_src.columns:
                     df_src[col] = pd.to_numeric(df_src[col], errors="coerce").fillna(0)
-                iso = df_src["start_date_local"].dt.isocalendar()
-                df_src["year_week"] = iso["year"].astype(str) + "-W" + iso["week"].astype(str)
-                df_week = (
-                    df_src.groupby("year_week", as_index=False)
-                .agg({
-                    "distance": "sum",
-                    "moving_time": "sum",
-                    "icu_training_load": "sum"
-                })
-                .sort_values("year_week")
+
+            iso = df_src["start_date_local"].dt.isocalendar()
+            df_src["year_week"] = iso["year"].astype(str) + "-W" + iso["week"].astype(str)
+            df_week = (
+                df_src.groupby("year_week", as_index=False)
+                    .agg({
+                        "distance": "sum",
+                        "moving_time": "sum",
+                        "icu_training_load": "sum"
+                    })
+                    .sort_values("year_week")
             )
 
-            semantic["phases_weekly"] = [
+            # --- Phase linkage: map each week to its detected macro phase ---
+            def get_phase_for_week(week_label):
+                try:
+                    year, week = week_label.split("-W")
+                    week_start = pd.Timestamp.fromisocalendar(int(year), int(week), 1)
+                except Exception:
+                    return "Unclassified"
+
+                for p in context.get("phases", []):
+                    s = pd.to_datetime(p.get("start"))
+                    e = pd.to_datetime(p.get("end"))
+                    if s <= week_start <= e:
+                        return p.get("phase")
+                return "Unclassified"
+
+            # --- Build unified weekly phase summary ---
+            semantic["weekly_phases"] = [
                 {
-                    "phase": f"{r['year_week']}",
+                    "week": r["year_week"],
+                    "phase": get_phase_for_week(r["year_week"]),
                     "distance_km": round(r["distance"] / 1000, 1),
                     "hours": round(r["moving_time"] / 3600, 1),
                     "tss": round(r["icu_training_load"], 0)
                 }
                 for _, r in df_week.iterrows()
             ]
-        else:
-            semantic["phases_weekly"] = [
-                {"phase": "No Data", "start": None, "end": None, "delta": 0.0}
-            ]
 
+            debug(context, f"[WEEKLY] ✅ Injected weekly_phases with {len(semantic['weekly_phases'])} weeks")
+
+        else:
+            semantic["weekly_phases"] = [
+                {"week": "No Data", "phase": "No Data", "distance_km": 0, "hours": 0, "tss": 0}
+            ]
+            debug(context, "[WEEKLY] ⚠️ No valid data source for weekly summary")
 
     # ---------------------------------------------------------
     # DERIVED EVENT SUMMARIES — W' Balance & Performance
@@ -1549,12 +1543,22 @@ def build_semantic_json(context):
     else:
         debug(context, "[SEMANTIC] ⚠️ No actions_future found after Tier-3 injection.")
 
-     # ---------------------------------------------------------
+    # ---------------------------------------------------------
     # 🧠 INSIGHTS (computed once, after all metrics resolved)
     # ---------------------------------------------------------
-    semantic["insights"] = build_insights(semantic)
-    semantic["insight_view"] = build_insight_view(semantic)
+    # ✅ pass weekly phase detail (not macro) to insight view
+    full_phases_for_view = (
+        semantic.get("weekly_phases")
+        or semantic.get("phases_detail")
+        or []
+    )
+    semantic["insight_view"] = build_insight_view({
+        **semantic,
+        "phases_detail": full_phases_for_view
+    })
+
     semantic["context_ref"] = context
+
 
     # ---------------------------------------------------------
     # 🧹 CLEANUP — ensure only one authoritative actions section
@@ -1567,17 +1571,299 @@ def build_semantic_json(context):
         semantic.setdefault("meta", {})
         semantic["meta"]["has_actions"] = bool(semantic["actions"])
 
+    # ----------------------------------------------------------
+    # Cleanup Phases for weekly and wellness
+    # ----------------------------------------------------------
+    if semantic["meta"]["report_type"] in ("weekly", "wellness"):
+        if "insight_view" in semantic and "phases" in semantic["insight_view"]:
+            del semantic["insight_view"]["phases"]
+            debug(context, "[SEMANTIC] Pruned phases from insight_view (short-term report)")
+
     # ---------------------------------------------------------
     # 🧩 Echo render options for transparency
     # ---------------------------------------------------------
     if "render_options" in context:
         semantic["options"] = context["render_options"]
 
+    # ---------------------------------------------------------
+    # 🧭 Phase Structure Normalisation (URF v5.1 — Science-Aligned)
+    # ---------------------------------------------------------
+    """
+    Scientific alignment:
+    - Issurin, V. (2008): Block Periodization of Training Cycles
+    - Seiler, S. (2010, 2019): Hierarchical Organization of Endurance Training
+    - Mujika & Padilla (2003): Tapering and Peaking for Performance
+    - Banister, E.W. (1975): Impulse–Response Model
+    - Foster, C. et al. (2001): Monitoring Training Load with session RPE
+
+    ✅ phases → week-by-week (TSS, hours, distance, CTL, ATL, TSB)
+    ✅ phases_summary → macro roll-up (duration, total load, descriptors)
+    """
+
+    report_type = semantic["meta"].get("report_type")
+
+    # ---------------------------------------------------------
+    # 🗓️ Weekly / Wellness → show current phase only
+    # ---------------------------------------------------------
+    if report_type in ("weekly", "wellness"):
+        full_phases = context.get("phases", [])
+        if full_phases:
+            current = full_phases[-1]
+            semantic["phases"] = [{
+                "phase": current.get("phase"),
+                "start": current.get("start"),
+                "end": current.get("end"),
+                "duration_days": current.get("duration_days"),
+                "duration_weeks": current.get("duration_weeks")
+            }]
+            debug(context, f"[PHASES] Weekly/Wellness → current phase '{current.get('phase')}'")
+        else:
+            semantic["phases"] = []
+            debug(context, "[PHASES] Weekly/Wellness → no phase data")
+
+        # Remove detail / summary for short reports
+        for k in ("weekly_phases", "phases_summary"):
+            semantic.pop(k, None)
+
+    # ---------------------------------------------------------
+    # 🌍 Season / Summary → full weekly + roll-up
+    # ---------------------------------------------------------
+    elif report_type in ("season", "summary"):
+        raw_weeks = semantic.get("weekly_phases", [])
+        if not raw_weeks:
+            debug(context, "[PHASES] ⚠️ No weekly data; skipping normalisation")
+            semantic["phases_summary"], semantic["phases"] = [], []
+        else:
+            df_weeks = pd.DataFrame(raw_weeks)
+
+            # Derive start/end for each ISO week
+            def week_to_dates(week_label):
+                try:
+                    y, wk = str(week_label).split("-W")
+                    start = pd.Timestamp.fromisocalendar(int(y), int(wk), 1)
+                    end = start + pd.Timedelta(days=6)
+                    return start, end
+                except Exception:
+                    return pd.NaT, pd.NaT
+
+            df_weeks[["start", "end"]] = df_weeks["week"].apply(lambda w: pd.Series(week_to_dates(w)))
+
+            # -----------------------------------------------------
+            # 🧩 Inject CTL/ATL/TSB per week (from df_light / df_master)
+            # -----------------------------------------------------
+            ctl_src = pd.DataFrame()
+            for key in ["df_light", "df_master"]:
+                if isinstance(context.get(key), pd.DataFrame) and not context[key].empty:
+                    df_tmp = context[key].copy()
+
+                    # Normalise Intervals fields
+                    rename_map = {
+                        "icu_ctl": "CTL",
+                        "icu_atl": "ATL",
+                        "icu_training_load": "tss"
+                    }
+                    df_tmp.rename(columns=rename_map, inplace=True)
+
+                    # Compute TSB dynamically if missing
+                    if "TSB" not in df_tmp.columns and all(c in df_tmp.columns for c in ["CTL", "ATL"]):
+                        df_tmp["TSB"] = df_tmp["CTL"] - df_tmp["ATL"]
+
+                    # Find the best date column
+                    date_col = None
+                    for c in ["start_date_local", "start_date", "date"]:
+                        if c in df_tmp.columns:
+                            date_col = c
+                            break
+
+                    if date_col:
+                        ctl_src = df_tmp[[date_col, "CTL", "ATL", "TSB"]].copy()
+                        ctl_src.rename(columns={date_col: "date"}, inplace=True)
+                    break
+
+            # -----------------------------------------------------
+            # Aggregate by ISO week
+            # -----------------------------------------------------
+            if not ctl_src.empty:
+                ctl_src["date"] = pd.to_datetime(ctl_src["date"], errors="coerce")
+                ctl_src["year_week"] = (
+                    ctl_src["date"].dt.isocalendar().year.astype(str)
+                    + "-W"
+                    + ctl_src["date"].dt.isocalendar().week.astype(str)
+                )
+                df_ctl = (
+                    ctl_src.groupby("year_week", as_index=False)
+                    .agg({"CTL": "mean", "ATL": "mean", "TSB": "mean"})
+                )
+                df_ctl.columns = ["week", "ctl", "atl", "tsb"]
+                df_weeks = df_weeks.merge(df_ctl, on="week", how="left")
+
+                # Diagnostic
+                debug(
+                    context,
+                    f"[PHASES] ✅ Injected CTL/ATL/TSB from {key} "
+                    f"({len(df_ctl)} weekly rows) — mean TSB={df_ctl['tsb'].mean():.2f}"
+                )
+            else:
+                ctl_val = semantic.get("extended_metrics", {}).get("CTL", {}).get("value", 0.0)
+                atl_val = semantic.get("extended_metrics", {}).get("ATL", {}).get("value", 0.0)
+                tsb_val = ctl_val - atl_val
+                df_weeks["ctl"], df_weeks["atl"], df_weeks["tsb"] = ctl_val, atl_val, tsb_val
+                debug(context, "[PHASES] ⚠️ No df_light/df_master — fallback static CTL/ATL/TSB")
+
+            # -----------------------------------------------------
+            # Classify per week using TSB thresholds
+            # -----------------------------------------------------
+            tsb_thresholds = CHEAT_SHEET.get("thresholds", {}).get("TSB", {})
+
+            def classify_tsb(tsb_value):
+                for label, (lo, hi) in tsb_thresholds.items():
+                    if lo <= tsb_value < hi:
+                        return label.capitalize()
+                return "Unknown"
+
+            df_weeks["classification"] = df_weeks["tsb"].apply(classify_tsb)
+
+            # -----------------------------------------------------
+            # 🔗 Propagate calc_method / calc_context from detect_phases()
+            # -----------------------------------------------------
+            if "phases" in context and isinstance(context["phases"], list) and len(context["phases"]) > 0:
+                df_detected = pd.DataFrame(context["phases"])
+                if not df_detected.empty:
+                    # 🩹 Ensure columns exist in df_weeks before assignment
+                    if "calc_method" not in df_weeks.columns:
+                        df_weeks["calc_method"] = None
+                    if "calc_context" not in df_weeks.columns:
+                        df_weeks["calc_context"] = None
+
+                    # Match by overlapping date ranges
+                    for idx, row in df_weeks.iterrows():
+                        wk_start, wk_end = row["start"], row["end"]
+                        matched = df_detected[
+                            (pd.to_datetime(df_detected["start"]) <= wk_end)
+                            & (pd.to_datetime(df_detected["end"]) >= wk_start)
+                        ]
+                        if not matched.empty:
+                            df_weeks.at[idx, "calc_method"] = matched.iloc[-1].get("calc_method")
+
+                            context_val = matched.iloc[-1].get("calc_context")
+                            # ✅ Safe assignment for dict values (keeps them scalar)
+                            df_weeks.at[idx, "calc_context"] = (
+                                context_val if isinstance(context_val, (dict, type(None))) else dict(context_val)
+                            )
+
+                    debug(context, f"[PHASES] 🔄 Propagated calc_method/context into weekly roll-up")
+
+
+
+            # -----------------------------------------------------
+            # 🧮 Macro-level roll-up (phases_summary) — sequential, boundary-aware
+            # -----------------------------------------------------
+            summaries = []
+            advice = CHEAT_SHEET.get("advice", {}).get("PhaseAdvice", {})
+
+            # Sort chronologically
+            df_weeks = df_weeks.sort_values("start").reset_index(drop=True)
+
+            current_phase = None
+            segment_rows = []
+
+            for _, wk in df_weeks.iterrows():
+                if current_phase is None:
+                    current_phase = wk["phase"]
+                    segment_rows = [wk]
+                    continue
+
+                # Phase transition detected
+                if wk["phase"] != current_phase:
+                    seg = pd.DataFrame(segment_rows)
+                    summaries.append({
+                        "phase": current_phase,
+                        "start": seg["start"].min().strftime("%Y-%m-%d"),
+                        "end": seg["end"].max().strftime("%Y-%m-%d"),
+                        "duration_days": (seg["end"].max() - seg["start"].min()).days,
+                        "duration_weeks": round((seg["end"].max() - seg["start"].min()).days / 7, 1),
+                        "tss_total": round(seg["tss"].sum(), 1),
+                        "hours_total": round(seg["hours"].sum(), 1),
+                        "distance_km_total": round(seg["distance_km"].sum(), 1),
+                        "descriptor": advice.get(current_phase, f"{current_phase} phase — maintain adaptive consistency."),
+                        # 🔽 Add this line to keep calc provenance
+                        "calc_method": seg["calc_method"].iloc[-1] if "calc_method" in seg else None,
+                        "calc_context": seg["calc_context"].iloc[-1] if "calc_context" in seg else None
+                    })
+                    # Start new segment
+                    current_phase = wk["phase"]
+                    segment_rows = [wk]
+                else:
+                    segment_rows.append(wk)
+
+            # Final segment
+            if segment_rows:
+                seg = pd.DataFrame(segment_rows)
+                summaries.append({
+                    "phase": current_phase,
+                    "start": seg["start"].min().strftime("%Y-%m-%d"),
+                    "end": seg["end"].max().strftime("%Y-%m-%d"),
+                    "duration_days": (seg["end"].max() - seg["start"].min()).days,
+                    "duration_weeks": round((seg["end"].max() - seg["start"].min()).days / 7, 1),
+                    "tss_total": round(seg["tss"].sum(), 1),
+                    "hours_total": round(seg["hours"].sum(), 1),
+                    "distance_km_total": round(seg["distance_km"].sum(), 1),
+                    "descriptor": advice.get(current_phase, f"{current_phase} phase — maintain adaptive consistency.")
+                })
+
+            semantic["phases_summary"] = summaries
+            debug(context, f"[PHASES] ✅ Created {len(summaries)} sequential phase blocks (no overlaps)")
+
+            # -----------------------------------------------------
+            # 🧩 Weekly-level detail (phases, cleaned for output)
+            # -----------------------------------------------------
+            df_weeks = df_weeks.sort_values(by=["start", "week"], ascending=[True, True]).reset_index(drop=True)
+
+            # Format + clean
+            weekly_output = (
+                df_weeks.assign(
+                    start=lambda x: pd.to_datetime(x["start"]).dt.strftime("%Y-%m-%d"),
+                    end=lambda x: pd.to_datetime(x["end"]).dt.strftime("%Y-%m-%d"),
+                    ctl=lambda x: x["ctl"].round(2),
+                    atl=lambda x: x["atl"].round(2),
+                    tsb=lambda x: x["tsb"].round(2)
+                )[
+                    [
+                        "week", "start", "end",
+                        "distance_km", "hours", "tss",
+                        "ctl", "atl", "tsb", "classification"
+                    ]
+                ].to_dict(orient="records")
+            )
+
+            semantic["phases"] = weekly_output
+            debug(context, f"[PHASES] ✅ Cleaned weekly phase output ({len(weekly_output)} weeks)")
+
+
+
+            # -----------------------------------------------------
+            # Enforce output ordering (summary before phases)
+            # -----------------------------------------------------
+            ordered = {}
+            for k, v in semantic.items():
+                if k not in ("phases_summary", "phases"):
+                    ordered[k] = v
+            ordered["phases_summary"] = semantic["phases_summary"]
+            ordered["phases"] = semantic["phases"]
+
+            semantic.clear()
+            semantic.update(ordered)
+
+
+    # ---------------------------------------------------------
+    # ✅ Contract Enforcement
+    # ---------------------------------------------------------
     return apply_report_type_contract(semantic)
+
 
 # ==============================================================
 # build_insight_view (URF v5.2+)
-# Data-driven insight grouping for API/UI layer
+# Clean version – no embedded phases
 # ==============================================================
 from coaching_cheat_sheet import CHEAT_SHEET
 
@@ -1596,14 +1882,12 @@ def build_insight_view(semantic):
             "critical": [ ... ],
             "watch": [ ... ],
             "positive": [ ... ],
-            "actions": [...],
-            "phases": [...]
+            "actions": [ ... ]
         }
     """
 
     metrics = semantic.get("metrics", {})
     actions = semantic.get("actions", [])
-    phases = semantic.get("phases", [])
 
     critical, watch, positive = [], [], []
 
@@ -1624,7 +1908,7 @@ def build_insight_view(semantic):
                or metric.get("status")
                or "").lower()
 
-        # 1️⃣ If explicit classification or alias exists
+        # 1️⃣ Explicit classification or alias
         if cls:
             if cls in ("red", "amber", "green"):
                 return cls
@@ -1649,20 +1933,19 @@ def build_insight_view(semantic):
         return None
 
     # ----------------------------------------------------------
-    # Iterate over all metrics in semantic_graph
+    # Iterate over all metrics
     # ----------------------------------------------------------
     for name, m in metrics.items():
 
-        # 🧩 Skip nested variant containers (already rendered in metrics table)
+        # Skip nested polarisation variants
         if "polarisation" in name.lower():
             continue
 
-        # 🩻 Flatten nested variant metrics (e.g. Polarisation_variants)
+        # Flatten nested variants (e.g. Polarisation_variants)
         if isinstance(m, dict) and any(isinstance(v, dict) for v in m.values()):
             for subname, submetric in m.items():
                 if not isinstance(submetric, dict):
                     continue
-                # ⛔ Skip Polarisation submetrics entirely
                 if "polarisation" in subname.lower():
                     continue
                 cls = classify_metric(f"{name}_{subname}", submetric)
@@ -1678,7 +1961,7 @@ def build_insight_view(semantic):
                 {"red": critical, "amber": watch, "green": positive}[cls].append(entry)
             continue
 
-        # 🔹 Flat metric case
+        # Flat metric
         cls = classify_metric(name, m)
         if not cls:
             continue
@@ -1693,15 +1976,15 @@ def build_insight_view(semantic):
         {"red": critical, "amber": watch, "green": positive}[cls].append(entry)
 
     # ----------------------------------------------------------
-    # Return grouped view
+    # Return grouped insight view (no phases)
     # ----------------------------------------------------------
     return {
         "critical": critical,
         "watch": watch,
         "positive": positive,
         "actions": actions,
-        "phases": phases,
     }
+
 
 
 def apply_report_type_contract(semantic: dict) -> dict:

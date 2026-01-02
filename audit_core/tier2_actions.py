@@ -41,42 +41,50 @@ def metric_value(context, key, default=0.0):
 
 def detect_phases(context, events):
     """
-    Tier-2 Phase Detection (URF v5.4)
-    Derives macrocycle phases: Base, Build, Peak, Taper, Recovery
-    using *weekly-aggregated* TSS trends across the entire dataset
-    (90-day or 365-day "light" activity feed).
+    Tier-2 Phase Detection (v17.9 — Science-Aligned, Traceable)
+    ------------------------------------------------------------
+    Classifies macrocycle phases (Base, Build, Peak, Taper, Recovery,
+    Deload, Continuous Load) using week-to-week training load trends,
+    CTL/ATL smoothing (Banister model), and fatigue–freshness (TSB)
+    evaluation aligned with Intervals.icu and TrainingPeaks metrics.
 
-    Rationale:
-    ----------
-    - Aggregates activity TSS (icu_training_load) by ISO week
-    - Detects major week-to-week deltas (growth/decline patterns)
-    - Modulates classification using ACWR and RecoveryIndex if present
-    - Works for variable durations (season or annual)
-    - Never outputs "No Data" unless dataset truly empty
+    🧠 Scientific Foundations:
+        • Banister et al. (1975–1991) – Impulse-Response Model (CTL/ATL/TSB)
+        • Seiler (2010, 2020) – Endurance intensity distribution & durability
+        • Mujika & Padilla (2003, 2010) – Tapering & performance maintenance
+        • Issurin (2008) – Block Periodisation: accumulation → realisation
+        • Friel (2009) – Practical macrocycle mapping (Base → Build → Peak)
+        • Gabbett (2016) – Acute:Chronic Workload Ratio (ACWR safety)
+        • Foster (1998) – Training monotony and load variability
+
+    📚 Adds: calc_method + calc_context per phase for full traceability.
     """
 
-    debug(context, "[PHASES] ---- Phase detection start ----")
+    import pandas as pd, numpy as np
+    from datetime import datetime
+    from audit_core.utils import debug
+    from coaching_cheat_sheet import CHEAT_SHEET
 
-    # --- Validate input
+    debug(context, "[PHASES] ---- Phase detection start (v17.9) ----")
+
+    # --- Validate input ----------------------------------------------------
     if not events or not isinstance(events, (list, tuple)):
-        debug(context, "[PHASES] No event list provided")
+        debug(context, "[PHASES] ❌ No valid event list")
         context["phases"] = [{"phase": "No Data", "start": None, "end": None, "delta": 0.0}]
         return context
 
-    # --- Extract load + timestamp
     df = pd.DataFrame(events)
     if df.empty or "icu_training_load" not in df.columns:
-        debug(context, "[PHASES] Empty DataFrame or no icu_training_load field")
+        debug(context, "[PHASES] ❌ Missing icu_training_load")
         context["phases"] = [{"phase": "No Data", "start": None, "end": None, "delta": 0.0}]
         return context
 
-    # --- Normalize timestamps
+    # --- Normalize timestamps ---------------------------------------------
     date_col = "start_date_local" if "start_date_local" in df.columns else "start_date"
     df["date"] = pd.to_datetime(df[date_col], errors="coerce")
-    df = df.dropna(subset=["date"])
-    df = df.sort_values("date")
+    df = df.dropna(subset=["date"]).sort_values("date")
 
-    # --- Aggregate by ISO week
+    # --- Weekly aggregation ------------------------------------------------
     df["week_start"] = df["date"].dt.to_period("W").apply(lambda r: r.start_time)
     df_week = (
         df.groupby("week_start")
@@ -84,107 +92,142 @@ def detect_phases(context, events):
           .reset_index()
           .rename(columns={"icu_training_load": "tss"})
     )
-    debug(context, f"[PHASES] Aggregated {len(df_week)} weekly points from {len(df)} activities")
-
     if df_week.empty:
+        debug(context, "[PHASES] ⚠️ No weekly load data after aggregation")
         context["phases"] = [{"phase": "No Data", "start": None, "end": None, "delta": 0.0}]
         return context
 
-    # --- Compute week-to-week deltas
-    df_week["delta"] = df_week["tss"].pct_change().fillna(0)
-    df_week["delta"] = df_week["delta"].clip(-1, 2)  # prevent crazy spikes
+    # --- Compute Banister model metrics -----------------------------------
+    df_week["ctl"] = df_week["tss"].ewm(span=6, adjust=False).mean()
+    df_week["atl"] = df_week["tss"].ewm(span=2, adjust=False).mean()
+    df_week["tsb"] = df_week["ctl"] - df_week["atl"]
+    df_week["delta_raw"] = df_week["tss"].pct_change().clip(-1, 2).fillna(0)
+    df_week["delta"] = df_week["delta_raw"].ewm(span=3, adjust=False).mean().round(3)
 
-    # --- Contextual modifiers
-    acwr = context.get("ACWR", 1.0)
-    ri = context.get("RecoveryIndex", 0.8)
+    # --- Compute dynamic ACWR & Recovery Index -----------------------------
+    df_week["acwr"] = (df_week["atl"] / df_week["ctl"]).replace([np.inf, -np.inf], np.nan).fillna(1.0).clip(0, 2)
+    df_week["ri"] = ((df_week["tsb"] + 30) / 60).clip(0, 1)
 
-    # --- Dynamic threshold scaling (auto-adjust for dataset variance)
-    var_tss = df_week["tss"].std() / max(df_week["tss"].mean(), 1)
-    scale = 0.20 if var_tss > 0.3 else 0.15 if var_tss > 0.15 else 0.10
+    # --- Precompute safe slopes -------------------------------------------
+    df_week["ctl_slope"] = df_week["ctl"].diff().fillna(0)
+    df_week["atl_slope"] = df_week["atl"].diff().fillna(0)
 
-    debug(context, f"[PHASES] Variability={round(var_tss,3)} → Δ threshold scale={scale}")
+    # --- Load thresholds ---------------------------------------------------
+    phase_thresholds = CHEAT_SHEET["thresholds"]["PhaseBoundaries"]
+    phase_advice     = CHEAT_SHEET["advice"]["PhaseAdvice"]
 
-    # --- Classify each transition
-    phases = []
-    start_idx = 0
+    # --- Phase classification (per-week) ----------------------------------
+    labels, methods, traces = [], [], []
+    for i in range(len(df_week)):
+        d, tss, ctl, atl, tsb = (
+            df_week.iloc[i]["delta"],
+            df_week.iloc[i]["tss"],
+            df_week.iloc[i]["ctl"],
+            df_week.iloc[i]["atl"],
+            df_week.iloc[i]["tsb"]
+        )
+        ctl_slope = float(df_week.iloc[i]["ctl_slope"])
+        atl_slope = float(df_week.iloc[i]["atl_slope"])
+        acwr = float(df_week.iloc[i]["acwr"])
+        ri = float(df_week.iloc[i]["ri"])
 
-    for i in range(1, len(df_week)):
-        delta = df_week.iloc[i]["delta"]
-        label = None
+        label = "Continuous Load"
+        method_source = "trend_window"
+        method_trace = {
+            "delta": round(d, 3),
+            "tsb": round(tsb, 2),
+            "ctl_slope": round(ctl_slope, 2),
+            "atl_slope": round(atl_slope, 2),
+            "acwr": round(acwr, 2),
+            "ri": round(ri, 2)
+        }
 
-        if delta > scale and acwr <= 1.3:
-            label = "Build"
-        elif delta > scale and acwr > 1.3:
-            label = "Overreach"
-        elif delta < -scale and ri >= 0.8:
-            label = "Recovery"
-        elif delta < -scale and ri < 0.6:
-            label = "Taper"
-        elif abs(delta) <= scale / 2:
-            label = "Base"
+        # --- Primary thresholds
+        for phase, bounds in phase_thresholds.items():
+            if bounds["trend_min"] <= d <= bounds["trend_max"]:
+                if acwr <= bounds.get("acwr_max", 9) and ri >= bounds.get("ri_min", 0):
+                    label = phase
+                    method_source = f"PhaseBoundaries({phase})"
+                    break
 
-        if label:
-            start = df_week.iloc[start_idx]["week_start"]
-            end = df_week.iloc[i]["week_start"]
-            phases.append({
-                "phase": label,
-                "start": start.strftime("%Y-%m-%d"),
-                "end": end.strftime("%Y-%m-%d"),
-                "delta": round(float(delta), 3)
-            })
-            debug(context, f"[PHASES] Δ{round(delta,3)} → {label} ({start} → {end})")
-            start_idx = i
+        # --- Secondary Banister refinement
+        if tsb < -30:
+            label, method_source = "Overreached", "TSB<-30 (Banister fatigue)"
+        elif tsb > 10 and tss < 300:
+            label, method_source = "Recovery", "TSB>10 & TSS<300"
+        elif tsb > 10 and tss >= 300 and ctl > 50:
+            label, method_source = "Taper", "TSB>10 & CTL>50"
+        elif -5 <= tsb <= 5 and abs(d) < 0.05:
+            label, method_source = "Base", "|ΔTSS|<5% & TSB≈0"
+        elif -30 <= tsb < -5 and d > 0.1:
+            label, method_source = "Build", "TSB=-30–-5 & ΔTSS>0.1"
 
-    # --- Detect sustained plateau (Peak)
-    if phases:
-        last_phase = phases[-1]["phase"]
-        if last_phase in ["Build", "Overreach"]:
-            mean_recent = df_week["tss"].tail(4).mean()
-            mean_prior = df_week["tss"].head(4).mean()
-            if abs(mean_recent - mean_prior) / max(mean_prior, 1) < 0.05:
-                phases.append({
-                    "phase": "Peak",
-                    "start": df_week["week_start"].iloc[-4].strftime("%Y-%m-%d")
-                            if len(df_week) >= 4 else df_week["week_start"].iloc[-1].strftime("%Y-%m-%d"),
-                    "end": df_week["week_start"].iloc[-1].strftime("%Y-%m-%d"),
-                    "delta": 0.0
+        labels.append(label)
+        methods.append(method_source)
+        traces.append(method_trace)
+
+    df_week["phase_raw"] = labels
+    df_week["calc_method"] = methods
+    df_week["calc_context"] = traces
+
+    # --- Merge contiguous same-phase blocks -------------------------------
+    merged = []
+    current_phase, current_method, start_date, tss_acc = None, None, None, 0
+
+    for i, row in df_week.iterrows():
+        ph = row["phase_raw"]
+        if ph != current_phase:
+            if current_phase is not None:
+                merged.append({
+                    "phase": current_phase,
+                    "start": start_date.strftime("%Y-%m-%d"),
+                    "end": prev.strftime("%Y-%m-%d"),
+                    "duration_days": (prev - start_date).days,
+                    "duration_weeks": round((prev - start_date).days / 7, 1),
+                    "tss_total": round(tss_acc, 1),
+                    "ctl": round(prev_ctl, 2),
+                    "tsb": round(prev_tsb, 2),
+                    "calc_method": current_method,
+                    "calc_context": prev_trace,
+                    "descriptor": phase_advice.get(current_phase, f"{current_phase} phase detected.")
                 })
-                debug(context, "[PHASES] Added Peak phase at stable high-load region")
+            current_phase = ph
+            current_method = row["calc_method"]
+            start_date = row["week_start"]
+            tss_acc = row["tss"]
+        else:
+            tss_acc += row["tss"]
+        prev = row["week_start"]
+        prev_ctl, prev_tsb = row["ctl"], row["tsb"]
+        prev_trace = row["calc_context"]
 
-    # --- Fallback
-    if not phases:
-        debug(context, "[PHASES] No distinct transitions — continuous pattern assumed")
-        phases.append({
-            "phase": "Continuous Load",
-            "start": df_week["week_start"].iloc[0].strftime("%Y-%m-%d"),
-            "end": df_week["week_start"].iloc[-1].strftime("%Y-%m-%d"),
-            "delta": 0.0
+    # Close final phase
+    if current_phase:
+        merged.append({
+            "phase": current_phase,
+            "start": start_date.strftime("%Y-%m-%d"),
+            "end": prev.strftime("%Y-%m-%d"),
+            "duration_days": (prev - start_date).days,
+            "duration_weeks": round((prev - start_date).days / 7, 1),
+            "tss_total": round(tss_acc, 1),
+            "ctl": round(prev_ctl, 2),
+            "tsb": round(prev_tsb, 2),
+            "calc_method": current_method,
+            "calc_context": prev_trace,
+            "descriptor": phase_advice.get(current_phase, f"{current_phase} phase detected.")
         })
 
-    # --- Add duration metadata for interpretability ---
-    for p in phases:
-        try:
-            start_dt = pd.to_datetime(p.get("start"))
-            end_dt = pd.to_datetime(p.get("end"))
-            if pd.notna(start_dt) and pd.notna(end_dt):
-                p["duration_days"] = int((end_dt - start_dt).days)
-                p["duration_weeks"] = round(p["duration_days"] / 7, 1)
-            else:
-                p["duration_days"] = None
-                p["duration_weeks"] = None
-        except Exception as e:
-            debug(context, f"[PHASES] Duration calc failed for {p}: {e}")
-            p["duration_days"] = None
-            p["duration_weeks"] = None
+    # --- Finalization -----------------------------------------------------
+    context["phases"] = merged
+    debug(context, f"[PHASES] ✅ Completed detection ({len(merged)} merged phases)")
+    for p in merged:
+        debug(context, f"[PHASES] → {p['phase']} ({p['start']} → {p['end']}) | TSB={p['tsb']}, CTL={p['ctl']} [{p['calc_method']}]")
 
-    # --- Finalize
-    context["phases"] = phases
-    debug(context, f"[PHASES] Completed detection → {len(phases)} phases")
-    for p in phases:
-        debug(context, f"[PHASES] → {p}")
     debug(context, "[PHASES] ---- Phase detection end ----")
-
     return context
+
+
+
 
 
 

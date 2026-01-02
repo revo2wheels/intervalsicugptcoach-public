@@ -12,13 +12,9 @@ print(f"[DEBUG] CWD: {os.getcwd()}")
 
 import pandas as pd
 from datetime import timedelta, datetime, date
-
-import pandas as pd
-from datetime import timedelta, datetime, date
 from audit_core.errors import AuditHalt
 
 from audit_core.utils import debug
-from api_github_com__jit_plugin import loadAllRules
 
 from audit_core.tier0_pre_audit import run_tier0_pre_audit
 from audit_core.tier1_controller import run_tier1_controller
@@ -35,147 +31,6 @@ from audit_core.tier2_extended_metrics import compute_extended_metrics
 from semantic_json_builder import build_semantic_json
 from athlete_profile import map_icu_athlete_to_profile
 from audit_core.tier2_actions import detect_phases
-
-# --- optional compatibility alias ---
-from intervals_icu__jit_plugin import (
-    getAthleteProfile,
-    listActivitiesLight,
-    listActivitiesFull,
-    listWellness,
-)
-
-def orchestrate_fetch_context(report_type: str = "weekly", today: date | None = None):
-    """
-    Unified fetch orchestrator for URF v5.x.
-    Fetches all datasets (profile, light, full, wellness)
-    and sets context flags for render and phase behavior.
-    Supports both local execution and ChatGPT tool-execution mode.
-    """
-    from datetime import date, timedelta
-    from audit_core.utils import debug
-
-    # --- Tool fallback import ---
-    try:
-        from intervals_icu__jit_plugin import (
-            getAthleteProfile,
-            listActivitiesLight,
-            listActivitiesFull,
-            listWellness,
-        )
-        debug({}, "[CHAIN] Using local intervals_icu__jit_plugin bindings")
-    except ImportError:
-        # Fallback to ChatGPT plugin tool binding
-        import intervalsicugptcoach_clive_a5a_workers_dev__jit_plugin as tool
-        getAthleteProfile = tool.getAthleteProfile
-        listActivitiesLight = tool.listActivitiesLight
-        listWellness = tool.listWellness
-        listActivitiesFull = tool.listActivitiesFull
-        debug({}, "[CHAIN] Using ChatGPT tool bindings (intervalsicugptcoach_clive_a5a_workers_dev__jit_plugin)")
-
-    # --- Base context ---
-    today = today or date.today()
-    rtype = report_type.lower()
-    ctx: dict[str, any] = {"report_type": rtype, "today": str(today)}
-
-    # --- Profile always first ---
-    ctx["profile"] = getAthleteProfile()
-
-    # --- Date range config ---
-    if rtype in ("weekly"):
-        light_days, full_days, wellness_days = 90, 7, 42
-    elif rtype in ("season", "season_phases", "season_summary"):
-        light_days, full_days, wellness_days = 90, 7, 42
-    elif rtype == "wellness":
-        light_days, full_days, wellness_days = 90, 7, 42
-    elif rtype == "summary":
-        light_days, full_days, wellness_days = 365, 7, 42
-    else:
-        raise ValueError(f"Unknown report type '{report_type}'")
-
-    # --- Chunk mode logic ---
-    chunk_mode = full_days > 7 or light_days > 90 or wellness_days > 42
-
-    debug(ctx, f"[CHAIN] Starting orchestrate_fetch_context for {rtype} | light={light_days} full={full_days} wellness={wellness_days}")
-
-    # --- Fetch chain ---
-    try:
-        ctx["activities_light"] = listActivitiesLight(
-            oldest=str(today - timedelta(days=light_days)),
-            newest=str(today),
-            fields="id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,average_heartrate,IF,VO2MaxGarmin",
-        )
-        debug(ctx, "[CHAIN] 90-day light activities fetched")
-    except Exception as e:
-        debug(ctx, f"[CHAIN] Light activities fetch failed: {e}")
-        ctx["activities_light"] = []
-
-    # --- 7-day Full dataset (always required for weekly) ---
-    if full_days > 0:
-        try:
-            ctx["activities_full"] = listActivitiesFull(
-                oldest=str(today - timedelta(days=full_days)),
-                newest=str(today),
-                auto=True,
-                chunk=chunk_mode,
-            )
-            debug(ctx, "[CHAIN] 7-day full activities fetched successfully")
-        except Exception as e:
-            debug(ctx, f"[CHAIN] Full activities fetch failed: {e}")
-            ctx["activities_full"] = []
-
-    # --- Wellness fetch ---
-    if wellness_days > 0:
-        try:
-            ctx["wellness"] = listWellness(
-                oldest=str(today - timedelta(days=wellness_days)),
-                newest=str(today),
-            )
-            debug(ctx, "[CHAIN] 42-day wellness data fetched")
-        except Exception as e:
-            debug(ctx, f"[CHAIN] Wellness fetch failed: {e}")
-            ctx["wellness"] = []
-
-    # --- Safety fallback (especially for ChatGPT mode) ---
-    if rtype == "weekly" and (not ctx.get("activities_full") or len(ctx["activities_full"]) == 0):
-        debug(ctx, "[CHAIN] Auto-forcing 7-day full fetch (safety path)")
-        try:
-            ctx["activities_full"] = listActivitiesFull(
-                oldest=str(today - timedelta(days=7)),
-                newest=str(today),
-                auto=True,
-            )
-            debug(ctx, "[CHAIN] Forced 7-day full fetch succeeded")
-        except Exception as e:
-            debug(ctx, f"[CHAIN] Forced 7-day full fetch failed: {e}")
-            ctx["activities_full"] = []
-
-    # --- Range metadata ---
-    ctx["range"] = {
-        "lightDays": light_days,
-        "fullDays": full_days,
-        "wellnessDays": wellness_days,
-        "chunk": chunk_mode,
-    }
-    ctx["fetchComplete"] = True
-
-    # --- Render + phase flagging ---
-    if rtype == "weekly":
-        ctx["render_mode"], ctx["phase_mode"] = "full+metrics", False
-    elif rtype == "summary":
-        ctx["render_mode"], ctx["phase_mode"] = "summary", False
-    elif rtype == "season":
-        ctx["render_mode"], ctx["phase_mode"] = "block", False
-    elif rtype == "season_phases":
-        ctx["render_mode"], ctx["phase_mode"] = "block+phases", True
-        ctx["phases"] = []
-    elif rtype == "season_summary":
-        ctx["render_mode"], ctx["phase_mode"] = "block+summary", False
-    elif rtype == "wellness":
-        ctx["render_mode"], ctx["phase_mode"] = "recovery", False
-
-    debug(ctx, f"[CHAIN] Context fetch complete for {rtype} | render_mode={ctx['render_mode']}")
-    return ctx
-
 
 def run_report(
     reportType: str = "weekly",
@@ -344,38 +199,70 @@ def run_report(
 
     # --- Tier-0 Range Configuration (aligned with worker) ---
     today = datetime.now().date()
+    # ============================================================
+    # 🧭 CLI explicit start/end override — must persist downstream
+    # ============================================================
+    if "start" in context and "end" in context:
+        try:
+            s = pd.to_datetime(context["start"])
+            e = pd.to_datetime(context["end"])
+            context["range"] = {
+                "light_start": s.strftime("%Y-%m-%d"),
+                "light_end": e.strftime("%Y-%m-%d"),
+                "lightDays": (e - s).days,
+                "fullDays": 90,
+                "wellnessDays": 90,
+                "chunk": False,
+            }
+            debug(context, f"[RUN_REPORT] 🧭 CLI override persisted → {s.date()} → {e.date()}")
+        except Exception as err:
+            debug(context, f"[RUN_REPORT] ⚠️ Failed to parse CLI override dates: {err}")
 
     # ----------------------------------------------------------
     # 🧩 Range Context (preserve user-specified for summary/custom)
     # ----------------------------------------------------------
-    if reportType.lower() == "season":
-        context.setdefault("range", {
-            "lightDays": 90,
-            "fullDays": 42,
-            "wellnessDays": 90,
-            "chunk": True
-        })
-
     elif reportType.lower() in ["summary", "custom"]:
         # 🧩 Support CLI or API-provided explicit date range
         custom_range = context.get("custom_date_range", {})
+
+        # Detect both API-supplied (custom_date_range) and CLI-supplied (start/end) inputs
         if custom_range and "start" in custom_range and "end" in custom_range:
+            start = custom_range["start"]
+            end = custom_range["end"]
+            source = "custom_date_range"
+        elif "start" in context and "end" in context:
+            start = context["start"]
+            end = context["end"]
+            source = "CLI args"
+        else:
+            start = None
+            end = None
+            source = None
+
+        if start and end:
             context["range"] = {
-                "light_start": custom_range["start"],
-                "light_end": custom_range["end"],
+                "light_start": start,
+                "light_end": end,
                 "custom": True,
                 "chunk": False
             }
-            debug(context, f"[RUN_REPORT] 🧭 Using user-provided range: {custom_range['start']} → {custom_range['end']}")
+            debug(context, f"[RUN_REPORT] 🧭 Using user-provided range ({source}): {start} → {end}")
         else:
-            # fallback to 365d default
-            context["range"] = {
-                "lightDays": 365,
-                "fullDays": 90,
-                "wellnessDays": 90,
-                "chunk": False
-            }
-            debug(context, "[RUN_REPORT] Using default 365-day summary window")
+            # 🧩 Fallback to 365d default only if NO CLI/custom range exists
+            if not (
+                "range" in context
+                and "light_start" in context["range"]
+                and "light_end" in context["range"]
+            ):
+                context["range"] = {
+                    "lightDays": 365,
+                    "fullDays": 90,
+                    "wellnessDays": 90,
+                    "chunk": False
+                }
+                debug(context, "[RUN_REPORT] Using default 365-day summary window")
+            else:
+                debug(context, f"[RUN_REPORT] ✅ Preserving CLI/custom range {context['range']['light_start']} → {context['range']['light_end']}")
 
     else:
         context.setdefault("range", {
@@ -394,7 +281,7 @@ def run_report(
     debug(context, f"[T0] Config → light={light_days}d full={full_days}d chunk={chunk}")
 
     # --- Tier-0 Full Audit (canonical, single execution) ---
-    import pandas as pd
+
 
     # 🧩 CLI override for explicit start/end dates
     if "range" in context and "light_start" in context["range"] and "light_end" in context["range"]:
@@ -859,7 +746,7 @@ def run_report(
 
     # --- Inject full Tier-0 dataset for proper ACWR (acute/chronic load ratio) ---
     if "activities_light" in context and isinstance(context["activities_light"], list):
-        import pandas as pd
+
         context["df_event_only_full"] = pd.DataFrame(context["activities_light"])
         debug(context, f"[TIER-2 INIT] Injected Tier-0 full dataset ({len(context['activities_light'])} activities)")
 

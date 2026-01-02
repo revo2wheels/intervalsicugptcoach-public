@@ -101,7 +101,7 @@ def fetch_wellness_chunked(
     wellness = []
     df_well = pd.DataFrame()
 
-    total_days = (newest - oldest).days + 1
+    total_days = (newest - oldest).days #+1
 
     # --- Determine wellness window --------------------
     default_wellness_days = context.get("range", {}).get("wellnessDays", 42)
@@ -202,7 +202,7 @@ def fetch_activities_chunked(
         debug(context, "🧩 Tier-0: forced full dataset (7-day)")
 
 
-    total_days = (newest - oldest).days + 1
+    total_days = (newest - oldest).days #+ 1
     est_payload_acts = estimate_payload_size(total_days, "activities")
 
     # --- Chunking strategy -----------------------------
@@ -233,8 +233,7 @@ def fetch_activities_chunked(
                     acts_url = (
                         f"{INTERVALS_API}/athlete/{athlete_id}/activities_t0light?"
                         f"oldest={chunk_start:%Y-%m-%d}&newest={chunk_end:%Y-%m-%d}"
-                        "&fields=id,name,type,start_date_local,distance,moving_time,"
-                        "icu_training_load,IF,average_heartrate,VO2MaxGarmin"
+                        "&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,icu_atl,icu_ctl,IF,average_heartrate,VO2MaxGarmin,HRTLNDLT1"
                     )
                 else:
                     acts_url = (
@@ -561,27 +560,31 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         context["prefetch_done"] = True
 
         fields = (
-            "id,name,type,start_date_local,distance,moving_time,"
-            "icu_training_load,IF,average_heartrate,VO2MaxGarmin"
+            "id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,icu_atl,icu_ctl,IF,average_heartrate,VO2MaxGarmin,HRTLNDLT1"
         )
 
-        # 🔧 Use controller range by default
+        # 🔧 Determine baseline range (default: from controller start/end)
         oldest = pd.to_datetime(start).strftime("%Y-%m-%d")
         newest = pd.to_datetime(end).strftime("%Y-%m-%d")
 
-        # 🚀 OVERRIDE: Force 90-day window when force_light=True (but NOT if user provided custom range)
-        if context.get("force_light", False) and not (
-            "range" in context
-            and "light_start" in context["range"]
-            and "light_end" in context["range"]
-        ):
+        range_cfg = context.get("range", {})
+
+        # ✅ Respect user/CLI-specified override if present
+        if range_cfg.get("light_start") and range_cfg.get("light_end"):
+            oldest = pd.to_datetime(range_cfg["light_start"]).strftime("%Y-%m-%d")
+            newest = pd.to_datetime(range_cfg["light_end"]).strftime("%Y-%m-%d")
+            debug(context, f"[T0] ✅ Preserving upstream range override → {oldest} → {newest}")
+
+        # 🚀 Only apply force_light if NO explicit CLI/custom range was given
+        elif context.get("force_light", False):
             newest_date = datetime.now().date()
-            oldest_date = newest_date - timedelta(days=context.get("range", {}).get("lightDays", 90))
+            oldest_date = newest_date - timedelta(days=range_cfg.get("lightDays", 90))
             oldest = oldest_date.strftime("%Y-%m-%d")
             newest = newest_date.strftime("%Y-%m-%d")
             debug(context, f"[T0-FORCE-LIGHT] Overriding controller range → {oldest} → {newest}")
+
         else:
-            debug(context, f"[T0-FORCE-LIGHT] 🧭 Retaining CLI override range {start} → {end}")
+            debug(context, f"[T0] Using controller-provided window → {oldest} → {newest}")
 
         debug(context, f"[T0-LIGHT] Using range oldest={oldest} newest={newest}")
 

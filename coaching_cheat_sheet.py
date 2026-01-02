@@ -62,6 +62,86 @@ CHEAT_SHEET["thresholds"] = {
         "optimal": [-30, -5],        # Productive training fatigue (good zone)
         "high_risk": [-999, -30],    # Overreached / excessive fatigue
     },
+    # ================================================================
+    # 🧠 SCIENTIFICALLY VALIDATED PHASE DETECTION (v17.4)
+    # ================================================================
+    # These PhaseBoundaries are based on:
+    # - Banister et al. (1975–1991): Impulse-Response Model (CTL/ATL → TSB)
+    # - Mujika & Padilla (2003, 2010): Tapering and Performance Maintenance
+    # - Seiler (2010, 2020): Endurance Intensity Distribution (Base/Build/Peak)
+    # - Issurin (2008): Block Periodisation Model
+    # - Friel (2009): Practical endurance periodisation framework
+    #
+    # In this model:
+    #   trend_min / trend_max  → week-to-week % change in training load (TSS)
+    #   acwr_max               → acute:chronic workload ratio (ATL/CTL) ceiling
+    #   ri_min                 → Recovery Index (fatigue balance) floor
+    #
+    # These values align with both academic sources and Intervals.icu's
+    # TSB (Training Stress Balance) fatigue-freshness mapping:
+    #     transition: [10, 999]   → very fresh / detraining
+    #     fresh: [5, 10]          → race-ready
+    #     grey: [-5, 5]           → balanced / neutral
+    #     optimal: [-30, -5]      → productive fatigue
+    #     high_risk: [-999, -30]  → overreached
+    # ================================================================
+
+    "PhaseBoundaries": {
+
+        # 🧱 BASE → Stable or gently rising CTL; small week-to-week variance
+        "Base": {
+            "trend_min": -0.05,
+            "trend_max": 0.10,
+            "acwr_max": 1.2,
+            "ri_min": 0.75
+        },
+
+        # 📈 BUILD → Progressive overload; productive fatigue zone
+        "Build": {
+            "trend_min": 0.10,
+            "trend_max": 0.40,
+            "acwr_max": 1.3,
+            "ri_min": 0.65
+        },
+
+        # 🏁 PEAK → Stabilised high CTL, ATL dropping, RI improving
+        "Peak": {
+            "trend_min": -0.10,
+            "trend_max": 0.05,
+            "acwr_max": 1.15,
+            "ri_min": 0.8
+        },
+
+        # 📉 TAPER → Rapid ATL drop, load reduced 30–50%
+        "Taper": {
+            "trend_min": -0.50,
+            "trend_max": -0.15,
+            "acwr_max": 1.1,
+            "ri_min": 0.8
+        },
+
+        # 💤 RECOVERY → Heavy unload / detraining period
+        "Recovery": {
+            "trend_min": -1.0,
+            "trend_max": -0.50,
+            "acwr_max": 1.0,
+            "ri_min": 0.6
+        },
+
+        # 🧘 DELOAD → Short mid-block unloads; prevents overreach
+        "Deload": {
+            "trend_min": -0.25,
+            "trend_max": -0.10,
+            "acwr_max": 1.2,
+            "ri_min": 0.7
+        },
+
+        # 🔁 CONTINUOUS LOAD → fallback when variation truly minimal (<5%)
+        "Continuous Load": {
+            "trend_min": -0.05,
+            "trend_max": 0.05
+        }
+    }
 }
 
 # === Phase-Aware Threshold Adjustments (optional overrides) ===

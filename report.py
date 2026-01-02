@@ -146,10 +146,8 @@ def generate_full_report(report_type="weekly", output_path=None, output_format="
         context = {}
         if start and end:
             debug(context, f"[CLI] ⏱️ Custom date range provided: {start} → {end}")
-            context["range"] = {
-                "light_start": start,
-                "light_end": end
-            }
+            context["start"] = start
+            context["end"] = end
         else:
             debug(context, "[CLI] Using default auto-window (today-365 for summary, etc.)")
 
@@ -158,7 +156,7 @@ def generate_full_report(report_type="weekly", output_path=None, output_format="
                 reportType=report_type,
                 include_coaching_metrics=True,
                 output_format=output_format,
-                context=context,       # ← pass through to controller
+                **context,              # flatten correctly
             )
 
         if isinstance(result, tuple):
