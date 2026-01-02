@@ -122,7 +122,7 @@ REPORT_CONTRACT = {
         "metrics", "extended_metrics",
         "zones", "daily_load",
         "wellness", "insights", "insight_view",
-        "events", "phases", "actions",
+        "events", "actions",
         "planned_events", "planned_summary_by_date",
         "future_forecast"
     ],

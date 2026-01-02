@@ -1089,6 +1089,13 @@ def build_semantic_json(context):
             if ev:
                 semantic["events"].append(ev)
 
+        # ✅ Add meta info for structured UI rendering
+        semantic["meta"]["events"] = {
+            "is_event_block": True,
+            "event_block_count": len(semantic["events"]),
+            "notes": "Canonical activity/event block (URF v5.2) — intended for ChatGPT / structured UI rendering."
+         }
+
         debug(
             context,
             f"[SEMANTIC] EVENTS: populated semantic.events with {len(semantic['events'])} entries"
@@ -1280,9 +1287,24 @@ def build_semantic_json(context):
             for day, events in planned_by_date.items()
         }
 
-    semantic["planned_events"] = planned_events
-    semantic["planned_summary_by_date"] = planned_summary_by_date
-    semantic["future_forecast"] = context.get("future_forecast", {})
+        semantic["planned_events"] = planned_events
+        semantic["planned_summary_by_date"] = planned_summary_by_date
+        semantic["future_forecast"] = context.get("future_forecast", {})
+        # ✅ Add meta info for structured UI rendering
+        semantic["meta"]["planned_events"] = {
+            "is_planned_events_block": True,
+            "planned_events_block_count": len(semantic["planned_events"]),
+            "notes": "Canonical planned events block (URF v5.2) — intended for ChatGPT / structured UI rendering."
+        }
+    else:
+        semantic["planned_events"] = []
+        semantic["planned_summary_by_date"] = {}
+        semantic["meta"]["planned_events"] = {
+            "is_planned_events_block": False,
+            "planned_events_block_count": 0,
+            "notes": "No planned events found or calendar source unavailable."
+        }
+        debug(context, "[SEMANTIC] ⚠️ No valid planned events found")
 
     # ---------------------------------------------------------
     # DERIVED METRICS
@@ -1602,33 +1624,11 @@ def build_semantic_json(context):
 
     report_type = semantic["meta"].get("report_type")
 
-    # ---------------------------------------------------------
-    # 🗓️ Weekly / Wellness → show current phase only
-    # ---------------------------------------------------------
-    if report_type in ("weekly", "wellness"):
-        full_phases = context.get("phases", [])
-        if full_phases:
-            current = full_phases[-1]
-            semantic["phases"] = [{
-                "phase": current.get("phase"),
-                "start": current.get("start"),
-                "end": current.get("end"),
-                "duration_days": current.get("duration_days"),
-                "duration_weeks": current.get("duration_weeks")
-            }]
-            debug(context, f"[PHASES] Weekly/Wellness → current phase '{current.get('phase')}'")
-        else:
-            semantic["phases"] = []
-            debug(context, "[PHASES] Weekly/Wellness → no phase data")
-
-        # Remove detail / summary for short reports
-        for k in ("weekly_phases", "phases_summary"):
-            semantic.pop(k, None)
 
     # ---------------------------------------------------------
     # 🌍 Season / Summary → full weekly + roll-up
     # ---------------------------------------------------------
-    elif report_type in ("season", "summary"):
+    if report_type in ("season", "summary"):
         raw_weeks = semantic.get("weekly_phases", [])
         if not raw_weeks:
             debug(context, "[PHASES] ⚠️ No weekly data; skipping normalisation")
@@ -1847,8 +1847,6 @@ def build_semantic_json(context):
 
             semantic["phases"] = weekly_output
             debug(context, f"[PHASES] ✅ Cleaned weekly phase output ({len(weekly_output)} weeks)")
-
-
 
             # -----------------------------------------------------
             # Enforce output ordering (summary before phases)
