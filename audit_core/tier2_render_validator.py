@@ -169,9 +169,18 @@ def finalize_and_validate_render(context, reportType="weekly"):
 
     # --- Step 2: Duration Formatting Injection ---
     def fmt_dur(sec):
-        return time.strftime("%H:%M:%S", time.gmtime(int(sec)))
+        # Handle NaN, None, or invalid values gracefully
+        if sec is None or (isinstance(sec, float) and np.isnan(sec)) or sec < 0:
+            return "00:00:00"
+        try:
+            sec = int(sec)
+            return time.strftime("%H:%M:%S", time.gmtime(sec))
+        except Exception:
+            return "00:00:00"
 
     if "moving_time" in df.columns:
+        # ✅ Fill NaN to 0 before applying the formatter
+        df["moving_time"] = df["moving_time"].fillna(0)
         df["Duration"] = df["moving_time"].apply(fmt_dur)
         context["Duration_total"] = fmt_dur(df["moving_time"].sum())
 
