@@ -301,3 +301,34 @@ def get_insights(range: str = Query("weekly")):
     _, compliance, logs, _, sg, _ = _run_full_audit(range=range)
     return JSONResponse({"status":"ok","report_type":range,"insights":sanitize(sg.get("insight_view",{})),
         "compliance":compliance,"logs":logs[:20000]})
+
+# ============================================================
+# 🧠 DEBUG ENDPOINT — Semantic JSON + Logs Only
+# ============================================================
+@app.get("/debug")
+def get_debug(
+    range: str = Query("weekly", description="Report type: weekly, season, wellness, summary"),
+    format: str = Query("semantic", description="Output format: semantic (ignored for now)")
+):
+    """
+    Debug endpoint for any report type.
+    Returns semantic JSON + captured logs.
+    Compatible with both local and staging use.
+    """
+    try:
+        report, compliance, logs, context, sg, markdown = _run_full_audit(
+            range=range,
+            output_format="semantic"
+        )
+
+        return JSONResponse({
+            "status": "ok",
+            "report_type": range,
+            "output_format": "semantic_json",
+            "semantic_graph": sanitize(sg),
+            "logs": logs[-20000:],
+        })
+
+    except Exception as e:
+        return error_response(e)
+

@@ -331,6 +331,42 @@ def generate_full_report(
     gpt_tag = "_gpt" if gpt else ""
     base_name = f"report_{report_type}{prefetch_tag}_{env_tag}{gpt_tag}_{output_format}"
 
+# ============================================================
+# 💾 DEBUG OPTIONAL
+# ============================================================
+
+
+def fetch_debug_report(report_type="weekly", staging=False):
+    """
+    Fetch any report in debug mode (semantic JSON + logs only).
+    Works locally or with Railway staging.
+    """
+    base = (
+        "https://intervalsicugptcoach-public-staging.up.railway.app"
+        if staging else
+        "http://localhost:8080"
+    )
+    url = f"{base}/debug?range={report_type}"
+    headers = {
+        "Authorization": f"Bearer {os.getenv('ICU_OAUTH', '')}",
+        "User-Agent": "IntervalsGPTCoachLocal/1.0"
+    }
+
+    print(f"[DEBUG MODE] Fetching '{report_type}' debug report from {url}")
+    resp = requests.get(url, headers=headers, timeout=120)
+    resp.raise_for_status()
+
+    data = resp.json()
+    reports_dir = Path("reports")
+    reports_dir.mkdir(exist_ok=True)
+
+    outname = f"report_{report_type}_{'staging' if staging else 'local'}_debug.json"
+    (reports_dir / outname).write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+    print(f"[DEBUG] ✅ Saved → {outname}")
+    print(f"[DEBUG] Keys: {list(data.keys())}")
+    print(f"[DEBUG] Log lines: {len(data.get('logs', '').splitlines())}")
+    return data
 
 
 # ─────────────────────────────────────────────
@@ -355,10 +391,19 @@ def main():
     parser.add_argument("--start", type=str, help="Custom start date (YYYY-MM-DD)")
     parser.add_argument("--end", type=str, help="Custom end date (YYYY-MM-DD)")
     parser.add_argument("--gpt", action="store_true",
-                    help="Request GPT-rendered report from Cloudflare Worker (adds ?render=gpt)")
+                        help="Request GPT-rendered report from Cloudflare Worker (adds ?render=gpt)")
+    parser.add_argument("--debug", action="store_true",
+                        help="Run any report type in debug mode (via Railway /debug endpoint if available)")
 
     args = parser.parse_args()
 
+    # 🧠 Debug mode shortcut — directly fetch from /debug and exit
+    if args.debug:
+        print(f"[CLI] 🧠 Debug mode enabled for '{args.range}' (staging={args.staging})")
+        fetch_debug_report(args.range, staging=args.staging)
+        return  # ✅ Skip normal report generation entirely
+
+    # 🧩 Otherwise, run the normal flow
     generate_full_report(
         report_type=args.range,
         output_path=args.output,
@@ -370,6 +415,7 @@ def main():
         end=args.end,
         gpt=args.gpt
     )
+
 
 
 if __name__ == "__main__":
