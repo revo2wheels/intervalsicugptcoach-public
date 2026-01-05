@@ -2005,8 +2005,9 @@ def apply_report_type_contract(semantic: dict) -> dict:
 
     allowed_keys = REPORT_CONTRACT.get(report_type, semantic.keys())
     filtered = {k: v for k, v in semantic.items() if k in allowed_keys}
-
-    filtered["system_prompt"] = build_system_prompt_from_header(report_type, header)
+    filtered["system_prompt"] = build_system_prompt_from_header(
+        report_type, REPORT_HEADERS.get(report_type, {})
+    )
 
     # 🧠 Contract drift detection (optional)
     unexpected = set(semantic.keys()) - set(allowed_keys)
