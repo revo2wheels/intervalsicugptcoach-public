@@ -1,14 +1,93 @@
 #!/usr/bin/env python3
 """
-Generate audit reports (weekly, season, wellness, summary)
-Captures both stdout logs and the rendered markdown or semantic report into one file.
+Unified URF v5.1 Report Runner
+==============================
 
-Usage:
-    python report.py --range weekly --format markdown
-    python report.py --range weekly --format semantic
-    python report.py --range weekly --format semantic --prefetch
-    python report.py --range weekly --format semantic --prefetch --staging --owner xyz
+Generates and fetches audit reports for:
+  • weekly
+  • season
+  • wellness
+  • summary
+
+Supports both:
+  🔹 Local (direct) Railway-backed generation
+  🔹 Remote (prefetched) Worker-based generation
+  🔹 Optional GPT-rendered Markdown (via Cloudflare Worker + OpenAI)
+
+───────────────────────────────────────────────
+📡 ENDPOINTS
+───────────────────────────────────────────────
+• Railway Production:
+    https://intervalsicugptcoach-public-production.up.railway.app
+
+• Railway Staging:
+    https://intervalsicugptcoach-public-staging.up.railway.app
+
+• Cloudflare Worker (Unified API Gateway):
+    https://intervalsicugptcoach.clive-a5a.workers.dev
+
+───────────────────────────────────────────────
+🚀 AVAILABLE ROUTES (Worker)
+───────────────────────────────────────────────
+• /run_weekly
+• /run_season
+• /run_wellness
+• /run_summary
+
+Query parameters:
+  ?staging=1          → routes to Railway staging environment
+  ?owner=xyz          → optional owner identifier for staging keys
+  ?render=gpt         → enables GPT-rendered Markdown output
+                         (includes both Markdown + semantic JSON)
+
+───────────────────────────────────────────────
+🏗️  MODES
+───────────────────────────────────────────────
+LOCAL MODE
+-----------
+  • Runs report generation entirely in Python via audit_core.run_report()
+  • Writes either:
+        - report_<range>_prod_semantic.json  (default)
+        - report_<range>_prod_markdown.md    (if --format markdown)
+
+PREFETCH MODE (REMOTE)
+----------------------
+  • Fetches data from Cloudflare Worker which proxies Railway.
+  • Automatically handles both production and staging targets.
+  • Writes semantic JSON by default:
+        - report_<range>_prefetch_prod_semantic.json
+  • If GPT flag is enabled:
+        - report_<range>_prefetch_prod_gpt_markdown.md
+        - report_<range>_prefetch_prod_gpt_semantic.json
+    (Markdown is ChatGPT-rendered, JSON is original semantic graph)
+
+───────────────────────────────────────────────
+⚙️  CLI USAGE EXAMPLES
+───────────────────────────────────────────────
+  python report.py --range weekly (LOCAL JSON) 
+  python report.py --range weekly --format semantic (LOCAL JSON)
+  python report.py --range weekly --prefetch (RAILWAY JSON) - This would get sent to GPT
+  python report.py --range weekly --prefetch --staging (RAILWAY STAGING JSON) - this would get sent to GPT
+  python report.py --range season --prefetch --gpt (RAILWAY JSON AND GPT MD)
+  python report.py --range summary --start 2025-01-01 --end 2025-12-31 (LOCAL JSON)
+
+───────────────────────────────────────────────
+🧠 NOTES
+───────────────────────────────────────────────
+• The GPT-rendered version returns a single JSON payload:
+    {
+        "markdown": "<AI-formatted Markdown>",
+        "semantic_graph": { ... },
+        "logs": "...",
+        "status": "ok"
+    }
+
+• Local runs with --format semantic never use GPT (direct JSON only).
+
+• Prefetch + GPT writes both Markdown and JSON files directly to ./reports
+  — no duplication or mirror files will be created.
 """
+
 
 import io
 import os
@@ -66,75 +145,97 @@ def fetch_debug_report(report_type, format="semantic", staging=False):
 # ─────────────────────────────────────────────
 def fetch_remote_report(report_type, fmt="semantic", staging=False, owner=None, gpt=False):
     """
-    Fetch a full rendered URF report (semantic+markdown+logs) from Cloudflare Worker.
-    Access control (for staging) is handled entirely by the Worker.
-    Supports optional GPT-rendered output (?render=gpt).
+    Fetch a URF report (semantic+markdown) from Cloudflare Worker.
+    If GPT rendering is enabled (?render=gpt), the Worker now returns both
+    markdown and semantic JSON in a single JSON envelope.
     """
     base = f"https://intervalsicugptcoach.clive-a5a.workers.dev/run_{report_type}"
 
-    # Assemble optional query params
+    # Build query params
     params = []
     if staging:
         params.append("staging=1")
     if owner:
         params.append(f"owner={owner}")
     if gpt:
-        params.append("render=gpt")  # ✅ new param for GPT-rendered output
+        params.append("render=gpt")
 
-    if params:
-        base += "?" + "&".join(params)
-
+    url = f"{base}?{'&'.join(params)}" if params else base
     headers = {
         "Authorization": f"Bearer {os.getenv('ICU_OAUTH', '')}",
         "User-Agent": "IntervalsGPTCoachLocal/1.0"
     }
 
-    print(f"[REMOTE] Fetching {report_type} report (staging={staging}, owner={owner}, gpt={gpt}) → {base}")
-    resp = requests.get(base, headers=headers, timeout=120)
+    print(f"[REMOTE] Fetching {report_type} report (staging={staging}, gpt={gpt}) → {url}")
+    resp = requests.get(url, headers=headers, timeout=120)
+    resp.raise_for_status()
 
-    # GPT-rendered output may return Markdown directly
+    Path("reports").mkdir(exist_ok=True)
+    env_tag = "staging" if staging else "prod"
+
     content_type = resp.headers.get("content-type", "")
-    if "text/markdown" in content_type or gpt:
+
+    # 🔥 NEW: handle unified JSON payload (markdown + semantic)
+    if "application/json" in content_type:
+        data = resp.json()
+        markdown = data.get("markdown")
+        semantic = data.get("semantic_graph")
+
+        if markdown:
+            md_out = f"report_{report_type}_{env_tag}_gpt.md"
+            Path(f"reports/{md_out}").write_text(markdown, encoding="utf-8")
+            print(f"[REMOTE] ✅ Markdown saved → {md_out}")
+
+        if semantic:
+            json_out = f"report_{report_type}_{env_tag}_semantic.json"
+            Path(f"reports/{json_out}").write_text(json.dumps(semantic, indent=2), encoding="utf-8")
+            print(f"[REMOTE] ✅ Semantic JSON saved → {json_out}")
+
+        return data
+
+    # 🧩 Legacy fallback (for older Worker that returns markdown only)
+    if "text/markdown" in content_type:
         text = resp.text
-        outname = f"report_{report_type}_{'staging' if staging else 'prod'}_markdown.md"
-        Path("reports").mkdir(exist_ok=True)
-        Path(f"reports/{outname}").write_text(text, encoding="utf-8")
-        print(f"[REMOTE] ✅ GPT-rendered Markdown saved → {outname}")
+        md_out = f"report_{report_type}_{env_tag}_gpt.md"
+        Path(f"reports/{md_out}").write_text(text, encoding="utf-8")
+        print(f"[REMOTE] ✅ Markdown saved (legacy) → {md_out}")
         return {"markdown": text, "status": resp.status_code}
 
-    # Default JSON flow (unchanged)
-    resp.raise_for_status()
+    # Default JSON flow (no GPT)
     data = resp.json()
-
-    env_tag = "staging" if staging else "prod"
-    outname = f"report_{report_type}_{env_tag}_{fmt}.json"
-    Path("reports").mkdir(exist_ok=True)
-    Path(f"reports/{outname}").write_text(json.dumps(data, indent=2), encoding="utf-8")
-
-    print(f"[REMOTE] ✅ JSON report saved → {outname}")
+    json_out = f"report_{report_type}_{env_tag}_semantic.json"
+    Path(f"reports/{json_out}").write_text(json.dumps(data, indent=2), encoding="utf-8")
+    print(f"[REMOTE] ✅ Semantic JSON saved → {json_out}")
     return data
 
-# ─────────────────────────────────────────────
-# MAIN REPORT GENERATION
-# ─────────────────────────────────────────────
-def generate_full_report(report_type="weekly", output_path=None, output_format="markdown",
-                         prefetch=False, staging=False, owner=None, start=None, end=None, gpt=False):
+
+def generate_full_report(
+    report_type="weekly",
+    output_path=None,
+    output_format="markdown",
+    prefetch=False,
+    staging=False,
+    owner=None,
+    start=None,
+    end=None,
+    gpt=False
+):
     """Run report and capture logs and output into one file."""
     buffer = io.StringIO()
     os.environ["REPORT_TYPE"] = report_type.lower()
+    Path("reports").mkdir(parents=True, exist_ok=True)
 
-    if not output_path:
-        Path("reports").mkdir(parents=True, exist_ok=True)
-        suffix = ""
-        if prefetch:
-            suffix = f"_prefetch_{'staging' if staging else 'prod'}"
-        output_path = Path("reports") / f"report_{report_type}{suffix}.{output_format}"
+    # ✅ Always respect custom date range flags (even if unused by remote)
+    if start and end:
+        print(f"[CLI] ⏱️ Custom date range override detected: {start} → {end}")
+    else:
+        print("[CLI] Using automatic window selection (based on report type).")
 
-    if output_format == "markdown":
-        gpt = True
-
+    # ============================================================
+    # 🌐 PREFETCH MODE — via Cloudflare Worker
+    # ============================================================
     if prefetch:
-        print(f"[PREFETCH] Using Worker prehydrated report (staging={staging}, owner={owner})")
+        print(f"[PREFETCH] Using Worker prehydrated report (staging={staging}, owner={owner}, gpt={gpt})")
         data = fetch_remote_report(
             report_type,
             fmt=output_format,
@@ -143,28 +244,28 @@ def generate_full_report(report_type="weekly", output_path=None, output_format="
             gpt=gpt
         )
 
-        log_output = data.get("logs", "")
-        if output_format == "semantic":
-            full_output = {
-                "status": data.get("status", "ok"),
-                "message": f"{report_type.title()} report (prefetched)",
-                "semantic_graph": data.get("semantic_graph", {}),
-                "logs": log_output,
-            }
-        else:
-            md_output = data.get("markdown", "")
-            full_output = (
-                f"# 🧾 {report_type.title()} Audit Report (Prefetch)\n\n"
-                "## Execution Logs\n\n"
-                "```\n" + log_output + "\n```\n\n"
-                "## Rendered Markdown Report\n\n"
-                + md_output.strip()
-            )
+        # ✅ GPT-handled — Worker already wrote markdown + semantic
+        if gpt:
+            print("[GPT] ✅ Worker already saved Markdown + Semantic JSON — exiting early.")
+            return None  # 🚫 This now safely exits generate_full_report()
 
+        # Otherwise, continue normal prefetch JSON flow
+        log_output = data.get("logs", "")
+        semantic = data.get("semantic_graph", {})
+        full_output = {
+            "status": data.get("status", "ok"),
+            "message": f"{report_type.title()} report (prefetched)",
+            "semantic_graph": semantic,
+            "logs": log_output,
+        }
+
+    # ============================================================
+    # 💻 LOCAL MODE — Run directly via Railway
+    # ============================================================
     else:
         debug({}, f"🧭 Generating {report_type.title()} Report (local mode)")
 
-        # 🧩 Optional: inject custom start/end date range into context
+        # 🧩 Inject optional custom date range
         context = {}
         if start and end:
             debug(context, f"[CLI] ⏱️ Custom date range provided: {start} → {end}")
@@ -178,21 +279,20 @@ def generate_full_report(report_type="weekly", output_path=None, output_format="
                 reportType=report_type,
                 include_coaching_metrics=True,
                 output_format=output_format,
-                **context,              # flatten correctly
+                **context,
             )
 
-        if isinstance(result, tuple):
-            report = result[0]
-            logs = buffer.getvalue()
-        else:
-            report = result
-            logs = buffer.getvalue()
-
+        logs = buffer.getvalue()
         raw_logs = logs.splitlines()
         skip_terms = ["snapshot", "trace", "json", "context", "activities_full", "DataFrame"]
         log_output = "\n".join(
             [line for line in raw_logs if not any(term in line.lower() for term in skip_terms)]
         ).strip()
+
+        if isinstance(result, tuple):
+            report = result[0]
+        else:
+            report = result
 
         if isinstance(report, dict):
             if output_format == "semantic":
@@ -202,11 +302,14 @@ def generate_full_report(report_type="weekly", output_path=None, output_format="
                     "message": f"{report_type.title()} report generated",
                     "semantic_graph": semantic_output,
                     "logs": log_output,
+                    "date_range": {"start": start, "end": end} if start and end else None,
                 }
             else:
                 md_output = report.get("markdown", "")
                 full_output = (
                     f"# 🧾 {report_type.title()} Audit Report\n\n"
+                    f"🗓️ Date Range: {start} → {end}\n\n" if start and end else ""
+                ) + (
                     "## Execution Logs\n\n"
                     "```\n" + log_output + "\n```\n\n"
                     "## Rendered Markdown Report\n\n"
@@ -215,46 +318,19 @@ def generate_full_report(report_type="weekly", output_path=None, output_format="
         else:
             full_output = {"markdown": str(report), "logs": log_output}
 
-    # ─────────────────────────────────────────────
-    # WRITE OUTPUTS TO DISK (.json for semantic / .md for markdown)
-    # Preserve full descriptive filename (range, prefetch, staging, format)
-    # ─────────────────────────────────────────────
-    reports_dir = Path("reports")
-    reports_dir.mkdir(parents=True, exist_ok=True)
 
-    # Compute base name from inputs
+    # ============================================================
+    # 💾 FILE WRITING (Distinct Names, No Collisions)
+    # ============================================================
+    if prefetch and gpt:
+        print("[SAFEGUARD] 🛑 Prefetch GPT detected — skipping local file writing entirely.")
+        return None  # 🧱 Hard stop, prevents duplicate writes
+
     env_tag = "staging" if staging else "prod"
     prefetch_tag = "_prefetch" if prefetch else ""
-    base_name = f"report_{report_type}{prefetch_tag}_{env_tag}_{output_format}"
+    gpt_tag = "_gpt" if gpt else ""
+    base_name = f"report_{report_type}{prefetch_tag}_{env_tag}{gpt_tag}_{output_format}"
 
-    # Determine correct extension (semantic → .json, markdown → .md)
-    if output_format == "semantic":
-        primary_path = reports_dir / f"{base_name}.json"
-    elif output_format == "markdown":
-        primary_path = reports_dir / f"{base_name}.md"
-    else:
-        primary_path = reports_dir / f"{base_name}.json"
-
-    # ─── Primary file write
-    if isinstance(full_output, dict):
-        primary_path.write_text(
-            json.dumps(full_output, indent=2, default=str),
-            encoding="utf-8"
-        )
-    else:
-        primary_path.write_text(full_output, encoding="utf-8")
-
-    print(f"✅ {report_type.title()} report written to {primary_path.resolve()}")
-
-    # ─── Optional JSON mirror (for markdown only)
-    if output_format == "markdown":
-        mirror_path = reports_dir / f"{base_name}.json"
-        mirror_payload = (
-            full_output if isinstance(full_output, dict)
-            else {"markdown": full_output}
-        )
-        mirror_path.write_text(json.dumps(mirror_payload, indent=2, default=str), encoding="utf-8")
-        print(f"💾 JSON mirror written to {mirror_path.resolve()}")
 
 
 # ─────────────────────────────────────────────
