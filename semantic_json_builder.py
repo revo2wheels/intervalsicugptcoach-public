@@ -39,6 +39,7 @@ import numpy as np
 from math import isnan
 import pytz
 from audit_core.tier2_derived_metrics import classify_marker
+from textwrap import dedent
 
 # ---------------------------------------------------------
 # Helpers
@@ -134,8 +135,6 @@ def semantic_block_for_metric(name, value, context):
         "coaching_implication": coaching_link,
         "related_metrics": profile_desc.get("criteria", {}),
     }
-
-
 
 # ---------------------------------------------------------
 # Insights Builder
@@ -2007,6 +2006,8 @@ def apply_report_type_contract(semantic: dict) -> dict:
     allowed_keys = REPORT_CONTRACT.get(report_type, semantic.keys())
     filtered = {k: v for k, v in semantic.items() if k in allowed_keys}
 
+    filtered["system_prompt"] = build_system_prompt_from_header(report_type, header)
+
     # 🧠 Contract drift detection (optional)
     unexpected = set(semantic.keys()) - set(allowed_keys)
     if unexpected:
@@ -2016,4 +2017,51 @@ def apply_report_type_contract(semantic: dict) -> dict:
     return filtered
 
 
+def build_system_prompt_from_header(report_type: str, header: dict) -> str:
+    """
+    Dynamically build a system prompt for GPT rendering based on the URF v5.1 report contract.
+    Combines metadata (REPORT_HEADERS) + schema (REPORT_CONTRACT) for deterministic formatting.
+    """
+    title = header.get("title", f"{report_type.title()} Report")
+    scope = header.get("scope", "Training and wellness summary")
+    sources = header.get("data_sources", "Intervals.icu activity and wellness datasets")
+    intended = header.get("intended_use", "General endurance coaching insight")
+    contract_sections = REPORT_CONTRACT.get(report_type, [])
+    contract_version = "URF v5.1"
+
+    # --- Format section manifest (e.g. "1️⃣ Athlete Profile", "2️⃣ Summary", etc.)
+    if isinstance(contract_sections, dict):
+        section_order = list(contract_sections.keys())
+    else:
+        section_order = contract_sections or ["Summary", "Metrics", "Actions"]
+
+    manifest_lines = []
+    for i, section in enumerate(section_order, start=1):
+        manifest_lines.append(f"{i}. {section}")
+
+    # --- Construct final prompt text
+    prompt = dedent(f"""
+    You are an AI endurance coach rendering a **{title}**.
+    This report follows the **Unified Reporting Framework ({contract_version})**.
+    
+    **Scope:** {scope}
+    **Data Sources:** {sources}
+    **Intended Use:** {intended}
+
+    Your task:
+    - Render all sections defined in the URF contract for this report type.
+    - Preserve the section order exactly as shown below.
+    - Do not omit or merge sections, even if data is missing.
+    - Use concise Markdown with emoji section headers (🧍, 📊, ⚙️, 💪, 🧠, 🗒️, 💤 etc.).
+    - For lists of activities, metrics, or phases, use Markdown tables.
+    - Keep tone factual, supportive, and coach-like.
+    - Target length: 600–900 words, readable on mobile.
+
+    **Section Order:**
+    {chr(10).join(manifest_lines)}
+
+    At the end, provide a short closing summary with recovery or adaptation recommendations.
+    """).strip()
+
+    return prompt
 

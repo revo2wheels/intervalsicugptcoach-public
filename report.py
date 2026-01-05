@@ -64,19 +64,23 @@ def fetch_debug_report(report_type, format="semantic", staging=False):
 # ─────────────────────────────────────────────
 # PREFETCH HELPER — Cloudflare Worker Schema
 # ─────────────────────────────────────────────
-def fetch_remote_report(report_type, fmt="semantic", staging=False, owner=None):
+def fetch_remote_report(report_type, fmt="semantic", staging=False, owner=None, gpt=False):
     """
     Fetch a full rendered URF report (semantic+markdown+logs) from Cloudflare Worker.
     Access control (for staging) is handled entirely by the Worker.
+    Supports optional GPT-rendered output (?render=gpt).
     """
     base = f"https://intervalsicugptcoach.clive-a5a.workers.dev/run_{report_type}"
 
-    # Pass staging and owner — Worker decides what to do
+    # Assemble optional query params
     params = []
     if staging:
         params.append("staging=1")
     if owner:
         params.append(f"owner={owner}")
+    if gpt:
+        params.append("render=gpt")  # ✅ new param for GPT-rendered output
+
     if params:
         base += "?" + "&".join(params)
 
@@ -85,27 +89,36 @@ def fetch_remote_report(report_type, fmt="semantic", staging=False, owner=None):
         "User-Agent": "IntervalsGPTCoachLocal/1.0"
     }
 
-    print(f"[REMOTE] Fetching full {report_type} report (staging={staging}, owner={owner}) from {base}")
-    resp = requests.get(base, headers=headers, timeout=60)
+    print(f"[REMOTE] Fetching {report_type} report (staging={staging}, owner={owner}, gpt={gpt}) → {base}")
+    resp = requests.get(base, headers=headers, timeout=120)
+
+    # GPT-rendered output may return Markdown directly
+    content_type = resp.headers.get("content-type", "")
+    if "text/markdown" in content_type or gpt:
+        text = resp.text
+        outname = f"report_{report_type}_{'staging' if staging else 'prod'}_markdown.md"
+        Path("reports").mkdir(exist_ok=True)
+        Path(f"reports/{outname}").write_text(text, encoding="utf-8")
+        print(f"[REMOTE] ✅ GPT-rendered Markdown saved → {outname}")
+        return {"markdown": text, "status": resp.status_code}
+
+    # Default JSON flow (unchanged)
     resp.raise_for_status()
     data = resp.json()
 
     env_tag = "staging" if staging else "prod"
     outname = f"report_{report_type}_{env_tag}_{fmt}.json"
-
     Path("reports").mkdir(exist_ok=True)
     Path(f"reports/{outname}").write_text(json.dumps(data, indent=2), encoding="utf-8")
 
-    print(f"[REMOTE] ✅ Saved {outname}")
-    print(f"[REMOTE] keys={list(data.keys())}")
+    print(f"[REMOTE] ✅ JSON report saved → {outname}")
     return data
-
 
 # ─────────────────────────────────────────────
 # MAIN REPORT GENERATION
 # ─────────────────────────────────────────────
 def generate_full_report(report_type="weekly", output_path=None, output_format="markdown",
-                         prefetch=False, staging=False, owner=None, start=None, end=None):
+                         prefetch=False, staging=False, owner=None, start=None, end=None, gpt=False):
     """Run report and capture logs and output into one file."""
     buffer = io.StringIO()
     os.environ["REPORT_TYPE"] = report_type.lower()
@@ -117,9 +130,18 @@ def generate_full_report(report_type="weekly", output_path=None, output_format="
             suffix = f"_prefetch_{'staging' if staging else 'prod'}"
         output_path = Path("reports") / f"report_{report_type}{suffix}.{output_format}"
 
+    if output_format == "markdown":
+        gpt = True
+
     if prefetch:
         print(f"[PREFETCH] Using Worker prehydrated report (staging={staging}, owner={owner})")
-        data = fetch_remote_report(report_type, fmt=output_format, staging=staging, owner=owner)
+        data = fetch_remote_report(
+            report_type,
+            fmt=output_format,
+            staging=staging,
+            owner=owner,
+            gpt=gpt
+        )
 
         log_output = data.get("logs", "")
         if output_format == "semantic":
@@ -256,6 +278,8 @@ def main():
                         help="Optional owner identifier (e.g., 'xyz' for staging access)")
     parser.add_argument("--start", type=str, help="Custom start date (YYYY-MM-DD)")
     parser.add_argument("--end", type=str, help="Custom end date (YYYY-MM-DD)")
+    parser.add_argument("--gpt", action="store_true",
+                    help="Request GPT-rendered report from Cloudflare Worker (adds ?render=gpt)")
 
     args = parser.parse_args()
 
@@ -267,8 +291,10 @@ def main():
         staging=args.staging,
         owner=args.owner,
         start=args.start,
-        end=args.end
+        end=args.end,
+        gpt=args.gpt
     )
+
 
 if __name__ == "__main__":
     main()
