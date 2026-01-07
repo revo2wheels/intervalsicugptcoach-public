@@ -265,6 +265,19 @@ async def run_audit_with_data(request: Request):
             prefetch_context["end"] = end
             print(f"[STAGING] Injected start/end into prefetch_context: {start} → {end}")
 
+        # ✅ Gracefully handle empty light dataset to prevent AuditHalt
+        light = prefetch_context.get("activities_light", [])
+        if not light or len(light) == 0:
+            print(f"[STAGING] ⚠️ No activities found for light dataset ({data.get('start')} → {data.get('end')})")
+            return JSONResponse({
+                "status": "ok",
+                "report_type": report_range,
+                "output_format": "semantic_json",
+                "semantic_graph": {},
+                "compliance": {},
+                "message": f"No activities found between {data.get('start')} and {data.get('end')}",
+            })
+
         # now run the unified audit
         with redirect_stdout(buffer):
             report, compliance = run_report(
