@@ -839,6 +839,30 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
             source_df = df_light_slice
             debug(context, f"[T0] Unknown report_type='{report_type}' → defaulting to LIGHT dataset ({len(source_df)} rows)")
 
+        # ------------------------------------------------------------------
+        # 🛡️ Tier-0 Safety Guard — ensure baseline columns exist & numeric
+        # ------------------------------------------------------------------
+        required_cols = ["start_date_local", "moving_time", "icu_training_load", "type"]
+        for col in required_cols:
+            if col not in source_df.columns:
+                default_val = 0 if col in ["moving_time", "icu_training_load"] else ""
+                debug(context, f"[T0-FIX] Column '{col}' missing — adding default {default_val}")
+                source_df[col] = default_val
+
+        # Normalize numeric columns
+        for col in ["moving_time", "icu_training_load"]:
+            if col in source_df.columns:
+                source_df[col] = pd.to_numeric(source_df[col], errors="coerce").fillna(0)
+
+        # Re-check emptiness after coercion
+        if not source_df.empty:
+            debug(
+                context,
+                f"[T0-FIX] source_df validated — rows={len(source_df)}, "
+                f"ΣTSS={source_df['icu_training_load'].sum():.1f}, "
+                f"Σh={source_df['moving_time'].sum()/3600:.2f}"
+            )
+
         # --- Validate before serializing ---
         if source_df.empty:
             raise AuditHalt(f"❌ Tier-0: snapshot source empty before serialization (report_type={report_type})")
