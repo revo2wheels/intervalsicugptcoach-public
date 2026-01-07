@@ -331,6 +331,27 @@ def generate_full_report(
     gpt_tag = "_gpt" if gpt else ""
     base_name = f"report_{report_type}{prefetch_tag}_{env_tag}{gpt_tag}_{output_format}"
 
+
+    # ============================================================
+    # 💾 WRITE LOCAL OUTPUT (Semantic or Markdown)
+    # ============================================================
+    reports_dir = Path("reports")
+    reports_dir.mkdir(parents=True, exist_ok=True)
+
+    if output_format == "semantic":
+        out_path = reports_dir / f"{base_name}.json"
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(full_output, f, indent=2)
+        print(f"[LOCAL] ✅ Saved semantic JSON → {out_path}")
+    else:
+        out_path = reports_dir / f"{base_name}.md"
+        with open(out_path, "w", encoding="utf-8") as f:
+            f.write(full_output)
+        print(f"[LOCAL] ✅ Saved markdown report → {out_path}")
+
+    return full_output
+
+
 # ============================================================
 # 💾 DEBUG OPTIONAL
 # ============================================================

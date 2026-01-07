@@ -251,15 +251,49 @@ async def run_audit_with_data(request: Request):
         data = json.loads(raw)
         report_range = data.get("range","weekly")
         fmt = data.get("format","markdown").lower()
+
+        # ✅ NEW — capture start/end from the worker payload
+        start = data.get("start")
+        end = data.get("end")
+
+        # normalize prefetched JSON into pandas-friendly context
         prefetch_context = normalize_prefetched_context(data)
+
+        # ✅ NEW — inject start/end into context for Tier-0 summary to work
+        if start and end:
+            prefetch_context["start"] = start
+            prefetch_context["end"] = end
+            print(f"[STAGING] Injected start/end into prefetch_context: {start} → {end}")
+
+        # now run the unified audit
         with redirect_stdout(buffer):
-            report, compliance = run_report(reportType=report_range, output_format=fmt, include_coaching_metrics=True, **prefetch_context)
+            report, compliance = run_report(
+                reportType=report_range,
+                output_format=fmt,
+                include_coaching_metrics=True,
+                **prefetch_context
+            )
+
         logs = buffer.getvalue()
         if fmt in ("json","semantic"):
             context = report.get("context",{}) if isinstance(report,dict) else {}
-            return JSONResponse({"status":"ok","report_type":report_range,"output_format":"semantic_json",
-                "semantic_graph":sanitize(build_semantic_json(context)),"compliance":compliance,"logs":logs[-20000:]})
-        return JSONResponse({"status":"ok","report_type":report_range,"output_format":"markdown","markdown":report.get("markdown",""),"logs":logs[-20000:]})
+            return JSONResponse({
+                "status": "ok",
+                "report_type": report_range,
+                "output_format": "semantic_json",
+                "semantic_graph": sanitize(build_semantic_json(context)),
+                "compliance": compliance,
+                "logs": logs[-20000:],
+            })
+
+        return JSONResponse({
+            "status": "ok",
+            "report_type": report_range,
+            "output_format": "markdown",
+            "markdown": report.get("markdown",""),
+            "logs": logs[-20000:],
+        })
+
     except Exception as e:
         return error_response(e, buffer)
 
