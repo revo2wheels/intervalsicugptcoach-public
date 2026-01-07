@@ -92,6 +92,15 @@ def normalize_prefetched_context(data):
         athlete  = data.get("athlete", {})
         calendar = data.get("calendar", {})
 
+        # ─────────────────────────────────────────────
+        # 🩺 Ensure baseline columns exist for Tier-0 stability
+        # ─────────────────────────────────────────────
+        for df_name, df in {"light": df_light, "full": df_full}.items():
+            for col in ["moving_time", "distance", "icu_training_load", "type"]:
+                if col not in df.columns:
+                    df[col] = 0 if col in ["moving_time", "distance", "icu_training_load"] else ""
+            debug({}, f"[NORM] ensured baseline columns exist for df_{df_name} ({len(df)} rows)")
+
         context["activities_light"] = df_light.to_dict(orient="records")
         context["activities_full"]  = df_full.to_dict(orient="records")
         context["wellness"]         = df_well.to_dict(orient="records")
