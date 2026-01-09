@@ -266,29 +266,22 @@ async def run_audit_with_data(request: Request):
             print(f"[STAGING] Injected start/end into prefetch_context: {start} → {end}")
 
         # --- Detect Strava-only account (Intervals UI has data but API returns none) ---
-        calendar = prefetch_context.get("calendar", {})
+        light = prefetch_context.get("activities_light", [])
         athlete = prefetch_context.get("athleteProfile", {})
 
-        has_calendar_events = bool(calendar.get("events") or calendar.get("seasons"))
-        has_athlete = bool(athlete)
+        has_athlete = isinstance(athlete, dict) and athlete.get("id") is not None
+        no_activities = not light or len(light) == 0
 
-        light = prefetch_context.get("activities_light", [])
-
-        if (not light or len(light) == 0) and has_calendar_events and has_athlete:
+        if has_athlete and no_activities:
             return JSONResponse({
                 "status": "blocked",
                 "error_code": "STRAVA_API_RESTRICTED",
                 "message": (
                     "Your Intervals.icu account is connected only via Strava. "
-                    "Intervals.icu is legally not allowed to expose Strava-sourced activities via its API. "
-                    "Connect Garmin/Wahoo directly or upload FIT files to make your rides accessible."
+                    "Intervals.icu is not allowed to expose Strava-sourced activities via its API. "
+                    "Connect Garmin/Wahoo directly or upload FIT files."
                 ),
-                "action_required": [
-                    "Connect Garmin or Wahoo directly to Intervals.icu",
-                    "Or upload FIT files instead of Strava",
-                    "Or duplicate rides as manual entries"
-                ],
-                "calendar_visible": True,
+                "athlete_id": athlete.get("id"),
                 "activities_returned": 0
             })
 
