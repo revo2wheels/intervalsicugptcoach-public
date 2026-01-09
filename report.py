@@ -143,7 +143,7 @@ def fetch_debug_report(report_type, format="semantic", staging=False):
 # ─────────────────────────────────────────────
 # PREFETCH HELPER — Cloudflare Worker Schema
 # ─────────────────────────────────────────────
-def fetch_remote_report(report_type, fmt="semantic", staging=False, owner=None, gpt=False):
+def fetch_remote_report(report_type, fmt="semantic", staging=False, owner=None, gpt=False, start=None, end=None):
     """
     Fetch a URF report (semantic+markdown) from Cloudflare Worker.
     If GPT rendering is enabled (?render=gpt), the Worker now returns both
@@ -159,8 +159,14 @@ def fetch_remote_report(report_type, fmt="semantic", staging=False, owner=None, 
         params.append(f"owner={owner}")
     if gpt:
         params.append("render=gpt")
+    if start:
+        params.append(f"start={start}")
+    if end:
+        params.append(f"end={end}")
 
-    url = f"{base}?{'&'.join(params)}" if params else base
+    query = "&".join(params)
+    url = f"{base}?{query}" if query else base
+
     headers = {
         "Authorization": f"Bearer {os.getenv('ICU_OAUTH', '')}",
         "User-Agent": "IntervalsGPTCoachLocal/1.0"
@@ -175,7 +181,7 @@ def fetch_remote_report(report_type, fmt="semantic", staging=False, owner=None, 
 
     content_type = resp.headers.get("content-type", "")
 
-    # 🔥 NEW: handle unified JSON payload (markdown + semantic)
+    # 🔥 Handle unified JSON payload (markdown + semantic)
     if "application/json" in content_type:
         data = resp.json()
         markdown = data.get("markdown")
@@ -193,7 +199,7 @@ def fetch_remote_report(report_type, fmt="semantic", staging=False, owner=None, 
 
         return data
 
-    # 🧩 Legacy fallback (for older Worker that returns markdown only)
+    # Legacy markdown-only fallback
     if "text/markdown" in content_type:
         text = resp.text
         md_out = f"report_{report_type}_{env_tag}_gpt.md"
@@ -207,6 +213,7 @@ def fetch_remote_report(report_type, fmt="semantic", staging=False, owner=None, 
     Path(f"reports/{json_out}").write_text(json.dumps(data, indent=2), encoding="utf-8")
     print(f"[REMOTE] ✅ Semantic JSON saved → {json_out}")
     return data
+
 
 
 def generate_full_report(
@@ -241,8 +248,11 @@ def generate_full_report(
             fmt=output_format,
             staging=staging,
             owner=owner,
-            gpt=gpt
+            gpt=gpt,
+            start=start,
+            end=end,
         )
+
 
         # ✅ GPT-handled — Worker already wrote markdown + semantic
         if gpt:
