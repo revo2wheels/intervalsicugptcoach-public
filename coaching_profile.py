@@ -387,6 +387,42 @@ COACH_PROFILE = {
                 "Target ≥0.75 for strong aerobic adaptation in Base/Recovery."
             ),
         },
+        "Polarisation_fused": {
+            "framework": "Seiler 80/20 (HR+Power Fusion)",
+            "formula": "(Z1 + Z3) / (2 × Z2) [applied to fused HR+Power zones]",
+            "criteria": {
+                "polarised": "≥ 1.0",
+                "mixed": "0.7–0.99",
+                "z2_base": "0.35–0.69",
+                "threshold": "< 0.35"
+            },
+            "interpretation": (
+                "Derived per sport from HR+Power fusion. Reflects dominant-sport load separation. "
+                "Higher values indicate clear low/high intensity contrast."
+            ),
+            "coaching_implication": (
+                "If <0.7 in Base → aerobic focus (✅). "
+                "If <0.7 in Build/Peak → excessive mid-zone; rebalance toward Z1/Z3 contrast."
+            ),
+        },
+        "Polarisation_combined": {
+            "framework": "Seiler 80/20 (Multi-sport Weighted)",
+            "formula": "(Z1 + Z3) / (2 × Z2) [multi-sport weighted]",
+            "criteria": {
+                "polarised": "≥ 1.0",
+                "mixed": "0.7–0.99",
+                "z2_base": "0.35–0.69",
+                "threshold": "< 0.35"
+            },
+            "interpretation": (
+                "Weighted mean of sport-specific fused indices. Represents overall cross-sport "
+                "intensity distribution. Lower values indicate too much threshold work globally."
+            ),
+            "coaching_implication": (
+                "Maintain ≥0.8 global balance for healthy load variation. "
+                "If <0.65 → add Z1 endurance days or rest."
+            ),
+        },
         "TRIMP": {
             "framework": "Banister Load Model",
             "formula": "Duration × HR_ratio × e^(1.92 × HR_ratio)",
