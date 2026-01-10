@@ -70,6 +70,7 @@ PREFETCH MODE (REMOTE)
   python report.py --range weekly --prefetch --staging (RAILWAY STAGING JSON) - this would get sent to GPT
   python report.py --range season --prefetch --gpt (RAILWAY JSON AND GPT MD)
   python report.py --range summary --start 2025-01-01 --end 2025-12-31 (LOCAL JSON)
+  python report.py --range weekly --prefetch --staging --owner clive --strava-test (this test strips activities to replicate STRAVA ONLY source and retruns friendly error msg)
 
 ───────────────────────────────────────────────
 🧠 NOTES
@@ -143,7 +144,7 @@ def fetch_debug_report(report_type, format="semantic", staging=False):
 # ─────────────────────────────────────────────
 # PREFETCH HELPER — Cloudflare Worker Schema
 # ─────────────────────────────────────────────
-def fetch_remote_report(report_type, fmt="semantic", staging=False, owner=None, gpt=False, start=None, end=None):
+def fetch_remote_report(report_type, fmt="semantic", staging=False, owner=None, gpt=False, start=None, end=None, strava_test=False):
     """
     Fetch a URF report (semantic+markdown) from Cloudflare Worker.
     If GPT rendering is enabled (?render=gpt), the Worker now returns both
@@ -163,6 +164,8 @@ def fetch_remote_report(report_type, fmt="semantic", staging=False, owner=None, 
         params.append(f"start={start}")
     if end:
         params.append(f"end={end}")
+    if strava_test:
+        params.append("test=strava")
 
     query = "&".join(params)
     url = f"{base}?{query}" if query else base
@@ -225,7 +228,8 @@ def generate_full_report(
     owner=None,
     start=None,
     end=None,
-    gpt=False
+    gpt=False,
+    strava_test=False
 ):
     """Run report and capture logs and output into one file."""
     buffer = io.StringIO()
@@ -251,23 +255,26 @@ def generate_full_report(
             gpt=gpt,
             start=start,
             end=end,
+            strava_test=strava_test
         )
-
 
         # ✅ GPT-handled — Worker already wrote markdown + semantic
         if gpt:
             print("[GPT] ✅ Worker already saved Markdown + Semantic JSON — exiting early.")
             return None  # 🚫 This now safely exits generate_full_report()
 
-        # Otherwise, continue normal prefetch JSON flow
-        log_output = data.get("logs", "")
-        semantic = data.get("semantic_graph", {})
-        full_output = {
-            "status": data.get("status", "ok"),
-            "message": f"{report_type.title()} report (prefetched)",
-            "semantic_graph": semantic,
-            "logs": log_output,
-        }
+        # If Worker returned a block/error, preserve it exactly
+        if data.get("status") != "ok":
+            full_output = data
+        else:
+            log_output = data.get("logs", "")
+            semantic = data.get("semantic_graph", {})
+            full_output = {
+                "status": "ok",
+                "message": f"{report_type.title()} report (prefetched)",
+                "semantic_graph": semantic,
+                "logs": log_output,
+            }
 
     # ============================================================
     # 💻 LOCAL MODE — Run directly via Railway
@@ -425,6 +432,8 @@ def main():
                         help="Request GPT-rendered report from Cloudflare Worker (adds ?render=gpt)")
     parser.add_argument("--debug", action="store_true",
                         help="Run any report type in debug mode (via Railway /debug endpoint if available)")
+    parser.add_argument("--strava-test", action="store_true",
+                    help="Simulate Strava-only account (passes ?test=strava to Worker)")
 
     args = parser.parse_args()
 
@@ -444,7 +453,8 @@ def main():
         owner=args.owner,
         start=args.start,
         end=args.end,
-        gpt=args.gpt
+        gpt=args.gpt,
+        strava_test=args.strava_test
     )
 
 
