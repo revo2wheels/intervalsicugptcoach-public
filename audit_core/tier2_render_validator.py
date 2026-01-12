@@ -141,14 +141,6 @@ def finalize_and_validate_render(context, reportType="weekly"):
         context["report_type"] = "season"
         debug(context, "[T2] Season mode → enforcing 'season' report_type before render.")
 
-        from render_unified_report import Report
-        try:
-            report = Report(context)
-            debug(context, "[T2] Season mode → initialized minimal Report object for return.")
-        except Exception as e:
-            report = {"note": f"season skip fallback (init failed: {e})"}
-            debug(context, f"[T2] Season mode → using fallback report dict due to error: {e}")
-
     # Verify canonical totals exist
     if "totalHours" not in context or "totalTss" not in context:
         raise AuditHalt("❌ Renderer: totals missing from context (Tier-2 enforcement skipped)")
@@ -451,15 +443,6 @@ def finalize_and_validate_render(context, reportType="weekly"):
         else:
             debug(context, f"[ZONE-PATCH] ✅ preserved {k} from Tier-1 ({len(val)} keys)")
 
-    # ---------------------------------------------------------
-    # 🧩 Prevent duplicate render pass (Tier-2 overlap)
-    # ---------------------------------------------------------
-    if context.get("_render_pass_done"):
-        debug(context, "[SKIP] render_unified_report already executed — skipping duplicate render.")
-        return context.get("cached_report", {}), {"status": "ok", "note": "render reused"}
-
-    context["_render_pass_done"] = True
-
     # --- Renderer execution ---
     report = render_template(
         reportType,
@@ -682,24 +665,7 @@ def finalize_and_validate_render(context, reportType="weekly"):
 
     compliance = validate_report_output(context, report_for_validation)
        
-    # --- Season mode: force full markdown render ---
-    if report_type == "season":
-        debug(context, "[T2] Season mode active — forcing full Report render before return.")
-        from render_unified_report import Report
-        report_obj = Report(context)
-
-        # Ensure proper markdown serialization
-        if hasattr(report_obj, "to_markdown"):
-            report = report_obj.to_markdown()
-        elif isinstance(report_obj, dict) and "markdown" in report_obj:
-            report = report_obj["markdown"]
-        else:
-            report = str(report_obj)
-
-        debug(context, "[T2] Season report fully rendered — returning markdown content.")
-        return report, {"status": "ok", "note": "season-mode markdown generated"}
-
-       # --- Step 10: Compliance Log Finalization ---
+    # --- Step 10: Compliance Log Finalization ---
     compliance.update({
         "schema_validated": True,
         "framework": "Unified_Reporting_Framework_v5.1",

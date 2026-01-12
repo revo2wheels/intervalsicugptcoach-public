@@ -357,9 +357,23 @@ def generate_full_report(
 
     if output_format == "semantic":
         out_path = reports_dir / f"{base_name}.json"
+
+        # --- Safe JSON encoder for Pandas, NumPy, and datetime objects ---
+        def json_default(obj):
+            import pandas as pd, datetime, numpy as np
+            if isinstance(obj, (pd.Timestamp, datetime.date, datetime.datetime)):
+                return obj.isoformat()
+            if isinstance(obj, (np.int64, np.int32)):
+                return int(obj)
+            if isinstance(obj, (np.float32, np.float64)):
+                return float(obj)
+            return str(obj)
+
         with open(out_path, "w", encoding="utf-8") as f:
-            json.dump(full_output, f, indent=2)
+            json.dump(full_output, f, indent=2, default=json_default)
+
         print(f"[LOCAL] ✅ Saved semantic JSON → {out_path}")
+
     else:
         out_path = reports_dir / f"{base_name}.md"
         with open(out_path, "w", encoding="utf-8") as f:
