@@ -2268,8 +2268,10 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
 
     HARD RULES:
     - Treat the provided semantic JSON as canonical truth.
-    - Do NOT compute, infer, modify, or reinterpret metrics.
-    - Do NOT summarise or collapse sections.
+    - Do NOT compute, infer, or modify metrics.
+    - You MAY restate interpretations explicitly present in the semantic JSON.
+    - Do NOT summarise, collapse, or omit DATA.
+    - You MAY render derived insight fields provided in the semantic JSON.
     - Do NOT omit sections, even if data is missing.
     - Render exactly ONE report.
     LIST RENDERING RULE (NON-NEGOTIABLE):
