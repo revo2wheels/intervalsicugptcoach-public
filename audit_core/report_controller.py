@@ -256,7 +256,7 @@ def run_report(
             ):
                 context["range"] = {
                     "lightDays": 365,
-                    "fullDays": 90,
+                    "fullDays": 7,
                     "wellnessDays": 90,
                     "chunk": False
                 }

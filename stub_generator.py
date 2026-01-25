@@ -1,6 +1,6 @@
 # === generate_stubs.py ===
 # Creates no-op placeholders for missing audit_core and UIcomponents modules.
-# Safe to run once inside ChatGPT or locally before testing render_unified_report.py
+# Safe to run once inside ChatGPT or locally 
 
 import os
 

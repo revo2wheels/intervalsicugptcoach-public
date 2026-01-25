@@ -713,31 +713,34 @@ def build_semantic_json(context):
 
     # --- Select dataset based on report type ---
     if report_type in ("season", "summary"):
-        df_light = context.get("df_light")
-        if isinstance(df_light, pd.DataFrame) and not df_light.empty:
-            df_ref = df_light
-        else:
-            acts_light = context.get("activities_light")
-            if isinstance(acts_light, list) and len(acts_light) > 0:
-                df_ref = pd.DataFrame(acts_light)
+        # ✅ Prefer the preserved full dataset if available (all activity types)
+        if "_df_scope_full" in context and isinstance(context["_df_scope_full"], pd.DataFrame) and not context["_df_scope_full"].empty:
+            df_ref = context["_df_scope_full"]
+            debug(context, f"[SEMANTIC-FORCE] Using _df_scope_full for summary (rows={len(df_ref)})")
+        elif "activities_full" in context and isinstance(context["activities_full"], list) and len(context["activities_full"]) > 0:
+            df_ref = pd.DataFrame(context["activities_full"])
+            debug(context, f"[SEMANTIC-FORCE] Using activities_full for summary (rows={len(df_ref)})")
+        elif "df_light" in context and isinstance(context["df_light"], pd.DataFrame) and not context["df_light"].empty:
+            df_ref = context["df_light"]
+            debug(context, f"[SEMANTIC-FORCE] Fallback to df_light (rows={len(df_ref)})")
+        elif isinstance(context.get("activities_light"), list) and context["activities_light"]:
+            df_ref = pd.DataFrame(context["activities_light"])
+            debug(context, f"[SEMANTIC-FORCE] Fallback to activities_light (rows={len(df_ref)})")
 
     elif report_type == "wellness":
         df_well = context.get("df_wellness")
         if isinstance(df_well, pd.DataFrame) and not df_well.empty:
             df_ref = df_well
-        else:
-            acts_well = context.get("wellness")
-            if isinstance(acts_well, list) and len(acts_well) > 0:
-                df_ref = pd.DataFrame(acts_well)
+        elif isinstance(context.get("wellness"), list) and len(context["wellness"]) > 0:
+            df_ref = pd.DataFrame(context["wellness"])
 
     else:
         df_master = context.get("df_master")
         if isinstance(df_master, pd.DataFrame) and not df_master.empty:
             df_ref = df_master
-        else:
-            acts_full = context.get("activities_full")
-            if isinstance(acts_full, list) and len(acts_full) > 0:
-                df_ref = pd.DataFrame(acts_full)
+        elif isinstance(context.get("activities_full"), list) and len(context["activities_full"]) > 0:
+            df_ref = pd.DataFrame(context["activities_full"])
+
 
     # --- Fallback: preserved df_scope_full (Railway safe)
     if df_ref is None and "_df_scope_full" in context and isinstance(context["_df_scope_full"], pd.DataFrame):
@@ -852,16 +855,14 @@ def build_semantic_json(context):
     # ---------------------------------------------------------
     report_type = semantic["meta"]["report_type"]
 
-    if report_type in ("season", "summary"):
-        semantic["hours"] = handle_missing_data(context.get("locked_totalHours"), 0)
-        semantic["tss"] = handle_missing_data(context.get("locked_totalTss"), 0)
-        semantic["distance_km"] = handle_missing_data(context.get("locked_totalDistance"), 0)
+    # ---------------------------------------------------------
+    # WEEKLY TOTALS (Tier-2 ONLY) - SEASON AND SUMMARY ARE IN PHASES
+    # ---------------------------------------------------------
 
-    else:  # weekly
+    if report_type not in ("season", "summary"):
         semantic["hours"] = handle_missing_data(context.get("totalHours"), 0)
         semantic["tss"] = handle_missing_data(context.get("totalTss"), 0)
         semantic["distance_km"] = handle_missing_data(context.get("totalDistance"), 0)
-
 
     # ---------------------------------------------------------
     # AUTHORITATIVE Tier-2 metric injection
@@ -1061,6 +1062,7 @@ def build_semantic_json(context):
             "distance", "moving_time", "icu_training_load", "IF",
             "average_heartrate", "average_cadence", "icu_average_watts",
             "strain_score", "trimp", "hr_load",
+            "ss", "ss_cp", "ss_w", "ss_pmax",
             "icu_efficiency_factor", "icu_intensity", "icu_power_hr",
             "decoupling", "icu_pm_w_prime", "icu_w_prime",
             "icu_max_wbal_depletion", "icu_joules_above_ftp",
@@ -1102,10 +1104,78 @@ def build_semantic_json(context):
     else:
         debug(context, "[SEMANTIC] EVENTS: no df_events available or empty DataFrame")
 
+
+    # --- Prevent override by short df_scope_full for season/summary ---
+    if semantic["meta"]["report_type"] in ("season", "summary"):
+        if (
+            "df_light" in context
+            and isinstance(context["df_light"], pd.DataFrame)
+            and len(context["df_light"]) > 100
+        ):
+            df_ref = context["df_light"]
+            debug(context, f"[SEMANTIC-OVERRIDE] Using df_light ({len(df_ref)} rows) for summary/season instead of short _df_scope_full")
+        elif (
+            "_df_scope_full" in context
+            and isinstance(context["_df_scope_full"], pd.DataFrame)
+            and len(context["_df_scope_full"]) > 100
+        ):
+            df_ref = context["_df_scope_full"]
+            debug(context, f"[SEMANTIC-OVERRIDE] Using _df_scope_full ({len(df_ref)} rows) for summary/season")
+        else:
+            debug(context, "[SEMANTIC-OVERRIDE] No valid long-frame dataset found — fallback to df_master")
+
+
+
+    # ---------------------------------------------------------
+    # 🧩 DEBUG — verify light vs full data sources (before weekly aggregation)
+    # ---------------------------------------------------------
+    if semantic["meta"]["report_type"] in ("season", "summary"):
+        debug(context, "🔍 [DATASET-DIAG] Checking available data sources:")
+
+        for name in ["df_light", "activities_light", "_df_scope_full", "df_master", "df_events"]:
+            candidate = context.get(name)
+            if isinstance(candidate, pd.DataFrame):
+                debug(context, f"🔍 [DATASET-DIAG] {name}: DataFrame rows={len(candidate)}, cols={list(candidate.columns)[:8]}")
+                if not candidate.empty:
+                    debug(
+                        context,
+                        f"🔍 [DATASET-DIAG] {name}: "
+                        f"min={pd.to_datetime(candidate.iloc[0].get('start_date_local', candidate.iloc[0].get('date', 'NA')), errors='coerce')}, "
+                        f"max={pd.to_datetime(candidate.iloc[-1].get('start_date_local', candidate.iloc[-1].get('date', 'NA')), errors='coerce')}"
+                    )
+            elif isinstance(candidate, list):
+                debug(context, f"🔍 [DATASET-DIAG] {name}: list length={len(candidate)}")
+                if len(candidate) > 0:
+                    sample = candidate[0]
+                    debug(context, f"🔍 [DATASET-DIAG] {name}: sample keys={list(sample.keys())[:10]}")
+            else:
+                debug(context, f"🔍 [DATASET-DIAG] {name}: type={type(candidate).__name__}, value={str(candidate)[:80]}")
+
+        # Explicit check for df_ref after it’s chosen
+        if "df_ref" in locals() and isinstance(df_ref, pd.DataFrame):
+            debug(
+                context,
+                f"🔍 [DATASET-DIAG] df_ref resolved → rows={len(df_ref)}, "
+                f"cols={list(df_ref.columns)[:6]}, "
+                f"date-range={pd.to_datetime(df_ref['start_date_local'] if 'start_date_local' in df_ref else df_ref['date']).agg(['min','max']).to_dict()}"
+            )
+        else:
+            debug(context, "⚠️ [DATASET-DIAG] df_ref not resolved or empty.")
+
+
+
     # ---------------------------------------------------------
     # 🪜 Weekly Phases Summary (URF v5.2 canonical)
     # ---------------------------------------------------------
     if semantic["meta"]["report_type"] in ("season", "summary"):
+        # --- Force authoritative dataset for season/summary totals ---
+        if "df_light" in context and isinstance(context["df_light"], pd.DataFrame) and len(context["df_light"]) > 100:
+            df_ref = context["df_light"]
+            debug(context, f"[FORCE] Overriding df_ref with df_light ({len(df_ref)} rows) for totals aggregation")
+        elif isinstance(context.get("activities_light"), list) and len(context["activities_light"]) > 0:
+            df_ref = pd.DataFrame(context["activities_light"])
+            debug(context, f"[FORCE] Overriding df_ref with activities_light ({len(df_ref)} rows) for totals aggregation)")
+
         df_src = None
         if "df_ref" in locals() and isinstance(df_ref, pd.DataFrame) and not df_ref.empty:
             df_src = df_ref.copy()
@@ -1122,20 +1192,43 @@ def build_semantic_json(context):
             df_src["start_date_local"] = pd.to_datetime(df_src["start_date_local"], errors="coerce")
             df_src = df_src.dropna(subset=["start_date_local"])
 
+            # ✅ Coerce numeric and fill NaNs
             for col in ["icu_training_load", "moving_time", "distance"]:
                 if col in df_src.columns:
-                    df_src[col] = pd.to_numeric(df_src[col], errors="coerce").fillna(0)
+                    df_src[col] = (
+                        pd.to_numeric(df_src[col], errors="coerce")
+                        .fillna(0)
+                        .astype(float)
+                    )
+
+            # 🔍 Pre-aggregation sanity check
+            debug(
+                context,
+                f"[CHECK] Before weekly aggregation → {len(df_src)} rows | "
+                f"Dist={df_src['distance'].sum()/1000:.1f} km | "
+                f"Hours={df_src['moving_time'].sum()/3600:.1f} h | "
+                f"TSS={df_src['icu_training_load'].sum():.0f}"
+            )
 
             iso = df_src["start_date_local"].dt.isocalendar()
             df_src["year_week"] = iso["year"].astype(str) + "-W" + iso["week"].astype(str)
             df_week = (
                 df_src.groupby("year_week", as_index=False)
-                    .agg({
-                        "distance": "sum",
-                        "moving_time": "sum",
-                        "icu_training_load": "sum"
-                    })
-                    .sort_values("year_week")
+                .agg({
+                    "distance": "sum",
+                    "moving_time": "sum",
+                    "icu_training_load": "sum"
+                })
+                .sort_values("year_week")
+            )
+
+            # 🔍 Post-aggregation sanity check
+            debug(
+                context,
+                f"[CHECK] After weekly aggregation → {len(df_week)} weeks | "
+                f"Dist={df_week['distance'].sum()/1000:.1f} km | "
+                f"Hours={df_week['moving_time'].sum()/3600:.1f} h | "
+                f"TSS={df_week['icu_training_load'].sum():.0f}"
             )
 
             # --- Phase linkage: map each week to its detected macro phase ---
@@ -1153,25 +1246,67 @@ def build_semantic_json(context):
                         return p.get("phase")
                 return "Unclassified"
 
-            # --- Build unified weekly phase summary ---
-            semantic["weekly_phases"] = [
-                {
+            # --- Build unified weekly phase summary + compute totals ---
+            total_hours = 0.0
+            total_tss = 0.0
+            total_distance = 0.0
+            weekly_phases = []
+
+            for _, r in df_week.iterrows():
+                week_data = {
                     "week": r["year_week"],
                     "phase": get_phase_for_week(r["year_week"]),
                     "distance_km": round(r["distance"] / 1000, 1),
                     "hours": round(r["moving_time"] / 3600, 1),
                     "tss": round(r["icu_training_load"], 0)
                 }
-                for _, r in df_week.iterrows()
-            ]
 
-            debug(context, f"[WEEKLY] ✅ Injected weekly_phases with {len(semantic['weekly_phases'])} weeks")
+                weekly_phases.append(week_data)
+
+                # 🔢 Increment totals directly
+                total_hours += week_data["hours"]
+                total_tss += week_data["tss"]
+                total_distance += week_data["distance_km"]
+
+            semantic["weekly_phases"] = weekly_phases
+
+            # ✅ Store canonical totals
+            semantic["hours"] = round(total_hours, 2)
+            semantic["tss"] = round(total_tss, 0)
+            semantic["distance_km"] = round(total_distance, 2)
+
+            # 🔒 Mirror totals into context (so finalizer sees them)
+            context["locked_totalHours"] = semantic["hours"]
+            context["locked_totalTss"] = semantic["tss"]
+            context["locked_totalDistance"] = semantic["distance_km"]
+
+            semantic.setdefault("summary", {}).update({
+                "totalHours": semantic["hours"],
+                "totalTss": semantic["tss"],
+                "totalDistance": semantic["distance_km"],
+            })
+
+            debug(
+                context,
+                f"[WEEKLY] ✅ Aggregated {len(weekly_phases)} weeks → "
+                f"{semantic['distance_km']} km / {semantic['hours']} h / {semantic['tss']} TSS"
+            )
 
         else:
-            semantic["weekly_phases"] = [
-                {"week": "No Data", "phase": "No Data", "distance_km": 0, "hours": 0, "tss": 0}
-            ]
-            debug(context, "[WEEKLY] ⚠️ No valid data source for weekly summary")
+            debug(context, "[WEEKLY] ❌ No valid df_src found for weekly aggregation")
+
+    debug(
+        context,
+        f"[WEEKLY-TRACE] df_src rows={len(df_src)}, total distance={df_src['distance'].sum()/1000:.1f} km, "
+        f"hours={df_src['moving_time'].sum()/3600:.1f}, tss={df_src['icu_training_load'].sum():.0f}"
+    )
+
+    debug(
+        context,
+        f"[WEEKLY-TRACE] df_week rows={len(df_week)}, grouped distance={df_week['distance'].sum()/1000:.1f} km, "
+        f"hours={df_week['moving_time'].sum()/3600:.1f}, tss={df_week['icu_training_load'].sum():.0f}"
+    )
+
 
     # ---------------------------------------------------------
     # DERIVED EVENT SUMMARIES — W' Balance & Performance
@@ -1760,49 +1895,60 @@ def build_semantic_json(context):
             summaries = []
             advice = CHEAT_SHEET.get("advice", {}).get("PhaseAdvice", {})
 
-            # Sort chronologically
+            # 🧭 Sort by start date for deterministic order
             df_weeks = df_weeks.sort_values("start").reset_index(drop=True)
 
             current_phase = None
             segment_rows = []
 
             for _, wk in df_weeks.iterrows():
+                # fill Unclassified with previous phase if possible (prevents fragmentation)
+                if wk["phase"] == "Unclassified" and current_phase is not None:
+                    wk["phase"] = current_phase
+
                 if current_phase is None:
                     current_phase = wk["phase"]
                     segment_rows = [wk]
                     continue
 
-                # Phase transition detected
+                # 🚧 Phase change — flush previous block
                 if wk["phase"] != current_phase:
                     seg = pd.DataFrame(segment_rows)
-                    summaries.append({
-                        "phase": current_phase,
-                        "start": seg["start"].min().strftime("%Y-%m-%d"),
-                        "end": seg["end"].max().strftime("%Y-%m-%d"),
-                        "duration_days": (seg["end"].max() - seg["start"].min()).days,
-                        "duration_weeks": round((seg["end"].max() - seg["start"].min()).days / 7, 1),
-                        "tss_total": round(seg["tss"].sum(), 1),
-                        "hours_total": round(seg["hours"].sum(), 1),
-                        "distance_km_total": round(seg["distance_km"].sum(), 1),
-                        "descriptor": advice.get(current_phase, f"{current_phase} phase — maintain adaptive consistency."),
-                        # 🔽 Add this line to keep calc provenance
-                        "calc_method": seg["calc_method"].iloc[-1] if "calc_method" in seg else None,
-                        "calc_context": seg["calc_context"].iloc[-1] if "calc_context" in seg else None,
-                    })
-                    # Start new segment
+                    if not seg.empty:
+                        summaries.append({
+                            "phase": current_phase,
+                            "start": seg["start"].min().strftime("%Y-%m-%d"),
+                            "end": seg["end"].max().strftime("%Y-%m-%d"),
+                            "duration_days": int((seg["end"].max() - seg["start"].min()).days) + 1,
+                            "duration_weeks": round((seg["end"].max() - seg["start"].min()).days / 7, 1),
+                            "tss_total": round(seg["tss"].sum(), 1),
+                            "hours_total": round(seg["hours"].sum(), 1),
+                            "distance_km_total": round(seg["distance_km"].sum(), 1),
+                            "descriptor": advice.get(
+                                current_phase, f"{current_phase} phase — maintain adaptive consistency."
+                            ),
+                            "calc_method": seg["calc_method"].iloc[-1] if "calc_method" in seg else None,
+                            "calc_context": (
+                                seg["calc_context"].iloc[-1]
+                                if "calc_context" in seg and not isinstance(seg["calc_context"].iloc[-1], list)
+                                else None
+                            ),
+                        })
+
+                    # start new block
                     current_phase = wk["phase"]
                     segment_rows = [wk]
                 else:
                     segment_rows.append(wk)
 
-            # Final open segment
+            # 🧩 Flush final open segment
             if segment_rows:
                 seg = pd.DataFrame(segment_rows)
                 summaries.append({
                     "phase": current_phase,
                     "start": seg["start"].min().strftime("%Y-%m-%d"),
                     "end": seg["end"].max().strftime("%Y-%m-%d"),
-                    "duration_days": (seg["end"].max() - seg["start"].min()).days,
+                    "duration_days": int((seg["end"].max() - seg["start"].min()).days) + 1,
                     "duration_weeks": round((seg["end"].max() - seg["start"].min()).days / 7, 1),
                     "tss_total": round(seg["tss"].sum(), 1),
                     "hours_total": round(seg["hours"].sum(), 1),
@@ -1811,8 +1957,27 @@ def build_semantic_json(context):
                         current_phase, f"{current_phase} phase — maintain adaptive consistency."
                     ),
                     "calc_method": seg["calc_method"].iloc[-1] if "calc_method" in seg else None,
-                    "calc_context": seg["calc_context"].iloc[-1] if "calc_context" in seg else None,
+                    "calc_context": (
+                        seg["calc_context"].iloc[-1]
+                        if "calc_context" in seg and not isinstance(seg["calc_context"].iloc[-1], list)
+                        else None
+                    ),
                 })
+
+            # 🔒 Mirror totals for easy debugging and validation
+            semantic["meta"]["phases_summary"] = {
+                "is_phase_block": True,
+                "phase_block_count": len(summaries),
+                "notes": "Macro-level sequential phase summary — validated and boundary-corrected.",
+            }
+
+            semantic["phases_summary"] = summaries
+
+            debug(
+                context,
+                f"[PHASES] ✅ Created {len(summaries)} macro phase blocks (merged unclassified weeks where needed)"
+            )
+
 
             # Save to semantic
             semantic["meta"]["phases_summary"] = {

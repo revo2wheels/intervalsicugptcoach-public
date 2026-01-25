@@ -15,8 +15,8 @@ class Report(dict):
 
 
 def render_template(report_type: str, framework: str, context: dict):
-    """Semantic-only renderer entrypoint — skips legacy Markdown paths entirely."""
-    debug(context, "[Renderer shim] Semantic-only mode: skipping render_unified_report")
+    """Semantic-only renderer entrypoint."""
+    debug(context, "[Renderer shim] Semantic-only mode")
 
     # Sanitize NumPy scalars and nested dicts for JSON serialization
     def _sanitize(obj):
