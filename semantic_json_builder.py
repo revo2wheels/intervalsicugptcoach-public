@@ -2287,7 +2287,8 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     - Use concise Markdown with emoji section headers.
     - Use Markdown tables for events, metrics, phases, and summaries.
     - Keep tone factual, neutral, and coach-like.
-    - No speculative language.
+    - No speculation beyond the provided semantic data.
+
 
     **Section Order:**
     {chr(10).join(manifest_lines)}
