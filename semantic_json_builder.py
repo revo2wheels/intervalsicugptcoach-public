@@ -2272,13 +2272,20 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     - You MAY express brief, section-local coaching interpretations that are
     directly supported by values, states, or interpretation fields present
     in the semantic JSON.
-    - Interpretations must be descriptive or conditional — NOT predictive.
+    - All interpretations MUST be descriptive or conditional — NOT predictive.
     - Do NOT summarise, collapse, or omit data.
     - You MAY render derived insight or interpretation fields already present
     in the semantic JSON.
     - Render exactly ONE report.
     - Do NOT add numeric prefixes to section headers.
     - Use emoji-based section headers only.
+    - You MAY include at most one short coaching sentence per section.
+    - This sentence MUST be directly anchored to values, states, or interpretation
+    fields within that section.
+    - The coaching sentence MUST appear immediately after the section’s data
+    and before the next divider.
+    - The coaching sentence MUST NOT introduce new metrics, comparisons,
+    cross-section synthesis, or forward-looking guidance.
 
     LIST RENDERING RULE (NON-NEGOTIABLE):
     - If a section value is a JSON array (list), you MUST:
