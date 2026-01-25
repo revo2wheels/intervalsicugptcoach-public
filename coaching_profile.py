@@ -121,7 +121,7 @@ REPORT_CONTRACT = {
         "meta", "hours", "tss", "distance_km",
         "metrics", "extended_metrics",
         "zones", "daily_load",
-        "wellness", "insights", "insight_view",
+        "wellness", "insights",
         "events", "actions",
         "planned_events", "planned_summary_by_date",
         "future_forecast"
@@ -133,7 +133,7 @@ REPORT_CONTRACT = {
         "adaptation_metrics", "trend_metrics",
         "phases", "phases_summary",
         "wbal_summary", "performance_summary",
-        "insights", "actions", "future_forecast"
+        "insights", "insights_view" "actions", "future_forecast"
     ],
 
     "summary": [

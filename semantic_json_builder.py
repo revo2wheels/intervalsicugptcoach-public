@@ -2018,6 +2018,33 @@ def build_semantic_json(context):
             semantic["phases"] = weekly_output
             debug(context, f"[PHASES] ✅ Cleaned weekly phase output ({len(weekly_output)} weeks)")
 
+            # ---------------------------------------------------------
+            # 📈 Season / Summary Trend Metrics (URF-canonical)
+            # MUST run AFTER final semantic["phases"] is built
+            # ---------------------------------------------------------
+            if report_type in ("season", "summary") and semantic.get("phases"):
+                df = pd.DataFrame(semantic["phases"])
+
+                def slope(series):
+                    s = pd.to_numeric(series, errors="coerce").dropna()
+                    if len(s) < 4:
+                        return "—"
+                    x = np.arange(len(s))
+                    return round(float(np.polyfit(x, s, 1)[0]), 3)
+
+                semantic["trend_metrics"] = {
+                    "load_trend": slope(df["tss"]),
+                    "fitness_trend": slope(df["ctl"]),
+                    "fatigue_trend": slope(df["atl"]),
+                }
+
+                debug(
+                    context,
+                    "[TREND] Derived from FINAL weekly phases → "
+                    f"{semantic['trend_metrics']}"
+                )
+
+
             # -----------------------------------------------------
             # Enforce output ordering (summary before phases)
             # -----------------------------------------------------
