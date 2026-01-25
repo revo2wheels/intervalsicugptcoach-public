@@ -2167,32 +2167,50 @@ def build_insight_view(semantic):
 def apply_report_type_contract(semantic: dict) -> dict:
     """
     Enforce report-type-specific semantic exposure (URF v5.1).
-    Filters top-level keys based on REPORT_CONTRACT in coaching_profile.py.
+
+    Responsibilities:
+    - Filter top-level semantic keys according to REPORT_CONTRACT
+    - Attach renderer instructions as DATA (not enforced here)
+
+    NOTE:
+    - renderer_instructions must be promoted to a system-role message
+      at the ChatGPT call site.
     """
     report_type = semantic.get("meta", {}).get("report_type", "weekly")
+
+    # --- Enrich meta with header + resolution
     semantic["meta"]["report_header"] = REPORT_HEADERS.get(report_type, {})
     semantic["meta"]["resolution"] = REPORT_RESOLUTION.get(report_type, {})
     semantic["header"] = semantic["meta"]["report_header"]
 
+    # --- Apply contract filtering
     allowed_keys = REPORT_CONTRACT.get(report_type, semantic.keys())
     filtered = {k: v for k, v in semantic.items() if k in allowed_keys}
-    filtered["system_prompt"] = build_system_prompt_from_header(
-        report_type, REPORT_HEADERS.get(report_type, {})
+
+    # --- Attach renderer instructions (DATA ONLY)
+    filtered["renderer_instructions"] = build_system_prompt_from_header(
+        report_type,
+        REPORT_HEADERS.get(report_type, {})
     )
 
-    # 🧠 Contract drift detection (optional)
+    # --- Optional contract drift detection
     unexpected = set(semantic.keys()) - set(allowed_keys)
     if unexpected:
         from audit_core.utils import debug
-        debug({}, f"[CONTRACT] ⚠️ Unexpected keys in '{report_type}' report: {unexpected}")
+        debug(
+            {},
+            f"[CONTRACT] ⚠️ Unexpected keys in '{report_type}' report: {unexpected}"
+        )
 
     return filtered
 
-
 def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     """
-    Dynamically build a system prompt for GPT rendering based on the URF v5.1 report contract.
-    Combines metadata (REPORT_HEADERS) + schema (REPORT_CONTRACT) for deterministic formatting.
+    Build deterministic renderer instructions for GPT based on the
+    URF v5.1 report contract.
+
+    This output is DATA ONLY and must be used as a system-role message
+    by the caller.
     """
     title = header.get("title", f"{report_type.title()} Report")
     scope = header.get("scope", "Training and wellness summary")
@@ -2201,39 +2219,48 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     contract_sections = REPORT_CONTRACT.get(report_type, [])
     contract_version = "URF v5.1"
 
-    # --- Format section manifest (e.g. "1️⃣ Athlete Profile", "2️⃣ Summary", etc.)
+    # --- Resolve section order
     if isinstance(contract_sections, dict):
         section_order = list(contract_sections.keys())
     else:
         section_order = contract_sections or ["Summary", "Metrics", "Actions"]
 
-    manifest_lines = []
-    for i, section in enumerate(section_order, start=1):
-        manifest_lines.append(f"{i}. {section}")
+    manifest_lines = [
+        f"{i}. {section}" for i, section in enumerate(section_order, start=1)
+    ]
 
-    # --- Construct final prompt text
     prompt = dedent(f"""
-    You are an AI endurance coach rendering a **{title}**.
+    You are a deterministic URF renderer.
+
+    You must render a **{title}** using the embedded system context.
     This report follows the **Unified Reporting Framework ({contract_version})**.
-    
+
     **Scope:** {scope}
     **Data Sources:** {sources}
     **Intended Use:** {intended}
 
-    Your task:
-    - Render all sections defined in the URF contract for this report type.
-    - Preserve the section order exactly as shown below.
-    - Do not omit or merge sections, even if data is missing.
-    - Use concise Markdown with emoji section headers (🧍, 📊, ⚙️, 💪, 🧠, 🗒️, 💤 etc.).
-    - For lists of activities, metrics, or phases, use Markdown tables.
-    - Keep tone factual, supportive, and coach-like.
-    - Target length: 600–900 words, readable on mobile.
+    HARD RULES:
+    - Treat the provided semantic JSON as canonical truth.
+    - Do NOT compute, infer, modify, or reinterpret metrics.
+    - Do NOT summarise or collapse sections.
+    - Do NOT omit sections, even if data is missing.
+    - Render exactly ONE report.
+
+    Rendering rules:
+    - Preserve section order exactly as defined below.
+    - Use concise Markdown with emoji section headers.
+    - Use Markdown tables for events, metrics, phases, and summaries.
+    - Keep tone factual, neutral, and coach-like.
+    - No speculative language.
 
     **Section Order:**
     {chr(10).join(manifest_lines)}
 
-    At the end, provide a short closing summary with recovery or adaptation recommendations.
+    End with a short, factual closing note on recovery or adaptation
+    based strictly on the provided data.
     """).strip()
 
     return prompt
+
+
 

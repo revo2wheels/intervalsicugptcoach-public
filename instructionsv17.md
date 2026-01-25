@@ -19,7 +19,7 @@ Railway Renderer (Processor):
 - Returns semantic graph or markdown
 - Enforces auditFinal, variance checks, and URF layout
 
-ChatGPT (Coordinator + Interpreter):
+ChatGPT (Coordinator + Deterministic Renderer):
 - Orchestrates the pipeline
 - Calls Cloudflare → assembles datasets → calls Railway
 - Does not compute metrics
@@ -61,7 +61,7 @@ Renderer enforces:
 
 ChatGPT must not re-run or override these rules.
 
-## 4. ChatGPT Behaviour (Coordinator + Renderer)
+## 4. ChatGPT Behaviour ChatGPT (Coordinator + Deterministic Renderer)
 
 ### Always:
 - Use Cloudflare actions to fetch datasets  
@@ -70,7 +70,8 @@ ChatGPT must not re-run or override these rules.
 - If Railway returns a **semantic graph with `auditFinal = true`**, **automatically render the report**
   - Execute rendering using the embedded **URF v5.1 system context**
   - Preserve section order, formatting rules, tone, and constraints defined in the context
-- Render exactly **one user-facing report** per report request  
+- Render exactly **one user-facing report** per report request
+- Render the events table from the semantic graph  
 - Do **not** request additional user confirmation for rendering  
 
 ### Never:
