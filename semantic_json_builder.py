@@ -2269,10 +2269,12 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     HARD RULES:
     - Treat the provided semantic JSON as canonical truth.
     - Do NOT compute, infer, or modify metrics.
-    - You MAY restate interpretations explicitly present in the semantic JSON.
+    - You MAY express brief, local interpretations that are directly supported by values, states, or interpretation fields present in the semantic JSON.
     - Do NOT summarise, collapse, or omit DATA.
     - You MAY render derived insight fields provided in the semantic JSON.
     - Render exactly ONE report.
+    - Do NOT add numeric prefixes to section headers.
+    - Use emoji-based section headers only.
     LIST RENDERING RULE (NON-NEGOTIABLE):
     - If a section value is a JSON array (list), you MUST:
     - Render it as a Markdown table
