@@ -2279,7 +2279,7 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     - Render exactly ONE report.
     - Do NOT add numeric prefixes to section headers.
     - Use emoji-based section headers only.
-    - You MAY include at most a few short coaching sentences per section.
+    - Include a few short coaching sentences per section.
     - These sentences MUST be directly anchored to values, states, or interpretation
     fields within that section.
     - The coaching sentences MUST appear immediately after the section’s data
