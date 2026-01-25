@@ -2272,7 +2272,6 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     - You MAY restate interpretations explicitly present in the semantic JSON.
     - Do NOT summarise, collapse, or omit DATA.
     - You MAY render derived insight fields provided in the semantic JSON.
-    - Do NOT omit sections, even if data is missing.
     - Render exactly ONE report.
     LIST RENDERING RULE (NON-NEGOTIABLE):
     - If a section value is a JSON array (list), you MUST:
@@ -2281,7 +2280,6 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     - Preserve one row per array element
     - You MUST NOT:
     - Summarise the list
-    - Highlight subsets ("key sessions")
     - Replace the list with prose
     - Omit rows for brevity
     Rendering rules:
