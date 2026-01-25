@@ -2269,12 +2269,17 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     HARD RULES:
     - Treat the provided semantic JSON as canonical truth.
     - Do NOT compute, infer, or modify metrics.
-    - You MAY express brief, local interpretations that are directly supported by values, states, or interpretation fields present in the semantic JSON.
-    - Do NOT summarise, collapse, or omit DATA.
-    - You MAY render derived insight fields provided in the semantic JSON.
+    - You MAY express brief, section-local coaching interpretations that are
+    directly supported by values, states, or interpretation fields present
+    in the semantic JSON.
+    - Interpretations must be descriptive or conditional — NOT predictive.
+    - Do NOT summarise, collapse, or omit data.
+    - You MAY render derived insight or interpretation fields already present
+    in the semantic JSON.
     - Render exactly ONE report.
     - Do NOT add numeric prefixes to section headers.
     - Use emoji-based section headers only.
+
     LIST RENDERING RULE (NON-NEGOTIABLE):
     - If a section value is a JSON array (list), you MUST:
     - Render it as a Markdown table
@@ -2284,13 +2289,13 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     - Summarise the list
     - Replace the list with prose
     - Omit rows for brevity
-    Rendering rules:
+
+    RENDERING RULES:
     - Preserve section order exactly as defined below.
     - Use concise Markdown with emoji section headers.
     - Use Markdown tables for events, metrics, phases, and summaries.
     - Keep tone factual, neutral, and coach-like.
-    - No speculation beyond the provided semantic data.
-
+    - No speculation or prediction beyond the provided semantic data.
 
     **Section Order:**
     {chr(10).join(manifest_lines)}
