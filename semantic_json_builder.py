@@ -1094,6 +1094,7 @@ def build_semantic_json(context):
         semantic["meta"]["events"] = {
             "is_event_block": True,
             "event_block_count": len(semantic["events"]),
+            "render": True,
             "notes": "Canonical activity/event block (URF v5.2) — intended for ChatGPT / structured UI rendering."
          }
 
