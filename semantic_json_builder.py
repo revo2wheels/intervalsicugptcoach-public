@@ -1295,18 +1295,23 @@ def build_semantic_json(context):
         else:
             debug(context, "[WEEKLY] ❌ No valid df_src found for weekly aggregation")
 
-    debug(
-        context,
-        f"[WEEKLY-TRACE] df_src rows={len(df_src)}, total distance={df_src['distance'].sum()/1000:.1f} km, "
-        f"hours={df_src['moving_time'].sum()/3600:.1f}, tss={df_src['icu_training_load'].sum():.0f}"
-    )
+    if "df_src" in locals() and isinstance(df_src, pd.DataFrame):
+        debug(
+            context,
+            f"[WEEKLY-TRACE] df_src rows={len(df_src)}, "
+            f"total distance={df_src['distance'].sum()/1000:.1f} km, "
+            f"hours={df_src['moving_time'].sum()/3600:.1f}, "
+            f"tss={df_src['icu_training_load'].sum():.0f}"
+        )
 
-    debug(
-        context,
-        f"[WEEKLY-TRACE] df_week rows={len(df_week)}, grouped distance={df_week['distance'].sum()/1000:.1f} km, "
-        f"hours={df_week['moving_time'].sum()/3600:.1f}, tss={df_week['icu_training_load'].sum():.0f}"
-    )
-
+    if "df_week" in locals() and isinstance(df_week, pd.DataFrame):
+        debug(
+            context,
+            f"[WEEKLY-TRACE] df_week rows={len(df_week)}, "
+            f"grouped distance={df_week['distance'].sum()/1000:.1f} km, "
+            f"hours={df_week['moving_time'].sum()/3600:.1f}, "
+            f"tss={df_week['icu_training_load'].sum():.0f}"
+        )
 
     # ---------------------------------------------------------
     # DERIVED EVENT SUMMARIES — W' Balance & Performance

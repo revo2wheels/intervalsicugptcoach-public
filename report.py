@@ -70,7 +70,7 @@ PREFETCH MODE (REMOTE)
   python report.py --range weekly --prefetch --staging (RAILWAY STAGING JSON) - this would get sent to GPT
   python report.py --range season --prefetch --gpt (RAILWAY JSON AND GPT MD)
   python report.py --range summary --start 2025-01-01 --end 2025-12-31 (LOCAL JSON)
-  python report.py --range weekly --prefetch --staging --owner clive --strava-test (this test strips activities to replicate STRAVA ONLY source and retruns friendly error msg)
+  python report.py --range weekly --prefetch --staging --owner xxxx --strava-test (this test strips activities to replicate STRAVA ONLY source and retruns friendly error msg)
 
 ───────────────────────────────────────────────
 🧠 NOTES
