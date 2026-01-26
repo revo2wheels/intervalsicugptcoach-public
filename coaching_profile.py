@@ -47,7 +47,7 @@ RENDERER_PROFILES = {
     },
 
     # ==============================================================
-    # Weekly report (FULL DETAIL)
+    # Weekly report (FULL DETAIL, SESSION-LEVEL)
     # ==============================================================
     "weekly": {
         "coaching_sentences": {
@@ -70,12 +70,13 @@ RENDERER_PROFILES = {
             "metrics": "full",
             "extended_metrics": "full",
             "zones": "full",
-            "wellness": "full"
+            "wellness": "full",
+            "phases": "forbid"
         }
     },
 
     # ==============================================================
-    # Season report (PHASE-LEVEL ONLY)
+    # Season report (PHASE-LEVEL, STRATEGIC)
     # ==============================================================
     "season": {
         "coaching_sentences": {
@@ -95,50 +96,50 @@ RENDERER_PROFILES = {
             "daily_load": "forbid",
             "weekly_phases": "forbid",
             "phases": "full",
-            "metrics": "summary",
+            "metrics": "full",
+            "extended_metrics": "full",
+            "zones": "summary",
             "wellness": "summary"
         }
     },
 
-    # ------------------------------------------------------------------
-    # Wellness report (PROD-aligned, signal-first)
-    # ------------------------------------------------------------------
+    # ==============================================================
+    # Wellness report (PROD-ALIGNED, SIGNAL-FIRST)
+    # ==============================================================
     "wellness": {
-
-        # 🧠 Coaching language is allowed and expected
         "coaching_sentences": {
             "enabled": True,
             "max_per_section": 4,
             "placement": "after_data"
         },
-
-        # 🔒 Interpretation boundaries
         "interpretation_rules": [
             "Interpret recovery using trends, means, and latest values together.",
             "Prioritise signal interpretation over raw time-series narration.",
             "Use HRV baseline deviation and trend direction as primary indicators.",
             "Avoid day-by-day narration when aggregates are present."
         ],
-
-        # ✅ What the renderer IS allowed to do (this is why PROD works)
         "allowed_enrichment": [
             "Summarise HRV behaviour using variability, peaks, troughs, and clustering.",
             "Explain recovery state using CTL, ATL, TSB in conjunction with HRV trend.",
             "Describe physiological meaning of HRV suppression vs baseline.",
             "Highlight missing subjective signals if present in semantic data."
         ],
-
-        # 🧱 SECTION HANDLING (THIS IS THE CRITICAL PART)
         "section_handling": {
             "wellness": "full",
             "hrv_daily": "summary",
             "insights": "full",
-            "insight_view": "full"
+            "insight_view": "full",
+            "events": "forbid",
+            "daily_load": "forbid",
+            "metrics": "forbid",
+            "extended_metrics": "forbid",
+            "zones": "forbid",
+            "phases": "forbid"
         }
     },
 
     # ==============================================================
-    # Summary report (EXECUTIVE VIEW)
+    # Summary report (EXECUTIVE)
     # ==============================================================
     "summary": {
         "coaching_sentences": {
@@ -157,11 +158,14 @@ RENDERER_PROFILES = {
             "events": "forbid",
             "daily_load": "forbid",
             "metrics": "summary",
+            "extended_metrics": "forbid",
+            "zones": "summary",
             "wellness": "summary",
             "phases": "summary"
         }
     }
 }
+
 
 
 
