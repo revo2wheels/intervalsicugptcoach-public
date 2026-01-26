@@ -100,27 +100,40 @@ RENDERER_PROFILES = {
         }
     },
 
-    # ==============================================================
-    # Wellness report (TREND-FOCUSED)
-    # ==============================================================
+    # ------------------------------------------------------------------
+    # Wellness report (PROD-aligned, signal-first)
+    # ------------------------------------------------------------------
     "wellness": {
+
+        # 🧠 Coaching language is allowed and expected
         "coaching_sentences": {
             "enabled": True,
-            "max_per_section": 3,
+            "max_per_section": 4,
             "placement": "after_data"
         },
+
+        # 🔒 Interpretation boundaries
         "interpretation_rules": [
-            "Prioritise trends, means, and latest values over daily series.",
-            "Avoid exhaustive daily listings when aggregates are present."
+            "Interpret recovery using trends, means, and latest values together.",
+            "Prioritise signal interpretation over raw time-series narration.",
+            "Use HRV baseline deviation and trend direction as primary indicators.",
+            "Avoid day-by-day narration when aggregates are present."
         ],
+
+        # ✅ What the renderer IS allowed to do (this is why PROD works)
         "allowed_enrichment": [
-            "Summarise HRV using mean, trend, and latest value when available."
+            "Summarise HRV behaviour using variability, peaks, troughs, and clustering.",
+            "Explain recovery state using CTL, ATL, TSB in conjunction with HRV trend.",
+            "Describe physiological meaning of HRV suppression vs baseline.",
+            "Highlight missing subjective signals if present in semantic data."
         ],
+
+        # 🧱 SECTION HANDLING (THIS IS THE CRITICAL PART)
         "section_handling": {
-            "hrv_daily": "summary",
             "wellness": "full",
-            "events": "forbid",
-            "daily_load": "forbid"
+            "hrv_daily": "summary",
+            "insights": "full",
+            "insight_view": "full"
         }
     },
 
