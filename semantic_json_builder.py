@@ -2306,9 +2306,16 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
         {chr(10).join(f"- {k}: {v}" for k, v in section_handling.items())}
 
         Handling meanings:
-        - full: render entire section (tables required for lists)
+        - full: render entire section exactly as provided
         - summary: summarise using existing semantic aggregates only
         - forbid: do NOT render this section
+
+        EVENTS (WEEKLY — NON-NEGOTIABLE):
+        - The events section MUST be rendered as a Markdown table.
+        - EVERY event in the semantic JSON MUST appear as exactly one row.
+        - The events section MUST NOT be summarised, renamed, grouped, or rewritten.
+        - Bullet points, highlights, or narrative descriptions of events are FORBIDDEN.
+        - Coaching sentences for events, if enabled, MUST appear AFTER the table.
         """).strip()
 
     # --------------------------------------------------
