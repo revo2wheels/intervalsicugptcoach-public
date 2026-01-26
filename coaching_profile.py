@@ -107,24 +107,30 @@ RENDERER_PROFILES = {
     # Wellness report (PROD-ALIGNED, SIGNAL-FIRST)
     # ==============================================================
     "wellness": {
+
         "coaching_sentences": {
             "enabled": True,
-            "max_per_section": 4,
+            "max_per_section": 5,
             "placement": "after_data"
         },
+
         "interpretation_rules": [
             "Interpret recovery using trends, means, and latest values together.",
-            "Prioritise signal interpretation over raw time-series narration.",
-            "Use HRV baseline deviation and trend direction as primary indicators.",
-            "Avoid day-by-day narration when aggregates are present."
+            "Explain HRV behaviour (variability, clustering, suppression) when present.",
+            "Integrate HRV with CTL, ATL, and TSB within the same section.",
+            "Avoid day-by-day narration when aggregates or trends exist."
         ],
+
         "allowed_enrichment": [
-            "Summarise HRV behaviour using variability, peaks, troughs, and clustering.",
-            "Explain recovery state using CTL, ATL, TSB in conjunction with HRV trend.",
-            "Describe physiological meaning of HRV suppression vs baseline.",
-            "Highlight missing subjective signals if present in semantic data."
+            "Summarise HRV behaviour using peaks, troughs, variability, and clustering.",
+            "Explain physiological meaning of HRV suppression vs personal baseline.",
+            "Describe maintenance-under-load states when CTL≈ATL and HRV is falling.",
+            "Highlight absence of subjective recovery data if present in semantic data.",
+            "Include short, non-predictive coach recommendations grounded in signals."
         ],
+
         "section_handling": {
+            "meta": "full",
             "wellness": "full",
             "hrv_daily": "summary",
             "insights": "full",
@@ -137,6 +143,7 @@ RENDERER_PROFILES = {
             "phases": "forbid"
         }
     },
+
 
     # ==============================================================
     # Summary report (EXECUTIVE)
