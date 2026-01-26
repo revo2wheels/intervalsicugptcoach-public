@@ -19,9 +19,9 @@ def get_profile_metrics(context):
 
 RENDERER_PROFILES = {
 
-    # ------------------------------------------------------------------
-    # Global rules (apply to all reports)
-    # ------------------------------------------------------------------
+    # ==============================================================
+    # Global rules (apply to ALL report types)
+    # ==============================================================
     "global": {
         "hard_rules": [
             "Treat the provided semantic JSON as canonical truth.",
@@ -36,8 +36,8 @@ RENDERER_PROFILES = {
             "If a section value is a JSON array (list), render it as a Markdown table.",
             "Render EVERY element in the array.",
             "Preserve one row per array element.",
-            "Do NOT summarise the list.",
-            "Do NOT replace lists with prose.",
+            "Do NOT summarise the list unless explicitly allowed by section handling.",
+            "Do NOT replace lists with prose unless explicitly allowed.",
             "Do NOT omit rows for brevity."
         ],
         "tone_rules": [
@@ -46,9 +46,9 @@ RENDERER_PROFILES = {
         ]
     },
 
-    # ------------------------------------------------------------------
-    # Weekly report
-    # ------------------------------------------------------------------
+    # ==============================================================
+    # Weekly report (FULL DETAIL)
+    # ==============================================================
     "weekly": {
         "coaching_sentences": {
             "enabled": True,
@@ -63,12 +63,20 @@ RENDERER_PROFILES = {
         "allowed_enrichment": [
             "Restate semantic interpretation fields.",
             "Explain what a value indicates within its known threshold or state."
-        ]
+        ],
+        "section_handling": {
+            "events": "full",
+            "daily_load": "full",
+            "metrics": "full",
+            "extended_metrics": "full",
+            "zones": "full",
+            "wellness": "full"
+        }
     },
 
-    # ------------------------------------------------------------------
-    # Season report
-    # ------------------------------------------------------------------
+    # ==============================================================
+    # Season report (PHASE-LEVEL ONLY)
+    # ==============================================================
     "season": {
         "coaching_sentences": {
             "enabled": True,
@@ -80,13 +88,21 @@ RENDERER_PROFILES = {
             "Avoid session-level or daily commentary."
         ],
         "allowed_enrichment": [
-            "Summarise phase descriptors already present in the semantic data."
-        ]
+            "Restate phase descriptors already present in semantic data."
+        ],
+        "section_handling": {
+            "events": "forbid",
+            "daily_load": "forbid",
+            "weekly_phases": "forbid",
+            "phases": "full",
+            "metrics": "summary",
+            "wellness": "summary"
+        }
     },
 
-    # ------------------------------------------------------------------
-    # Wellness report
-    # ------------------------------------------------------------------
+    # ==============================================================
+    # Wellness report (TREND-FOCUSED)
+    # ==============================================================
     "wellness": {
         "coaching_sentences": {
             "enabled": True,
@@ -95,16 +111,22 @@ RENDERER_PROFILES = {
         },
         "interpretation_rules": [
             "Prioritise trends, means, and latest values over daily series.",
-            "Daily HRV tables may be summarised when trend and mean are present."
+            "Avoid exhaustive daily listings when aggregates are present."
         ],
         "allowed_enrichment": [
-            "Summarise HRV daily series using mean, trend, and latest value when available."
-        ]
+            "Summarise HRV using mean, trend, and latest value when available."
+        ],
+        "section_handling": {
+            "hrv_daily": "summary",
+            "wellness": "full",
+            "events": "forbid",
+            "daily_load": "forbid"
+        }
     },
 
-    # ------------------------------------------------------------------
-    # Summary report
-    # ------------------------------------------------------------------
+    # ==============================================================
+    # Summary report (EXECUTIVE VIEW)
+    # ==============================================================
     "summary": {
         "coaching_sentences": {
             "enabled": True,
@@ -117,9 +139,18 @@ RENDERER_PROFILES = {
         ],
         "allowed_enrichment": [
             "Restate high-level trends explicitly present in semantic data."
-        ]
+        ],
+        "section_handling": {
+            "events": "forbid",
+            "daily_load": "forbid",
+            "metrics": "summary",
+            "wellness": "summary",
+            "phases": "summary"
+        }
     }
 }
+
+
 
 
 

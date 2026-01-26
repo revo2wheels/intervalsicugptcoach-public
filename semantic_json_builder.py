@@ -2257,9 +2257,7 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     else:
         section_order = contract_sections or ["Summary", "Metrics", "Actions"]
 
-    manifest_lines = [
-        f"{i}. {section}" for i, section in enumerate(section_order, start=1)
-    ]
+    manifest_lines = [f"{i}. {section}" for i, section in enumerate(section_order, start=1)]
 
     # --------------------------------------------------
     # Resolve renderer profiles
@@ -2278,8 +2276,10 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     coaching_enabled = coaching_cfg.get("enabled", False)
     coaching_max = coaching_cfg.get("max_per_section", 0)
 
+    section_handling = report_profile.get("section_handling", {})
+
     # --------------------------------------------------
-    # Optional coaching interpretation block
+    # Optional blocks
     # --------------------------------------------------
     coaching_block = ""
     if coaching_enabled and coaching_max > 0:
@@ -2292,9 +2292,6 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
         - Coaching sentences MUST NOT introduce new metrics, thresholds, comparisons, or cross-section synthesis.
         """).strip()
 
-    # --------------------------------------------------
-    # Optional enrichment block
-    # --------------------------------------------------
     enrichment_block = ""
     if allowed_enrichment:
         enrichment_block = dedent(f"""
@@ -2302,8 +2299,20 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
         {chr(10).join(f"- {r}" for r in allowed_enrichment)}
         """).strip()
 
+    section_handling_block = ""
+    if section_handling:
+        section_handling_block = dedent(f"""
+        SECTION HANDLING RULES:
+        {chr(10).join(f"- {k}: {v}" for k, v in section_handling.items())}
+
+        Handling meanings:
+        - full: render entire section (tables required for lists)
+        - summary: summarise using existing semantic aggregates only
+        - forbid: do NOT render this section
+        """).strip()
+
     # --------------------------------------------------
-    # Assemble final renderer instructions
+    # Assemble final prompt
     # --------------------------------------------------
     prompt = dedent(f"""
     You are a deterministic URF renderer.
@@ -2325,6 +2334,8 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
 
     {enrichment_block}
 
+    {section_handling_block}
+
     LIST RENDERING RULES (NON-NEGOTIABLE):
     {chr(10).join(f"- {r}" for r in list_rules)}
 
@@ -2339,6 +2350,7 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     """).strip()
 
     return prompt
+
 
 
 
