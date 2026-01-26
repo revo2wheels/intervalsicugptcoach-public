@@ -2239,6 +2239,9 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     This output is DATA ONLY and must be used as a system-role message
     by the caller.
     """
+    from coaching_profile import RENDERER_PROFILES
+    from textwrap import dedent
+
     title = header.get("title", f"{report_type.title()} Report")
     scope = header.get("scope", "Training and wellness summary")
     sources = header.get("data_sources", "Intervals.icu activity and wellness datasets")
@@ -2246,7 +2249,9 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     contract_sections = REPORT_CONTRACT.get(report_type, [])
     contract_version = "URF v5.1"
 
-    # --- Resolve section order
+    # --------------------------------------------------
+    # Resolve section order from contract
+    # --------------------------------------------------
     if isinstance(contract_sections, dict):
         section_order = list(contract_sections.keys())
     else:
@@ -2256,6 +2261,50 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
         f"{i}. {section}" for i, section in enumerate(section_order, start=1)
     ]
 
+    # --------------------------------------------------
+    # Resolve renderer profiles
+    # --------------------------------------------------
+    global_profile = RENDERER_PROFILES.get("global", {})
+    report_profile = RENDERER_PROFILES.get(report_type, {})
+
+    hard_rules = global_profile.get("hard_rules", [])
+    list_rules = global_profile.get("list_rules", [])
+    tone_rules = global_profile.get("tone_rules", [])
+
+    interpretation_rules = report_profile.get("interpretation_rules", [])
+    allowed_enrichment = report_profile.get("allowed_enrichment", [])
+
+    coaching_cfg = report_profile.get("coaching_sentences", {})
+    coaching_enabled = coaching_cfg.get("enabled", False)
+    coaching_max = coaching_cfg.get("max_per_section", 0)
+
+    # --------------------------------------------------
+    # Optional coaching interpretation block
+    # --------------------------------------------------
+    coaching_block = ""
+    if coaching_enabled and coaching_max > 0:
+        coaching_block = dedent(f"""
+        COACHING INTERPRETATION RULES:
+        - You MAY include up to {coaching_max} short coaching sentence(s) per section.
+        - Coaching sentences MUST be directly anchored to values, states, or interpretation fields in that section.
+        - Coaching sentences MUST be descriptive or conditional, not predictive.
+        - Coaching sentences MUST appear immediately after the section’s data and before the next divider.
+        - Coaching sentences MUST NOT introduce new metrics, thresholds, comparisons, or cross-section synthesis.
+        """).strip()
+
+    # --------------------------------------------------
+    # Optional enrichment block
+    # --------------------------------------------------
+    enrichment_block = ""
+    if allowed_enrichment:
+        enrichment_block = dedent(f"""
+        ALLOWED ENRICHMENT:
+        {chr(10).join(f"- {r}" for r in allowed_enrichment)}
+        """).strip()
+
+    # --------------------------------------------------
+    # Assemble final renderer instructions
+    # --------------------------------------------------
     prompt = dedent(f"""
     You are a deterministic URF renderer.
 
@@ -2267,44 +2316,22 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     **Intended Use:** {intended}
 
     HARD RULES:
-    - Treat the provided semantic JSON as canonical truth.
-    - Do NOT compute, infer, or modify metrics.
-    - You MAY express brief, section-local coaching interpretations that are
-    directly supported by values, states, or interpretation fields present
-    in the semantic JSON.
-    - All interpretations MUST be descriptive or conditional — NOT predictive.
-    - Do NOT summarise, collapse, or omit data.
-    - You MAY render derived insight or interpretation fields already present
-    in the semantic JSON.
-    - Render exactly ONE report.
-    - Do NOT add numeric prefixes to section headers.
-    - Use emoji-based section headers only.
-    - Include a few short coaching sentences per section.
-    - These sentences MUST be directly anchored to values, states, or interpretation
-    fields within that section.
-    - The coaching sentences MUST appear immediately after the section’s data
-    and before the next divider.
-    - The coaching sentences MUST NOT introduce new metrics, comparisons,
-    cross-section synthesis, or forward-looking guidance.
+    {chr(10).join(f"- {r}" for r in hard_rules)}
 
-    LIST RENDERING RULE (NON-NEGOTIABLE):
-    - If a section value is a JSON array (list), you MUST:
-    - Render it as a Markdown table
-    - Render EVERY element in the array
-    - Preserve one row per array element
-    - You MUST NOT:
-    - Summarise the list
-    - Replace the list with prose
-    - Omit rows for brevity
+    INTERPRETATION RULES:
+    {chr(10).join(f"- {r}" for r in interpretation_rules)}
 
-    RENDERING RULES:
-    - Preserve section order exactly as defined below.
-    - Use concise Markdown with emoji section headers.
-    - Use Markdown tables for events, metrics, phases, and summaries.
-    - Keep tone factual, neutral, and coach-like.
-    - No speculation or prediction beyond the provided semantic data.
+    {coaching_block}
 
-    **Section Order:**
+    {enrichment_block}
+
+    LIST RENDERING RULES (NON-NEGOTIABLE):
+    {chr(10).join(f"- {r}" for r in list_rules)}
+
+    TONE AND STYLE:
+    {chr(10).join(f"- {r}" for r in tone_rules)}
+
+    SECTION ORDER (INSTRUCTIONAL — DO NOT NUMBER HEADERS):
     {chr(10).join(manifest_lines)}
 
     End with a short, factual closing note on recovery or adaptation
@@ -2312,6 +2339,7 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     """).strip()
 
     return prompt
+
 
 
 

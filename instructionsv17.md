@@ -82,7 +82,25 @@ ChatGPT must not re-run or override these rules.
 - Recompute, transform, or reinterpret semantic values  
 - Modify, merge, or drop event or planned-event data  
 
-## 5. Architecture Summary Flow
+## 5. CHAT MESSAGE
+When forwarding a report to Intervals chat:
+
+1. The report content is already final and must not be modified.
+2. Require exactly ONE routing field:
+   - chat_id
+   - to_athlete_id
+   - to_activity_id
+3. If zero or more than one routing field is provided, do not call any tool.
+   Ask the user to provide exactly one destination.
+4. When exactly one routing field is available, call sendChatMessageV1
+   with only:
+   - the selected routing field
+   - content = the full rendered report text
+5. Do not rely on prior chat messages for context.
+6. Do not add metadata, headers, or summaries.
+
+
+## 6. Architecture Summary Flow
 
 User → GPT → Cloudflare Action → Intervals API
                              ↓

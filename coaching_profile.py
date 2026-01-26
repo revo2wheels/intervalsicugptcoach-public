@@ -17,6 +17,112 @@ def get_profile_metrics(context):
 
 # coaching_profile.py
 
+RENDERER_PROFILES = {
+
+    # ------------------------------------------------------------------
+    # Global rules (apply to all reports)
+    # ------------------------------------------------------------------
+    "global": {
+        "hard_rules": [
+            "Treat the provided semantic JSON as canonical truth.",
+            "Do NOT compute, infer, or modify metrics.",
+            "Do NOT introduce new metrics, thresholds, or comparisons.",
+            "Render exactly ONE report.",
+            "Do NOT add numeric prefixes to section headers.",
+            "Use emoji-based section headers only.",
+            "Preserve section order exactly as defined by the contract."
+        ],
+        "list_rules": [
+            "If a section value is a JSON array (list), render it as a Markdown table.",
+            "Render EVERY element in the array.",
+            "Preserve one row per array element.",
+            "Do NOT summarise the list.",
+            "Do NOT replace lists with prose.",
+            "Do NOT omit rows for brevity."
+        ],
+        "tone_rules": [
+            "Keep tone factual, neutral, and coach-like.",
+            "No speculation or prediction beyond the provided semantic data."
+        ]
+    },
+
+    # ------------------------------------------------------------------
+    # Weekly report
+    # ------------------------------------------------------------------
+    "weekly": {
+        "coaching_sentences": {
+            "enabled": True,
+            "max_per_section": 3,
+            "placement": "after_data"
+        },
+        "interpretation_rules": [
+            "Interpretations must be directly anchored to values, states, or interpretation fields.",
+            "Interpretations may be descriptive or conditional, not predictive.",
+            "No cross-section synthesis."
+        ],
+        "allowed_enrichment": [
+            "Restate semantic interpretation fields.",
+            "Explain what a value indicates within its known threshold or state."
+        ]
+    },
+
+    # ------------------------------------------------------------------
+    # Season report
+    # ------------------------------------------------------------------
+    "season": {
+        "coaching_sentences": {
+            "enabled": True,
+            "max_per_section": 3,
+            "placement": "after_data"
+        },
+        "interpretation_rules": [
+            "Focus on trends, phases, and accumulated load.",
+            "Avoid session-level or daily commentary."
+        ],
+        "allowed_enrichment": [
+            "Summarise phase descriptors already present in the semantic data."
+        ]
+    },
+
+    # ------------------------------------------------------------------
+    # Wellness report
+    # ------------------------------------------------------------------
+    "wellness": {
+        "coaching_sentences": {
+            "enabled": True,
+            "max_per_section": 3,
+            "placement": "after_data"
+        },
+        "interpretation_rules": [
+            "Prioritise trends, means, and latest values over daily series.",
+            "Daily HRV tables may be summarised when trend and mean are present."
+        ],
+        "allowed_enrichment": [
+            "Summarise HRV daily series using mean, trend, and latest value when available."
+        ]
+    },
+
+    # ------------------------------------------------------------------
+    # Summary report
+    # ------------------------------------------------------------------
+    "summary": {
+        "coaching_sentences": {
+            "enabled": True,
+            "max_per_section": 3,
+            "placement": "after_data"
+        },
+        "interpretation_rules": [
+            "High-level descriptive interpretation only.",
+            "Avoid granular metrics or micro-coaching."
+        ],
+        "allowed_enrichment": [
+            "Restate high-level trends explicitly present in semantic data."
+        ]
+    }
+}
+
+
+
 REPORT_RESOLUTION = {
     "weekly": {
         "CTL": "authoritative",
