@@ -28,7 +28,7 @@ Includes (URF v5.1 Canonical Layout):
 """
 
 
-import json
+import json, math
 from datetime import datetime, date, timezone
 import pandas as pd
 from math import isnan
@@ -786,6 +786,28 @@ def build_semantic_json(context):
         k: handle_missing_data(v, None)
         for k, v in context.get("wellness_summary", {}).items()
     }
+
+    # ---------------------------------------------------------
+    # 🧹 Inject DAILY wellness fields (wellness report only)
+    # ---------------------------------------------------------
+    if (
+        context.get("report_type") == "wellness"
+        and "wellness_daily" in context
+        and context["wellness_daily"]
+    ):
+        cleaned_daily = []
+
+        for row in context["wellness_daily"]:
+            cleaned = {
+                k: v
+                for k, v in row.items()
+                if v is not None
+                and not (isinstance(v, float) and math.isnan(v))
+            }
+            if cleaned:
+                cleaned_daily.append(cleaned)
+
+        semantic["wellness"]["daily"] = cleaned_daily
 
     # 🩵 Inject HRV summary & 42-day series
     if "df_wellness" in context and not getattr(context["df_wellness"], "empty", True):

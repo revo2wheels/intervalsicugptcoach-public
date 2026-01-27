@@ -943,6 +943,21 @@ def run_report(
         debug(context, f"[CHECKPOINT] zone_dist_power exists: {bool(context.get('zone_dist_power'))}")
         debug(context, f"[CHECKPOINT] zone_dist_fused exists: {bool(context.get('zone_dist_fused'))}")
 
+        # ============================================================
+        # 🔓 EXPOSE FULL WELLNESS DATA (existence-based policy)
+        # ============================================================
+        dfw = context.get("df_wellness")
+
+        if dfw is not None:
+            try:
+                # Expose full daily wellness records
+                context["wellness_daily"] = (
+                    dfw
+                    .dropna(how="all")
+                    .to_dict(orient="records")
+                )
+            except Exception as e:
+                debug(context, f"[WELLNESS-EXPOSE] failed: {e}")
 
         semantic_output = build_semantic_json(context)  # Ensure semantic_output is generated
 
