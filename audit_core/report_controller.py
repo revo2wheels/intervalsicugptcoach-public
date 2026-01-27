@@ -392,6 +392,33 @@ def run_report(
     debug(context, f"[T0] Completed range alignment → chunk_mode={chunk}")
         
 
+    # ============================================================
+    # 🔒 FIX: Promote SEASON / SUMMARY light-range to controller window
+    # ============================================================
+    if context.get("report_type") in ("season", "summary"):
+        df_light = context.get("df_light")
+
+        if isinstance(df_light, pd.DataFrame) and not df_light.empty:
+            # Use light dataset as authoritative window
+            date_col = (
+                "start_date_local"
+                if "start_date_local" in df_light.columns
+                else "date"
+                if "date" in df_light.columns
+                else None
+            )
+
+            if date_col:
+                context["window_start"] = pd.to_datetime(df_light[date_col]).min()
+                context["window_end"] = pd.to_datetime(df_light[date_col]).max()
+
+                debug(
+                    context,
+                    f"[CONTROLLER-FIX] window promoted from df_light → "
+                    f"{context['window_start'].date()} → {context['window_end'].date()}"
+                )
+
+
     # --- Merge static knowledge base ---
     from athlete_profile import ATHLETE_PROFILE
     from coaching_profile import COACH_PROFILE

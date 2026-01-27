@@ -745,19 +745,43 @@ def build_semantic_json(context):
     # --- Fallback: preserved df_scope_full (Railway safe)
     if df_ref is None and "_df_scope_full" in context and isinstance(context["_df_scope_full"], pd.DataFrame):
         df_ref = context["_df_scope_full"]
-
+    
     # --- Compute report period from reference dataset ---
-    if isinstance(df_ref, pd.DataFrame) and not df_ref.empty:
-        date_col = "date" if "date" in df_ref.columns else "start_date_local" if "start_date_local" in df_ref.columns else df_ref.columns[0]
+    if report_type in ("season", "summary") and context.get("window_start") and context.get("window_end"):
+        # 🔒 Controller-defined window is authoritative
+        context["period"] = {
+            "start": pd.to_datetime(context["window_start"]).strftime("%Y-%m-%d"),
+            "end": pd.to_datetime(context["window_end"]).strftime("%Y-%m-%d"),
+        }
+        debug(
+            context,
+            f"[SEMANTIC] Preserved controller window for {report_type} → "
+            f"{context['period']['start']} → {context['period']['end']}"
+        )
+
+    elif isinstance(df_ref, pd.DataFrame) and not df_ref.empty:
+        date_col = (
+            "date"
+            if "date" in df_ref.columns
+            else "start_date_local"
+            if "start_date_local" in df_ref.columns
+            else df_ref.columns[0]
+        )
         start_date = pd.to_datetime(df_ref[date_col], errors="coerce").min().strftime("%Y-%m-%d")
         end_date = pd.to_datetime(df_ref[date_col], errors="coerce").max().strftime("%Y-%m-%d")
         context["period"] = {"start": start_date, "end": end_date}
-        debug(context, f"[SEMANTIC-FIX] Derived period from {report_type} dataset → {start_date} → {end_date}")
+        debug(context, f"[SEMANTIC] Derived period from {report_type} dataset → {start_date} → {end_date}")
+
     else:
         start_date = datetime.now() - timedelta(days=7)
         end_date = datetime.now()
-        context["period"] = {"start": start_date.strftime("%Y-%m-%d"), "end": end_date.strftime("%Y-%m-%d")}
-        debug(context, "[SEMANTIC-FIX] Could not derive period — defaulted to last 7 days")
+        context["period"] = {
+            "start": start_date.strftime("%Y-%m-%d"),
+            "end": end_date.strftime("%Y-%m-%d"),
+        }
+        debug(context, "[SEMANTIC] Defaulted weekly period to last 7 days")
+
+
 
     # --- Enrich meta block from authoritative REPORT_HEADERS ---
     semantic.setdefault("meta", {})
