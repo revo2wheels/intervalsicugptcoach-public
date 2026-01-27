@@ -294,15 +294,14 @@ REPORT_CONTRACT = {
         "adaptation_metrics", "trend_metrics",
         "phases", "phases_summary",
         "wbal_summary", "performance_summary",
-        "insights", "insights_view" "actions", "future_forecast"
+        "insights", "actions", "future_forecast"
     ],
 
     "summary": [
         "meta", "hours", "tss", "distance_km",
-        "wellness", "insights", "insight_view",
+        "wellness", "insights",
         "phases", "phases_summary",
-        "wbal_summary", "performance_summary",
-        "actions"
+        "wbal_summary", "performance_summary"
     ],
 
     "wellness": [
