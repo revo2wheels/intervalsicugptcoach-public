@@ -25,8 +25,7 @@ RENDERER_PROFILES = {
     "global": {
         "hard_rules": [
             "Treat the provided semantic JSON as canonical truth.",
-            "Do NOT compute, infer, or modify metrics.",
-            "Do NOT introduce new metrics, thresholds, or comparisons.",
+            "Do NOT modify metrics.",
             "Render exactly ONE report.",
             "Do NOT add numeric prefixes to section headers.",
             "Use emoji-based section headers only.",
@@ -41,8 +40,8 @@ RENDERER_PROFILES = {
             "Do NOT omit rows for brevity."
         ],
         "tone_rules": [
-            "Keep tone factual, neutral, and coach-like.",
-            "No speculation or prediction beyond the provided semantic data."
+            "Keep tone factual, supportive, neutral, and coach-like.",
+            "No speculation beyond the provided semantic data."
         ]
     },
 
@@ -58,7 +57,6 @@ RENDERER_PROFILES = {
         "interpretation_rules": [
             "Interpretations must be directly anchored to values, states, or interpretation fields.",
             "Interpretations may be descriptive or conditional, not predictive.",
-            "No cross-section synthesis."
         ],
         "allowed_enrichment": [
             "Restate semantic interpretation fields.",
@@ -126,7 +124,8 @@ RENDERER_PROFILES = {
             "Explain physiological meaning of HRV suppression vs personal baseline.",
             "Describe maintenance-under-load states when CTL≈ATL and HRV is falling.",
             "Highlight absence of subjective recovery data if present in semantic data.",
-            "Include short, non-predictive coach recommendations grounded in signals."
+            "Include short, non-predictive coach recommendations grounded in signals.",
+            "include sleep and RHR Analysis if available"
         ],
 
         "section_handling": {
