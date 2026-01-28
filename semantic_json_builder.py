@@ -1365,7 +1365,7 @@ def build_semantic_json(context):
     # ---------------------------------------------------------
 
     report_type = semantic["meta"]["report_type"]
-    
+
     # =========================================================
     # WEEKLY → per-session mean (robust to mixed sports)
     # =========================================================
@@ -1403,7 +1403,7 @@ def build_semantic_json(context):
     # SEASON / SUMMARY → weekly peak session model (UNCHANGED)
     # =========================================================
     elif report_type in ("season", "summary"):
-        df = context.get("df_light_slice")
+        df = context.get("df_light")
 
         if (
             isinstance(df, pd.DataFrame)
@@ -1419,6 +1419,16 @@ def build_semantic_json(context):
             df["start_date_local"] = pd.to_datetime(df["start_date_local"], errors="coerce")
             df = df.dropna(subset=["start_date_local"])
 
+            # 🔑 FILTER TO WBAL-CAPABLE SESSIONS (this is the missing piece)
+            df = df[
+                df["icu_pm_w_prime"].notna()
+                & df["icu_max_wbal_depletion"].notna()
+                & df["icu_joules_above_ftp"].notna()
+            ]
+
+            if df.empty:
+                return  # or just skip silently
+
             iso = df["start_date_local"].dt.isocalendar()
             df["year_week"] = iso["year"].astype(str) + "-W" + iso["week"].astype(str)
 
@@ -1426,7 +1436,6 @@ def build_semantic_json(context):
                 df["wbal_pct"] = df["icu_max_wbal_depletion"] / df["icu_pm_w_prime"]
                 df["anaerobic_pct"] = df["icu_joules_above_ftp"] / df["icu_pm_w_prime"]
 
-            # 🔑 hardest anaerobic session per week
             weekly = (
                 df.sort_values("wbal_pct", ascending=False)
                 .groupby("year_week", as_index=False)
@@ -1440,12 +1449,6 @@ def build_semantic_json(context):
                 "basis": "weekly peak session",
                 "window": "per-week max over season",
             }
-
-            debug(
-                context,
-                f"[WBAL] Season/summary weekly peaks={len(weekly)} "
-                f"mean_depletion={semantic['wbal_summary']['mean_wbal_depletion_pct']}"
-            )
 
 
     # =========================================================
