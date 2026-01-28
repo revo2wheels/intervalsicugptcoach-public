@@ -280,7 +280,7 @@ REPORT_CONTRACT = {
     "weekly": [
         "meta", "hours", "tss", "distance_km",
         "metrics", "extended_metrics",
-        "zones", "daily_load", "events",
+        "zones", "daily_load", "events", "wbal_summary",
         "wellness", "insights", "insight_view", "actions",
         "planned_events", "planned_summary_by_date",
         "future_forecast"

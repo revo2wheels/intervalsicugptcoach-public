@@ -1363,27 +1363,102 @@ def build_semantic_json(context):
     # ---------------------------------------------------------
     # DERIVED EVENT SUMMARIES — W' Balance & Performance
     # ---------------------------------------------------------
-    df_ev = pd.DataFrame(semantic["events"])
-    if not df_ev.empty:
-        # --- W' (Wbal) summaries ---
-        if {"icu_pm_w_prime", "icu_max_wbal_depletion", "icu_joules_above_ftp"} <= set(df_ev.columns):
+
+    report_type = semantic["meta"]["report_type"]
+    
+    # =========================================================
+    # WEEKLY → per-session mean (robust to mixed sports)
+    # =========================================================
+    if semantic["meta"]["report_type"] == "weekly":
+        df_ev = df_events.copy()
+
+        if {
+            "icu_pm_w_prime",
+            "icu_max_wbal_depletion",
+            "icu_joules_above_ftp",
+        } <= set(df_ev.columns):
+
+            df_ev = df_ev[
+                df_ev["icu_pm_w_prime"].notna()
+                & df_ev["icu_max_wbal_depletion"].notna()
+                & df_ev["icu_joules_above_ftp"].notna()
+            ]
+
+            if not df_ev.empty:
+                with np.errstate(divide="ignore", invalid="ignore"):
+                    wbal_pct = df_ev["icu_max_wbal_depletion"] / df_ev["icu_pm_w_prime"]
+                    anaerobic_pct = df_ev["icu_joules_above_ftp"] / df_ev["icu_pm_w_prime"]
+
+                semantic["wbal_summary"] = {
+                    "mean_wbal_depletion_pct": round(float(wbal_pct.mean()), 3),
+                    "mean_anaerobic_contrib_pct": round(float(anaerobic_pct.mean()), 3),
+                    "sessions_with_wbal_data": int(len(df_ev)),
+                    "basis": "per-session mean (W′-capable sessions only)",
+                    "window": "weekly",
+                }
+
+
+
+    # =========================================================
+    # SEASON / SUMMARY → weekly peak session model (UNCHANGED)
+    # =========================================================
+    elif report_type in ("season", "summary"):
+        df = context.get("df_light_slice")
+
+        if (
+            isinstance(df, pd.DataFrame)
+            and not df.empty
+            and {
+                "start_date_local",
+                "icu_pm_w_prime",
+                "icu_max_wbal_depletion",
+                "icu_joules_above_ftp",
+            } <= set(df.columns)
+        ):
+            df = df.copy()
+            df["start_date_local"] = pd.to_datetime(df["start_date_local"], errors="coerce")
+            df = df.dropna(subset=["start_date_local"])
+
+            iso = df["start_date_local"].dt.isocalendar()
+            df["year_week"] = iso["year"].astype(str) + "-W" + iso["week"].astype(str)
+
             with np.errstate(divide="ignore", invalid="ignore"):
-                wbal_pct = df_ev["icu_max_wbal_depletion"] / df_ev["icu_pm_w_prime"]
-                anaerobic_pct = df_ev["icu_joules_above_ftp"] / df_ev["icu_pm_w_prime"]
+                df["wbal_pct"] = df["icu_max_wbal_depletion"] / df["icu_pm_w_prime"]
+                df["anaerobic_pct"] = df["icu_joules_above_ftp"] / df["icu_pm_w_prime"]
+
+            # 🔑 hardest anaerobic session per week
+            weekly = (
+                df.sort_values("wbal_pct", ascending=False)
+                .groupby("year_week", as_index=False)
+                .first()
+            )
 
             semantic["wbal_summary"] = {
-                "mean_wbal_depletion_pct": round(float(wbal_pct.mean(skipna=True) or 0), 3),
-                "mean_anaerobic_contrib_pct": round(float(anaerobic_pct.mean(skipna=True) or 0), 3),
-                "sessions_with_wbal_data": int(df_ev["icu_max_wbal_depletion"].notna().sum()),
+                "mean_wbal_depletion_pct": round(float(weekly["wbal_pct"].mean()), 3),
+                "mean_anaerobic_contrib_pct": round(float(weekly["anaerobic_pct"].mean()), 3),
+                "weeks_with_wbal_data": int(len(weekly)),
+                "basis": "weekly peak session",
+                "window": "per-week max over season",
             }
 
-        # --- General performance summaries ---
+            debug(
+                context,
+                f"[WBAL] Season/summary weekly peaks={len(weekly)} "
+                f"mean_depletion={semantic['wbal_summary']['mean_wbal_depletion_pct']}"
+            )
+
+
+    # =========================================================
+    # GENERAL PERFORMANCE SUMMARIES (unchanged)
+    # =========================================================
+    df_ev = pd.DataFrame(semantic["events"])
+    if not df_ev.empty:
         perf_fields = {
             "IF": "mean_IF",
             "icu_intensity": "mean_intensity",
             "icu_efficiency_factor": "mean_efficiency_factor",
             "decoupling": "mean_decoupling",
-            "icu_power_hr": "mean_power_hr_ratio"
+            "icu_power_hr": "mean_power_hr_ratio",
         }
 
         perf_summary = {}
@@ -1391,19 +1466,14 @@ def build_semantic_json(context):
             if in_name in df_ev.columns:
                 debug(context, f"[SEMANTIC-SUMMARY] Computing mean for {in_name}, dtype={df_ev[in_name].dtype}")
                 try:
-                    # ✅ Safely coerce to numeric (ignore strings)
                     val_series = pd.to_numeric(df_ev[in_name], errors="coerce")
-                    mean_val = float(val_series.mean(skipna=True) or 0)
-                    perf_summary[out_name] = round(mean_val, 3)
+                    perf_summary[out_name] = round(float(val_series.mean(skipna=True) or 0), 3)
                 except Exception as e:
                     debug(context, f"[SEMANTIC-SUMMARY] Skipped {in_name}: {e}")
                     perf_summary[out_name] = 0
 
-
-                if perf_summary:
-                    semantic["performance_summary"] = perf_summary
-
-    
+        if perf_summary:
+            semantic["performance_summary"] = perf_summary
 
     # ---------------------------------------------------------
     # 🗓️ PLANNED EVENTS — Grouped by Date (Calendar Context)

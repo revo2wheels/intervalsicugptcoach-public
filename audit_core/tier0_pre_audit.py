@@ -233,7 +233,7 @@ def fetch_activities_chunked(
                     acts_url = (
                         f"{INTERVALS_API}/athlete/{athlete_id}/activities_t0light?"
                         f"oldest={chunk_start:%Y-%m-%d}&newest={chunk_end:%Y-%m-%d}"
-                        "&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,icu_atl,icu_ctl,IF,average_heartrate,VO2MaxGarmin,HRTLNDLT1"
+                        "&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,icu_atl,icu_ctl,IF,average_heartrate,VO2MaxGarmin,HRTLNDLT1,icu_pm_w_prime,icu_max_wbal_depletion,icu_joules_above_ftp,"
                     )
                 else:
                     acts_url = (
@@ -560,7 +560,7 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         context["prefetch_done"] = True
 
         fields = (
-            "id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,icu_atl,icu_ctl,IF,average_heartrate,VO2MaxGarmin,HRTLNDLT1"
+            "&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,icu_atl,icu_ctl,IF,average_heartrate,VO2MaxGarmin,HRTLNDLT1,icu_pm_w_prime,icu_max_wbal_depletion,icu_joules_above_ftp,"
         )
 
         # 🔧 Determine baseline range (default: from controller start/end)
