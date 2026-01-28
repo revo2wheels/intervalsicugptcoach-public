@@ -51,7 +51,7 @@ RENDERER_PROFILES = {
     "weekly": {
         "coaching_sentences": {
             "enabled": True,
-            "max_per_section": 3,
+            "max_per_section": 5,
             "placement": "after_data"
         },
         "interpretation_rules": [
@@ -79,7 +79,7 @@ RENDERER_PROFILES = {
     "season": {
         "coaching_sentences": {
             "enabled": True,
-            "max_per_section": 3,
+            "max_per_section": 5,
             "placement": "after_data"
         },
         "interpretation_rules": [
@@ -150,7 +150,7 @@ RENDERER_PROFILES = {
     "summary": {
         "coaching_sentences": {
             "enabled": True,
-            "max_per_section": 3,
+            "max_per_section": 5,
             "placement": "after_data"
         },
         "interpretation_rules": [
@@ -158,16 +158,17 @@ RENDERER_PROFILES = {
             "Avoid granular metrics or micro-coaching."
         ],
         "allowed_enrichment": [
-            "Restate high-level trends explicitly present in semantic data."
+            "Restate high-level trends explicitly present in semantic data.",
+            "show full phases in markdown table."
         ],
         "section_handling": {
             "events": "forbid",
             "daily_load": "forbid",
             "metrics": "summary",
-            "extended_metrics": "forbid",
+            "extended_metrics": "summary",
             "zones": "summary",
             "wellness": "summary",
-            "phases": "summary"
+            "phases": "full"
         }
     }
 }
