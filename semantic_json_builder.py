@@ -2259,7 +2259,7 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
         - Coaching sentences MUST be directly anchored to values, states, or interpretation fields in that section.
         - Coaching sentences MUST be descriptive or conditional, not predictive.
         - Coaching sentences MUST appear immediately after the section’s data and before the next divider.
-        - Coaching sentences MUST NOT introduce new metrics, thresholds, comparisons, or cross-section synthesis.
+        - Coaching sentences MUST NOT introduce new metrics.
         """).strip()
 
     enrichment_block = ""
