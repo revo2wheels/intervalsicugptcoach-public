@@ -298,8 +298,7 @@ REPORT_CONTRACT = {
     "summary": [
         "meta", "hours", "tss", "distance_km",
         "wellness", "insights",
-        "phases", "phases_summary",
-        "wbal_summary", "performance_summary"
+        "phases", "phases_summary", "performance_summary"
     ],
 
     "wellness": [
