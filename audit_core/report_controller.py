@@ -640,27 +640,52 @@ def run_report(
 
     # ============================================================
     # RESTORE canonical 90-day dataset (AUTHORITATIVE)
+    # + REHYDRATE WBAL METRICS IF LOST IN TIER-0
     # ============================================================
+
     if "_df_light_90d" not in context or not isinstance(context["_df_light_90d"], pd.DataFrame):
         raise RuntimeError("FATAL: _df_light_90d missing — Tier-2 pipeline corrupted")
 
-    context["df_light"] = context["_df_light_90d"]
-    debug(context, f"[EXT-PRE] df_light rows={len(context['df_light'])}")
+    df_light = context["_df_light_90d"].copy()
+
+    # ------------------------------------------------------------
+    # 🔄 WBAL REHYDRATION (prefetch-safe)
+    # ------------------------------------------------------------
+    WBAL_COLS = [
+        "icu_max_wbal_depletion",
+        "icu_pm_w_prime",
+        "icu_joules_above_ftp",
+    ]
+
+    raw_light = context.get("activities_light")
+
+    if isinstance(raw_light, list) and raw_light:
+        raw_df = pd.DataFrame(raw_light)
+
+        for col in WBAL_COLS:
+            if col not in df_light.columns and col in raw_df.columns:
+                df_light[col] = pd.to_numeric(raw_df[col], errors="coerce")
+                debug(context, f"[WBAL-REHYDRATE] Restored '{col}' from raw activities_light")
+
+    # ------------------------------------------------------------
+    # Rebind canonical dataset
+    # ------------------------------------------------------------
+    context["df_light"] = df_light
+
+    debug(context, f"[EXT-PRE] df_light rows={len(df_light)}")
 
     debug(
         context,
         "[SMOKING-GUN] df_light rows=%s load_sum=%s cols=%s"
         % (
-            0 if context.get("df_light") is None else len(context["df_light"]),
-            context["df_light"]["icu_training_load"].sum()
-            if isinstance(context.get("df_light"), pd.DataFrame)
-            and "icu_training_load" in context["df_light"]
+            len(df_light),
+            df_light["icu_training_load"].sum()
+            if "icu_training_load" in df_light
             else "MISSING",
-            list(context["df_light"].columns)
-            if isinstance(context.get("df_light"), pd.DataFrame)
-            else type(context.get("df_light")),
+            list(df_light.columns),
         )
     )
+
 
     # ============================================================
     # AUTHORITATIVE CTL / ATL / TSB (Intervals ICU)
