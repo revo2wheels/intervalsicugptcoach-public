@@ -42,7 +42,14 @@ RENDERER_PROFILES = {
         "tone_rules": [
             "Keep tone factual, supportive, neutral, and coach-like.",
             "No speculation beyond the provided semantic data."
-        ]
+        ],
+
+        # ➕ NEW (presentation only)
+        "state_presentation": {
+            "enabled": True,
+            "style": "single_sentence_banner",
+            "source": "semantic_states_only",   # no derivation
+        }
     },
 
     # ==============================================================
@@ -70,6 +77,18 @@ RENDERER_PROFILES = {
             "zones": "full",
             "wellness": "full",
             "phases": "forbid"
+        },
+
+        # ➕ NEW
+        "emphasis": {
+            "metrics": "high",
+            "actions": "high",
+            "events": "medium",
+            "wellness": "medium"
+        },
+
+        "framing": {
+            "intent": "tactical_weekly_control"
         }
     },
 
@@ -98,6 +117,17 @@ RENDERER_PROFILES = {
             "extended_metrics": "full",
             "zones": "summary",
             "wellness": "summary"
+        },
+
+        # ➕ NEW
+        "emphasis": {
+            "phases": "high",
+            "trend_metrics": "high",
+            "metrics": "medium"
+        },
+
+        "framing": {
+            "intent": "medium_term_block_assessment"
         }
     },
 
@@ -105,20 +135,17 @@ RENDERER_PROFILES = {
     # Wellness report (PROD-ALIGNED, SIGNAL-FIRST)
     # ==============================================================
     "wellness": {
-
         "coaching_sentences": {
             "enabled": True,
             "max_per_section": 5,
             "placement": "after_data"
         },
-
         "interpretation_rules": [
             "Interpret recovery using trends, means, and latest values together.",
             "Explain HRV behaviour (variability, clustering, suppression) when present.",
             "Integrate HRV with CTL, ATL, and TSB within the same section.",
             "Avoid day-by-day narration when aggregates or trends exist."
         ],
-
         "allowed_enrichment": [
             "Summarise HRV behaviour using peaks, troughs, variability, and clustering.",
             "Explain physiological meaning of HRV suppression vs personal baseline.",
@@ -127,7 +154,6 @@ RENDERER_PROFILES = {
             "Include short, non-predictive coach recommendations grounded in signals.",
             "include sleep and RHR Analysis if available"
         ],
-
         "section_handling": {
             "meta": "full",
             "wellness": "full",
@@ -140,12 +166,21 @@ RENDERER_PROFILES = {
             "extended_metrics": "forbid",
             "zones": "forbid",
             "phases": "forbid"
+        },
+
+        # ➕ NEW
+        "emphasis": {
+            "wellness": "high",
+            "insights": "high"
+        },
+
+        "framing": {
+            "intent": "recovery_signal_interpretation"
         }
     },
 
-
     # ==============================================================
-    # Summary report (EXECUTIVE)
+    # Summary report (ANNUAL / EXECUTIVE)
     # ==============================================================
     "summary": {
         "coaching_sentences": {
@@ -169,13 +204,21 @@ RENDERER_PROFILES = {
             "zones": "summary",
             "wellness": "summary",
             "phases": "full"
+        },
+
+        # ➕ NEW
+        "emphasis": {
+            "phases": "high",
+            "phases_summary": "high",
+            "performance_summary": "high",
+            "metrics": "low"
+        },
+
+        "framing": {
+            "intent": "annual_system_health_review"
         }
     }
 }
-
-
-
-
 
 
 REPORT_RESOLUTION = {
