@@ -2368,6 +2368,12 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
         - Display as integer minutes by default.
         - Use one decimal only if duration < 30 minutes and precision is useful.
         - Label column as Duration (min).
+        PLANNED EVENTS (WEEKLY — NON-NEGOTIABLE):
+        - The planned_events section MUST be rendered as a Markdown table.
+        - EVERY planned event in the semantic JSON MUST appear as exactly one row.
+        - The planned_events section MUST NOT be summarised, renamed, grouped, or rewritten.
+        - Narrative descriptions of planned events are FORBIDDEN.
+        - Coaching sentences for planned_events, if enabled, MUST appear AFTER the table.
         """).strip()
 
     # --------------------------------------------------
@@ -2398,8 +2404,7 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
         FRAMING INTENT:
         - Interpret and summarise this report through the following intent:
           {framing.get("intent")}
-        - This intent guides prioritisation and narrative focus only.
-        - Do NOT introduce predictions, prescriptions, or new metrics.
+        - This intent guides prioritisation and narrative focus only.        
         """).strip()
 
     # --------------------------------------------------
@@ -2443,7 +2448,7 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     {chr(10).join(manifest_lines)}
 
     End with a factual closing note on recovery or adaptation
-    based strictly on the provided data. What is working well and what is not.
+    based strictly on the provided data.
     """).strip()
 
     return prompt
