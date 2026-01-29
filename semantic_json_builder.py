@@ -2364,6 +2364,10 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
         - The events section MUST NOT be summarised, renamed, grouped, or rewritten.
         - Bullet points, highlights, or narrative descriptions of events are FORBIDDEN.
         - Coaching sentences for events, if enabled, MUST appear AFTER the table.
+        - Convert duration from seconds to minutes at render time.
+        - Display as integer minutes by default.
+        - Use one decimal only if duration < 30 minutes and precision is useful.
+        - Label column as Duration (min).
         """).strip()
 
     # --------------------------------------------------
