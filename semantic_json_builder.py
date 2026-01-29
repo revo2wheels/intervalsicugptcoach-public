@@ -2371,7 +2371,7 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
         """).strip()
 
     # --------------------------------------------------
-    # ➕ NEW: inline presentation blocks
+    # inline presentation blocks
     # --------------------------------------------------
     state_presentation_block = ""
     if state_presentation.get("enabled"):

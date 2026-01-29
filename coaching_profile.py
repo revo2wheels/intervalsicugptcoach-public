@@ -25,7 +25,7 @@ RENDERER_PROFILES = {
     "global": {
         "hard_rules": [
             "Treat the provided semantic JSON as canonical truth.",
-            "Do NOT modify metrics.",
+            "Do NOT modify canonical metrics.",
             "Render exactly ONE report.",
             "Do NOT add numeric prefixes to section headers.",
             "Use emoji-based section headers only.",
@@ -41,10 +41,9 @@ RENDERER_PROFILES = {
         ],
         "tone_rules": [
             "Keep tone factual, supportive, neutral, and coach-like.",
-            "No speculation beyond the provided semantic data."
         ],
 
-        # ➕ NEW (presentation only)
+        # NEW (presentation only)
         "state_presentation": {
             "enabled": True,
             "style": "single_sentence_banner",
@@ -62,12 +61,12 @@ RENDERER_PROFILES = {
             "placement": "after_data"
         },
         "interpretation_rules": [
-            "Interpretations must be directly anchored to values, states, or interpretation fields.",
             "Interpretations may be descriptive or conditional, not predictive.",
         ],
         "allowed_enrichment": [
             "Restate semantic interpretation fields.",
-            "Explain what a value indicates within its known threshold or state."
+            "Explain what a value indicates within its known threshold or state.",
+            "derive_stepwise_forecast"
         ],
         "section_handling": {
             "events": "full",
@@ -81,7 +80,7 @@ RENDERER_PROFILES = {
             "planned_summary_by_date": "full"
         },
 
-        # ➕ NEW
+        # NEW
         "emphasis": {
             "metrics": "high",
             "actions": "high",
@@ -121,7 +120,7 @@ RENDERER_PROFILES = {
             "wellness": "summary"
         },
 
-        # ➕ NEW
+        # NEW
         "emphasis": {
             "phases": "high",
             "trend_metrics": "high",
@@ -170,7 +169,7 @@ RENDERER_PROFILES = {
             "phases": "forbid"
         },
 
-        # ➕ NEW
+        # NEW
         "emphasis": {
             "wellness": "high",
             "insights": "high"
@@ -208,7 +207,7 @@ RENDERER_PROFILES = {
             "phases": "full"
         },
 
-        # ➕ NEW
+        # NEW
         "emphasis": {
             "phases": "high",
             "phases_summary": "high",
