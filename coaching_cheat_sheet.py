@@ -198,16 +198,15 @@ CLASSIFICATION_ALIASES = {
     "watch": "amber",
     "fatigued": "amber",
     "pyramidal": "amber",
-
+    "threshold": "amber",        # Low polarisation; phase-dependent (not inherently bad)
+    
     # --- Red (critical / bad)
     "red": "red",
     "poor": "red",
     "overreached": "red",
     "critical": "red",
-    "threshold": "red",      # For low polarisation
     "intensity-focused": "red"
 }
-
 
 # === Context ===
 CHEAT_SHEET["context"] = {
@@ -267,13 +266,17 @@ CHEAT_SHEET["context"] = {
     ),
     "Polarisation_fused": (
         "Dominant-sport Polarisation Index derived from fused HR+Power data. "
-        "Represents how the athlete distributes intensity within the primary discipline. "
+        "Represents how the athlete distributes intensity within the dominant discipline. "
+        "Dominance reflects the sport providing the clearest and most internally consistent "
+        "intensity (zone) signal — not the sport with the greatest volume, duration, or load. "
         "≥0.80 = polarised, 0.65–0.79 = pyramidal, <0.65 = threshold-dominant. "
-        "⚙️ *HR fills gaps when power unavailable.*"
+        "⚙️ *HR fills gaps when power unavailable; low-intensity HR-only activities may dominate "
+        "the signal when cycling intensity is spread across Z2–Z4.*"
     ),
     "Polarisation_combined": (
         "Global HR+Power combined Polarisation Index across all sports. "
         "Reflects total weekly distribution and load balance for multi-sport athletes. "
+        "Dominance reflects intensity signal strength, not training volume. "
         "≥0.80 = polarised, 0.65–0.79 = pyramidal, <0.65 = threshold-heavy. "
         "⚙️ *Cross-discipline index — lower precision, but best overall summary of load contrast.*"
     ),
@@ -365,7 +368,7 @@ CHEAT_SHEET["advice"] = {
     },
     # Fused HR+Power variant (sport-specific)
     "Polarisation_fused": {
-        "low": "⚠ Fused Polarisation Index low ({:.2f}) — dominant sport intensity heavy; add endurance work.",
+        "low": "⚠ Fused Polarisation Index low ({:.2f}) — dominant intensity signal is threshold-heavy (not necessarily highest-volume sport); add endurance work.",
         "z2_base": "🧱 Fused Polarisation Index ({:.2f}) — Z2-base dominant, normal for aerobic development.",
         "optimal": "✅ Fused Polarisation Index optimal ({:.2f}) — maintain current intensity mix."
     },

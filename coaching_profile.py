@@ -554,14 +554,15 @@ COACH_PROFILE = {
             "criteria": {
                 "polarised": "≥ 1.0",
                 "mixed": "0.7–0.99",
-                "z2_base": "0.35–0.69",   # Added contextual category
+                "z2_base": "0.35–0.69",
                 "threshold": "< 0.35"
             },
             "interpretation": (
                 "Seiler Polarisation Ratio showing the balance of low- and high-intensity "
                 "training (Z1 + Z3) relative to moderate-intensity work (Z2). "
                 "≥1.0 = polarised (80/20), 0.7–0.99 = mixed, 0.35–0.69 = Z2-base dominant "
-                "(normal in aerobic foundation), <0.35 = true threshold-heavy pattern."
+                "(normal in aerobic foundation), <0.35 = true threshold-heavy pattern. "
+                "Dominance reflects intensity distribution characteristics, not training volume."
             ),
             "coaching_implication": (
                 "If Polarisation <0.7 and current block = Base, interpret as Z2-base dominant "
@@ -600,7 +601,8 @@ COACH_PROFILE = {
             },
             "interpretation": (
                 "Derived per sport from HR+Power fusion. Reflects dominant-sport load separation. "
-                "Higher values indicate clear low/high intensity contrast."
+                "Dominant sport is defined by clarity of zone-distribution signal (HR or power), "
+                "not by total duration, distance, or training load."
             ),
             "coaching_implication": (
                 "If <0.7 in Base → aerobic focus (✅). "
@@ -618,7 +620,8 @@ COACH_PROFILE = {
             },
             "interpretation": (
                 "Weighted mean of sport-specific fused indices. Represents overall cross-sport "
-                "intensity distribution. Lower values indicate too much threshold work globally."
+                "intensity distribution. Dominance reflects intensity signal weighting, "
+                "not primary sport or training volume."
             ),
             "coaching_implication": (
                 "Maintain ≥0.8 global balance for healthy load variation. "
