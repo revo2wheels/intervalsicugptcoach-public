@@ -77,7 +77,8 @@ RENDERER_PROFILES = {
             "zones": "full",
             "wellness": "full",
             "phases": "forbid",
-            "planned": "full"
+            "planned_events": "full",
+            "planned_summary_by_date": "full"
         },
 
         # ➕ NEW
