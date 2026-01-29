@@ -2273,7 +2273,7 @@ def apply_report_type_contract(semantic: dict) -> dict:
         )
 
     return filtered
-    
+
 def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     """
     Build deterministic renderer instructions for GPT based on the
@@ -2438,8 +2438,8 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     SECTION ORDER (INSTRUCTIONAL — DO NOT NUMBER HEADERS):
     {chr(10).join(manifest_lines)}
 
-    End with a short, factual closing note on recovery or adaptation
-    based strictly on the provided data.
+    End with a factual closing note on recovery or adaptation
+    based strictly on the provided data. What is working well and what is not.
     """).strip()
 
     return prompt
