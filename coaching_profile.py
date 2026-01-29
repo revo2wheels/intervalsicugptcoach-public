@@ -120,6 +120,8 @@ RENDERER_PROFILES = {
             "extended_metrics": "full",
             "zones": "summary",
             "wellness": "summary"
+            "actions": "full",
+            "future_actions": "full"
         },
 
         # NEW
