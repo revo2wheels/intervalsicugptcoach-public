@@ -2273,7 +2273,7 @@ def apply_report_type_contract(semantic: dict) -> dict:
         )
 
     return filtered
-
+    
 def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     """
     Build deterministic renderer instructions for GPT based on the
@@ -2321,8 +2321,13 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
 
     section_handling = report_profile.get("section_handling", {})
 
+    # ➕ NEW: presentation config (read directly, no helpers)
+    state_presentation = global_profile.get("state_presentation", {})
+    emphasis = report_profile.get("emphasis", {})
+    framing = report_profile.get("framing", {})
+
     # --------------------------------------------------
-    # Optional blocks
+    # Optional blocks (existing)
     # --------------------------------------------------
     coaching_block = ""
     if coaching_enabled and coaching_max > 0:
@@ -2362,6 +2367,38 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
         """).strip()
 
     # --------------------------------------------------
+    # ➕ NEW: inline presentation blocks
+    # --------------------------------------------------
+    state_presentation_block = ""
+    if state_presentation.get("enabled"):
+        state_presentation_block = dedent(f"""
+        STATE PRESENTATION:
+        - Present a concise, single-sentence state banner at the top of the report.
+        - Use ONLY semantic states already present in the data.
+        - Do NOT derive, compute, or infer new states.
+        - Style: {state_presentation.get("style")}
+        """).strip()
+
+    emphasis_block = ""
+    if emphasis:
+        emphasis_block = dedent(f"""
+        EMPHASIS GUIDANCE:
+        The following sections should receive proportional narrative and visual emphasis.
+        This does NOT change section order, inclusion, or data fidelity.
+        {chr(10).join(f"- {k}: {v}" for k, v in emphasis.items())}
+        """).strip()
+
+    framing_block = ""
+    if framing:
+        framing_block = dedent(f"""
+        FRAMING INTENT:
+        - Interpret and summarise this report through the following intent:
+          {framing.get("intent")}
+        - This intent guides prioritisation and narrative focus only.
+        - Do NOT introduce predictions, prescriptions, or new metrics.
+        """).strip()
+
+    # --------------------------------------------------
     # Assemble final prompt
     # --------------------------------------------------
     prompt = dedent(f"""
@@ -2383,6 +2420,12 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     {coaching_block}
 
     {enrichment_block}
+
+    {state_presentation_block}
+
+    {emphasis_block}
+
+    {framing_block}
 
     {section_handling_block}
 
