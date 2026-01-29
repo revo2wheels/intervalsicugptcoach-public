@@ -1816,15 +1816,15 @@ def build_semantic_json(context):
     # ---------------------------------------------------------
     # 🧩 Merge Tier-3 Future Actions (if available)
     # ---------------------------------------------------------
-    if context.get("actions_future"):
-        debug(
-            context,
-            f"[SEMANTIC] 🔮 Merging {len(context['actions_future'])} future actions into canonical list."
-        )
-        semantic.setdefault("actions", [])
-        semantic["actions"].extend(context["actions_future"])
-    else:
-        debug(context, "[SEMANTIC] ⚠️ No actions_future found after Tier-3 injection.")
+#    if context.get("actions_future"):
+#        debug(
+#            context,
+#            f"[SEMANTIC] 🔮 Merging {len(context['actions_future'])} future actions into canonical list."
+#        )
+#        semantic.setdefault("actions", [])
+#       semantic["actions"].extend(context["actions_future"])
+#   else:
+#        debug(context, "[SEMANTIC] ⚠️ No actions_future found after Tier-3 injection.")
 
     # ---------------------------------------------------------
     # 🧠 INSIGHTS (computed once, after all metrics resolved)

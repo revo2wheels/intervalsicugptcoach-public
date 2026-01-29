@@ -78,7 +78,8 @@ RENDERER_PROFILES = {
             "phases": "forbid",
             "planned_events": "full",
             "planned_summary_by_date": "full",
-            "actions": "full"
+            "actions": "full",
+            "future_actions": "full"
         },
 
         # NEW
@@ -329,7 +330,7 @@ REPORT_CONTRACT = {
         "zones", "daily_load", "events", "wbal_summary",
         "wellness", "insights", "insight_view", "actions",
         "planned_events", "planned_summary_by_date",
-        "future_forecast"
+        "future_forecast", "future_actions"
     ],
 
     "season": [
@@ -338,7 +339,7 @@ REPORT_CONTRACT = {
         "adaptation_metrics", "trend_metrics",
         "phases", "phases_summary",
         "wbal_summary", "performance_summary",
-        "insights", "actions", "future_forecast"
+        "insights", "actions", "future_forecast", "future_actions"
     ],
 
     "summary": [
