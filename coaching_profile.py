@@ -24,8 +24,8 @@ RENDERER_PROFILES = {
     # ==============================================================
     "global": {
         "hard_rules": [
-            "Treat the provided semantic JSON as canonical truth.",
-            "Do NOT modify canonical metrics.",
+#           "Treat the provided semantic JSON as canonical truth.",
+#           "Do NOT modify canonical metrics.",
             "Render exactly ONE report.",
             "Do NOT add numeric prefixes to section headers.",
             "Use emoji-based section headers only.",
