@@ -76,7 +76,8 @@ RENDERER_PROFILES = {
             "extended_metrics": "full",
             "zones": "full",
             "wellness": "full",
-            "phases": "forbid"
+            "phases": "forbid",
+            "planned": "full"
         },
 
         # ➕ NEW
