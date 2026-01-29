@@ -122,6 +122,25 @@ def run_future_forecast(context, forecast_days="auto"):
     load_series = daily_load.reindex(forecast_window, fill_value=0.0)
 
     # -----------------------------------------------------------------
+    # 4️⃣b Inject maintenance load on planned rest / note days
+    # -----------------------------------------------------------------
+    # Rationale:
+    # Planned OFF / NOTE days should not be treated as zero impulse,
+    # otherwise CTL decays unrealistically during structured plans.
+
+    maintenance_load = ctl * 0.3  # ~20–25 TSS for CTL ≈ 70
+
+    load_series = load_series.apply(
+        lambda x: x if x > 0 else maintenance_load
+    )
+
+    debug(
+        context,
+        f"[T3] 🧩 Applied maintenance load ({maintenance_load:.1f}) "
+        f"to planned zero-load days"
+    )
+
+    # -----------------------------------------------------------------
     # 5️⃣ Compute CTL/ATL/TSB via Banister model
     # -----------------------------------------------------------------
     ctl_values, atl_values, tsb_values = [], [], []

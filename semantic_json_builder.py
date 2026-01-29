@@ -1548,16 +1548,35 @@ def build_semantic_json(context):
 
         semantic["planned_events"] = planned_events
         semantic["planned_summary_by_date"] = planned_summary_by_date
-        semantic["future_forecast"] = context.get("future_forecast", {})
-        # ✅ Add meta info for structured UI rendering
+
+        # ---------------------------------------------------------
+        # 🔮 Tier-3 FUTURE FORECAST (PLAN-AWARE, CORRECT LOCATION)
+        # ---------------------------------------------------------
+        context["calendar"] = calendar_data  # ✅ REQUIRED — Tier-3 reads THIS
+
+        if not context.get("future_forecast"):
+            from audit_core.tier3_future_forecast import run_future_forecast
+            forecast_output = run_future_forecast(context)
+
+            if isinstance(forecast_output, dict):
+                context.update(forecast_output)
+                semantic["future_forecast"] = forecast_output.get("future_forecast", {})
+            else:
+                semantic["future_forecast"] = {}
+        else:
+            semantic["future_forecast"] = context.get("future_forecast", {})
+
+        # ✅ Meta info for structured UI rendering
         semantic["meta"]["planned_events"] = {
             "is_planned_events_block": True,
             "planned_events_block_count": len(semantic["planned_events"]),
             "notes": "Canonical planned events block (URF v5.2) — intended for ChatGPT / structured UI rendering."
         }
+
     else:
         semantic["planned_events"] = []
         semantic["planned_summary_by_date"] = {}
+        semantic["future_forecast"] = {}
         semantic["meta"]["planned_events"] = {
             "is_planned_events_block": False,
             "planned_events_block_count": 0,
@@ -1777,23 +1796,6 @@ def build_semantic_json(context):
         semantic["wellness"]["ATL"] = ws.get("atl")
         semantic["wellness"]["TSB"] = ws.get("tsb")
         debug(context, "[SEM] CTL/ATL/TSB sourced from wellness_summary fallback")
-
-    # ---------------------------------------------------------
-    # 🔮 Tier-3 FUTURE FORECAST (inline execution if not already injected)
-    # ---------------------------------------------------------
-    try:
-        if "future_forecast" not in context or not context.get("future_forecast"):
-            from audit_core.tier3_future_forecast import run_future_forecast
-            forecast_output = run_future_forecast(context)
-            if isinstance(forecast_output, dict):
-                context.update(forecast_output)
-                debug(context, "[SEMANTIC] Injected Tier-3 forecast output into context.")
-            else:
-                debug(context, "[SEMANTIC] ⚠️ Tier-3 forecast returned unexpected type.")
-        else:
-            debug(context, "[SEMANTIC] Skipped Tier-3 forecast — already present in context.")
-    except Exception as e:
-        debug(context, f"[SEMANTIC] ⚠️ Tier-3 forecast execution failed: {e}")
 
     # ---------------------------------------------------------
     # 🌤️ Copy future actions to semantic structure
