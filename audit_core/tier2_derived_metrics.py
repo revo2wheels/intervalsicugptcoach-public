@@ -752,119 +752,117 @@ def compute_derived_metrics(df_events, context):
 
     debug(context, f"[DERIVED] Polarisation={polarisation} | PolarisationIndex={polarisation_index}")
 
-
     # ======================================================
-    # 🧪 Lactate Measurement Integration (context enrichment)
+    # 🧪 Lactate Measurement Integration (df_light ONLY)
     # ======================================================
-    if "HRTLNDLT1" in df_events.columns:
-        try:
-            df_events["HRTLNDLT1"] = pd.to_numeric(df_events["HRTLNDLT1"], errors="coerce")
-            valid_lac = df_events["HRTLNDLT1"].dropna()
-            total_rows = len(df_events)
-            valid_count = len(valid_lac)
 
-            debug(context, (
-                f"[DERIVED] HRTLNDLT1 found → total={total_rows}, valid={valid_count}, "
-                f"values={valid_lac.tolist()[:10]}{'...' if valid_count > 10 else ''}"
-            ))
+    df_lac = context.get("df_light")
 
-            if not valid_lac.empty:
-                mean_lac = round(valid_lac.mean(), 2)
-                latest_lac = round(valid_lac.iloc[-1], 2)
-                samples = len(valid_lac)
-                min_lac, max_lac = round(valid_lac.min(), 2), round(valid_lac.max(), 2)
+    if not isinstance(df_lac, pd.DataFrame) or df_lac.empty:
+        df_lac = None
 
-                thresholds = {"aerobic": 2.0, "anaerobic": 4.0}
-                zone_dist = {
-                    "below_2mmol": int((valid_lac < thresholds["aerobic"]).sum()),
-                    "between_2_4mmol": int(((valid_lac >= thresholds["aerobic"]) &
-                                            (valid_lac < thresholds["anaerobic"])).sum()),
-                    "above_4mmol": int((valid_lac >= thresholds["anaerobic"]).sum())
-                }
+    if df_lac is None or df_lac.empty:
+        context["lactate_summary"] = {"available": False}
+        debug(context, "[LACTATE] no df_light available")
 
-                corr_with_power = None
-                if "icu_average_watts" in df_events.columns:
-                    df_lac = df_events.dropna(subset=["HRTLNDLT1", "icu_average_watts"])
-                    if not df_lac.empty:
-                        corr_val = df_lac["HRTLNDLT1"].corr(df_lac["icu_average_watts"])
-                        if pd.notna(corr_val):
-                            corr_with_power = round(float(corr_val), 3)
-                        else:
-                            corr_with_power = 0.0
-                            debug(context, "[DERIVED] Lactate–Power correlation undefined (constant series) → set to 0.0")
+    else:
+        df_lac = df_lac.copy()
 
-                context["lactate_summary"] = {
-                    "mean_mmol": mean_lac,
-                    "latest_mmol": latest_lac,
-                    "samples": samples,
-                    "range_mmol": [min_lac, max_lac],
-                    "zone_distribution": zone_dist,
-                    "corr_with_power": corr_with_power,
-                    "available": True
-                }
-                # Normalize keys for compatibility
-                lac = context["lactate_summary"]
-                if "mean_mmol" in lac and "mean" not in lac:
-                    lac["mean"] = lac["mean_mmol"]
-                if "latest_mmol" in lac and "latest" not in lac:
-                    lac["latest"] = lac["latest_mmol"]
-                context["lactate_summary"] = lac
+        if "HrtLndLt1" not in df_lac.columns:
+            context["lactate_summary"] = {"available": False}
+            debug(context, "[LACTATE] HrtLndLt1 not in df_light columns")
 
-                debug(context, (
-                    f"[DERIVED] HRTLNDLT1 ✓ integrated → mean={mean_lac} mmol/L, "
-                    f"latest={latest_lac}, samples={samples}, corr_with_power={corr_with_power}, zones={zone_dist}"
-                ))
-                # ======================================================
-                # 🔄 Lactate Calibration Context Alignment (URF v5.1)
-                # ======================================================
+        else:
+            # --- Coerce
+            df_lac["HrtLndLt1"] = pd.to_numeric(df_lac["HrtLndLt1"], errors="coerce")
+            df_lac["HrtLndLt1p"] = (
+                pd.to_numeric(df_lac["HrtLndLt1p"], errors="coerce")
+                if "HrtLndLt1p" in df_lac.columns
+                else np.nan
+            )
 
-                try:
-                    lac_thresholds = CHEAT_SHEET["thresholds"].get("Lactate", {})
-                    lt1_default = lac_thresholds.get("lt1_mmol", 2.0)
-                    lt2_default = lac_thresholds.get("lt2_mmol", 4.0)
-                    corr_threshold = lac_thresholds.get("corr_threshold", 0.6)
-                    corr_val = context["lactate_summary"].get("corr_with_power")
+            # --- Lactate-only samples (DO NOT REQUIRE POWER)
+            df_valid = df_lac[df_lac["HrtLndLt1"] > 0]
 
-                    # Store correlation value directly for calibration confidence
-                    context["zones_corr"] = corr_val
+            samples = len(df_valid)
+            debug(context, f"[LACTATE] rows={len(df_lac)} valid_samples={samples}")
 
-                    if isinstance(corr_val, (int, float)) and corr_val >= corr_threshold:
-                        context["zones_source"] = "lactate_test"
-                        context["zones_reason"] = (
-                            f"Lactate–power correlation strong (r={corr_val:.2f}≥{corr_threshold})"
-                        )
-                        context["lactate_thresholds_dict"] = {
-                            "lt1_mmol": lt1_default,
-                            "lt2_mmol": lt2_default,
-                        }
-                        debug(context, f"[DERIVED] ✅ Lactate calibration active → LT1={lt1_default}, LT2={lt2_default}, r={corr_val:.2f}")
-                    else:
-                        context["zones_source"] = "ftp_based"
-                        context["zones_reason"] = (
-                            f"Lactate–power correlation weak or missing (r={corr_val}) → FTP defaults"
-                        )
-                        context["lactate_thresholds_dict"] = {
-                            "lt1_mmol": lt1_default,
-                            "lt2_mmol": lt2_default,
-                        }
-                        debug(context, f"[DERIVED] ⚠️ Lactate correlation below threshold ({corr_val}) → FTP-based calibration")
-
-                except Exception as e:
-                    context["zones_source"] = "ftp_based"
-                    context["zones_reason"] = f"Lactate calibration error: {e}"
-                    context["lactate_thresholds_dict"] = {}
-                    debug(context, f"[DERIVED] ⚠️ Lactate calibration context alignment failed → {e}")
+            if samples == 0:
+                context["lactate_summary"] = {"available": False}
+                debug(context, "[LACTATE] no valid lactate samples")
 
             else:
-                context["lactate_summary"] = {"available": False}
-                debug(context, "[DERIVED] HRTLNDLT1 present but no valid numeric values.")
+                lact_vals = df_valid["HrtLndLt1"]
 
-        except Exception as e:
-            context["lactate_summary"] = {"available": False}
-            debug(context, f"[DERIVED] ⚠️ HRTLNDLT1 integration failed → {e}", exc_info=True)
-    else:
-        context["lactate_summary"] = {"available": False}
-        debug(context, "[DERIVED] HRTLNDLT1 column NOT FOUND in df_events.")
+                mean_lac = round(lact_vals.mean(), 2)
+                latest_lac = round(lact_vals.iloc[-1], 2)
+                min_lac = round(lact_vals.min(), 2)
+                max_lac = round(lact_vals.max(), 2)
+
+                # --- Power handling
+                paired_power = df_valid["HrtLndLt1p"].dropna()
+                paired_with_power = not paired_power.empty
+
+                if paired_with_power:
+                    power_vals = paired_power
+                    power_spread = [
+                        round(power_vals.min(), 1),
+                        round(power_vals.max(), 1),
+                    ]
+                    power_source = "activity_samples"
+                else:
+                    ftp = context.get("ftp")
+                    if isinstance(ftp, (int, float)) and ftp > 0:
+                        z2_mid = round(ftp * 0.70, 1)
+                        power_vals = pd.Series([z2_mid] * samples)
+                        power_spread = [z2_mid, z2_mid]
+                        power_source = "ftp_z2_fallback"
+                    else:
+                        power_vals = None
+                        power_spread = None
+                        power_source = "unpaired"
+
+                # --- Correlation (safe)
+                if (
+                    power_vals is not None
+                    and lact_vals.nunique() > 1
+                    and power_vals.nunique() > 1
+                ):
+                    corr_val = lact_vals.corr(power_vals)
+                    corr_with_power = round(float(corr_val), 3) if pd.notna(corr_val) else 0.0
+                else:
+                    corr_with_power = 0.0
+
+                # --- Store
+                context["lactate_summary"] = {
+                    "available": True,
+                    "samples": samples,
+                    "mean_mmol": mean_lac,
+                    "latest_mmol": latest_lac,
+                    "range_mmol": [min_lac, max_lac],
+                    "paired_with_power": paired_with_power,
+                    "power_field": "HrtLndLt1p",
+                    "power_spread_w": power_spread,
+                    "power_source": power_source,
+                    "corr_with_power": corr_with_power,
+                    "corr_window_days": 90,
+                    "source": "df_light",
+                    "mean": mean_lac,
+                    "latest": latest_lac,
+                }
+
+                debug(context, f"[LACTATE] OK → {context['lactate_summary']}")
+
+                # --- Calibration flag only (no zone mutation)
+                corr_threshold = CHEAT_SHEET.get("thresholds", {}).get("Lactate", {}).get("corr_threshold", 0.6)
+                context["zones_corr"] = corr_with_power
+
+                if corr_with_power >= corr_threshold:
+                    context["zones_source"] = "lactate_test"
+                    context["zones_reason"] = f"lactate correlation r={corr_with_power:.2f}"
+                else:
+                    context["zones_source"] = "ftp_based"
+                    context["zones_reason"] = f"lactate weak/assumed power ({power_source})"
 
 
 

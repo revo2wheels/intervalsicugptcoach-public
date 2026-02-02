@@ -308,6 +308,14 @@ def run_report(
         debug(context, f"[T0-FULL] Tier-0 execution failed: {e}")
         raise
 
+    # 🔒 Preserve raw 90d light data BEFORE mutation (prefetch + local safe)
+    if isinstance(context.get("df_light_full"), pd.DataFrame):
+        context["df_light_raw"] = context["df_light_full"].copy(deep=True)
+        debug(context, "[LOCK] Preserved raw df_light_full for lactate")
+
+    elif isinstance(context.get("df_light"), pd.DataFrame):
+        context["df_light_raw"] = context["df_light"].copy(deep=True)
+        debug(context, "[LOCK] Preserved raw df_light for lactate")
 
     # ============================================================
     # 🔒 LOCK Tier-0 90-day dataset (authoritative for Tier-3)

@@ -954,6 +954,20 @@ def build_semantic_json(context):
     else:
         debug(context, "[SEMANTIC] No personalized_z2 data available in context")
 
+    # --- Lactate-derived power zones (LT1-based)
+    if context.get("power_lactate"):
+        semantic.setdefault("extended_metrics", {})
+        semantic["extended_metrics"]["power_lactate"] = context["power_lactate"]
+
+        debug(
+            context,
+            f"[SEMANTIC] Injected power_lactate → "
+            f"Z2={context['power_lactate'].get('z2_start_w')}–"
+            f"{context['power_lactate'].get('z2_end_w')}W, "
+            f"r={context['power_lactate'].get('confidence_r')}"
+        )
+
+
     # ---------------------------------------------------------
     # 🔗 ATHLETE: identity + profile + context (UNIVERSAL)
     # ---------------------------------------------------------

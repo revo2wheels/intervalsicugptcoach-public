@@ -233,7 +233,7 @@ def fetch_activities_chunked(
                     acts_url = (
                         f"{INTERVALS_API}/athlete/{athlete_id}/activities_t0light?"
                         f"oldest={chunk_start:%Y-%m-%d}&newest={chunk_end:%Y-%m-%d}"
-                        "&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,icu_atl,icu_ctl,IF,average_heartrate,VO2MaxGarmin,HRTLNDLT1,icu_pm_w_prime,icu_max_wbal_depletion,icu_joules_above_ftp,"
+                        "&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,icu_atl,icu_ctl,IF,average_heartrate,VO2MaxGarmin,HrtLndLt1,HrtLndLt1p,icu_pm_w_prime,icu_max_wbal_depletion,icu_joules_above_ftp,"
                     )
                 else:
                     acts_url = (
@@ -361,7 +361,7 @@ def fetch_activities_chunked(
     # =================================================
     # ✅ FINAL
     # =================================================
-        # --- Diagnostics ---
+    # --- Diagnostics ---
     total_tss = df_activities["icu_training_load"].sum() if "icu_training_load" in df_activities else 0
     total_time = df_activities["moving_time"].sum() / 3600 if "moving_time" in df_activities else 0
     debug(context, f"[T0] Diagnostics → Σ(TSS)={total_tss:.1f}, Σ(Time)={total_time:.2f}h")
@@ -375,6 +375,29 @@ def fetch_activities_chunked(
     if context is not None:
         context["df_master"] = df_activities.copy()
         context["df_raw_activities"] = df_activities.copy()
+
+    # =================================================
+    # 🔎 DEBUG: LIGHT DATASET COLUMN AUDIT (AUTHORITATIVE)
+    # =================================================
+    if light_mode:
+        debug(
+            context,
+            "[T0-LIGHT-COLS] rows=%s cols=%s missing=%s"
+            % (
+                len(df_activities),
+                list(df_activities.columns),
+                [c for c in ["HrtLndLt1", "HrtLndLt1p"] if c not in df_activities.columns],
+            )
+        )
+
+        for c in ["HrtLndLt1", "HrtLndLt1p"]:
+            if c in df_activities.columns:
+                debug(
+                    context,
+                    f"[T0-LIGHT-LACTATE] {c} non-null="
+                    f"{df_activities[c].notna().sum()}/{len(df_activities)}"
+                )
+
 
     return df_activities
 
@@ -560,7 +583,7 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         context["prefetch_done"] = True
 
         fields = (
-            "&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,icu_atl,icu_ctl,IF,average_heartrate,VO2MaxGarmin,HRTLNDLT1,icu_pm_w_prime,icu_max_wbal_depletion,icu_joules_above_ftp,"
+            "id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,icu_atl,icu_ctl,IF,average_heartrate,VO2MaxGarmin,HrtLndLt1,HrtLndLt1p,icu_pm_w_prime,icu_max_wbal_depletion,icu_joules_above_ftp,"
         )
 
         # 🔧 Determine baseline range (default: from controller start/end)
@@ -619,6 +642,15 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         context["activities_light"] = df_light.copy()
 
         debug(context, f"[T0-LIGHT] Retrieved {len(df_light)} activities")
+        debug(
+            context,
+            "[T0-LIGHT-COLS] rows=%s cols=%s missing_lactate=%s"
+            % (
+                len(df_light),
+                list(df_light.columns),
+                [c for c in ["HrtLndLt1", "HrtLndLt1p"] if c not in df_light.columns],
+            )
+        )
 
     # ============================================================
     # 🧩 Inject activities_full for Tier-2 enrichment

@@ -134,6 +134,36 @@ def compute_extended_metrics(context):
         debug(context, f"[Z2] ⚠️ Personalized Z2 inference failed → {e}")
 
     # ---------------------------------------------------------
+    # 🧪 Lactate-inferred Power Zones (LT1 / LT2 anchors)
+    # ONLY if personalized_z2 exists
+    # ---------------------------------------------------------
+    if "personalized_z2" in context:
+        corr = context.get("lactate_summary", {}).get("corr_with_power")
+        corr_threshold = CHEAT_SHEET["thresholds"]["Lactate"].get("corr_threshold", 0.6)
+
+        if isinstance(corr, (int, float)) and corr >= corr_threshold:
+            z2 = context["personalized_z2"]
+
+            context["power_lactate"] = {
+                "method": "lactate_inferred",
+                "lt1_w": z2["start_w"],     # LT1 anchor
+                "lt2_w": ftp,              # LT2 assumed FTP
+                "zones": {
+                    "z1": [0, z2["start_w"]],
+                    "z2": [z2["start_w"], z2["end_w"]],
+                    "z3": [z2["end_w"], ftp],
+                },
+                "confidence_r": round(corr, 3),
+                "source": "extended_metrics",
+            }
+
+            debug(
+                context,
+                f"[EXT] Lactate power zones emitted → "
+                f"LT1={z2['start_w']}W LT2={ftp}W (r={corr:.2f})"
+            )
+
+    # ---------------------------------------------------------
     # 🧩 Lactate–Power Calibration Confidence and Zone Source (Cheat Sheet–driven)
     # ---------------------------------------------------------
     try:
