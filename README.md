@@ -17,6 +17,7 @@ All computations use **event-only totals** and enforce <2 % variance across all 
 No data smoothing, interpolation, or load-based hour conversions are ever applied. 
 
 ##buy me a coffee to support this project!
+
 <a href="https://www.buymeacoffee.com/revo2wheels" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
 ---
