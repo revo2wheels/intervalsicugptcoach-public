@@ -190,6 +190,7 @@ CLASSIFICATION_ALIASES = {
     "balanced": "green",
     "healthy": "green",
     "normal": "green",
+    "low_exposure": "green",
 
     # --- Amber (watch / moderate / caution)
     "amber": "amber",
@@ -199,7 +200,7 @@ CLASSIFICATION_ALIASES = {
     "fatigued": "amber",
     "pyramidal": "amber",
     "threshold": "amber",        # Low polarisation; phase-dependent (not inherently bad)
-    
+
     # --- Red (critical / bad)
     "red": "red",
     "poor": "red",

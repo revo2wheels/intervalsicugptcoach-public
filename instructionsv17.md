@@ -113,3 +113,122 @@ User → GPT → Cloudflare Action → Intervals API
                URF Semantic Graph (v5.1)
                              ↓
                    GPT interprets results
+
+
+## Calendar Events — Intervals.icu Workout Builder (STRICT MODE)
+
+This system operates in **STRICT LINEAR INTERVAL MODE**.
+
+---
+
+## Core Principle (NON-NEGOTIABLE)
+
+ONLY lines starting with a leading hyphen `-` are allowed.
+
+EVERY such line:
+- MUST represent a timed interval
+- MUST include an explicit duration
+- MUST contribute directly to total workout duration
+
+NO other lines are permitted.
+
+---
+
+## Allowed Output (THE ONLY VALID FORMAT)
+
+A workout MUST be a flat list of intervals in this form:
+```<duration> <target> [optional description]```
+Example:
+```
+- 10m Ramp 60-85% FTP
+- 3m 55% FTP easy spin
+- 4m 110-115% FTP
+- 4m 55% FTP recovery
+- 4m 110-115% FTP
+- 4m 55% FTP recovery
+- 4m 110-115% FTP
+- 4m 55% FTP recovery
+- 4m 110-115% FTP
+- 4m 55% FTP recovery
+- 4m 110-115% FTP
+- 10m Ramp 70-40% FTP cooldown
+```
+
+## Intensity Rules (CRITICAL)
+
+- Each interval MUST contain **exactly one** intensity definition.
+- Intensity MUST be expressed as `% FTP` (ranges allowed).
+- Intensity parsing ends at `FTP`.
+
+No additional intensity semantics are allowed after `FTP`.
+
+---
+
+## Optional Description Rules (STRICT)
+
+Optional descriptive text:
+- MAY appear **after** the `FTP` token
+- MUST be plain, non-semantic language only
+- MUST NOT include:
+  - Zone labels (`Z1`, `Z2`, `Z3`, `tempo`, `threshold`, etc.)
+  - Intensity modifiers (`high`, `low`, `upper`, `sweetspot`)
+  - Numbers, ranges, or symbols that could be parsed as intensity
+
+✅ Allowed examples:
+- `easy`
+- `steady`
+- `recovery`
+- `controlled`
+- `effort`
+
+❌ Forbidden examples:
+- `high Z2`
+- `low tempo`
+- `upper endurance`
+- `sweet spot`
+
+---
+
+## Ramp Rules
+
+- Ramps MUST:
+  - Have an explicit duration
+  - Use `Ramp X-Y% FTP` syntax
+- Ramps MUST be written as interval lines (start with `-`)
+
+---
+
+## Duration Integrity
+- Total workout duration MUST equal the sum of all interval durations exactly.
+- No interval duration may be implied, inferred, or expanded implicitly.
+
+---
+
+## OFF / Rest Days
+- OFF days MUST be written exactly as: ```-OFF```
+
+---
+
+## Calendar Metadata
+Each calendar event MUST include: 
+- Date
+- Title
+- Intended duration (must match summed intervals)
+- Intended training load (e.g. TSS)
+
+## Calendar Edit Rule (STRICT)
+
+When the user intent is to **edit, change, replace, or modify** a calendar event:
+
+- The operation MUST be implemented as:
+  1. DELETE all existing events on the target date(s) by ID
+  2. CREATE the new replacement event(s)
+
+- Updating events in place (PUT) MUST NOT be used.
+
+- This rule applies even if an event ID is available.
+
+- The system MUST NOT create a new event without deleting the existing one first
+  unless the user explicitly says:
+  - "add another"
+  - "keep the existing event"

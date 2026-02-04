@@ -431,7 +431,7 @@ COACH_PROFILE = {
             "framework": "Adaptive Load Tolerance",
             "formula": "(strain / monotony) / 100",
             "criteria": {
-                "low": "<3",
+                "low_exposure": "<3",
                 "optimal": "3–6",
                 "high": ">6"
             }

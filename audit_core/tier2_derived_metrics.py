@@ -265,7 +265,7 @@ def classify_marker(value, marker, context=None):
 
     # --- Icon mapping ---
     icon_map = {
-        "optimal": "🟢", "productive": "🟢", "balanced": "🟢", "polarised": "🟢",
+        "optimal": "🟢", "productive": "🟢", "balanced": "🟢", "polarised": "🟢", "low_exposure": "🟢",
         "moderate": "🟠", "borderline": "🟠", "mixed": "🟠", "recovering": "🟠",
         "low": "🔴", "high": "🔴", "overload": "🔴", "accumulating": "🔴", "threshold": "🔴"
     }
