@@ -537,18 +537,18 @@ CHEAT_SHEET["sport_groups"] = {
 }
 CHEAT_SHEET["zone_semantics"] = {
     "power": {
-        "label": "Power Zones",
+        "label": "Cycling Power Zones",
         "description": (
             "Distribution of training time by cycling power zones. Derived from Intervals.icu power zone times for Ride-based activities. "
             "SS = Sweetspot"
         ),
     },
     "hr": {
-        "label": "Heart Rate Zones",
+        "label": "Cycling Heart Rate Zones",
         "description": "Distribution of training time by heart rate zones. Restricted to Ride-based activities for physiological comparability."
     },
     "pace": {
-        "label": "Pace Zones",
+        "label": "Run Pace Zones",
         "description": "Distribution of training time by pace zones. Used primarily for Run-based activities."
     },
     "swim": {
