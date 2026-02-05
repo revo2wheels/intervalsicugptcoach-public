@@ -320,7 +320,7 @@ def collect_zone_distributions(df_master, athlete_profile, context):
         # ✅ THE FIX: USE df, NOT df_master
         subset = (
             df[cols]
-            .applymap(extract_secs)
+            .apply(lambda col: col.map(extract_secs))  # ✅ pandas 2.x safe
             .apply(pd.to_numeric, errors="coerce")
             .fillna(0)
         )
