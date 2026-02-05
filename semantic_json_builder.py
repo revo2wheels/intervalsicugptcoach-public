@@ -496,21 +496,25 @@ def build_semantic_json(context):
             "power": zone_block(
                 "power",
                 #rename_z8_to_ss(context.get("zone_dist_power")),
+                context.get("zone_dist_power"),  
                 context.get("icu_power_zones") or context.get("athlete_power_zones"),
             ),
             "hr": zone_block(
                 "hr",
                 #rename_z8_to_ss(context.get("zone_dist_hr")),
+                context.get("zone_dist_hr"),
                 context.get("icu_hr_zones") or context.get("athlete_hr_zones"),
             ),
             "pace": zone_block(
                 "pace",
                 #rename_z8_to_ss(context.get("zone_dist_pace")),
+                context.get("zone_dist_pace"),
                 context.get("icu_pace_zones") or context.get("athlete_pace_zones"),
             ),
             "swim": zone_block(
                 "swim",
                 #rename_z8_to_ss(context.get("zone_dist_swim")),
+                context.get("zone_dist_swim"),
                 context.get("icu_swim_zones") or context.get("athlete_swim_zones"),
             ),
             "calibration": {
