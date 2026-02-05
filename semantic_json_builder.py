@@ -819,10 +819,7 @@ def build_semantic_json(context):
     semantic["meta"]["report_type"] = report_type
     semantic["meta"]["window_days"] = window_days
     semantic["meta"]["period"] = f"{context['period']['start']} → {context['period']['end']}"
-    semantic["meta"]["scope"] = header.get("scope", "Custom analysis window")
-    semantic["meta"]["data_sources"] = header.get("data_sources", f"{window_days}-day mixed dataset")
     semantic["meta"]["report_header"] = header
-
 
     # --- Mark summary reports as image-ready for ChatGPT ---
     if report_type == "summary":
