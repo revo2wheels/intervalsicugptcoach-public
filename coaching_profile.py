@@ -358,7 +358,7 @@ REPORT_CONTRACT = {
 
 
 COACH_PROFILE = {
-    "version": "v17",
+    "version": "v16.17",
     "bio": {
         "summary": (
             "Data-driven endurance coaching blending objective load metrics "

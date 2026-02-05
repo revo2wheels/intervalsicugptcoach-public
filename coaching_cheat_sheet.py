@@ -9,8 +9,9 @@ import pandas as pd
 CHEAT_SHEET = {}
 
 CHEAT_SHEET["meta"] = {
+    "framework": "V5.1 Unified Reporting Framework",
     "version": "v16.17",
-    "last_updated": "2025-12-30",
+    "last_updated": "2026-02-05",
     "source": "Unified Coaching Reference (Intervals + Seiler + Banister)"
 }
 

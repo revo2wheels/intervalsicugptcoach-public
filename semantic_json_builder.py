@@ -458,30 +458,44 @@ def build_semantic_json(context):
     # ---------------------------------------------------------
     semantic = {
         "meta": {
-            "framework": "Unified Reporting Framework v5.1",
-            "version": "v16.17",
+            # --- Framework identity ---
+            "framework": CHEAT_SHEET["meta"].get(
+                "framework", "Unified Reporting Framework"
+            ),
+            "version": CHEAT_SHEET["meta"].get("version"),
+
+            # --- Methodology (coach + cheat sheet) ---
+            "methodology": {
+                "source": CHEAT_SHEET["meta"].get("source"),
+                "summary": COACH_PROFILE["bio"]["summary"],
+                "principles": COACH_PROFILE["bio"]["principles"],
+            },
+
+            # --- Generation context ---
             "generated_at": {
                 "local": (
                     datetime.now(
                         pytz.timezone(context.get("timezone", "UTC"))
                         if context.get("timezone") else pytz.UTC
-                    ).replace(microsecond=0).isoformat()
-                ),
+                    )
+                    .replace(microsecond=0)
+                    .isoformat()
+                )
             },
-            "report_type": context.get("report_type"),
-            "period": {
-                "start": context.get("period", {}).get("start"),
-                "end": context.get("period", {}).get("end"),
-            },
+
+            # --- Environment ---
             "timezone": context.get("timezone"),
-            "athlete": {"identity": {}, "profile": {}},
-            "report_header": {
-                "title": None,
-                "scope": None,
-                "data_sources": None,
-                "intended_use": None,
+
+            # --- Athlete placeholder (filled later) ---
+            "athlete": {
+                "identity": {},
+                "profile": {},
             },
         },
+   
+        # ---------------------------------------------------------
+        # METRICS CONTAINERS
+        # ---------------------------------------------------------
 
         "metrics": {},
         "extended_metrics": {},
