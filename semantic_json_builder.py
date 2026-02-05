@@ -178,6 +178,31 @@ def rename_z8_to_ss(dist: dict):
 
     return out
 
+def resolve_planned_duration_minutes(e: dict):
+    """
+    Resolve planned duration from canonical schema fields.
+    Priority:
+    1) moving_time (seconds)
+    2) time_target (seconds)
+    3) end_date_local - start_date_local
+    """
+    if e.get("moving_time"):
+        return round(int(e["moving_time"]) / 60, 1)
+
+    if e.get("time_target"):
+        return round(int(e["time_target"]) / 60, 1)
+
+    try:
+        if e.get("start_date_local") and e.get("end_date_local"):
+            start = pd.to_datetime(e["start_date_local"])
+            end = pd.to_datetime(e["end_date_local"])
+            return round((end - start).total_seconds() / 60, 1)
+    except Exception:
+        pass
+
+    return None
+
+
 # ---------------------------------------------------------
 # Insights Builder
 # ---------------------------------------------------------
@@ -1549,7 +1574,7 @@ def build_semantic_json(context):
                 "description": e.get("description") or e.get("notes") or "",
                 "start_date_local": e.get("start_date_local"),
                 "end_date_local": e.get("end_date_local"),
-                "duration_minutes": e.get("duration_minutes"),
+                "duration_minutes": resolve_planned_duration_minutes(e),
                 "icu_training_load": e.get("icu_training_load") or e.get("tss"),
                 "load_target": e.get("load_target"),
                 "time_target": e.get("time_target"),
