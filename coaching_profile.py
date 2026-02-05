@@ -272,7 +272,7 @@ REPORT_HEADERS = {
     "weekly": {
         "title": "Weekly Training Report",
         "scope": "Detailed analysis of the last 7 days of training activity",
-        "data_sources": "7-day full activities, 42-day wellness, zone distributions",
+        "data_sources": "7-day full activities, 42-day wellness, 90 day Light",
         "intended_use": (
             "Day-to-day coaching decisions, intensity balance, "
             "short-term fatigue and recovery management"
