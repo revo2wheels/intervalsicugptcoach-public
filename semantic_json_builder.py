@@ -137,6 +137,48 @@ def semantic_block_for_metric(name, value, context):
     }
 
 # ---------------------------------------------------------
+# 🔬 Zone semantics helpers (CHEAT_SHEET–driven)
+# ---------------------------------------------------------
+zone_semantics = CHEAT_SHEET.get("zone_semantics", {})
+
+def zone_block(key, dist, thresholds):
+    meta = zone_semantics.get(key, {})
+    return {
+        "label": meta.get("label"),
+        "description": meta.get("description"),
+        "distribution": dist or {},
+        "thresholds": thresholds or [],
+    }
+
+def rename_z8_to_ss(dist: dict):
+    """
+    Semantic-only rename for Sweet Spot (power only).
+
+    Rules:
+    - z8               -> SS
+    - _fused_power_z8   -> _fused_power_SS
+
+    Non-destructive, presentation layer only.
+    """
+    if not isinstance(dist, dict):
+        return dist
+
+    out = {}
+    for k, v in dist.items():
+        # --- Power Sweet Spot (canonical) ---
+        if k == "z8":
+            out["SS"] = v
+
+        # --- Fused Power Sweet Spot ---
+        elif k == "_fused_power_z8":
+            out["_fused_power_SS"] = v
+
+        else:
+            out[k] = v
+
+    return out
+
+# ---------------------------------------------------------
 # Insights Builder
 # ---------------------------------------------------------
 
@@ -448,41 +490,29 @@ def build_semantic_json(context):
         "correlation_metrics": {},
 
         # ---------------------------------------------------------
-        # 🔬 Zones — Power, HR, Pace + Calibration Metadata
+        # 🔬 Zones — Power, HR, Pace, Swim + Calibration
         # ---------------------------------------------------------
         "zones": {
-            "power": {
-                "distribution": context.get("zone_dist_power", {}),
-                "thresholds": (
-                    context.get("icu_power_zones")
-                    or context.get("athlete_power_zones")
-                    or []
-                ),
-            },
-            "hr": {
-                "distribution": context.get("zone_dist_hr", {}),
-                "thresholds": (
-                    context.get("icu_hr_zones")
-                    or context.get("athlete_hr_zones")
-                    or []
-                ),
-            },
-            "pace": {
-                "distribution": context.get("zone_dist_pace", {}) or context.get("athlete_pace_zones", {}),
-                "thresholds": (
-                    context.get("icu_pace_zones")
-                    or context.get("athlete_pace_zones")
-                    or []
-                ),
-            },
-            "swim": {
-                "distribution": context.get("zone_dist_swim", {}) or context.get("athlete_swim_zones", {}),
-                "thresholds": (
-                    context.get("icu_swim_zones")
-                    or context.get("athlete_swim_zones")
-                    or []
-                ),
-            },
+            "power": zone_block(
+                "power",
+                rename_z8_to_ss(context.get("zone_dist_power")),
+                context.get("icu_power_zones") or context.get("athlete_power_zones"),
+            ),
+            "hr": zone_block(
+                "hr",
+                rename_z8_to_ss(context.get("zone_dist_hr")),
+                context.get("icu_hr_zones") or context.get("athlete_hr_zones"),
+            ),
+            "pace": zone_block(
+                "pace",
+                rename_z8_to_ss(context.get("zone_dist_pace")),
+                context.get("icu_pace_zones") or context.get("athlete_pace_zones"),
+            ),
+            "swim": zone_block(
+                "swim",
+                rename_z8_to_ss(context.get("zone_dist_swim")),
+                context.get("icu_swim_zones") or context.get("athlete_swim_zones"),
+            ),
             "calibration": {
                 "source": zones_source,
                 "method": method,
@@ -523,9 +553,12 @@ def build_semantic_json(context):
     try:
         if context.get("zone_dist_fused"):
             semantic["zones"]["fused"] = {
-                "per_sport": context["zone_dist_fused"],
+                "per_sport": {
+                    sport: rename_z8_to_ss(dist)
+                    for sport, dist in context["zone_dist_fused"].items()
+                },
                 "dominant_sport": context.get("polarisation_sport", "Unknown"),
-                "basis": "time-weighted blend of power and HR zones per sport",
+                "basis": "Sport-specific fusion of power and HR zones (power preferred, HR fallback)",
             }
             debug(context, f"[SEMANTIC] Injected fused zones → sports={list(context['zone_dist_fused'].keys())}")
         else:
@@ -539,54 +572,31 @@ def build_semantic_json(context):
 
 
     # ---------------------------------------------------------
-    # 🧩 Inject Combined Zones (global HR+Power blend)
+    # 🧩 Inject Combined Zones (Tier-2 authoritative)
     # ---------------------------------------------------------
     try:
-        fused = semantic["zones"].get("fused", {}).get("per_sport", {})
-        combined = {}
+        zc = context.get("zone_dist_combined")
 
-        if fused:
-            all_keys = set()
-            for sport_data in fused.values():
-                all_keys.update(sport_data.keys())
-
-            for key in all_keys:
-                combined[key] = np.mean([
-                    sport_data.get(key, 0.0) for sport_data in fused.values()
-                ])
-
-            grouped = {
-                "power": {k.replace("power_", ""): round(v, 2) for k, v in combined.items() if k.startswith("power_")},
-                "hr": {k.replace("hr_", ""): round(v, 2) for k, v in combined.items() if k.startswith("hr_")},
-            }
-
-            # ✅ Do not recompute polarisation index here — Tier-2 already provides it
+        if isinstance(zc, dict) and zc.get("distribution"):
             semantic["zones"]["combined"] = {
-                "distribution": grouped,
-                "basis": "Power where available, HR otherwise (time-weighted)",
-                "polarisation_index": context.get("Polarisation_combined") or context.get("PolarisationIndex"),
-                "model": None,
-                "model_description": None,
-                "_render": {
-                    "polarisation_index": False,
-                    "model": False,
-                    "model_description": False
-                }
+                "label": CHEAT_SHEET["zone_semantics"]["combined"]["label"],
+                "description": CHEAT_SHEET["zone_semantics"]["combined"]["description"],
+                "distribution": rename_z8_to_ss(zc["distribution"]),
+                "basis": zc.get("basis"),
             }
-
-            debug(context, "[SEMANTIC] ✅ Combined zones injected (using Tier-2 polarisation values)")
-
+            debug(context, "[SEMANTIC] ✅ Injected combined zones from Tier-2 (authoritative)")
         else:
             semantic["zones"]["combined"] = {
                 "distribution": {"power": {}, "hr": {}},
                 "basis": "unavailable",
-                "polarisation_index": None,
-                "model": "undefined",
                 "model_description": "No valid data",
             }
 
     except Exception as e:
-        debug(context, f"[SEMANTIC] ⚠️ Failed to inject combined zones: {e}")
+        debug(context, f"[SEMANTIC] ⚠️ Combined zone injection failed: {e}")
+
+
+
 
     # ---------------------------------------------------------
     # 🧭 Polarisation Variants (Tier-2 authoritative values only)

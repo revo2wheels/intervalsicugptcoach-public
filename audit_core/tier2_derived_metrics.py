@@ -480,6 +480,18 @@ def compute_derived_metrics(df_events, context):
             df_events.loc[:, hr_zone_cols] = df_events[hr_zone_cols].apply(lambda col: col * factor)
             debug(context, f"[T2] ⚙️ Applied HR→Power scaling ×{factor} to HR zones ({len(hr_zone_cols)} cols)")
 
+    # --------------------------------------------------
+    # 🔧 Ensure fused zone columns exist (Tier-1 parity)
+    # --------------------------------------------------
+    for c in df_events.columns:
+        if c.startswith("power_z") and f"_fused_{c}" not in df_events.columns:
+            df_events[f"_fused_{c}"] = df_events[c]
+
+        if c.startswith("hr_z") and f"_fused_{c}" not in df_events.columns:
+            df_events[f"_fused_{c}"] = df_events[c]
+
+    debug(context, "[T2-FUSED] Injected _fused_* columns from raw zones")
+
     # ======================================================
     # 🧩 Fuse Power + HR zones per sport (URF v5.1 addition)
     # ======================================================
@@ -513,8 +525,8 @@ def compute_derived_metrics(df_events, context):
                 continue
 
             # Identify possible zone columns
-            pcols = [c for c in sub.columns if c.startswith("power_z")]
-            hcols = [c for c in sub.columns if c.startswith("hr_z")]
+            pcols = [c for c in sub.columns if c.startswith("_fused_power_z")]
+            hcols = [c for c in sub.columns if c.startswith("_fused_hr_z")]
             if not pcols and not hcols:
                 debug(context, f"[T2-FUSED] ⚠️ No zone columns found for {sport_group}")
                 continue
@@ -581,65 +593,86 @@ def compute_derived_metrics(df_events, context):
         import traceback
         debug(context, f"[T2-FUSED] ❌ Zone fusion failed: {e}\n{traceback.format_exc()}")
 
-
-
     # ---------------------------------------------------------
-    # 🧩 Combined Zones (global HR+Power blend across all sports)
+    # 🧩 Combined Zones (ALL sports, fused, time-normalised ONCE)
+    # Seiler / Stöggl / Issurin compliant
     # ---------------------------------------------------------
     try:
-        debug(context, "[T2-COMBINED] 🔍 Starting combined zone computation")
+        debug(context, "[T2-COMBINED] 🔍 Starting combined zone computation (fused → canonical)")
 
-        fused = context.get("zone_dist_fused", {})
-        combined = {}
+        df = df_events.copy()
 
-        if not fused:
-            debug(context, "[T2-COMBINED] ⚠️ No fused zones in context → skipping combination.")
+        # Operate ONLY on fused columns (already exclusive per activity)
+        fused_cols = [c for c in df.columns if c.startswith("_fused_")]
+
+        if not fused_cols:
+            debug(context, "[T2-COMBINED] ⚠️ No fused zone columns available")
+            context["zone_dist_combined"] = {}
+
         else:
-            debug(context, f"[T2-COMBINED] Found fused sports: {list(fused.keys())}")
+            zdf = df[fused_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
 
-            # --- Aggregate all sports’ fused distributions
-            all_keys = set()
-            for sport_data in fused.values():
-                all_keys.update(sport_data.keys())
+            total_time = zdf.sum().sum()
+            if total_time <= 0:
+                debug(context, "[T2-COMBINED] ⚠️ Total fused time = 0")
+                context["zone_dist_combined"] = {}
 
-            debug(context, f"[T2-COMBINED] All zone keys across sports: {sorted(all_keys)}")
-
-            for key in all_keys:
-                combined[key] = np.mean([
-                    sport_data.get(key, 0.0) for sport_data in fused.values()
-                ])
-
-            # --- Optional sanity report
-            debug(context, f"[T2-COMBINED] Combined mean zones → sample: "
-                           f"{ {k: round(v,1) for k,v in list(combined.items())[:6]} }")
-
-            # --- Compute Polarisation Index (Z1 vs. Z3+)
-            z1 = combined.get("hr_z1", 0) + combined.get("power_z1", 0)
-            z3p = sum(v for k, v in combined.items()
-                      if any(zone in k for zone in ["z3", "z4", "z5"]))
-            polarisation_index = round(z1 / (z1 + z3p + 1e-9), 3)
-
-            # --- Simple model classification
-            if polarisation_index >= 0.8:
-                model = "polarised"
-            elif 0.65 <= polarisation_index < 0.8:
-                model = "pyramidal"
             else:
-                model = "threshold"
+                # --------------------------------------------------
+                # 1️⃣ Normalise ONCE across ALL sports (time-based)
+                # --------------------------------------------------
+                dist = (zdf.sum() / total_time * 100).to_dict()
 
-            context["zone_dist_combined"] = {
-                "distribution": {k: round(v, 2) for k, v in combined.items()},
-                "basis": "Power where available, HR otherwise (multi-sport weighted)",
-                "polarisation_index": polarisation_index,
-                "model": model,
-            }
+                # --------------------------------------------------
+                # 2️⃣ Collapse fused power/hr → canonical zones
+                #     (zones are physiological, sensors are proxies)
+                # --------------------------------------------------
+                collapsed = {}
 
-            debug(context,
-                  f"[T2-COMBINED] ✅ Combined zones computed → PI={polarisation_index}, model={model}")
+                for k, v in dist.items():
+                    key = k
+                    if key.startswith("_fused_"):
+                        key = key.replace("_fused_", "")
+                    if key.startswith("power_"):
+                        key = key.replace("power_", "")
+                    if key.startswith("hr_"):
+                        key = key.replace("hr_", "")
+
+                    collapsed[key] = collapsed.get(key, 0.0) + float(v)
+
+                # --------------------------------------------------
+                # 3️⃣ Final normalisation guard (should ≈100 already)
+                # --------------------------------------------------
+                total = sum(collapsed.values())
+                if total > 0:
+                    collapsed = {
+                        k: round(v / total * 100, 1)
+                        for k, v in collapsed.items()
+                    }
+
+                # --------------------------------------------------
+                # 4️⃣ Store canonical combined distribution
+                # --------------------------------------------------
+                context["zone_dist_combined"] = {
+                    "distribution": collapsed,
+                    "basis": (
+                        "Time-based intensity distribution across all endurance activities. "
+                        "Power used when available, HR otherwise. "
+                        "Normalised once across total training time "
+                        "(Seiler / Stöggl / Issurin methodology)."
+                    ),
+                }
+
+                debug(
+                    context,
+                    f"[T2-COMBINED] ✅ Combined zones computed → "
+                    f"{len(collapsed)} zones, total={sum(collapsed.values()):.1f}%"
+                )
 
     except Exception as e:
         import traceback
-        debug(context, f"[T2-COMBINED] ❌ Failed to compute combined zones: {e}\n{traceback.format_exc()}")
+        debug(context, f"[T2-COMBINED] ❌ Failed: {e}\n{traceback.format_exc()}")
+
 
 
 

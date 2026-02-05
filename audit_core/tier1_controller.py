@@ -11,29 +11,27 @@ import numpy as np
 from audit_core.utils import debug
 from audit_core.errors import AuditHalt
 from audit_core.utils import validate_dataset_integrity, validate_wellness_alignment
+from coaching_cheat_sheet import CHEAT_SHEET
 
-def apply_event_filter(df):
-    """Tier-1 proxy to isolate visible endurance events for renderer."""
-    # Accept all valid sessions except system sync or nulls
-    include_types = [
-        "Ride", "VirtualRide", "GravelRide",
-        "Hike", "Run", "TrailRun", "Walk"
-    ]
+# ======================================================
+# 🧩 SPORT GROUP RESOLUTION (CHEAT_SHEET AUTHORITATIVE)
+# ======================================================
 
-    # Filter by sport type when present
-    if "type" in df.columns:
-        df = df[df["type"].isin(include_types)]
+SPORT_GROUPS = CHEAT_SHEET.get("sport_groups", {})
 
-    # Drop duplicates on canonical identifiers
-    df = df.drop_duplicates(subset=["id", "start_date_local"], keep="first")
+def resolve_sport_group(activity_type: str):
+    """
+    Return canonical sport group name for an activity type
+    using CHEAT_SHEET sport_groups.
+    """
+    if not activity_type:
+        return None
 
-    # Remove ignored, null, or zero-duration records
-    if "moving_time" in df.columns:
-        df = df[df["moving_time"] > 0]
-
-    return df
-
-
+    t = str(activity_type).strip()
+    for group, members in SPORT_GROUPS.items():
+        if t in members:
+            return group
+    return None
 
 def collect_zone_distributions(df_master, athlete_profile, context):
     """
@@ -233,46 +231,43 @@ def collect_zone_distributions(df_master, athlete_profile, context):
     debug(context, f"[DEBUG-ZONES] Swim cols={swim_cols}")
 
     # ======================================================
-    # 🧩 Sensor Exclusivity Enforcement (Power > HR Priority)
+    # 🧩 Sensor Exclusivity Enforcement (FUSION ONLY)
+    # Preserve raw HR for reporting
     # ======================================================
     try:
         pcols = [c for c in df_master.columns if c.startswith("power_z")]
         hcols = [c for c in df_master.columns if c.startswith("hr_z")]
 
-        debug(context, f"[ZONES-FIX] 🔧 Enforcing per-activity sensor exclusivity → "
-                       f"Power cols={len(pcols)}, HR cols={len(hcols)}")
+        # Create fused copies ONCE
+        for c in pcols + hcols:
+            fused_col = f"_fused_{c}"
+            if fused_col not in df_master.columns:
+                df_master[fused_col] = df_master[c]
 
-        if not pcols and not hcols:
-            debug(context, "[ZONES-FIX] ⚠️ No zone columns found — skipping exclusivity check")
-        else:
-            for idx, row in df_master.iterrows():
-                has_power = pcols and pd.to_numeric(row[pcols], errors="coerce").fillna(0).sum() > 0
-                has_hr = hcols and pd.to_numeric(row[hcols], errors="coerce").fillna(0).sum() > 0
+        for idx, row in df_master.iterrows():
+            has_power = pcols and pd.to_numeric(row[pcols], errors="coerce").fillna(0).sum() > 0
+            has_hr = hcols and pd.to_numeric(row[hcols], errors="coerce").fillna(0).sum() > 0
 
-                # Apply rule: Power data dominates
-                if has_power:
-                    for h in hcols:
-                        df_master.at[idx, h] = 0.0
-                    source = "power"
-                elif has_hr:
-                    for p in pcols:
-                        df_master.at[idx, p] = 0.0
-                    source = "hr"
-                else:
-                    for h in hcols + pcols:
-                        df_master.at[idx, h] = 0.0
-                    source = "none"
+            # Apply exclusivity ONLY to fused columns
+            if has_power:
+                for h in hcols:
+                    df_master.at[idx, f"_fused_{h}"] = 0.0
+            elif has_hr:
+                for p in pcols:
+                    df_master.at[idx, f"_fused_{p}"] = 0.0
+            else:
+                for c in pcols + hcols:
+                    df_master.at[idx, f"_fused_{c}"] = 0.0
 
-                debug(context, f"[ZONES-FIX] Row {idx}: has_power={has_power}, has_hr={has_hr}, using={source}")
-
-        debug(context, "[ZONES-FIX] ✅ Sensor exclusivity successfully enforced (no double counting)")
+        debug(context, "[ZONES-FIX] ✅ Sensor exclusivity applied to fused columns only")
 
     except Exception as e:
         import traceback
-        debug(context, f"[ZONES-FIX] ❌ Sensor exclusivity enforcement failed: {e}\n{traceback.format_exc()}")
+        debug(context, f"[ZONES-FIX] ❌ Fusion exclusivity failed: {e}\n{traceback.format_exc()}")
+
 
     # --- 🧮 Compute zone distributions ---
-    def compute(cols, label):
+    def compute(df, cols, label):
         if not cols:
             debug(context, f"[DEBUG-ZONES] ❌ No {label} columns found — skipping.")
             return {}
@@ -289,35 +284,31 @@ def collect_zone_distributions(df_master, athlete_profile, context):
             Includes detailed debug output for data visualization and auditing.
             """
             try:
-                # Case 1: list structures (dicts or numeric)
                 if isinstance(value, list):
-                    # Log small preview to debug pipeline data shape
                     preview = value[:5] if len(value) > 5 else value
-                    debug(context, f"[DEBUG-ZONES] extract_secs() input type={type(value[0]) if value else None}, sample={preview}")
+                    debug(
+                        context,
+                        f"[DEBUG-ZONES] extract_secs() input type="
+                        f"{type(value[0]) if value else None}, sample={preview}"
+                    )
 
-                    # Case 1a: list of dicts with 'secs' key
                     if len(value) > 0 and isinstance(value[0], dict) and "secs" in value[0]:
                         total = sum(int(entry.get("secs", 0)) for entry in value)
                         debug(context, f"[DEBUG-ZONES] ✅ Parsed dict-style zones → total_secs={total}")
                         return total
 
-                    # Case 1b: flat numeric list (Railway case)
                     elif all(isinstance(x, (int, float)) for x in value):
                         total = sum(value)
                         debug(context, f"[DEBUG-ZONES] ✅ Parsed numeric-style zones → total_secs={total}")
                         return total
 
-                    # Case 1c: malformed or unexpected
                     else:
                         debug(context, f"[DEBUG-ZONES] ⚠️ Unexpected zone entry shape: {preview}")
                         return 0
 
-                # Case 2: single numeric fallback
                 elif isinstance(value, (int, float)):
-                    #debug(context, f"[DEBUG-ZONES] Single numeric input={value}")
                     return float(value)
 
-                # Case 3: completely invalid
                 else:
                     debug(context, f"[DEBUG-ZONES] ⚠️ Non-list, non-numeric input={value}")
                     return 0
@@ -326,27 +317,29 @@ def collect_zone_distributions(df_master, athlete_profile, context):
                 debug(context, f"[DEBUG-ZONES] ⚠️ extract_secs() exception: {e}")
                 return 0
 
-
-        # Apply the function to handle the lists and convert all data to numeric
-        subset = df_master[cols].applymap(extract_secs).apply(pd.to_numeric, errors="coerce").fillna(0)
+        # ✅ THE FIX: USE df, NOT df_master
+        subset = (
+            df[cols]
+            .applymap(extract_secs)
+            .apply(pd.to_numeric, errors="coerce")
+            .fillna(0)
+        )
 
         # Debugging full table for raw data and subset
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-            raw_data = df_master[cols].to_string(index=False)
+        with pd.option_context("display.max_rows", None, "display.max_columns", None):
+            raw_data = df[cols].to_string(index=False)
+
         debug(context, f"[DEBUG-ZONES] FULL {label} dataset:\n{raw_data}")
         debug(context, f"[DEBUG-ZONES] Processed subset:\n{subset}")
 
-        # Calculate total sum and check if valid data exists
         total = subset.sum().sum()
 
         if total <= 0:
             debug(context, f"[DEBUG-ZONES] ⚠ No valid {label} data — total=0")
             return {}
 
-        # Calculate and return distribution
         dist = (subset.sum() / total * 100).round(1).to_dict()
 
-        # Debug output for the result
         debug(context, f"[DEBUG-ZONES] ✅ {label} zones computed → {dist}")
         return dist
 
@@ -357,11 +350,36 @@ def collect_zone_distributions(df_master, athlete_profile, context):
     )
     debug(context, f"[ZONE-DEBUG] Power cols detected → {power_cols}")
 
-    # --- Compute all four ---
-    context["zone_dist_power"] = compute(power_cols, "power")
-    context["zone_dist_hr"]    = compute(hr_cols, "hr")
-    context["zone_dist_pace"]  = compute(pace_cols, "pace")
-    context["zone_dist_swim"] = compute(swim_cols, "swim")
+    # ======================================================
+    # 🩺 HR ZONES — CHEAT_SHEET SPORT-AWARE FILTER
+    # ======================================================
+
+    df_hr_scope = df_master.copy()
+
+    if "type" in df_master.columns:
+        df_hr_scope["sport_group"] = df_hr_scope["type"].apply(resolve_sport_group)
+
+        # HR zones are only physiologically comparable for cycling
+        df_hr_scope = df_hr_scope[df_hr_scope["sport_group"] == "Ride"]
+
+        debug(
+            context,
+            f"[ZONES-HR] HR zones restricted to CHEAT_SHEET Ride group → "
+            f"{sorted(df_hr_scope['type'].unique().tolist())}"
+        )
+
+
+    context["zone_dist_power"] = compute(df_master, power_cols, "power")
+
+    context["zone_dist_hr"] = compute(
+        df_hr_scope,
+        [c for c in hr_cols if c in df_hr_scope.columns],
+        "hr"
+    )
+
+    context["zone_dist_pace"] = compute(df_master, pace_cols, "pace")
+    context["zone_dist_swim"] = compute(df_master, swim_cols, "swim")
+
 
     # --- ✅ Normalize zone keys for Tier-2 fusion parity ---
     import re
@@ -437,7 +455,9 @@ def collect_zone_distributions(df_master, athlete_profile, context):
         f"power={len(context['zones']['power'])}, "
         f"hr={len(context['zones']['hr'])}, "
         f"pace={len(context['zones']['pace'])}"
-    )    # ✅ Extract from athlete profile (multi-sport aware)
+    )
+    
+    # ✅ Extract from athlete profile (multi-sport aware)
     athlete = context.get("athlete_raw", {}) or context.get("athlete", {})
     sport_settings = athlete.get("sportSettings", [])
 
@@ -450,13 +470,10 @@ def collect_zone_distributions(df_master, athlete_profile, context):
             sport_types = [t.lower() for t in sport.get("types", []) if isinstance(t, str)]
             type_set = set(sport_types + [sport_name])
 
-            if any(t in type_set for t in ["ride", "virtualride", "gravelride"]):
-                sport_key = "ride"
-            elif any(t in type_set for t in ["run", "trailrun", "virtualrun"]):
-                sport_key = "run"
-            elif any(t in type_set for t in ["swim", "openwaterswim"]):
-                sport_key = "swim"
-            else:
+            sport_key = resolve_sport_group(
+                sport.get("sport") or sport.get("name")
+            )
+            if not sport_key:
                 sport_key = "other"
 
             # --- Extract zone sets ---
@@ -482,48 +499,6 @@ def collect_zone_distributions(df_master, athlete_profile, context):
             or context["icu_zones"].get(fallback_sport)
             or {}
         )
-
-        context["icu_power_zones"] = active_zones.get("power", [])
-        context["icu_hr_zones"] = active_zones.get("hr", [])
-        context["icu_pace_zones"] = active_zones.get("pace", [])
-
-    else:
-        debug(context, "[ZONE-CONTEXT] ⚠️ No sportSettings found in athlete profile.")
-
-    # ✅ Extract from athlete profile (multi-sport aware)
-    athlete = context.get("athlete_raw", {}) or context.get("athlete", {})
-    sport_settings = athlete.get("sportSettings", [])
-
-    context["icu_zones"] = {}  # new multi-sport container
-
-    if sport_settings:
-        for sport in sport_settings:
-            types = [t.lower() for t in sport.get("types", [])]
-            sport_key = "ride" if any(t in types for t in ["ride", "virtualride"]) else \
-                        "run" if any(t in types for t in ["run", "virtualrun", "trailrun"]) else \
-                        "swim" if any(t in types for t in ["swim", "openwaterswim"]) else \
-                        "other"
-
-            sport_entry = {}
-
-            if "power_zones" in sport and isinstance(sport["power_zones"], list):
-                sport_entry["power"] = sport["power_zones"]
-            if "hr_zones" in sport and isinstance(sport["hr_zones"], list):
-                sport_entry["hr"] = sport["hr_zones"]
-            if "pace_zones" in sport and isinstance(sport["pace_zones"], list):
-                sport_entry["pace"] = sport["pace_zones"]
-            if "paceZones" in sport and isinstance(sport["paceZones"], list):
-                sport_entry["pace"] = sport["paceZones"]
-
-            if sport_entry:
-                context["icu_zones"][sport_key] = sport_entry
-                debug(context, f"[ZONE-CONTEXT] Added zones for {sport_key} → {sport_entry}")
-
-        # --- Backward compatibility for flat context fields
-        # Pick dominant sport type for current report
-        report_type = (context.get("report_sport") or "ride").lower()
-        fallback_sport = "run" if report_type == "run" else "ride"
-        active_zones = context["icu_zones"].get(report_type) or context["icu_zones"].get(fallback_sport) or {}
 
         context["icu_power_zones"] = active_zones.get("power", [])
         context["icu_hr_zones"] = active_zones.get("hr", [])
@@ -738,7 +713,9 @@ def run_tier1_controller(df_master, wellness, context):
     )
 
     # --- Cycling-only refinement for mean metrics ---
-    cycling_subset = visible_events[visible_events["type"].isin(["Ride", "VirtualRide", "Workout"])].copy()
+    cycling_subset = visible_events.copy()
+    cycling_subset["sport_group"] = cycling_subset["type"].apply(resolve_sport_group)
+    cycling_subset = cycling_subset[cycling_subset["sport_group"] == "Ride"]
     if not cycling_subset.empty:
         context["tier1_visibleTotals"].update({
             "avg_if": round(cycling_subset["IF"].mean(), 2)

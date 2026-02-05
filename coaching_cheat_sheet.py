@@ -443,26 +443,141 @@ CHEAT_SHEET["advice"] = {
 }
 
 # =========================================================
-# 🏷️ SPORT GROUP CANONICAL MAPS (for zone, polarisation, etc.)
+# 🏷️ SPORT GROUP CANONICAL MAPS (Intervals.icu canonical)
+# Used for zones, fusion, polarisation, reporting
 # =========================================================
 CHEAT_SHEET["sport_groups"] = {
+
+    # -----------------------------
+    # 🚴 CYCLING (POWER FIRST)
+    # -----------------------------
     "Ride": [
-        "Ride", "VirtualRide", "GravelRide", "MountainBikeRide",
-        "TrackRide", "EBikeRide", "EMountainBikeRide", "Velomobile", "Handcycle"
+        "Ride",
+        "VirtualRide",
+        "GravelRide",
+        "MountainBikeRide",
+        "TrackCycling",
+        "EBikeRide",
+        "EMountainBikeRide",
+        "Handcycle",
+        "Velomobile",
     ],
+
+    # -----------------------------
+    # 🏃 RUNNING (HR / PACE)
+    # -----------------------------
     "Run": [
-        "Run", "TrailRun", "VirtualRun", "Hike", "Walk"
+        "Run",
+        "TrailRun",
+        "VirtualRun",
+        "Walk",
+        "Hike",
+        "Snowshoe",
     ],
+
+    # -----------------------------
+    # 🏊 SWIMMING
+    # -----------------------------
     "Swim": [
-        "Swim", "OpenWaterSwim", "VirtualSwim"
+        "Swim",
+        "OpenWaterSwim",
+        "VirtualSwim",
     ],
+
+    # -----------------------------
+    # ⛷️ SKI / SNOW
+    # -----------------------------
+    "Ski": [
+        "AlpineSki",
+        "BackcountrySki",
+        "NordicSki",
+        "RollerSki",
+        "Snowboard",
+        "VirtualSki",
+    ],
+
+    # -----------------------------
+    # 🚣 ROWING
+    # -----------------------------
+    "Row": [
+        "Row",
+        "VirtualRow",
+    ],
+
+    # -----------------------------
+    # 🚫 EXCLUDED FROM ZONE / POL
+    # -----------------------------
     "Excluded": [
-        "WeightTraining", "Crossfit", "Yoga", "Pilates", "Golf", "Workout",
-        "Rowing", "VirtualRow", "Kayaking", "StandUpPaddling", "Surfing",
-        "TableTennis", "Tennis", "Squash", "Padel", "Pickleball", "Badminton",
-        "Soccer", "Hockey", "Rugby", "RockClimbing", "Snowboard", "Ski",
-        "BackcountrySki", "NordicSki", "RollerSki", "Snowshoe"
-    ]
+        "WeightTraining",
+        "Crossfit",
+        "Yoga",
+        "Pilates",
+        "Golf",
+        "Workout",
+        "HIIT",
+        "Elliptical",
+        "StairStepper",
+        "Tennis",
+        "TableTennis",
+        "Squash",
+        "Padel",
+        "Pickleball",
+        "Badminton",
+        "Soccer",
+        "Hockey",
+        "Rugby",
+        "RockClimbing",
+        "Kayaking",
+        "StandUpPaddling",
+        "Surfing",
+        "Windsurf",
+        "Sail",
+        "Canoeing",
+    ],
+}
+CHEAT_SHEET["zone_semantics"] = {
+    "power": {
+        "label": "Power Zones",
+        "description": (
+            "Distribution of training time by cycling power zones. Derived from Intervals.icu power zone times for Ride-based activities. "
+            "SS = Sweetspot"
+        ),
+    },
+    "hr": {
+        "label": "Heart Rate Zones",
+        "description": "Distribution of training time by heart rate zones. Restricted to Ride-based activities for physiological comparability."
+    },
+    "pace": {
+        "label": "Pace Zones",
+        "description": "Distribution of training time by pace zones. Used primarily for Run-based activities."
+    },
+    "swim": {
+        "label": "Swim Pace Zones",
+        "description": "Distribution of training time by swim pace zones for pool and open water swims."
+    },
+    "fused": {
+        "label": "Fused Intensity Zones",
+        "description": (
+            "Sport-specific fusion of power and heart-rate intensity zones. "
+            "Within each activity, power is used when available; heart rate is "
+            "used otherwise. Time-in-zone is normalised per sport before aggregation. "
+            "This follows established endurance physiology practice where intensity "
+            "distribution is defined by time spent in intensity domains, with sensors "
+            "treated as interchangeable proxies rather than distinct categories "
+            "(Seiler 2010; Stöggl & Sperlich 2015; Issurin 2008) "
+            "SS = Sweetspot."
+        ),
+    },
+    "combined": {
+        "label": "Combined Intensity Distribution",
+        "description": (
+            "Global distribution of training time across intensity zones "
+            "for all endurance activities. Power is prioritised where available, "
+            "heart rate otherwise. Normalised once across total training time "
+            "(Seiler / Stöggl / Issurin methodology) "
+            "SS = Sweetspot."
+        ),
+    },
 }
 
 # === Labels ===
@@ -515,6 +630,8 @@ CHEAT_SHEET["future_colors"] = {
     "optimal": "#ffcc66",
     "high_risk": "#ff6666"
 }
+
+
 
 # --- Backward compatibility aliases ---
 if "IFDrift" in CHEAT_SHEET["advice"]:
