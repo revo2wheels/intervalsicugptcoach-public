@@ -47,15 +47,46 @@ CHEAT_SHEET["thresholds"] = {
     "HRVBalance": {"green": [1.0, 1.3],"amber": [0.9, 1.0],"red": [0.0, 0.9]},
     "HRVStability": {"green": (0.85, 1.0), "amber": (0.7, 0.85)},
     "HRVTrend": {"green": (0.0, 5.0), "amber": (-2.0, 0.0)},
-    # --- Power-based (Seiler) ---
-    "Polarisation": {"green": (0.75, 0.90), "amber": (0.65, 0.95)},  # Seiler ratio (Power only)
-    "PolarisationIndex": {"green": (0.75, 1.00), "amber": (0.60, 0.75)},  # Normalized Power Index
+    # ================== POLARISATION THRESHOLDS ==================
+    # IMPORTANT SEMANTIC NOTE:
+    # - "Polarisation" (power-based) follows the Seiler ratio definition:
+    #     (Z1 + Z3) / (2 × Z2)
+    #   Canonical Seiler polarisation requires ≥ 1.0.
+    #   Green / amber ranges below are *heuristic coaching bands* for weekly feedback,
+    #   not strict physiological definitions.
+    #
+    # - "PolarisationIndex" is a normalized 0–1 power-only index (Z1+Z2 share),
+    #   interpreted contextually by training phase.
+    #
+    # - "Polarisation_fused" and "Polarisation_combined" are normalized intensity
+    #   distribution indices derived using Seiler / Stöggl / Issurin methodology.
+    #   Their green / amber bands represent polarised vs pyramidal vs threshold-dominant
+    #   patterns at the *weekly* level (not session-level judgments).
 
-    # --- Fused HR+Power (sport-specific) ---
-    "Polarisation_fused": {"green": (0.80, 1.00), "amber": (0.65, 0.80)},  # Slightly higher tolerance
+    # --- Power-based (Seiler ratio; power only) ---
+    "Polarisation": {
+        "green": (0.75, 0.90),
+        "amber": (0.65, 0.95),
+    },  # Canonical polarised ≥1.0; UI bands are coaching heuristics
 
-    # --- Combined HR+Power (multi-sport) ---
-    "Polarisation_combined": {"green": (0.78, 1.00), "amber": (0.60, 0.78)},  # Slightly looser due to sport mix
+    # --- Power-only normalized index (Z1 + Z2 proportion) ---
+    "PolarisationIndex": {
+        "green": (0.75, 1.00),
+        "amber": (0.60, 0.75),
+    },  # Aerobic bias vs intensity focus (phase-dependent)
+
+    # --- Fused HR + Power (sport-specific, normalized) ---
+    "Polarisation_fused": {
+        "green": (0.80, 1.00),
+        "amber": (0.65, 0.80),
+    },  # Seiler / Stöggl / Issurin (dominant-sport signal)
+
+    # --- Combined HR + Power (multi-sport, normalized) ---
+    "Polarisation_combined": {
+        "green": (0.78, 1.00),
+        "amber": (0.60, 0.78),
+    },  # Global descriptor; lower precision than sport-specific
+
     "TSB": {
         "transition": [10, 999],     # Very fresh, low load (fitness declining)
         "fresh": [5, 10],            # Race-ready freshness
@@ -358,40 +389,48 @@ CHEAT_SHEET["advice"] = {
     },
     # Base metric: Polarisation (Power-only)
     "Polarisation": {
-        "low": "⚠ Polarisation low ({:.2f}) — increase Z1–Z3 contrast unless in base phase.",
-        "z2_base": "🧱 Z2-base dominant ({:.2f}) — appropriate for aerobic foundation phase.",
-        "optimal": "✅ Polarisation optimal ({:.2f}) — strong 80/20 intensity structure."
-    },
-    # Power-normalized index variant
-    "PolarisationIndex": {
-        "low": "⚠ Polarisation Index low ({:.2f}) — intensity-heavy pattern; monitor Zone 2 volume.",
-        "z2_base": "🧱 Aerobic bias strong ({:.2f}) — excellent for base or recovery blocks.",
-        "optimal": "✅ Polarisation Index optimal ({:.2f}) — balanced endurance distribution."
+        "low": (
+            "⚠ Seiler Polarisation ratio low ({:.2f}) — increase Z1–Z3 contrast "
+            "unless this is an intentional base or durability-focused week."
+        ),
+        "z2_base": (
+            "🧱 Seiler Z2-base dominant ({:.2f}) — expected during aerobic foundation "
+            "or endurance development phases."
+        ),
+        "optimal": (
+            "✅ Seiler 80/20 Polarisation optimal ({:.2f}) — clear low–high intensity separation."
+        )
     },
     # Fused HR+Power variant (sport-specific)
     "Polarisation_fused": {
-        "low": "⚠ Fused Polarisation Index low ({:.2f}) — dominant intensity signal is threshold-heavy (not necessarily highest-volume sport); add endurance work.",
-        "z2_base": "🧱 Fused Polarisation Index ({:.2f}) — Z2-base dominant, normal for aerobic development.",
-        "optimal": "✅ Fused Polarisation Index optimal ({:.2f}) — maintain current intensity mix."
+        "low": (
+            "⚠ Seiler / Stöggl / Issurin methodology (HR+Power fused): polarisation low ({:.2f}) — "
+            "dominant sport intensity-domain distribution is threshold-heavy; "
+            "add endurance work only if this is not phase-intentional."
+        ),
+        "z2_base": (
+            "🧱 Seiler / Stöggl / Issurin methodology (HR+Power fused): ({:.2f}) — "
+            "Z2-base dominant intensity distribution, normal for aerobic development."
+        ),
+        "optimal": (
+            "✅ Seiler / Stöggl / Issurin methodology (HR+Power fused): optimal ({:.2f}) — "
+            "healthy intensity-domain contrast within the dominant sport."
+        )
     },
     # Multi-sport combined variant
     "Polarisation_combined": {
-        "low": "⚠ Combined Polarisation Index low ({:.2f}) — total weekly load intensity-heavy; increase endurance ratio.",
-        "z2_base": "🧱 Combined Polarisation Index ({:.2f}) — pyramidal distribution, acceptable in build weeks.",
-        "optimal": "✅ Combined Polarisation Index optimal ({:.2f}) — balanced global load contrast."
-    },
-        # --- Multi-variant Polarisation summary ---
-    "Polarisation_summary": {
         "low": (
-            "⚠ Polarisation metrics low ({}) — review endurance–intensity balance across sports. "
-            "Multiple discipline indices below target indicate overall Z2 dominance or insufficient intensity contrast."
+            "⚠ Seiler / Stöggl / Issurin methodology (multi-sport combined): polarisation low ({:.2f}) — "
+            "global weekly intensity-domain distribution is threshold-heavy; "
+            "increase endurance ratio if not phase-intentional."
         ),
-        "mixed": (
-            "🟠 Polarisation mixed ({}) — sport-specific imbalances detected; "
-            "ensure HR and power distributions align with phase goals."
+        "z2_base": (
+            "🧱 Seiler / Stöggl / Issurin methodology (multi-sport combined): ({:.2f}) — "
+            "pyramidal intensity distribution, acceptable in build or mixed-focus weeks."
         ),
-        "balanced": (
-            "✅ Polarisation balanced ({}) — endurance and intensity distribution consistent across sports."
+        "optimal": (
+            "✅ Seiler / Stöggl / Issurin methodology (multi-sport combined): optimal ({:.2f}) — "
+            "balanced global endurance–intensity contrast across sports."
         )
     },
     # --- Recovery Index ---
@@ -630,6 +669,76 @@ CHEAT_SHEET["future_colors"] = {
     "grey": "#cccccc",
     "optimal": "#ffcc66",
     "high_risk": "#ff6666"
+}
+
+# ============================================================
+# 🔎 Metric Confidence & Applicability Rules (Contextual Model)
+# ============================================================
+# These rules define WHEN a metric is actionable vs contextual.
+# They do NOT change values, thresholds, or classifications.
+# ============================================================
+
+CHEAT_SHEET["metric_confidence"] = {
+
+    # --- Power-only Seiler Ratio ---
+    "Polarisation": {
+        "default": "contextual",
+
+        "high_confidence_when": {
+            "phases": ["Build", "Peak"],
+            "min_sessions": 4,
+            "min_intensity_sessions": 2
+        },
+
+        "notes": (
+            "Power-based Seiler polarisation is only actionable when "
+            "intensity contrast is intentionally prescribed. "
+            "Z2-dominant values are expected during base, recovery, "
+            "or durability-focused weeks."
+        )
+    },
+
+    # --- Power-normalised index ---
+    "PolarisationIndex": {
+        "default": "contextual",
+
+        "high_confidence_when": {
+            "phases": ["Build", "Peak"],
+            "min_sessions": 3
+        },
+
+        "notes": (
+            "Normalised polarisation reflects aerobic bias rather than "
+            "intensity contrast. Best used directionally."
+        )
+    },
+
+    # --- Fused HR + Power (dominant sport) ---
+    "Polarisation_fused": {
+        "default": "contextual",
+
+        "high_confidence_when": {
+            "phases": ["Build", "Peak"],
+            "dominant_sport_required": True,
+            "min_sessions": 4
+        },
+
+        "notes": (
+            "Fused polarisation reflects intensity distribution within "
+            "the dominant sport. Confidence depends on signal quality, "
+            "not volume."
+        )
+    },
+
+    # --- Combined multi-sport ---
+    "Polarisation_combined": {
+        "default": "informational",
+
+        "notes": (
+            "Combined polarisation is a global summary metric and "
+            "should never trigger corrective actions on its own."
+        )
+    }
 }
 
 

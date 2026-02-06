@@ -573,6 +573,11 @@ COACH_PROFILE = {
                 "(✅ aerobic focus). If in Build or Peak, reduce mid-zone load and increase Z1 "
                 "and Z3 contrast. Maintain ≥1.0 for fully polarised 80/20 structure in race phases."
             ),
+            "confidence_model": "contextual",
+            "confidence_note": (
+                "Evaluated at weekly level. Actionable primarily in Build and Peak phases; "
+                "descriptive during Base and Recovery blocks."
+            ),
         },
         "PolarisationIndex": {
             "framework": "Z1+Z2 Normalized Index",
@@ -593,15 +598,19 @@ COACH_PROFILE = {
                 "and reduce Z2. If <0.60 in Build/Peak, acceptable due to intensity focus. "
                 "Target ≥0.75 for strong aerobic adaptation in Base/Recovery."
             ),
+            "confidence_model": "contextual",
+            "confidence_note": (
+                "Weekly distribution signal. Interpretation depends on phase intent "
+                "(aerobic accumulation vs intensity expression)."
+            ),
         },
         "Polarisation_fused": {
-            "framework": "Seiler 80/20 (HR+Power Fusion)",
-            "formula": "(Z1 + Z3) / (2 × Z2) [applied to fused HR+Power zones]",
+            "framework": "Seiler / Stöggl / Issurin (HR+Power fused)",
+            "formula": "Normalized intensity-domain distribution (fused HR+Power)",
             "criteria": {
-                "polarised": "≥ 1.0",
-                "mixed": "0.7–0.99",
-                "z2_base": "0.35–0.69",
-                "threshold": "< 0.35"
+                "polarised": "≥ 0.80",
+                "pyramidal": "0.65–0.79",
+                "threshold_dominant": "< 0.65"
             },
             "interpretation": (
                 "Derived per sport from HR+Power fusion. Reflects dominant-sport load separation. "
@@ -612,15 +621,19 @@ COACH_PROFILE = {
                 "If <0.7 in Base → aerobic focus (✅). "
                 "If <0.7 in Build/Peak → excessive mid-zone; rebalance toward Z1/Z3 contrast."
             ),
+            "confidence_model": "contextual",
+            "confidence_note": (
+                "Valid when one sport clearly dominates intensity signalling. "
+                "Less reliable with evenly mixed multi-sport weeks."
+            ),
         },
         "Polarisation_combined": {
-            "framework": "Seiler 80/20 (Multi-sport Weighted)",
-            "formula": "(Z1 + Z3) / (2 × Z2) [multi-sport weighted]",
+            "framework": "Seiler / Stöggl / Issurin (multi-sport combined)",
+            "formula": "Normalized global intensity-domain distribution",
             "criteria": {
-                "polarised": "≥ 1.0",
-                "mixed": "0.7–0.99",
-                "z2_base": "0.35–0.69",
-                "threshold": "< 0.35"
+                "polarised": "≥ 0.80",
+                "pyramidal": "0.65–0.79",
+                "threshold_dominant": "< 0.65"
             },
             "interpretation": (
                 "Weighted mean of sport-specific fused indices. Represents overall cross-sport "
@@ -630,6 +643,10 @@ COACH_PROFILE = {
             "coaching_implication": (
                 "Maintain ≥0.8 global balance for healthy load variation. "
                 "If <0.65 → add Z1 endurance days or rest."
+            ),
+            "confidence_model": "contextual",
+            "confidence_note": (
+                "High-level weekly descriptor only. Not intended for session-level judgement."
             ),
         },
         "TRIMP": {

@@ -45,6 +45,34 @@ from textwrap import dedent
 # Helpers
 # ---------------------------------------------------------
 
+def resolve_metric_confidence(metric_key, context, cheat_sheet):
+    rules = cheat_sheet.get("metric_confidence", {}).get(metric_key)
+    if not rules:
+        return "high"
+
+    confidence = rules.get("default", "high")
+    conditions = rules.get("high_confidence_when", {})
+
+    phase = context.get("current_phase")
+    total_sessions = context.get("total_sessions", 0)
+    intensity_sessions = context.get("intensity_sessions", 0)
+    dominant_sport = context.get("dominant_sport")
+
+    if conditions:
+        if phase not in conditions.get("phases", [phase]):
+            return confidence
+        if total_sessions < conditions.get("min_sessions", 0):
+            return confidence
+        if intensity_sessions < conditions.get("min_intensity_sessions", 0):
+            return confidence
+        if conditions.get("dominant_sport_required") and not dominant_sport:
+            return confidence
+
+        return "high"
+
+    return confidence
+
+
 def handle_missing_data(value, default_value=None):
     """Convert NaN or None → safe default."""
     if value is None:
@@ -131,6 +159,7 @@ def semantic_block_for_metric(name, value, context):
         "thresholds": thresholds,
         "phase_context": phase,
         "classification": classification,
+        "metric_confidence": resolve_metric_confidence(metric_name, context, CHEAT_SHEET),
         "interpretation": interpretation,
         "coaching_implication": coaching_link,
         "related_metrics": profile_desc.get("criteria", {}),
@@ -654,6 +683,11 @@ def build_semantic_json(context):
             Purely interpretative — no math. Uses Tier-2 values.
             """
             block = semantic_block_for_metric(metric_key, value, context)
+            block["metric_confidence"] = resolve_metric_confidence(
+                metric_key,
+                context,
+                CHEAT_SHEET
+            )
 
             # canonical enrichment — merge with COACH_PROFILE definitions
             profile_def = COACH_PROFILE["markers"].get(metric_key, {})
@@ -720,6 +754,12 @@ def build_semantic_json(context):
             )
         else:
             debug(context, "[SEMANTIC] ⚠️ No valid Polarisation variants found in context")
+
+        # --- Explicit context window for Polarisation variants (weekly, contextual)
+        if "Polarisation_variants" in semantic.get("metrics", {}):
+            for v in semantic["metrics"]["Polarisation_variants"].values():
+                if isinstance(v, dict):
+                    v["context_window"] = "7d"
 
     except Exception as e:
         debug(context, f"[SEMANTIC] ⚠️ Could not build polarisation variants: {e}")
@@ -1778,56 +1818,6 @@ def build_semantic_json(context):
     for name, metric in semantic["metrics"].items():
         metric["context_window"] = metric_windows.get(name, "unknown")
 
-    # ---------------------------------------------------------
-    # ✅ SAFETY PATCH — Ensure Polarisation metric uses CHEAT_SHEET metadata only
-    # ---------------------------------------------------------
-    try:
-        # Prefer most specific Tier-2 values in priority order
-        value = (
-            context.get("Polarisation_seiler")
-            or context.get("Polarisation")
-            or context.get("Polarisation_fused")
-            or context.get("Polarisation_combined")
-        )
-
-        # Detect which variant name is available in context
-        variant = next(
-            (k for k in [
-                "Polarisation_seiler",
-                "Polarisation",
-                "Polarisation_fused",
-                "Polarisation_combined"
-            ] if k in context),
-            "Polarisation"
-        )
-
-        if value is not None:
-            # --- Build metric block dynamically ---
-            metric_block = semantic_block_for_metric("Polarisation", value, context)
-
-            # All metadata dynamically pulled from CHEAT_SHEET
-            display_name = CHEAT_SHEET["display_names"].get(variant, variant)
-            thresholds = CHEAT_SHEET["thresholds"].get(variant, CHEAT_SHEET["thresholds"].get("Polarisation", {}))
-            context_text = CHEAT_SHEET["context"].get(variant, CHEAT_SHEET["context"].get("Polarisation"))
-            coaching_text = CHEAT_SHEET["coaching_links"].get(variant, CHEAT_SHEET["coaching_links"].get("Polarisation"))
-
-            metric_block.update({
-                "display_name": display_name,
-                "framework": "Seiler 80/20 Model",
-                "thresholds": thresholds,
-                "interpretation": context_text,
-                "coaching_implication": coaching_text,
-            })
-
-            semantic["metrics"]["Polarisation"] = metric_block
-            debug(context, f"[SEMANTIC] ✅ Polarisation ({variant}) injected = {value}")
-
-        else:
-            debug(context, "[SEMANTIC] ⚠️ No Polarisation value found in context")
-
-    except Exception as e:
-        debug(context, f"[SEMANTIC] ❌ Polarisation patch failed: {e}")
-
 
 
     # ---------------------------------------------------------
@@ -2265,6 +2255,11 @@ def build_insight_view(semantic):
 
     for key, ins in insights.items():
         cls = ins.get("classification")
+        confidence = ins.get("metric_confidence", "high")
+
+        if confidence == "contextual":
+            continue
+
         if not cls:
             continue
 

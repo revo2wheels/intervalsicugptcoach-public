@@ -10,6 +10,42 @@ from audit_core.utils import debug
 from coaching_cheat_sheet import CHEAT_SHEET
 from coaching_profile import COACH_PROFILE
 
+def metric_confidence(context, key, default="high"):
+    # Primary: semantic metrics (weekly / seasonal reports)
+    metrics = context.get("metrics", {})
+    if isinstance(metrics.get(key), dict):
+        return metrics[key].get("metric_confidence", default)
+
+    # Fallback: legacy derived_metrics
+    dm = context.get("derived_metrics", {})
+    if isinstance(dm.get(key), dict):
+        return dm[key].get("metric_confidence", default)
+
+    return default
+
+def metric_semantic_value(context, key, default=0.0):
+    """
+    Read metric value from semantic metrics first, then derived_metrics.
+    """
+    metrics = context.get("metrics", {})
+    if isinstance(metrics.get(key), dict):
+        val = metrics[key].get("value", default)
+        try:
+            return float(val)
+        except (TypeError, ValueError):
+            return default
+
+    dm = context.get("derived_metrics", {})
+    if isinstance(dm.get(key), dict):
+        val = dm[key].get("value", default)
+        try:
+            return float(val)
+        except (TypeError, ValueError):
+            return default
+
+    return default
+
+
 # === Dynamic Heuristics from Cheat Sheet ===
 def get_dynamic_heuristics():
     th = CHEAT_SHEET["thresholds"]
@@ -305,7 +341,16 @@ def evaluate_actions(context):
     }
 
     # Evaluate individual metrics with cheat-sheet thresholds + advice
-    for key, val in polarisations.items():
+    for key in polarisation_keys:
+        val = metric_semantic_value(context, key, 0.0)
+        if val <= 0:
+            continue
+
+        confidence = metric_confidence(context, key)
+        if confidence != "high":
+            debug(context, f"[T2-ACTIONS] ⏭ Skipping {key} (confidence={confidence})")
+            continue
+
         th = thr.get(key, thr.get("Polarisation", {}))
         adv_block = adv.get(key, {})
         if not th or not adv_block:
@@ -322,16 +367,15 @@ def evaluate_actions(context):
             actions.append(msg)
 
     # Multi-variant summary message (cross-discipline check)
-    low_keys = [
-        k for k, v in polarisations.items()
-        if v < thr.get(k, thr.get("Polarisation", {})).get("amber", (0, 1))[0]
-    ]
-
-    if len(low_keys) >= 2 and "Polarisation_summary" in adv:
-        vals_fmt = ", ".join(f"{k}:{v:.2f}" for k, v in polarisations.items())
-        actions.append(
-            adv["Polarisation_summary"]["low"].format(vals_fmt)
-        )
+    low_keys = []
+    for key in polarisation_keys:
+        if metric_confidence(context, key) != "high":
+            continue
+        val = metric_semantic_value(context, key, 0.0)
+        if val <= 0:
+            continue
+        if val < thr.get(key, thr.get("Polarisation", {})).get("amber", (0, 1))[0]:
+            low_keys.append(key)
 
     # ---------------- Metabolic Efficiency ----------------
     fox = context.get("FatOxidation", 0.0)
