@@ -1219,7 +1219,7 @@ def build_semantic_json(context):
             "decoupling", "icu_pm_w_prime", "icu_w_prime",
             "icu_max_wbal_depletion", "icu_joules_above_ftp",
             "total_elevation_gain", "calories", "VO2MaxGarmin",
-            "source", "device_name"
+            "source", "core_temp_mean", "core_temp_max", "core_temp_drift_per_hour", "device_name"
         ]
 
         # Identify which core fields actually exist in the incoming df
