@@ -29,7 +29,8 @@ RENDERER_PROFILES = {
             "Render exactly ONE report.",
             "Do NOT add numeric prefixes to section headers.",
             "Use emoji-based section headers only.",
-            "Preserve section order exactly as defined by the contract."
+            "Preserve section order exactly as defined by the contract.",
+            "Metric context MUST be derived exclusively from each metric’s `context_window` and `confidence_model` fields."
         ],
         "list_rules": [
             "If a section value is a JSON array (list), render it as a Markdown table.",
