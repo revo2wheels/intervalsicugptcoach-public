@@ -39,7 +39,7 @@ A typical LT1 value is approximately **1.5-2.5 mmol/L**. When no tested value is
 * Refresh the page. The values should then populate automatically on new activities.
 * When values do not appear, reload the activity from its source or temporarily edit an interval to force the activity fields to refresh.
 
-![Activity Custom menu](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/lactate-lt1/activity-custom-menu.svg)
+![Activity Custom menu](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/lactate-lt1/activity-custom-menu.png)
 
 ### Keep the Values Updated
 Update `HRTLNDLT1` and `HRTLNDLT1P` in **Athlete Settings → Custom Fields** whenever you complete a new lactate or endurance test.
