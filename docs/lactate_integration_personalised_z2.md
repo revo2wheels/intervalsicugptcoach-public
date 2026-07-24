@@ -5,24 +5,24 @@ Montis uses optional blood lactate measurements to refine your aerobic training 
 ### Add the LT1 Fields in Intervals.icu
 * Open **Athlete → Settings** using the gear icon.
 * Scroll to **Custom Fields**.
-![Custom Fields overview](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/lactate-lt1/scroll-to-custom-fields.svg)
+![Custom Fields overview](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/lactate-lt1/scroll-to-custom-fields.png)
 * Use the search icon and enter `HRTLNDLT1`.
 * Add both custom fields:
   * **HRTLNDLT1** — LT1 lactate concentration in mmol/L.
   * **HRTLNDLT1P** — power recorded with the LT1 sample in watts.
 
-![Custom Fields overview](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/lactate-lt1/custom-fields-overview.svg)
+![Custom Fields overview](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/lactate-lt1/custom-fields-overview.png)
 
-![Search for the LT1 fields](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/lactate-lt1/search-lt1-fields.svg)
+![Search for the LT1 fields](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/lactate-lt1/search-lt1-fields.png)
 
 * Open each field with the edit icon and confirm its settings.
 * Click **OK**, tick the checkbox to activate the field, and then click **Close** to save.
 
-![LT1 field settings](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/lactate-lt1/lt1-field-settings.svg)
+![LT1 field settings](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/lactate-lt1/lt1-field-settings.png)
 
-![LT1 power field settings](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/lactate-lt1/lt1-power-field-settings.svg)
+![LT1 power field settings](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/lactate-lt1/lt1-power-field-settings.png)
 
-![Enabled activity fields](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/lactate-lt1/enabled-activity-fields.svg)
+![Enabled activity fields](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/lactate-lt1/enabled-activity-fields.png)
 
 ### Enter Your LT1 and Power Values
 * In **Athlete Settings → Custom Fields**, locate `HRTLNDLT1`.
