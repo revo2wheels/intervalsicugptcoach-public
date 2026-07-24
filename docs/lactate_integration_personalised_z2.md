@@ -5,6 +5,7 @@ Montis uses optional blood lactate measurements to refine your aerobic training 
 ### Add the LT1 Fields in Intervals.icu
 * Open **Athlete → Settings** using the gear icon.
 * Scroll to **Custom Fields**.
+![Custom Fields overview](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/lactate-lt1/scroll-to-custom-fields.svg)
 * Use the search icon and enter `HRTLNDLT1`.
 * Add both custom fields:
   * **HRTLNDLT1** — LT1 lactate concentration in mmol/L.
