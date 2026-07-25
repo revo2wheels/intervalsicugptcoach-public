@@ -865,14 +865,24 @@ def compute_derived_metrics(df_events, context):
                 context["ZQI"] = zqi
 
     # --- ✅ 9. Fat oxidation efficiency ---
-    if "icu_intensity" in df_events.columns:
-        df_events["icu_intensity"] = pd.to_numeric(df_events["icu_intensity"], errors="coerce")
-        df_events.loc[df_events["icu_intensity"] > 10, "icu_intensity"] /= 100
-        if_proxy = np.nanmean(df_events["icu_intensity"].values)
-    else:
-        if_proxy = 0.7  # assume aerobic bias if missing
+    if_proxy = 0.7  # fallback when usable intensity data is unavailable
 
-    fat_ox_eff = round(np.clip((if_proxy or 0.5) * 0.9, 0.3, 0.8), 3)
+    if "icu_intensity" in df_events.columns:
+        intensity = pd.to_numeric(
+            df_events["icu_intensity"],
+            errors="coerce"
+        )
+
+        intensity.loc[intensity > 10] /= 100
+        valid_intensity = intensity.dropna()
+
+        if not valid_intensity.empty:
+            if_proxy = float(valid_intensity.mean())
+
+    fat_ox_eff = round(
+        float(np.clip(if_proxy * 0.9, 0.3, 0.8)),
+        3
+    )
     # ---------------------------------------------------------
     # 🧩 Polarisation Metrics (Seiler 3-zone + Treff PI)
     # ---------------------------------------------------------
