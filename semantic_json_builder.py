@@ -4901,6 +4901,7 @@ def build_semantic_json(context):
                         df_future = (
                             df_future
                             .sort_values("start")
+                            .head(12)
                             .reset_index(drop=True)
                         )
 
