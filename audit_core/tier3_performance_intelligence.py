@@ -18,7 +18,7 @@ import numpy as np
 from coaching_profile import COACH_PROFILE
 from tier3_trail_execution import run_trail_execution
 
-PI_VERSION = "PI_v1.61"
+PI_VERSION = "PI_v1.62"
 # ===========================================================
 # Public Entry
 # ===========================================================
@@ -144,21 +144,47 @@ def _compute_weekly(context, df_full):
         )
 
 
+    # --------------------------------------------------
+    # ISDM durability classification
+    # Preserve existing JSON contract.
+    # Raw magnitude remains reported, but state uses signed
+    # decoupling and requires repeated evidence.
+    # --------------------------------------------------
+
     mean_signed = _safe_mean(decoupling_signed)
     mean_abs = _safe_mean(decoupling_abs)
 
+    positive_high_drift_sessions = _safe_count(
+        decoupling_signed,
+        5.0
+    ) or 0
+
+    valid_decoupling_sessions = int(
+        decoupling_signed.notna().sum()
+    ) if isinstance(decoupling_signed, pd.Series) else 0
+
     durability_state = None
 
-    if mean_abs is not None and mean_abs > 8:
-        durability_state = "drifting"   # magnitude dominates (bad stability)
+    if mean_signed is not None:
 
-    elif mean_signed is not None:
-        if mean_signed > 3:
+        # Substantial mean positive drift remains meaningful.
+        if mean_signed > 10:
             durability_state = "drifting"
-        elif mean_signed < -2:
+
+        # Moderate drift requires repetition, not one noisy activity.
+        elif (
+            mean_signed > 5
+            and positive_high_drift_sessions >= 2
+            and valid_decoupling_sessions >= 3
+        ):
+            durability_state = "drifting"
+
+        elif mean_signed < -5 and valid_decoupling_sessions >= 2:
             durability_state = "improving"
+
         elif mean_signed < 0:
             durability_state = "stable_improving"
+
         else:
             durability_state = "stable"
 
@@ -319,19 +345,35 @@ def _compute_season(context, df_light, df_full):
     mean_signed = _safe_mean(decoupling_signed)
     mean_abs = _safe_mean(decoupling_abs)
 
+    positive_high_drift_sessions_90d = _safe_count(
+        decoupling_signed,
+        5.0
+    ) or 0
+
+    valid_decoupling_sessions_90d = int(
+        decoupling_signed.notna().sum()
+    ) if isinstance(decoupling_signed, pd.Series) else 0
+
     durability_state_90d = None
 
-    # chronic state: magnitude first, then direction
-    if mean_abs is not None and mean_abs > 7:
-        durability_state_90d = "drifting"
+    if mean_signed is not None:
 
-    elif mean_signed is not None:
-        if mean_signed > 2:
+        if mean_signed > 8:
             durability_state_90d = "drifting"
-        elif mean_signed < -1.5:
+
+        elif (
+            mean_signed > 5
+            and positive_high_drift_sessions_90d >= 3
+            and valid_decoupling_sessions_90d >= 5
+        ):
+            durability_state_90d = "drifting"
+
+        elif mean_signed < -4 and valid_decoupling_sessions_90d >= 3:
             durability_state_90d = "improving"
+
         elif mean_signed < 0:
             durability_state_90d = "stable_improving"
+
         else:
             durability_state_90d = "stable"
 
