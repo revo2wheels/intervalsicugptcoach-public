@@ -581,17 +581,58 @@ def compute_carb_demand_from_sessions(context, model):
 
     return round(carbs, 2)
 
+
+def _completed_wellness_days(context, daily):
+    """
+    Return completed wellness days only.
+
+    Today's nutrition data may still be incomplete and must not
+    influence rolling nutrition classification.
+    """
+
+    if daily is None or daily.empty:
+        return daily
+
+    athlete_today = context.get("athlete_today")
+
+    if athlete_today is None:
+        # Defensive fallback; normal report execution supplies athlete_today.
+        athlete_today = pd.Timestamp.now(tz="UTC")
+
+    today = pd.Timestamp(athlete_today).tz_localize(None).date()
+
+    if "date" in daily.columns:
+        wellness_dates = pd.to_datetime(
+            daily["date"],
+            errors="coerce"
+        ).dt.date
+    else:
+        wellness_dates = pd.Series(
+            pd.to_datetime(
+                daily.index,
+                errors="coerce"
+            ).date,
+            index=daily.index
+        )
+
+    return daily.loc[wellness_dates < today].sort_index()
+
+
 def compute_nutrition_demand(context):
 
     debug(context, "[T3][NUTRITION] Starting demand model")
 
     model = COACH_PROFILE.get("nutrition_demand_model", {})
 
-    daily = context.get("wellness")
+    daily = _completed_wellness_days(
+        context,
+        context.get("wellness")
+    )
 
-    daily = daily.sort_index().tail(7)
     if daily is None or daily.empty:
         return
+
+    daily = daily.tail(7)
 
     valid_days = daily[
         daily["carbohydrates"].notna() &
@@ -654,7 +695,10 @@ def compute_nutrition_balance(context):
     debug(context, "[T3][NUTRITION] Evaluating balance")
 
     demand = context.get("nutrition_demand") or {}
-    daily = context.get("wellness")
+    daily = _completed_wellness_days(
+        context,
+        context.get("wellness")
+    )
 
     if daily is None or daily.empty:
         context["nutrition_balance"] = {
@@ -663,7 +707,7 @@ def compute_nutrition_balance(context):
         }
         return
 
-    daily = daily.sort_index().tail(7) #LIMIT to 7 NOT 42 days
+    daily = daily.tail(7)  # completed days only
 
     weight = (context.get("athlete") or {}).get("icu_weight")
 
@@ -749,16 +793,25 @@ def compute_nutrition_balance(context):
     fat_delta = fat_gkg - fat_req
 
     # -----------------------------
-    # Classification
+    # Carbohydrate classification
     # -----------------------------
     status = "balanced"
 
     if carbs_delta < -3:
         status = "severely_underfuelled"
-    elif carbs_delta < -1 or protein_delta < -0.3:
+    elif carbs_delta < -1:
         status = "underfuelled"
     elif carbs_delta > 1.5:
         status = "overfuelled"
+
+    # Protein is a separate signal and must not change
+    # the carbohydrate availability classification.
+    protein_status = "on_target"
+
+    if protein_delta < -0.3:
+        protein_status = "below_target"
+    elif protein_delta > 0.5:
+        protein_status = "above_target"
 
     if len(valid_days) >= 5:
         confidence = "high"
@@ -771,16 +824,24 @@ def compute_nutrition_balance(context):
         "carbs_gkg_actual": round(carbs_gkg, 2),
         "protein_gkg_actual": round(protein_gkg, 2),
         "fat_gkg_actual": round(fat_gkg, 2),
+
         "carbs_delta": round(carbs_delta, 2),
         "protein_delta": round(protein_delta, 2),
         "fat_delta": round(fat_delta, 2),
+
         "status": status,
+        "protein_status": protein_status,
         "confidence": confidence
     }
 
     context["nutrition_balance"] = balance
 
-    debug(context, "[T3][NUTRITION] Balance", f"status={status}", f"conf=moderate")
+    debug(
+        context,
+        "[T3][NUTRITION] Balance",
+        f"status={status}",
+        f"conf={confidence}"
+    )
 
     return
 

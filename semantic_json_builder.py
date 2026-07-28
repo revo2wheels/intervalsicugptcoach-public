@@ -3916,7 +3916,7 @@ def build_semantic_json(context):
             )
             
             # -----------------------------------------------------
-            # 3️⃣ Inject Nutrition (carb-driven only)
+            # 3️⃣ Inject Nutrition (carbohydrate classification)
             # -----------------------------------------------------
 
             nutrition = context.get("nutrition_balance")
@@ -3926,35 +3926,53 @@ def build_semantic_json(context):
             if nutrition and nutrition_demand:
 
                 classification = nutrition.get("status")
+                protein_status = nutrition.get("protein_status")
 
                 # -------------------------------------------------
-                # FIXED MARKER (NO SWITCHING)
+                # FIXED MARKER — carbohydrate availability
                 # -------------------------------------------------
-                marker = COACH_PROFILE.get("markers", {}).get("CarbohydrateAvailability", {})
+
+                marker = (
+                    COACH_PROFILE
+                    .get("markers", {})
+                    .get("CarbohydrateAvailability", {})
+                )
 
                 interpretation = marker.get("interpretation")
                 coaching = marker.get("coaching_implication")
                 formula = marker.get("formula")
                 framework = marker.get("framework")
 
+                def _to_grams(value_gkg):
+                    if value_gkg is None or weight is None or weight <= 0:
+                        return None
+                    return round(value_gkg * weight, 0)
+
                 semantic["performance_intelligence"]["nutrition"] = {
 
                     # -------------------------------------------------
-                    # Marker-driven (ALWAYS CARBS)
+                    # Carbohydrate marker
                     # -------------------------------------------------
 
                     "framework": framework,
                     "interpretation": interpretation,
                     "coaching_implication": coaching,
                     "formula": formula,
-                    "context_window": "rolling_3d",
+
+                    "context_window": "rolling_3d_completed_days",
+                    "signals_basis": "average_daily_intake",
 
                     # -------------------------------------------------
-                    # Classification (label only)
+                    # Classification
                     # -------------------------------------------------
 
                     "classification": classification,
+                    "classification_scope": "carbohydrate_availability",
                     "classification_source": "nutrition_balance",
+
+                    # Protein is reported separately and does not
+                    # control the carbohydrate classification.
+                    "protein_status": protein_status,
 
                     # -------------------------------------------------
                     # Confidence
@@ -3963,37 +3981,48 @@ def build_semantic_json(context):
                     "confidence": nutrition.get("confidence"),
 
                     # -------------------------------------------------
-                    # Signals (ALL MACROS — NO NARRATIVE SWITCH)
+                    # Signals
                     # -------------------------------------------------
 
                     "signals": {
+                        "carbs_actual_g": _to_grams(
+                            nutrition.get("carbs_gkg_actual")
+                        ),
+                        "protein_actual_g": _to_grams(
+                            nutrition.get("protein_gkg_actual")
+                        ),
+                        "fat_actual_g": _to_grams(
+                            nutrition.get("fat_gkg_actual")
+                        ),
 
-                        "carbs_actual_g": round(nutrition.get("carbs_gkg_actual", 0) * weight, 0) if weight else None,
-                        "protein_actual_g": round(nutrition.get("protein_gkg_actual", 0) * weight, 0) if weight else None,
-                        "fat_actual_g": round(nutrition.get("fat_gkg_actual", 0) * weight, 0) if weight else None,
+                        "carbs_required_g": _to_grams(
+                            nutrition_demand.get("carbs_gkg_required")
+                        ),
+                        "protein_required_g": _to_grams(
+                            nutrition_demand.get("protein_gkg_required")
+                        ),
+                        "fat_required_g": _to_grams(
+                            nutrition_demand.get("fat_gkg_target")
+                        ),
 
-                        "carbs_required_g": round(nutrition_demand.get("carbs_gkg_required", 0) * weight, 0) if weight else None,
-                        "protein_required_g": round(nutrition_demand.get("protein_gkg_required", 0) * weight, 0) if weight else None,
-                        "fat_required_g": round(nutrition_demand.get("fat_gkg_target", 0) * weight, 0) if weight else None,
-
-                        "carbs_delta_g": round(
-                            (nutrition.get("carbs_gkg_actual", 0) - nutrition_demand.get("carbs_gkg_required", 0)) * weight, 0
-                        ) if weight else None,
-
-                        "protein_delta_g": round(
-                            (nutrition.get("protein_gkg_actual", 0) - nutrition_demand.get("protein_gkg_required", 0)) * weight, 0
-                        ) if weight else None,
-
-                        "fat_delta_g": round(
-                            (nutrition.get("fat_gkg_actual", 0) - nutrition_demand.get("fat_gkg_target", 0)) * weight, 0
-                        ) if weight else None,
+                        "carbs_delta_g": _to_grams(
+                            nutrition.get("carbs_delta")
+                        ),
+                        "protein_delta_g": _to_grams(
+                            nutrition.get("protein_delta")
+                        ),
+                        "fat_delta_g": _to_grams(
+                            nutrition.get("fat_delta")
+                        ),
                     }
                 }
 
                 debug(
                     context,
-                    f"[SEMANTIC] Injected nutrition → "
-                    f"{classification} ({nutrition.get('confidence')})"
+                    "[SEMANTIC] Injected nutrition →",
+                    f"carbs={classification}",
+                    f"protein={protein_status}",
+                    f"confidence={nutrition.get('confidence')}"
                 )
  
     # ---------------------------------------------------------
