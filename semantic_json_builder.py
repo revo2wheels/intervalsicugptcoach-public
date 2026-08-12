@@ -4832,6 +4832,8 @@ def build_semantic_json(context):
 
                 df_ctl.columns = ["week", "ctl", "atl", "tsb"]
                 df_weeks = df_weeks.merge(df_ctl, on="week", how="left")
+                for col in ("ctl", "atl", "tsb"):
+                    df_weeks[col] = pd.to_numeric(df_weeks[col], errors="coerce")
 
                 # -----------------------------------------------------
                 # 🧠 Stabilise TSB for phase detection (prevent spikes)
@@ -5365,9 +5367,9 @@ def build_semantic_json(context):
                 df_weeks.assign(
                     start=lambda x: pd.to_datetime(x["start"]).dt.strftime("%Y-%m-%d"),
                     end=lambda x: pd.to_datetime(x["end"]).dt.strftime("%Y-%m-%d"),
-                    ctl=lambda x: x["ctl"].round(2),
-                    atl=lambda x: x["atl"].round(2),
-                    tsb=lambda x: x["tsb"].round(2)
+                    ctl=lambda x: pd.to_numeric(x["ctl"], errors="coerce").round(2),
+                    atl=lambda x: pd.to_numeric(x["atl"], errors="coerce").round(2),
+                    tsb=lambda x: pd.to_numeric(x["tsb"], errors="coerce").round(2),
                 )[
                     [
                         "week", "start", "end",
