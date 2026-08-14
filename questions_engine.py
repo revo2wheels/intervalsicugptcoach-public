@@ -179,7 +179,7 @@ def detect_signals(report):
 
         state = system.get("adaptation_state")
 
-        if state == "fatigue_state":
+        if state == "vo2_threshold_decline":
             signals.append(("system_decline", 3))
 
         elif state in ("vo2_expansion", "anaerobic_build"):
