@@ -1,111 +1,93 @@
-# Compliance Log Guide — v17
+# Compliance & Traceability Guide
 
 ## Overview
 
-This document describes **compliance logging within the audit process**.
-Compliance logs provide a deterministic, traceable record of data validation,
-rule enforcement, and audit decisions across both **Cloud** and **Local** execution modes.
+Montis.icu treats audit integrity and traceability as backend responsibilities. Validation, metric computation and coaching-decision state are produced by the deterministic engine; conversational AI is not the source of those results.
 
-Compliance logging is part of the **canonical audit pipeline** and is generated
-by the backend runtime — not by ChatGPT.
+This guide describes ownership and traceability at a system level. Exact emitted fields can evolve with the implementation and should be verified against the current backend code when debugging a specific contract.
 
----
+## Execution ownership
 
-## Compliance Logging — Cloud Execution
+### Cloud execution
 
-**Execution context:** ChatGPT → Cloudflare Worker → Backend API  
-**Log authority:** Backend (FastAPI)
+Typical flow:
 
-In Cloud execution, compliance logging is generated **entirely by the backend** as part of the Tier-0 → Tier-2 audit chain.
+`Client → Cloudflare Edge Services → Railway app.py → audit_core/report_controller.py`
 
-ChatGPT and the Cloudflare Worker:
-- do **not** generate logs
-- do **not** interpret compliance state
-- act only as orchestration and transport layers
+Responsibilities are separated:
 
-### Cloud Compliance Flow
+- **Cloudflare Edge Services** — authentication/OAuth, request validation, routing, integration/prefetch work and MCP resources as appropriate to the route.
+- **Railway backend** — canonical audit execution, derived metrics, Performance Intelligence, ESPE, forecast, ADE and semantic assembly.
+- **AI/client interface** — explanation, presentation and interaction with governed output.
 
-1. ChatGPT issues a report intent (`weekly`, `season`, etc.).
-2. Request passes through the Cloudflare Worker (OAuth, validation, routing).
-3. Backend entry point (`app.py`) receives the request.
-4. `run_report()` in `audit_core/report_controller.py` initiates the audit.
-5. Each tier emits structured compliance events:
-   - Tier-0: data window validation and fetch integrity
-   - Tier-1: dataset consistency, duplication checks
-   - Tier-2: rule enforcement, tolerance checks, audit flags
-6. Compliance events are accumulated into a **structured compliance log object**.
-7. The compliance log is attached to the **semantic JSON audit output**.
-8. Selected compliance summaries may be surfaced to ChatGPT for transparency.
+The language model does not generate canonical audit state or replace backend validation.
 
-**Important:**
-- Compliance logs are **JSON-first**.
-- Markdown representations (if shown) are derived from JSON.
-- The compliance log is part of the audit output, not a side effect.
+## Current engine trace
 
----
+The current controller executes these major stages:
 
-## Compliance Logging — Local Execution
+1. Tier-0 — acquisition, normalization and canonical evidence windows.
+2. Tier-1 — dataset integrity and audit preparation.
+3. Tier-2 — totals enforcement, derived/extended metrics and deterministic actions.
+4. Tier-3 Performance Intelligence.
+5. Tier-3 ESPE when required evidence is available.
+6. Tier-3 future forecast.
+7. Tier-3 Adaptive Decision Engine.
+8. Semantic assembly.
 
-**Execution context:** Local Python runtime  
-**Log authority:** Local filesystem + in-memory structures
+Current intelligence versions in source are:
 
-In Local mode, compliance logging follows the **same audit semantics** as Cloud mode,
-but logs are additionally persisted to disk for inspection.
+- `PI_v1.62`
+- `espe_v1.21`
+- `ade_v2.21`
 
-### Local Compliance Flow
+## Compliance principles
 
-1. `report.py` or `run_audit.py` triggers audit execution.
-2. Tier-0 → Tier-2 modules emit the same structured compliance events.
-3. Compliance events are accumulated in memory.
-4. At completion:
-   - Compliance events are written to `compliance.log`
-   - Full compliance state is embedded in `report.json`
+A compliant execution should preserve the following principles:
 
-Local execution allows:
-- post-run inspection
-- diffing between runs
-- developer debugging of individual tiers
+- source evidence remains distinguishable from derived state;
+- validation occurs before downstream interpretation;
+- missing evidence is not silently replaced with invented physiology;
+- event/totals checks remain explicit;
+- degraded or skipped analysis is represented as such where applicable;
+- coaching-decision state is produced by backend logic before conversational rendering;
+- presentation does not become a second source of truth.
 
----
+## Semantic output
 
-## Compliance Log Structure (Canonical)
+`semantic_json_builder.py` assembles the downstream machine-readable result after the analysis/intelligence chain has run.
 
-Compliance logs are structured objects containing:
+Semantic output is intended to provide the governed contract consumed by reports and conversational interfaces. A client may summarize or explain that contract, but should not silently recompute or redefine the underlying athlete state.
 
-- `tier`: Tier-0 / Tier-1 / Tier-2
-- `check`: validation or rule identifier
-- `status`: pass / warn / fail
-- `tolerance`: applied tolerance (if relevant)
-- `observed`: observed value(s)
-- `expected`: expected value(s)
-- `timestamp`: execution time
-- `context`: optional execution metadata
+## Local engineering execution
 
-This structure is identical in Cloud and Local modes.
+Local engineering entry points (`report.py` and `report_api.py`) should use the same canonical controller and preserve the same audit/intelligence semantics as Railway execution.
 
----
+Local execution may provide additional developer-visible logging or artifacts, but those diagnostics do not change the coaching authority of the core engine.
 
-## Key Differences Between Cloud and Local Compliance Logging
+## Legacy architecture note
 
-| Feature | Cloud Execution | Local Execution |
-|:--|:--|:--|
-| Log generation | Backend runtime | Backend runtime |
-| Persistence | Embedded in semantic JSON | Embedded in JSON + `compliance.log` |
-| Log format | Structured JSON | Structured JSON + text |
-| Accessibility | Returned via API / ChatGPT | Local filesystem |
-| Determinism | Guaranteed | Guaranteed |
+Older documentation described compliance as a Tier-0 → Tier-2-only chain and referenced the pre-Railway `all-modules.md` / GitHub JIT model. That is no longer the full current architecture.
 
----
+The current execution path continues into Tier-3 Performance Intelligence, ESPE, forecast and ADE before semantic output.
 
-## Conclusion
+## Debugging guidance
 
-Compliance logging is a **first-class audit artifact** in the Intervals.icu GPT Coaching Framework.
+When validating a production or engineering run, trace the request in this order:
 
-- Logs are generated by the backend, not ChatGPT
-- Logs are JSON-first and deterministic
-- Logs enforce audit integrity and reproducibility
-- Presentation is secondary to semantic correctness
+1. confirm edge request/auth/routing context;
+2. confirm `app.py` received the expected prefetched/input contract;
+3. confirm `report_controller.py` established Tier-0/Tier-1 data windows;
+4. confirm Tier-2 totals and derived/extended metrics;
+5. confirm PI/ESPE/forecast/ADE execution or explicit skip/degradation;
+6. confirm semantic assembly contains the expected governed state;
+7. only then inspect client/LLM presentation.
 
-Any execution environment that cannot preserve this behavior is **non-compliant**.
+This order prevents presentation-layer behaviour from being mistaken for a backend computation problem.
 
----
+## Related documentation
+
+- [Documentation Index](README.md)
+- [Usage Guide](USAGE_GUIDE.md)
+- [Audit Chain Overview](audit_chain_overview.md)
+- [Runtime Resource List](../runtime-list.md)
