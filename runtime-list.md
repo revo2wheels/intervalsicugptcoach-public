@@ -1,8 +1,9 @@
 RUNTIME-GPT
-OPENAI/tools_gptv2.md
-OPENAI/workoutsv2.md
-OPENAI/question_bank_coaching.md
-OPENAI/question_bank_what_next.md
-OPENAI/montis_icu_claude_skill_mcp_resource.md
-OPENAI/tea.md
+OPENAI/GPT/tools_gptv2.md
+OPENAI/GPT/workoutsv2.md
+OPENAI/GPT/question_bank_coaching.md
+OPENAI/GPT/question_bank_what_next.md
+OPENAI/GPT/montis_icu_claude_skill_mcp_resource.md
+OPENAI/GPT/tea.md
+OPENAI/GPT/SKILL.md
 OPENAI/instructionsv17.md

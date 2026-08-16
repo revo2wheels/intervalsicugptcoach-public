@@ -10,7 +10,7 @@ Montis.icu does not expose raw Intervals.icu data directly to a language model a
 
 `Intervals.icu → Cloudflare Edge Services → Railway Engine → governed coaching intelligence → AI / app / API`
 
-The Railway backend starts from `app.py` and dispatches into `audit_core/report_controller.py`. Local engineering execution uses `report.py` or `report_api.py` where applicable.
+The Railway backend starts from `app.py` and dispatches into `audit_core/report_controller.py`. Local engineering execution uses `report.py`.
 
 The controller currently executes:
 
@@ -31,30 +31,24 @@ Current intelligence versions in source:
 | Document | Purpose |
 |---|---|
 | [README](../README.md) | Project overview and current architecture |
-| [Usage Guide](USAGE_GUIDE.md) | Railway, local engineering and interface execution model |
+| [Usage Guide](USAGE_GUIDE.md) | Railway, local CLI and interface execution model |
 | [Audit Chain Overview](audit_chain_overview.md) | Current Tier-0 → Tier-3 execution flow |
 | [Compliance Log Guide](COMPLIANCE_LOG_GUIDE.md) | Audit/compliance ownership and traceability |
 | [Unified Reporting Framework](../Unified%20Reporting%20Framework.md) | URF v5.1 reporting contract |
 
-## Runtime resources — do not move or rename during documentation cleanup
+## AI integration resources
 
-The files listed in [`runtime-list.md`](../runtime-list.md) are operational resources, not ordinary documentation.
+The `OPENAI/` directory contains configuration and knowledge resources used by the Montis ChatGPT integration.
 
-Current protected resources are:
+These resources are operational integration assets and are not part of the deterministic coaching engine execution path.
 
-**Cloudflare MCP resources**
+Protected OpenAI resources are listed in [`runtime-list.md`](../runtime-list.md).
 
-- `tools_mcp.md`
-- `workoutsv2.md`
-- `question_bank_coaching.md`
-- `question_bank_what_next.md`
-- `montis_icu_claude_skill_mcp_resource.md`
+Shared knowledge resources used by MCP clients are published separately through:
 
-**OpenAI GPT instructions**
+https://github.com/revo2wheels/montis-mcp-resources
 
-- `OPENAI/instructionsv17.md`
-
-Their paths are part of external/runtime configuration and must not be changed as part of documentation tidying.
+The hosted MCP implementation itself is part of the private Montis Cloudflare Edge infrastructure.
 
 ## Coaching intelligence model
 
@@ -68,20 +62,13 @@ The product-level Montis Intelligence Stack is distinct from the internal Tier-0
 
 The language model is not a sixth intelligence tier. It receives governed output and turns it into useful conversation.
 
-## Legacy / review-required material
+## Historical documentation
 
-Some documents remain in the repository for historical or reference purposes but still describe the earlier GPT/JIT or Tier-0 → Tier-2-only architecture. They should not be treated as the current architecture until reviewed or archived.
+Some documents remain for historical or reference purposes and may describe earlier versions of the coaching architecture.
 
-Known examples include:
+Historical material should not override the current architecture described in the root README, this documentation index, or the current engine source.
 
-- `all-modules.md` — pre-Railway GPT/JIT orchestration manifest.
-- `api_github_com__jit_plugin/` — compatibility shim for the old `all-modules.md` loading model.
-- `coach_framework-map.md`
-- `coach_mapping-table.md`
-- `mapping-table.md`
-- older coaching guides and framework notes that pre-date the current PI / ESPE / ADE stack.
-
-Before moving or deleting any historical file, confirm that it is not referenced by an active runtime path or external Cloudflare/OpenAI configuration.
+Before moving or deleting documentation or integration resources, confirm that they are not referenced by an active runtime or external integration.
 
 ## Public product documentation
 

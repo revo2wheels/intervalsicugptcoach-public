@@ -35,7 +35,6 @@ flowchart LR
 
 - **Railway:** `app.py` is the backend service entry point and dispatches into `audit_core/report_controller.py`.
 - **Local CLI:** `report.py` is the local engineering/report entry point.
-- **Engineering Console:** `report_api.py` provides the local engineering API path.
 - **Canonical controller:** `audit_core/report_controller.py` executes the deterministic audit and intelligence chain.
 
 `app.py` imports `run_report` directly from `audit_core.report_controller`; the current Railway execution path does not load the historical `all-modules.md` manifest.
@@ -95,26 +94,22 @@ Montis exposes the same governed intelligence through multiple interfaces:
 - **ChatGPT** — GPT Actions / Montis integration.
 - **Claude and other MCP clients** — through the Montis MCP service.
 - **REST/API clients** — structured backend endpoints.
-- **Local engineering tools** — CLI and engineering-console execution.
+- **Local tools** — CLI
 
 The interfaces can differ in presentation, but they do not become the computational or physiological authority.
 
-## Runtime knowledge resources
+## AI integration resources
 
-Some Markdown files in this repository are operational resources and **must not be renamed, moved or archived as part of documentation cleanup**.
+The `OPENAI/` directory contains configuration and knowledge resources used by
+the Montis ChatGPT integration.
 
-See [`runtime-list.md`](runtime-list.md) for the protected list.
+These files are not part of the deterministic coaching engine execution path.
 
-Current protected resources include:
+Some shared knowledge resources are also published separately for MCP clients:
 
-- `tools_mcp.md`
-- `workoutsv2.md`
-- `question_bank_coaching.md`
-- `question_bank_what_next.md`
-- `montis_icu_claude_skill_mcp_resource.md`
-- `OPENAI/instructionsv17.md`
+https://github.com/revo2wheels/montis-mcp-resources
 
-The first five are Cloudflare Worker MCP knowledge resources. `OPENAI/instructionsv17.md` is the active GPT instruction artifact.
+See [`runtime-list.md`](runtime-list.md) for the protected OpenAI integration files.
 
 ## Documentation
 
@@ -134,17 +129,6 @@ Product documentation:
 - [Technical Design](https://www.montis.icu/pipeline.html)
 - [Public repository](https://github.com/revo2wheels/intervalsicugptcoach-public)
 
-## Legacy architecture material
-
-The repository still contains some historical artifacts from the pre-Railway GPT/JIT architecture. In particular:
-
-- `all-modules.md` was the earlier GPT/JIT module manifest.
-- `api_github_com__jit_plugin/` is a compatibility shim that wraps `all-modules.md` in the old GitHub-content response shape.
-
-The current `app.py`, `report.py`, `report_api.py` and `audit_core` execution paths do not reference `all-modules.md`, `loadAllRules` or `api_github_com__jit_plugin`. These artifacts should therefore be treated as legacy cleanup candidates rather than current architecture.
-
-Several older documents under `docs/` also describe the former Tier-0 → Tier-2-only model. They are retained until reviewed or archived and should not override the current architecture described here and in `docs/README.md`.
-
 ## Support
 
 If Montis.icu is useful to you, you can support the project through [Buy Me a Coffee](https://www.buymeacoffee.com/revo2wheels).
@@ -157,8 +141,8 @@ See [NOTICE.txt](NOTICE.txt) for the distinction between the software license an
 
 ## Open-source scope
 
-The MIT-licensed repository contains the Montis coaching engine, local CLI /
-engineering tooling, and public interface contracts.
+The MIT-licensed repository contains the Montis coaching engine, local CLI,
+public interface contracts, documentation and AI integration resources.
 
 The hosted Montis service also uses private infrastructure that is not part of
 this repository or the MIT package.
@@ -166,9 +150,9 @@ this repository or the MIT package.
 ### Included in the MIT package
 
 - Railway/Python coaching engine
-- Local CLI and engineering console
+- Local CLI
 - Public interface and semantic contracts
-- Documentation and runtime knowledge resources included in this repository
+- Documentation and AI integration resources included in this repository
 
 ### Private hosted infrastructure
 
