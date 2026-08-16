@@ -1,195 +1,104 @@
-# Usage Guide — v17.2
+# Montis.icu Usage Guide
 
 ### Unified Reporting Framework (URF v5.1)
 
-**Architecture:** Cloudflare Worker–gated backend with deterministic audit execution
+**Architecture:** Cloudflare Edge Services + Railway deterministic coaching engine
 
----
+## Architecture overview
 
-## ⚙️ Architecture Overview
+Montis.icu separates transport, identity and interface concerns from physiological computation and coaching governance.
 
-The Unified Reporting Framework (URF) operates across **local** and **cloud** environments using a **deterministic audit pipeline**.
-All modes produce identical canonical JSON outputs governed by the same Tier-0 → Tier-2 execution model.
+`Intervals.icu → Cloudflare Edge Services → Railway Engine → governed semantic output → App / ChatGPT / Claude / API`
 
-**Core components:**
+A language model is not responsible for computing athlete state. The Montis engine validates and resolves the available evidence first; downstream AI explains and discusses that governed result.
 
-* **`app.py`** — primary FastAPI entry point (Railway backend)
-* **`audit_core/report_controller.py`** — orchestrates Tier-0 through Tier-2 audit chain
-* **`semantic_json_builder.py`** — compiles the canonical semantic graph
-* **`Cloudflare Worker`** — handles OAuth, request validation, and environment routing
-* **`report.py`** — local developer entry point for full offline report generation
+## Railway execution
 
----
+**Backend entry point:** `app.py`
 
-## ☁️ Cloud Mode (ChatGPT → Worker → Backend)
+`app.py` receives normalized/prefetched request data and invokes `run_report()` from `audit_core/report_controller.py`.
 
-**Logical entry point:**
-`run_report(intent="weekly" | "season" | "wellness" | "summary")`
+The controller currently executes:
 
-**Physical flow:**
+1. **Tier-0** — data acquisition/normalization and canonical data windows.
+2. **Tier-1** — dataset integrity and audit preparation.
+3. **Tier-2** — event-only totals, derived metrics, deterministic actions and extended metrics.
+4. **Tier-3 Performance Intelligence** — durability, repeatability and acute/chronic performance context.
+5. **Tier-3 ESPE** — energy-system and power-curve progression where the required evidence is available.
+6. **Tier-3 Future Forecast** — forward load/event context.
+7. **Tier-3 ADE** — adaptive decision resolution using current capacity, recovery, phase and event governance.
+8. **Semantic assembly** — `semantic_json_builder.py` produces the governed machine-readable output used by downstream interfaces.
 
-1. ChatGPT issues a report intent.
-2. Request is routed through the **Cloudflare Worker**, which handles:
+Current source versions:
 
-   * OAuth token exchange
-   * Validation and dataset prefetch
-   * Routing to correct backend (Production or Staging)
-3. The **Railway backend** (`app.py`) receives and dispatches the request.
-4. `run_report()` in `audit_core/report_controller.py` executes the **full audit chain**:
+- Performance Intelligence: `PI_v1.62`
+- ESPE: `espe_v1.21`
+- Adaptive Decision Engine: `ade_v2.21`
 
-   * Tier-0: dataset normalization
-   * Tier-1: completeness and canonical totals
-   * Tier-2: derived metrics, wellness alignment, and actions
-5. The **Semantic JSON Builder** (`semantic_json_builder.py`) assembles the authoritative output.
-6. Markdown (optional) is rendered only from the semantic JSON — never directly from metrics.
-7. The canonical semantic JSON payload is returned to ChatGPT or API caller.
+## Cloudflare Edge Services
 
-**Characteristics**
+Cloudflare is the edge and integration layer. Depending on the route/interface it handles responsibilities such as authentication, OAuth, request validation, routing, prefetch/integration work and MCP resources before requests reach the Railway engine.
 
-* ChatGPT never performs metric computation.
-* Worker only routes and validates.
-* Railway handles all canonical logic and storage.
-* Deterministic and reproducible — identical results to local runs.
-* Production and staging use identical audit logic; staging uses isolated dataset branches.
+It is not the canonical physiological calculation engine. Coaching computation and decision resolution remain in the backend engine.
 
----
+## Local engineering execution
 
-## 🧩 Local Python Mode
+Local engineering uses the same core controller rather than a separate coaching implementation.
 
-**Entry point:**
-`python report.py [--range weekly|season|wellness|summary] [--format semantic] [--prefetch] [--staging]`
+- `report.py` — local CLI/report execution.
+- `report_api.py` — engineering-console/local API execution.
+- `audit_core/report_controller.py` — shared canonical execution controller.
 
-**Flow:**
+These entry points are distinct from Railway boot (`app.py`) but should converge on the same deterministic audit/intelligence logic.
 
-1. `report.py` invokes `run_report()` from `audit_core/report_controller.py`.
-2. Executes the **complete Tier-0 → Tier-2** chain locally.
-3. Optionally uses `--prefetch` to pull Worker-cached datasets for reproducible tests.
-4. **Semantic JSON Builder** produces the canonical semantic dataset.
-5. Optional Markdown is derived from JSON.
-6. Results are written to `/output/` and `/logs/`.
+## Data windows and evidence
 
-**Key advantages:**
+The controller preserves different evidence windows for different purposes. In the current implementation, weekly analysis uses high-resolution recent activity data while longer-range analysis preserves a broader light dataset for chronic/adaptation context.
 
-* Zero cloud dependency.
-* Identical audit and semantic logic as backend.
-* Useful for validation, module debugging, or offline analysis.
+Power-curve, calendar, wellness and athlete-profile data are incorporated when available. Missing evidence is not silently replaced by invented physiological state; downstream modules can skip, degrade or lower confidence when their required evidence is absent.
 
----
+## Implementation tiers vs product intelligence stack
 
-## 🚦 Environment Routing (Worker Logic)
+The internal Tier-0/Tier-1/Tier-2/Tier-3 execution labels are implementation stages. They are not the same as the product-level five-layer Montis Intelligence Stack:
 
-| Layer            | Parameter(s)                          | Routing Decision             |
-| ---------------- | ------------------------------------- | ---------------------------- |
-| **Worker**       | default                               | → Railway Production         |
-|                  | `staging=1 + authorized owner`        | → Railway Staging *(locked)* |
-| **CLI**          | `--staging` *(maintainer only)*       | → Railway Staging            |
-| **ChatGPT**      | Internal override *(maintainer only)* | → Staging                    |
-| **Unauthorized** | `?staging=1` (no owner)               | → Sanitized → Production     |
+1. Training Load
+2. Physiology Response
+3. Performance Intelligence
+4. Adaptation Progression (ESPE)
+5. Adaptive Decision Engine (ADE)
 
-Worker logs clearly indicate route context:
+The AI interface is downstream of this intelligence stack.
 
-```
-[ROUTE → PRODUCTION] /run_weekly
-[ROUTE → STAGING-OWNER] /run_weekly?staging=1   (restricted)
-[ROUTE → BLOCKED-STAGING] /run_weekly?staging=1  (unauthorized)
-```
+## Semantic output
 
-**Staging routing** uses a hidden owner validation field.
-Unauthorized users cannot access staging, even if `staging=1` is appended.
+`semantic_json_builder.py` assembles the governed semantic result after the core analysis/intelligence chain has run.
 
----
+For reporting use, presentation is downstream of the semantic result. The language model may explain, summarize, question and discuss the result, but it is not the authority for the underlying athlete state or coaching decision.
 
-## 🧭 Data Flow Summary
+## Runtime resources
 
-| Stage         | Layer                              | File / Module                             | Function |
-| ------------- | ---------------------------------- | ----------------------------------------- | -------- |
-| **T0**        | `audit_core/data_normalizer.py`    | Normalizes datasets                       |          |
-| **T1**        | `audit_core/metrics_controller.py` | Computes canonical totals                 |          |
-| **T2**        | `audit_core/adaptation_engine.py`  | Derives secondary metrics and actions     |          |
-| **Finalizer** | `semantic_json_builder.py`         | Builds authoritative semantic JSON        |          |
-| **Renderer**  | `app.py` → Markdown handler        | Converts semantic JSON → Markdown summary |          |
+Do not treat every Markdown file as ordinary documentation. The files listed in [`../runtime-list.md`](../runtime-list.md) are operational resources used by Cloudflare MCP or OpenAI GPT configuration and must retain their current names/paths unless the external configuration is changed at the same time.
 
----
+## Legacy pre-Railway architecture
 
-## 📦 Data Sources
+`all-modules.md` and `api_github_com__jit_plugin/` belong to the earlier GPT/JIT orchestration model. They are not referenced by the current `app.py`, `report.py`, `report_api.py` or `audit_core` execution paths and should not be described as current Railway dependencies.
 
-| Type                  | Provider                  | Layer           |
-| --------------------- | ------------------------- | --------------- |
-| Activities & Wellness | Intervals.icu API         | Worker Prefetch |
-| Ruleset / Manifest    | GitHub (`all-modules.md`) | Railway Tier-1  |
-| OAuth                 | Cloudflare Worker         | Cloud mode only |
-| Local Cache           | `/data/cache/`            | Developer mode  |
+The same caution applies to older documentation that describes Tier-0 → Tier-2 as the complete coaching architecture. Tier-2 remains important, but the current controller continues into Performance Intelligence, ESPE, forecast and ADE before semantic output.
 
----
+## Staging and production
 
-## 🧾 File Outputs (Local Mode)
+Production and staging should run the same core coaching code, while environment routing, credentials and datasets remain isolated as appropriate. Edge routing and environment controls are operational concerns; they do not change the coaching authority of the Railway engine.
 
-| File             | Description                    | Location   |
-| ---------------- | ------------------------------ | ---------- |
-| `report.json`    | Canonical semantic output      | `/output/` |
-| `report.md`      | Markdown summary (derived)     | `/output/` |
-| `compliance.log` | Tier-integrity and audit trace | `/logs/`   |
+## Related documentation
 
-> In Cloud mode, only JSON (and optionally Markdown) is returned via API — no file persistence occurs.
+- [Documentation Index](README.md)
+- [Audit Chain Overview](audit_chain_overview.md)
+- [Compliance Log Guide](COMPLIANCE_LOG_GUIDE.md)
+- [Unified Reporting Framework](../Unified%20Reporting%20Framework.md)
+- [Runtime Resource List](../runtime-list.md)
 
----
+Public product documentation:
 
-## 🧰 Environment Quick Reference
-
-| Mode                         | Route                    | Environment   | Notes             |
-| ---------------------------- | ------------------------ | ------------- | ----------------- |
-| Local Python                 | `report.py`              | Local         | Offline execution |
-| ChatGPT                      | Worker → Railway Prod    | Production    | Default           |
-| ChatGPT (maintainer only)    | Worker → Railway Staging | 🔒 Restricted |                   |
-| CLI / Bash                   | Worker → Railway Prod    | Production    | Manual            |
-| CLI / Bash (maintainer only) | Worker → Railway Staging | 🔒 Restricted |                   |
-
----
-
-## 🔒 Staging Environment Policy
-
-* Access restricted to maintainers only.
-* Requests must originate from authenticated or owner-validated routes.
-* Unauthorized `?staging=1` params are stripped automatically.
-* Staging logs retained for QA validation only.
-* Both environments share identical audit logic — only dataset and renderer branches differ.
-
----
-
-## 🧭 Debug and Verification
-
-Worker and backend logs explicitly indicate environment context:
-
-```
-[ROUTE → PRODUCTION] …Target=Railway Production
-[ROUTE → STAGING-OWNER] …Target=Railway Staging (restricted)
-```
-
-ChatGPT and Markdown outputs display corresponding framework context:
-
-```
-Framework: Unified Reporting Framework v5.1 (production)
-```
-
-or
-
-```
-Framework: Unified Reporting Framework v5.1 (staging – restricted)
-```
-
----
-
-## 🧱 Summary
-
-This v17.2 usage model ensures:
-
-* Deterministic output across all environments
-* Single canonical truth source (`semantic_json_builder.py`)
-* Secure staging access limited to maintainers
-* Seamless parity between Local Python and Cloud modes
-
-**Staging remains private, production remains public, and all execution is verifiable via audit logs and semantic output integrity.**
-
----
-
-Would you like me to append a **“Developer Deployment & Testing” section** explaining how to trigger each route (local, staging, production) with CLI examples and ChatGPT intents (for internal README inclusion)?
+- https://www.montis.icu/
+- https://www.montis.icu/science.html
+- https://www.montis.icu/pipeline.html
