@@ -34,7 +34,7 @@ flowchart LR
 ### Execution entry points
 
 - **Railway:** `app.py` is the backend service entry point and dispatches into `audit_core/report_controller.py`.
-- **Local CLI:** `report.py` is the local engineering/report entry point.
+- **Local CLI:** `report.py` is the local report execution entry point. It obtains a prefetched dataset through Cloudflare Edge, then runs the Montis coaching engine locally through `audit_core/report_controller.py`.
 - **Canonical controller:** `audit_core/report_controller.py` executes the deterministic audit and intelligence chain.
 
 `app.py` imports `run_report` directly from `audit_core.report_controller`; the current Railway execution path does not load the historical `all-modules.md` manifest.
