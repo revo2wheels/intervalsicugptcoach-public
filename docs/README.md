@@ -35,7 +35,6 @@ Current intelligence versions in source:
 | [Audit Chain Overview](audit_chain_overview.md) | Current Tier-0 → Tier-3 execution flow |
 | [Compliance Log Guide](COMPLIANCE_LOG_GUIDE.md) | Audit/compliance ownership and traceability |
 | [Unified Reporting Framework](../Unified%20Reporting%20Framework.md) | URF v5.1 reporting contract |
-| [Runtime Resource List](../runtime-list.md) | Files that are operational resources for MCP or GPT configuration |
 
 ## Runtime resources — do not move or rename during documentation cleanup
 
