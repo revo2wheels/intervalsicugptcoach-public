@@ -126,7 +126,6 @@ Key documents:
 - [Audit Chain Overview](docs/audit_chain_overview.md)
 - [Compliance Log Guide](docs/COMPLIANCE_LOG_GUIDE.md)
 - [Unified Reporting Framework v5.1](Unified%20Reporting%20Framework.md)
-- [Runtime Resource List](runtime-list.md)
 
 Product documentation:
 
