@@ -1,5 +1,8 @@
-Copyright (c) 2025 revo2wheels. All rights reserved.
+Copyright (c) 2026 Clive King
 
-This repository and its contents are proprietary.  
-No license is granted for copying, modification, or redistribution.
-Use is permitted for personal viewing and evaluation only.
+This repository is licensed under the MIT License.
+See the LICENSE file for the applicable permissions and conditions.
+
+Montis.icu names, logos, branding, hosted services, and other trademarks
+or service identifiers are not granted for reuse by the MIT License unless
+explicitly stated otherwise.
