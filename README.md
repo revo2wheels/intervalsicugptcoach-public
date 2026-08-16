@@ -156,4 +156,34 @@ The software in this repository is licensed under the [MIT License](LICENSE).
 
 See [NOTICE.txt](NOTICE.txt) for the distinction between the software license and Montis.icu names, branding, logos, hosted services and service identifiers.
 
+## Open-source scope
+
+The MIT-licensed repository contains the Montis coaching engine, local CLI /
+engineering tooling, and public interface contracts.
+
+The hosted Montis service also uses private infrastructure that is not part of
+this repository or the MIT package.
+
+### Included in the MIT package
+
+- Railway/Python coaching engine
+- Local CLI and engineering console
+- Public interface and semantic contracts
+- Documentation and runtime knowledge resources included in this repository
+
+### Private hosted infrastructure
+
+The following remain part of the private Montis service infrastructure:
+
+- Cloudflare Edge implementation
+- `MONTIS_INTERNAL_KEY`
+- KV / D1 bindings
+- OAuth client secrets
+- JWT signing secrets
+- Hosted LLM API keys
+- Webhook secrets
+
+No internal secret values are included in the open-source repository.
+
+
 Copyright © 2026 Clive King.

@@ -1,6 +1,7 @@
 # Secrets (never commit)
 .env
 .env.*
+!.env.example
 *.pem
 *.key
 *.crt
@@ -22,7 +23,6 @@ Thumbs.db
 !railway.json
 *.toml
 /docs/devandtest.md 
-/report.py
 /docs/PYTHONCurl.md
 /index.html
 /report_api.py
