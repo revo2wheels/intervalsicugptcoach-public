@@ -131,9 +131,21 @@ CONNECTION
 → getConnectionStatusV1 immediately
 
 CALENDAR
+
 - "planned events", "calendar", "schedule" → readCalendarV1
-- "write workout", "add workout", "plan workout" → writeCalendarV1
-- "delete workout", "remove event" → deleteCalendarV1
+
+- "write workout", "add workout", "plan workout", "create workout"
+  → writeCalendarV1 without `id` → CREATE
+
+- "move workout", "reschedule workout", "rename workout", "edit workout",
+  "change workout", "update workout", "modify workout"
+  → first call readCalendarV1 for the relevant date/range
+  → identify the exact existing event and its `id`
+  → call writeCalendarV1 with that existing `id` → UPDATE IN PLACE
+  → do NOT delete and recreate
+
+- "delete workout", "remove event", "cancel workout"
+  → deleteCalendarV1
 
 ACTIVITY
 - "activity", "analyse activity", "{id}", "{date}" → getOneDayFullActivityV1
@@ -262,7 +274,18 @@ Data Quality Report → runDataQualityReportV1 → params: athleteID? → check 
 
 Read Calendar → readCalendarV1 → params: start*, end*, lite?, athleteID? → planned workouts and events
 
-Write Calendar → writeCalendarV1 → body: planned_workouts[]* → create or update workouts
+Write Calendar → writeCalendarV1 → body: planned_workouts[]*
+
+CREATE:
+- omit `id`
+- full workout fields required
+
+UPDATE:
+- include existing event `id`
+- only changed fields need to be supplied
+- unspecified existing fields are preserved
+- always read calendar first to obtain the exact event ID
+- never delete/recreate when an ID is available
 
 Delete Calendar → deleteCalendarV1 → body: id* | date* | dates* → remove workouts or events
 
