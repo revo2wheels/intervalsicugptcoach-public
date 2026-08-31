@@ -506,126 +506,346 @@ def fetch_athlete_profile(headers, from_cache=None, context=None):
 
 def fetch_power_curves(headers, context=None, from_cache=None):
     """
-    Fetch ESPE power curve dataset and normalize to ESPE contract.
+    Fetch and normalize the ESPE/FRDM power-curve dataset.
+
+    Direct/local execution path:
+        Ride: previous, current, current-kj0, current-kj1
+        Run:  previous, current
+
+    Cloudflare-prefetched data is already normalized by app.py and
+    remains authoritative when supplied through from_cache.
     """
 
     context = context or {}
 
     # =================================================
-    # CACHE PATH (Cloudflare / prefetched)
+    # CACHE PATH — already normalized by app.py
     # =================================================
     if from_cache is not None:
         debug(context, "[T0] Loaded cached power_curve dataset")
         return from_cache
-    else:
 
-        athlete_id = context.get("athlete", {}).get("id", 0)
-        curves = context.get("espe_curves")
-        pm_type = "FFT_CURVES"
+    athlete_id = context.get("athlete", {}).get("id", 0)
+    curve_string = context.get("espe_curves") or ""
+    pm_type = "FFT_CURVES"
 
-        SPORTS = ["Ride", "Run"]
-        normalized = {}
+    normal_curve_ids = [
+        curve_id.strip()
+        for curve_id in str(curve_string).split(",")
+        if curve_id.strip()
+    ]
 
-        def extract_anchor(block, seconds):
-            secs = block.get("secs", [])
-            vals = block.get("values", [])
-            acts = block.get("activity_id", [])
+    if not normal_curve_ids:
+        debug(context, "[T0] ⚠ No ESPE curve identifiers configured")
+        return {}
 
-            try:
-                idx = secs.index(seconds)
+    current_curve_id = normal_curve_ids[-1]
 
-                return {
-                    "power": vals[idx],
-                    "activity_id": acts[idx] if idx < len(acts) else None
-                }
+    SPORTS = ["Ride", "Run"]
+    normalized = {}
 
-            except ValueError:
+    ANCHOR_SECONDS = {
+        "5s": 5,
+        "1m": 60,
+        "5m": 300,
+        "20m": 1200,
+        "60m": 3600,
+    }
+
+    def extract_anchor(block, seconds, allow_closest=True):
+        if not isinstance(block, dict):
+            return None
+
+        secs = block.get("secs") or []
+        vals = block.get("values") or []
+        acts = block.get("activity_id") or []
+
+        if not isinstance(secs, list) or not isinstance(vals, list):
+            return None
+
+        if not secs or not vals:
+            return None
+
+        try:
+            idx = secs.index(seconds)
+        except ValueError:
+            if not allow_closest:
                 return None
-                
-        for sport in SPORTS:
 
-            url = (
-                f"{INTERVALS_API}/athlete/{athlete_id}/power-curves-ext"
-                f"?type={sport}"
-                f"&curves={curves}"
-                f"&pmType={pm_type}"
+            idx = min(
+                range(len(secs)),
+                key=lambda i: abs(secs[i] - seconds)
             )
 
-            debug(context, f"[T0] Fetching power curves → {sport}")
+        if idx >= len(vals):
+            return None
 
-            resp = fetch_with_retry(url, headers)
+        power = vals[idx]
+        activity_id = (
+            acts[idx]
+            if isinstance(acts, list) and idx < len(acts)
+            else None
+        )
 
-            if resp.status_code != 200:
-                debug(context, f"[T0] ⚠ Power curve fetch failed for {sport}")
-                continue
+        if activity_id and not str(activity_id).startswith("i"):
+            activity_id = f"i{activity_id}"
 
-            payload = resp.json()
-            debug(context, f"[T0] Power curve dataset retrieved → {sport}")
+        return {
+            "power": power,
+            "activity_id": activity_id,
+        }
 
-            curve_list = payload.get("list")
-
-            if not curve_list or len(curve_list) < 2:
-                debug(context, f"[T0] ⚠ power_curve payload missing windows for {sport}")
-                continue
-
-            prev = curve_list[0]
-            curr = curve_list[1]
-
-            normalized[sport] = {
-                "previous": {
-                    "5s": extract_anchor(prev, 5),
-                    "1m": extract_anchor(prev, 60),
-                    "5m": extract_anchor(prev, 300),
-                    "20m": extract_anchor(prev, 1200),
-                    "60m": extract_anchor(prev, 3600),
-                },
-                "current": {
-                    "5s": extract_anchor(curr, 5),
-                    "1m": extract_anchor(curr, 60),
-                    "5m": extract_anchor(curr, 300),
-                    "20m": extract_anchor(curr, 1200),
-                    "60m": extract_anchor(curr, 3600),
-                },
-                "window_days": prev.get("days"),
-                "curve_regression": {
-                    "slope": curr.get("mapPlot", {}).get("poSlope"),
-                    "r2": curr.get("mapPlot", {}).get("poR2")
-                }
-            }
-
-            # --------------------------------------------
-            # FFT_CURVES model extraction
-            # --------------------------------------------
-
-            fft_model = next(
-                (m for m in curr.get("powerModels", []) if m.get("type") == "FFT_CURVES"),
-                None
+    def extract_anchors(block, allow_closest=True):
+        return {
+            name: extract_anchor(
+                block,
+                seconds,
+                allow_closest=allow_closest
             )
+            for name, seconds in ANCHOR_SECONDS.items()
+        }
 
-            if fft_model:
-                normalized[sport]["models"] = {
-                    "source": "FFT_CURVES",
-                    "cp": fft_model.get("criticalPower"),
-                    "w_prime": fft_model.get("wPrime"),
-                    "pmax": fft_model.get("pMax"),
-                    "ftp": fft_model.get("ftp")
-                }
+    def extract_fft_model(block):
+        if not isinstance(block, dict):
+            return None
 
-            # --------------------------------------------
-            # Guards
-            # --------------------------------------------
+        fft_model = next(
+            (
+                model
+                for model in (block.get("powerModels") or [])
+                if model.get("type") == "FFT_CURVES"
+            ),
+            None
+        )
 
-            if not normalized[sport]["current"]["5m"]:
-                debug(context, f"[NORM] ESPE missing 5m anchor for {sport}")
+        if not fft_model:
+            return None
 
+        return {
+            "source": "FFT_CURVES",
+            "cp": fft_model.get("criticalPower"),
+            "w_prime": fft_model.get("wPrime"),
+            "pmax": fft_model.get("pMax"),
+            "ftp": fft_model.get("ftp"),
+        }
+
+    def fatigue_slot(curve_id):
+        curve_id = str(curve_id or "")
+
+        if curve_id.endswith("-kj0"):
+            return "kj0"
+
+        if curve_id.endswith("-kj1"):
+            return "kj1"
+
+        return None
+
+    for sport in SPORTS:
+
+        requested_curve_ids = list(normal_curve_ids)
+
+        if sport == "Ride":
+            requested_curve_ids.extend([
+                f"{current_curve_id}-kj0",
+                f"{current_curve_id}-kj1",
+            ])
+
+        requested_curves = ",".join(requested_curve_ids)
+
+        url = (
+            f"{INTERVALS_API}/athlete/{athlete_id}/power-curves-ext"
+            f"?type={sport}"
+            f"&curves={requested_curves}"
+            f"&pmType={pm_type}"
+        )
+
+        debug(
+            context,
+            "[T0] Fetching power curves → "
+            f"sport={sport} curves={requested_curve_ids}"
+        )
+
+        resp = fetch_with_retry(url, headers)
+
+        if resp.status_code != 200:
             debug(
                 context,
-                f"[T0] Normalized power_curve anchors → {sport}",
-                list(normalized[sport]["current"].keys())
+                f"[T0] ⚠ Power curve fetch failed for {sport}"
+            )
+            continue
+
+        payload = resp.json()
+        curve_list = payload.get("list") or []
+
+        debug(
+            context,
+            "[T0] Power curve dataset retrieved → "
+            f"sport={sport} count={len(curve_list)}"
+        )
+
+        if not isinstance(curve_list, list) or not curve_list:
+            debug(
+                context,
+                f"[T0] ⚠ Empty power_curve payload for {sport}"
+            )
+            continue
+
+        normal_curve_list = [
+            block
+            for block in curve_list
+            if (
+                isinstance(block, dict)
+                and fatigue_slot(block.get("id")) is None
+            )
+        ]
+
+        if not normal_curve_list:
+            debug(
+                context,
+                f"[T0] ⚠ No normal power curves returned for {sport}"
+            )
+            continue
+
+        normal_curve_list.sort(
+            key=lambda block: (
+                str(block.get("end_date_local") or ""),
+                str(block.get("start_date_local") or ""),
+            )
+        )
+
+        if len(normal_curve_list) == 1:
+            debug(
+                context,
+                f"[T0] ⚠ Single normal window only for {sport}"
+            )
+            prev = {}
+            curr = normal_curve_list[0]
+        else:
+            prev = normal_curve_list[-2]
+            curr = normal_curve_list[-1]
+
+        normalized_current_curve_id = str(curr.get("id") or "")
+        previous_curve_id = str(prev.get("id") or "")
+
+        sport_block = {
+            "previous": extract_anchors(
+                prev,
+                allow_closest=True
+            ),
+            "current": extract_anchors(
+                curr,
+                allow_closest=True
+            ),
+            "window_days": (
+                curr.get("days")
+                or prev.get("days")
+            ),
+            "curve_ids": {
+                "previous": previous_curve_id or None,
+                "current": normalized_current_curve_id or None,
+            },
+            "curve_regression": {
+                "slope": (
+                    (curr.get("mapPlot") or {}).get("poSlope")
+                ),
+                "r2": (
+                    (curr.get("mapPlot") or {}).get("poR2")
+                ),
+            },
+        }
+
+        current_fft_model = extract_fft_model(curr)
+
+        if current_fft_model:
+            sport_block["models"] = current_fft_model
+
+        # --------------------------------------------
+        # Ride fatigued curves
+        # --------------------------------------------
+        if sport == "Ride":
+            fatigued_current = {}
+
+            for fatigue_curve in curve_list:
+                if not isinstance(fatigue_curve, dict):
+                    continue
+
+                curve_id = str(fatigue_curve.get("id") or "")
+                slot = fatigue_slot(curve_id)
+
+                if slot is None:
+                    continue
+
+                suffix = f"-{slot}"
+                base_curve_id = curve_id[:-len(suffix)]
+
+                if (
+                    not normalized_current_curve_id
+                    or base_curve_id != normalized_current_curve_id
+                ):
+                    debug(
+                        context,
+                        "[T0] Ignoring unmatched fatigued curve "
+                        f"id={curve_id} "
+                        f"current={normalized_current_curve_id}"
+                    )
+                    continue
+
+                fatigue_map_plot = (
+                    fatigue_curve.get("mapPlot") or {}
+                )
+
+                fatigued_current[slot] = {
+                    "source_slot": slot,
+                    "curve_id": curve_id,
+                    "base_curve_id": base_curve_id,
+                    "after_kj": fatigue_curve.get("after_kj"),
+                    "label": fatigue_curve.get("label"),
+                    "start_date_local": (
+                        fatigue_curve.get("start_date_local")
+                    ),
+                    "end_date_local": (
+                        fatigue_curve.get("end_date_local")
+                    ),
+                    "window_days": fatigue_curve.get("days"),
+                    "anchors": extract_anchors(
+                        fatigue_curve,
+                        allow_closest=False
+                    ),
+                    "models": (
+                        extract_fft_model(fatigue_curve) or {}
+                    ),
+                    "curve_regression": {
+                        "slope": fatigue_map_plot.get("poSlope"),
+                        "r2": fatigue_map_plot.get("poR2"),
+                    },
+                }
+
+            sport_block["fatigued"] = {
+                "current": fatigued_current
+            }
+
+        normalized[sport] = sport_block
+
+        if not sport_block["current"].get("5m"):
+            debug(
+                context,
+                f"[T0] ESPE missing 5m anchor for {sport}"
             )
 
-        return normalized
+        debug(
+            context,
+            f"[T0] Normalized power_curve anchors → {sport}",
+            list(sport_block["current"].keys())
+        )
 
+        if sport == "Ride":
+            debug(
+                context,
+                "[T0] Fatigued Ride curves normalized → "
+                f"{list(sport_block['fatigued']['current'].keys())}"
+            )
+
+    return normalized
 
 def run_tier0_pre_audit(start: str, end: str, context: dict):
     """Tier-0: OAuth-only Pre-audit fetch chain with adaptive chunking and meta-retry."""
