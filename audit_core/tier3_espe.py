@@ -1,6 +1,6 @@
 """
 Energy System Progression Engine (ESPE)
-Version: v1.21
+Version: v1.22
 
 Stateless engine comparing two rolling power-curve windows to track energy system progression.
 
@@ -13,13 +13,13 @@ Produces:
 v1.2 factored for baseline where no previous exists
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from coaching_cheat_sheet import CHEAT_SHEET
 from audit_core.utils import debug
 from coaching_profile import COACH_PROFILE
 
-ESPE_VERSION = "espe_v1.21"
+ESPE_VERSION = "espe_v1.22"
 
 # ---------------------------------------------------------------------
 # Power Anchor Helpers
@@ -48,6 +48,133 @@ def _anchor_meta(v):
         "activity_id": None,
         "activity_link": None
     }
+
+FATIGUE_ANCHORS = (
+    "5s",
+    "1m",
+    "5m",
+    "20m",
+    "60m",
+)
+
+
+def _is_number(value):
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+    )
+
+def _build_fatigue_resistance(
+    sport: str,
+    data: Dict[str, Any],
+    current: Dict[str, Any],
+    context: Dict[str, Any],
+) -> Optional[Dict[str, Any]]:
+    """
+    Build compact threshold-specific fatigue-resistance observations.
+
+    kj0/kj1 are source-slot identifiers only.
+    after_kj is the authoritative athlete-configured threshold.
+    """
+
+    if sport != "Ride":
+        return None
+
+    fatigued_current = (
+        (data.get("fatigued") or {})
+        .get("current")
+        or {}
+    )
+
+    if not isinstance(fatigued_current, dict):
+        return None
+
+    thresholds = []
+
+    for source_slot, curve in fatigued_current.items():
+        if not isinstance(curve, dict):
+            continue
+
+        after_kj_raw = curve.get("after_kj")
+
+        try:
+            after_kj = int(after_kj_raw)
+        except (TypeError, ValueError):
+            debug(
+                context,
+                "[ESPE-FR] Ignoring fatigued curve with invalid "
+                f"after_kj slot={source_slot} value={after_kj_raw}"
+            )
+            continue
+
+        if after_kj < 100 or after_kj > 9999:
+            debug(
+                context,
+                "[ESPE-FR] Ignoring fatigued curve outside supported "
+                f"range slot={source_slot} after_kj={after_kj}"
+            )
+            continue
+
+        fatigued_anchors = curve.get("anchors") or {}
+
+        fatigued_power_w = {}
+        retention_percent = {}
+
+        for anchor_name in FATIGUE_ANCHORS:
+            normal_power = _power(current.get(anchor_name))
+            fatigued_power = _power(
+                fatigued_anchors.get(anchor_name)
+            )
+
+            if (
+                not _is_number(normal_power)
+                or not _is_number(fatigued_power)
+                or normal_power <= 0
+                or fatigued_power <= 0
+            ):
+                continue
+
+            fatigued_power_w[anchor_name] = fatigued_power
+            retention_percent[anchor_name] = round(
+                (fatigued_power / normal_power) * 100,
+                2
+            )
+
+        if not fatigued_power_w:
+            debug(
+                context,
+                "[ESPE-FR] Ignoring fatigued curve with no usable "
+                f"anchors slot={source_slot}"
+            )
+            continue
+
+        thresholds.append({
+            "after_kj": after_kj,
+            "fatigued_power_w": fatigued_power_w,
+            "retention_percent": retention_percent,
+        })
+
+    if not thresholds:
+        return None
+
+    thresholds.sort(
+        key=lambda threshold: threshold["after_kj"]
+    )
+
+    debug(
+        context,
+        "[ESPE-FR] Fatigued Ride curves processed → "
+        f"thresholds={[item['after_kj'] for item in thresholds]}"
+    )
+
+    return {
+        "supported": True,
+        "source": "INTERVALS_FATIGUED_POWER_CURVES",
+        "comparison_reference": "current_normal_power_curve",
+        "thresholds_are_athlete_configured": True,
+        "thresholds": thresholds,
+    }
+
 
 # ---------------------------------------------------------------------
 # Entry Point
@@ -195,6 +322,15 @@ def _process_sport(sport: str, data: Dict[str, Any], context: Dict[str, Any]) ->
 
     curve_dynamics = _compute_curve_dynamics(delta or {})
 
+    # Optional fatigued power-curve extension.
+    # Returns None for Run or when no usable fatigued curves exist.
+    fatigue_resistance = _build_fatigue_resistance(
+        sport=sport,
+        data=data,
+        current=current,
+        context=context,
+    )
+
     # ---- curve window definition ----
     window = data.get(
         "window_days",
@@ -317,7 +453,7 @@ def _process_sport(sport: str, data: Dict[str, Any], context: Dict[str, Any]) ->
             "Power curve is stable across systems — a new stimulus may be needed to restart progression."
         )
 
-    return {
+    sport_result = {
         "supported": True,
 
         "curve_window": curve_window,
@@ -362,6 +498,10 @@ def _process_sport(sport: str, data: Dict[str, Any], context: Dict[str, Any]) ->
         "system_guidance": system_guidance
     }
 
+    if fatigue_resistance is not None:
+        sport_result["fatigue_resistance"] = fatigue_resistance
+
+    return sport_result
 
 
 def _compute_curve_dynamics(delta: Dict[str, float]) -> Dict[str, Any]:
