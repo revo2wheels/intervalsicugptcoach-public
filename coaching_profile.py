@@ -870,8 +870,8 @@ RENDERER_PROFILES = {
             "Render performance_intelligence as WDRM / ISDM / NDLI only (no recompute/merge).",
             "If high_dep_sessions>0 AND high_drift_sessions>0 → note neuromuscular+metabolic overlap.",
             "Cross-section interpretation allowed when describing same physiology.",
-            "When energy_system_progression exists: If delta_percent is null → describe as 'baseline established' with no adaptation direction. If delta_percent exists → summarise adaptation direction using system_status and adaptation_state."
-            "Prioritise ESPE signals when delta_percent exists; otherwise treat ESPE as baseline reference only."
+            "When energy_system_progression exists: If delta_percent is null → describe as 'baseline established' with no adaptation direction. If delta_percent exists → summarise adaptation direction using system_status and adaptation_state.",
+            "Prioritise ESPE signals when delta_percent exists; otherwise treat ESPE as baseline reference only.",
             "Render power anchors as [<power> W](link) when activity_link exists, else plain.",
             "Title current_ISO_weekly_microcycle as 'Current ISO Week ## (Mon-Sun)'.",
             "If a section is marked full, render every entity and field exactly as present in the semantic data",
@@ -895,11 +895,11 @@ RENDERER_PROFILES = {
             #"decision_context MUST be rendered as a single-row table with columns: ADE Directive, Phase Requirement, Alignment",
             "future_actions MUST be rendered as a table with columns: Priority, Action, Reason.",
             "Do NOT render state_action, system_guidance, or reflection as separate sections.",
-            "Do NOT render paragraph explanations for adaptive_decisions."
+            "Do NOT render paragraph explanations for adaptive_decisions.",
             #ADAPTATION
             "phases_summary MUST be rendered as a compact table (max 4 rows) with columns: Phase, Duration, Trend",
             "Phases should always be sequential dated phases",
-            "energy_system_progression MUST be rendered as compact adaptation table(s)",
+            "energy_system_progression MUST be rendered as compact adaptation table(s); when Ride fatigue_resistance exists, render only one summary row with evaluated kJ, state, limiter, current/previous retention, change, trend and confidence, excluding fatigued_power_w.",
             "Table MUST include key systems (aerobic, threshold, vo2, anaerobic) and overall phase/adaptation_state.",
             "lactate_calibration when available MUST be rendered as a single compact adaptation table before suppression.",
             "Do NOT render narrative or subsection breakdown when table is present.",
@@ -1105,7 +1105,7 @@ RENDERER_PROFILES = {
                 "current_ISO_weekly_microcycle",
                 "planned_summary_by_iso_week",
                 "future_forecast",
-                "future_actions"
+                "future_actions",
                 "phase_alignment",
                 "training_guidance",
                 #"decision_context"
@@ -1133,7 +1133,7 @@ RENDERER_PROFILES = {
             "Avoid session-level or daily commentary.",
             "If performance_intelligence exists, render chronic signals (90d) first, then acute signals (7d). Emphasise contrast between long-term capacity and current stress.",
             "Interpretation may combine signals across sections when they describe the same physiological process (e.g. fatigue, adaptation, durability).",
-            "When energy_system_progression exists: If delta_percent is null → describe as 'baseline established' with no adaptation direction. If delta_percent exists → summarise adaptation direction using system_status and adaptation_state."
+            "When energy_system_progression exists: If delta_percent is null → describe as 'baseline established' with no adaptation direction. If delta_percent exists → summarise adaptation direction using system_status and adaptation_state.",
             "Insights SHOULD prioritise adaptation signals (ESPE) before repeating metric definitions.",
             "Ensure current_ISO_weekly_microcycle is totled as 'Current ISO Week ## (Mon-Sun)'",
             "If actions[0].resolution == 'overridden_by_phase':",
@@ -1155,11 +1155,11 @@ RENDERER_PROFILES = {
             #"decision_context MUST be rendered as a single-row table with columns: ADE Directive, Phase Requirement, Alignment",
             "future_actions MUST be rendered as a table with columns: Priority, Action, Reason.",
             "Do NOT render state_action, system_guidance, or reflection as separate sections.",
-            "Do NOT render paragraph explanations for adaptive_decisions."
+            "Do NOT render paragraph explanations for adaptive_decisions.",
             #ADAPTATION
             "phases_summary MUST be rendered as a compact table (max 4 rows) with columns: Phase, Duration, Trend",
             "Phases should always be sequential dated phases",
-            "energy_system_progression MUST be rendered as compact adaptation table(s)",
+            "energy_system_progression MUST be rendered as compact adaptation table(s); when Ride fatigue_resistance exists, render only one summary row with evaluated kJ, state, limiter, current/previous retention, change, trend and confidence, excluding fatigued_power_w.",
             "Table MUST include key systems (aerobic, threshold, vo2, anaerobic) and overall phase/adaptation_state.",
             "lactate_calibration when available MUST be rendered as a single compact adaptation table before suppression.",
             "Do NOT render narrative or subsection breakdown when table is present.",
