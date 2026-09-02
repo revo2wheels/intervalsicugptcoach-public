@@ -821,6 +821,148 @@ For future planning:
 
 MUST be considered before generating recommendations.
 
+# 23.1 PERSONALISED Z2 RESOLUTION — RIDE ONLY
+
+When a current Montis report contains:
+
+`physiology.lactate_calibration.personalized_z2`
+
+with valid numeric:
+
+- `start_w`
+- `end_w`
+
+then those values are the authoritative personalised aerobic endurance range for Ride workouts.
+
+Example:
+
+```json
+"personalized_z2": {
+  "start_w": 223,
+  "end_w": 239,
+  "start_pct": 70.0,
+  "end_pct": 75.0,
+  "method": "lactate_inferred"
+}
+```
+
+## APPLICATION RULE
+
+When `personalized_z2` is available:
+
+- Apply it ONLY to Ride workout steps whose purpose is aerobic endurance.
+- Replace generic percentage-based endurance targets with the personalised Z2 watt target or range.
+- Preserve workout structure, duration, repetitions, recovery duration, cadence, warmup and cooldown.
+- Do NOT modify tempo, torque, sweet spot, threshold, under/over, VO2, sprint, neuromuscular or race-specific targets.
+- Recovery and easy-spin steps MUST remain below personalised Z2 and MUST NOT be raised into the personalised Z2 range.
+
+## ENDURANCE TARGET RESOLUTION
+
+For a ranged endurance step:
+
+```text
+- Endurance 90m 65-72%
+```
+
+replace the target with the full personalised Z2 range:
+
+```text
+- Endurance 90m 223-239w
+```
+
+For a single-value endurance step:
+
+```text
+- Endurance 40m 65%
+```
+
+use the midpoint of the personalised Z2 range.
+
+Formula:
+
+```text
+midpoint_w = round((start_w + end_w) / 2)
+```
+
+Example:
+
+```text
+start_w = 223
+end_w = 239
+midpoint_w = 231
+```
+
+Resolved workout step:
+
+```text
+- Endurance 40m 231w
+```
+
+For progressive endurance steps, preserve progression across the personalised Z2 range.
+
+Example library prescription:
+
+```text
+- Endurance 20m 65%
+- Endurance 20m 70%
+- Endurance 20m 75%
+```
+
+Resolved with personalised Z2 `223-239w`:
+
+```text
+- Endurance 20m 223w
+- Endurance 20m 231w
+- Endurance 20m 239w
+```
+
+Do NOT exceed `end_w` unless the workout explicitly moves into another training domain.
+
+## MIXED WORKOUTS
+
+In workouts containing both endurance and higher-intensity work, modify ONLY the endurance steps.
+
+Example library prescription:
+
+```text
+- Warmup 15m 55%
+- Endurance 70m 65%
+- Tempo finish 25m 80%
+- Cooldown 10m 50%
+```
+
+Resolved with personalised Z2 `223-239w`:
+
+```text
+- Warmup 15m 55%
+- Endurance 70m 231w
+- Tempo finish 25m 80%
+- Cooldown 10m 50%
+```
+
+## RAW LACTATE VALUES
+
+Do NOT use:
+
+- `meta.athlete.profile.lactate_power`
+- `meta.athlete.profile.lactate_mmol_l`
+
+as workout intensity targets when `personalized_z2` exists.
+
+The resolved `physiology.lactate_calibration.personalized_z2` block is authoritative for aerobic endurance prescription.
+
+## FALLBACK
+
+If `personalized_z2` is absent, incomplete or non-numeric:
+
+- Use the Workout Library prescription unchanged.
+
+Do NOT independently calculate personalised Z2.
+
+Do NOT infer LT1 from FTP.
+
+---
+
 # 24. WORKOUT LIBRARY
 
 This section defines canonical workout templates for Montis calendar writing.
@@ -830,7 +972,9 @@ Selection rules:
 - Prefer these library workouts before generating custom sessions.
 - Lock sport before selecting workout.
 - Use `Type` exactly as written unless user explicitly requests another sport.
-- Use only the interval text inside the workout description when writing to calendar.
+- Use the library workout as the canonical structure and default prescription.
+- When `physiology.lactate_calibration.personalized_z2` is available, resolve eligible Ride endurance steps according to Section 23.1 before writing the workout to calendar.
+- All non-endurance steps remain exactly as prescribed by the library unless another explicit Montis rule applies.
 - Do not pass estimated TSS. Intervals.icu calculates load from the workout prescription.
 - Do not mix intensity anchors inside a single interval.
 - Do not infer missing recovery.
@@ -2626,6 +2770,8 @@ Duration: 0m
 ```text
 - OFF
 ```
+
+
 
 # 25. FRIEL-ALIGNED WORKOUT LIBRARY ADDENDUM
 
