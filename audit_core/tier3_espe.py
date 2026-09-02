@@ -1,6 +1,6 @@
 """
 Energy System Progression Engine (ESPE)
-Version: v1.22
+Version: v1.23
 
 Stateless engine comparing two rolling power-curve windows to track energy system progression.
 
@@ -19,7 +19,7 @@ from coaching_cheat_sheet import CHEAT_SHEET
 from audit_core.utils import debug
 from coaching_profile import COACH_PROFILE
 
-ESPE_VERSION = "espe_v1.22"
+ESPE_VERSION = "espe_v1.23"
 
 # ---------------------------------------------------------------------
 # Power Anchor Helpers
@@ -57,6 +57,188 @@ FATIGUE_ANCHORS = (
     "60m",
 )
 
+FATIGUE_DOMAIN_ANCHORS = {
+    "short_power": ("5s", "1m"),
+    "vo2": ("5m",),
+    "threshold": ("20m",),
+    "long_duration": ("60m",),
+}
+
+# Montis operational deadband for longitudinal retention change.
+# This is governance, not a universal physiological threshold.
+FATIGUE_TREND_DEADBAND_PP = 2.0
+
+
+def _median(values):
+    numeric = sorted(
+        value
+        for value in values
+        if _is_number(value)
+    )
+
+    if not numeric:
+        return None
+
+    midpoint = len(numeric) // 2
+
+    if len(numeric) % 2:
+        return numeric[midpoint]
+
+    return (
+        numeric[midpoint - 1] + numeric[midpoint]
+    ) / 2
+
+
+def _build_fatigue_summary(
+    thresholds,
+) -> Dict[str, Any]:
+    """
+    Derive a governed fatigue-resistance summary.
+
+    State and trend are evaluated at the highest athlete-configured
+    after_kj threshold for which current and previous fatigued curves
+    match. If no previous match exists, use the highest current
+    threshold and report a baseline trend.
+    """
+
+    if not thresholds:
+        return {
+            "state": "unknown",
+            "primary_limiter": None,
+            "confidence": "low",
+            "trend": "baseline",
+            "evaluated_after_kj": None,
+            "overall_retention_percent": None,
+            "previous_overall_retention_percent": None,
+            "retention_change_pp": None,
+            "limiter_retention_percent": None,
+        }
+
+    matched_thresholds = [
+        threshold
+        for threshold in thresholds
+        if threshold.get("previous_retention_percent")
+    ]
+
+    evaluated = max(
+        matched_thresholds or thresholds,
+        key=lambda item: item.get("after_kj") or 0,
+    )
+
+    retention = (
+        evaluated.get("retention_percent")
+        or {}
+    )
+
+    previous_retention = (
+        evaluated.get("previous_retention_percent")
+        or {}
+    )
+
+    def _domain_values(anchor_retention):
+        output = {}
+
+        for domain, anchors in FATIGUE_DOMAIN_ANCHORS.items():
+            values = [
+                anchor_retention.get(anchor)
+                for anchor in anchors
+                if _is_number(anchor_retention.get(anchor))
+            ]
+
+            domain_value = _median(values)
+
+            if domain_value is not None:
+                output[domain] = round(domain_value, 2)
+
+        return output
+
+    domain_retention = _domain_values(retention)
+    previous_domain_retention = _domain_values(previous_retention)
+
+    domain_count = len(domain_retention)
+
+    if domain_count < 3:
+        return {
+            "state": "unknown",
+            "primary_limiter": None,
+            "confidence": "low",
+            "trend": "baseline",
+            "evaluated_after_kj": evaluated.get("after_kj"),
+            "overall_retention_percent": None,
+            "previous_overall_retention_percent": None,
+            "retention_change_pp": None,
+            "limiter_retention_percent": None,
+        }
+
+    overall_retention = round(
+        _median(domain_retention.values()),
+        2,
+    )
+
+    primary_limiter = min(
+        domain_retention,
+        key=domain_retention.get,
+    )
+
+    limiter_retention = domain_retention[
+        primary_limiter
+    ]
+
+    previous_overall_retention = None
+    retention_change_pp = None
+    trend = "baseline"
+
+    if len(previous_domain_retention) >= 3:
+        previous_overall_retention = round(
+            _median(previous_domain_retention.values()),
+            2,
+        )
+
+        retention_change_pp = round(
+            overall_retention - previous_overall_retention,
+            2,
+        )
+
+        if retention_change_pp >= FATIGUE_TREND_DEADBAND_PP:
+            trend = "improving"
+        elif retention_change_pp <= -FATIGUE_TREND_DEADBAND_PP:
+            trend = "declining"
+        else:
+            trend = "stable"
+
+    if overall_retention >= 90:
+        state = "robust"
+    elif overall_retention >= 80:
+        state = "moderate"
+    else:
+        state = "limited"
+
+    if (
+        len(matched_thresholds) >= 2
+        and domain_count == len(FATIGUE_DOMAIN_ANCHORS)
+        and len(previous_domain_retention) == len(FATIGUE_DOMAIN_ANCHORS)
+    ):
+        confidence = "high"
+    elif (
+        matched_thresholds
+        and domain_count >= 3
+        and len(previous_domain_retention) >= 3
+    ):
+        confidence = "moderate"
+    else:
+        confidence = "low"
+
+    return {
+        "state": state,
+        "primary_limiter": primary_limiter,
+        "confidence": confidence,
+        "trend": trend,
+        "evaluated_after_kj": evaluated.get("after_kj"),
+        "overall_retention_percent": overall_retention,
+        "previous_overall_retention_percent": previous_overall_retention,
+        "retention_change_pp": retention_change_pp,
+        "limiter_retention_percent": limiter_retention,
+    }
 
 def _is_number(value):
     return (
@@ -80,14 +262,38 @@ def _build_fatigue_resistance(
     if sport != "Ride":
         return None
 
-    fatigued_current = (
-        (data.get("fatigued") or {})
-        .get("current")
-        or {}
-    )
+    fatigued = data.get("fatigued") or {}
+    fatigued_current = fatigued.get("current") or {}
+    fatigued_previous = fatigued.get("previous") or {}
 
     if not isinstance(fatigued_current, dict):
         return None
+
+    if not isinstance(fatigued_previous, dict):
+        fatigued_previous = {}
+
+    previous = data.get("previous") or {}
+
+    # Match periods by authoritative athlete-configured kJ value,
+    # never by the configurable kj0/kj1 source slot.
+    previous_by_kj = {}
+
+    for source_slot, curve in fatigued_previous.items():
+        if not isinstance(curve, dict):
+            continue
+
+        try:
+            after_kj = int(curve.get("after_kj"))
+        except (TypeError, ValueError):
+            debug(
+                context,
+                "[ESPE-FR] Ignoring previous fatigued curve with invalid "
+                f"after_kj slot={source_slot} value={curve.get('after_kj')}"
+            )
+            continue
+
+        if 100 <= after_kj <= 9999:
+            previous_by_kj[after_kj] = curve
 
     thresholds = []
 
@@ -116,9 +322,15 @@ def _build_fatigue_resistance(
             continue
 
         fatigued_anchors = curve.get("anchors") or {}
+        previous_curve = previous_by_kj.get(after_kj) or {}
+        previous_fatigued_anchors = (
+            previous_curve.get("anchors") or {}
+        )
 
         fatigued_power_w = {}
         retention_percent = {}
+        previous_retention_percent = {}
+        retention_change_pp = {}
 
         for anchor_name in FATIGUE_ANCHORS:
             normal_power = _power(current.get(anchor_name))
@@ -140,6 +352,39 @@ def _build_fatigue_resistance(
                 2
             )
 
+            previous_normal_power = _power(
+                previous.get(anchor_name)
+            )
+            previous_fatigued_power = _power(
+                previous_fatigued_anchors.get(anchor_name)
+            )
+
+            if (
+                not _is_number(previous_normal_power)
+                or not _is_number(previous_fatigued_power)
+                or previous_normal_power <= 0
+                or previous_fatigued_power <= 0
+            ):
+                continue
+
+            previous_anchor_retention = round(
+                (
+                    previous_fatigued_power
+                    / previous_normal_power
+                ) * 100,
+                2,
+            )
+
+            previous_retention_percent[
+                anchor_name
+            ] = previous_anchor_retention
+
+            retention_change_pp[anchor_name] = round(
+                retention_percent[anchor_name]
+                - previous_anchor_retention,
+                2,
+            )
+
         if not fatigued_power_w:
             debug(
                 context,
@@ -148,11 +393,21 @@ def _build_fatigue_resistance(
             )
             continue
 
-        thresholds.append({
+        threshold_result = {
             "after_kj": after_kj,
             "fatigued_power_w": fatigued_power_w,
             "retention_percent": retention_percent,
-        })
+        }
+
+        if previous_retention_percent:
+            threshold_result[
+                "previous_retention_percent"
+            ] = previous_retention_percent
+            threshold_result[
+                "retention_change_pp"
+            ] = retention_change_pp
+
+        thresholds.append(threshold_result)
 
     if not thresholds:
         return None
@@ -164,7 +419,21 @@ def _build_fatigue_resistance(
     debug(
         context,
         "[ESPE-FR] Fatigued Ride curves processed → "
-        f"thresholds={[item['after_kj'] for item in thresholds]}"
+        f"thresholds={[item['after_kj'] for item in thresholds]} "
+        f"matched_previous={len(previous_by_kj)}"
+    )
+
+    summary = _build_fatigue_summary(thresholds)
+
+    debug(
+        context,
+        "[ESPE-FR] Summary → "
+        f"state={summary['state']} "
+        f"limiter={summary['primary_limiter']} "
+        f"trend={summary['trend']} "
+        f"change_pp={summary['retention_change_pp']} "
+        f"after_kj={summary['evaluated_after_kj']} "
+        f"confidence={summary['confidence']}"
     )
 
     return {
@@ -173,6 +442,7 @@ def _build_fatigue_resistance(
         "comparison_reference": "current_normal_power_curve",
         "thresholds_are_athlete_configured": True,
         "thresholds": thresholds,
+        "summary": summary,
     }
 
 
