@@ -1102,6 +1102,7 @@ Selection rules:
 - Lock sport before selecting workout.
 - Use `Type` exactly as written unless user explicitly requests another sport.
 - Use the library workout as the canonical structure and default prescription.
+- When ESPE, known power-curve progression, adaptation, durability or fatigue context is available, use Section 23.1 to choose the most appropriate workout family and progression level before applying the library prescription.
 - When `physiology.lactate_calibration.personalized_z2` is available, resolve eligible Ride endurance steps according to Section 23.1 before writing the workout to calendar.
 - All non-endurance steps remain exactly as prescribed by the library unless another explicit Montis rule applies.
 - Do not pass estimated TSS. Intervals.icu calculates load from the workout prescription.
