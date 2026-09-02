@@ -319,13 +319,14 @@ def normalize_prefetched_context(data):
         context["athleteProfile"] = athlete
         context["calendar"] = calendar
         
-                # -------------------------------------------------
+        # -------------------------------------------------
         # 🔋 POWER CURVE NORMALIZATION
         # Cloudflare-prefetched path
         #
         # Expected Worker response:
-        #   Ride: previous, current, current-kj0, current-kj1
-        #   Run:  previous, current
+        #   Ride: previous, current,
+        #         previous-kj0, previous-kj1,
+        #         current-kj0, current-kj1
         #
         # Fatigued curves are optional and may be omitted by
         # Intervals when the athlete has not configured kj0/kj1.
@@ -526,6 +527,7 @@ def normalize_prefetched_context(data):
                 # --------------------------------------------
                 if sport == "Ride":
                     fatigued_current = {}
+                    fatigued_previous = {}
 
                     for fatigue_curve in curve_list:
                         if not isinstance(fatigue_curve, dict):
@@ -540,16 +542,20 @@ def normalize_prefetched_context(data):
                         suffix = f"-{slot}"
                         base_curve_id = curve_id[:-len(suffix)]
 
-                        # Only bind fatigued curves belonging to the
-                        # current normal comparison window.
-                        if (
-                            not current_curve_id
-                            or base_curve_id != current_curve_id
-                        ):
+                        if current_curve_id and base_curve_id == current_curve_id:
+                            target_period = "current"
+                            target_curves = fatigued_current
+
+                        elif previous_curve_id and base_curve_id == previous_curve_id:
+                            target_period = "previous"
+                            target_curves = fatigued_previous
+
+                        else:
                             debug(
                                 context,
                                 "[NORM] Ignoring unmatched fatigued curve "
                                 f"sport={sport} id={curve_id} "
+                                f"previous={previous_curve_id} "
                                 f"current={current_curve_id}"
                             )
                             continue
@@ -558,8 +564,9 @@ def normalize_prefetched_context(data):
                             fatigue_curve.get("mapPlot") or {}
                         )
 
-                        fatigued_current[slot] = {
+                        target_curves[slot] = {
                             "source_slot": slot,
+                            "period": target_period,
                             "curve_id": curve_id,
                             "base_curve_id": base_curve_id,
                             "after_kj": fatigue_curve.get("after_kj"),
@@ -588,9 +595,9 @@ def normalize_prefetched_context(data):
                         }
 
                     sport_block["fatigued"] = {
-                        "current": fatigued_current
+                        "current": fatigued_current,
+                        "previous": fatigued_previous,
                     }
-
                 normalized_curves[sport] = sport_block
 
                 if not sport_block["current"].get("5m"):
@@ -605,12 +612,13 @@ def normalize_prefetched_context(data):
                     list(sport_block["current"].keys())
                 )
 
-                if sport == "Ride":
-                    debug(
-                        context,
-                        "[NORM] Fatigued Ride curves normalized → "
-                        f"{list(sport_block['fatigued']['current'].keys())}"
-                    )
+            if sport == "Ride":
+                debug(
+                    context,
+                    "[NORM] Fatigued Ride curves normalized → "
+                    f"current={list(sport_block['fatigued']['current'].keys())} "
+                    f"previous={list(sport_block['fatigued']['previous'].keys())}"
+                )
 
             context["power_curve"] = normalized_curves
 
