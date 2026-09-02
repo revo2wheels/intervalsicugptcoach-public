@@ -899,7 +899,7 @@ RENDERER_PROFILES = {
             #ADAPTATION
             "phases_summary MUST be rendered as a compact table (max 4 rows) with columns: Phase, Duration, Trend",
             "Phases should always be sequential dated phases",
-            "energy_system_progression MUST be rendered as compact adaptation table(s); when Ride fatigue_resistance exists, render only one summary row with evaluated kJ, state, limiter, current/previous retention, change, trend and confidence, excluding fatigued_power_w.",
+            "energy_system_progression MUST be rendered as compact adaptation table(s); when Ride fatigue_resistance exists, render only one summary row for eack after_kj with evaluated kJ, state, limiter, current/previous retention, change, trend and confidence, excluding fatigued_power_w.",
             "Table MUST include key systems (aerobic, threshold, vo2, anaerobic) and overall phase/adaptation_state.",
             "lactate_calibration when available MUST be rendered as a single compact adaptation table before suppression.",
             "Do NOT render narrative or subsection breakdown when table is present.",
@@ -1159,7 +1159,7 @@ RENDERER_PROFILES = {
             #ADAPTATION
             "phases_summary MUST be rendered as a compact table (max 4 rows) with columns: Phase, Duration, Trend",
             "Phases should always be sequential dated phases",
-            "energy_system_progression MUST be rendered as compact adaptation table(s); when Ride fatigue_resistance exists, render only one summary row with evaluated kJ, state, limiter, current/previous retention, change, trend and confidence, excluding fatigued_power_w.",
+            "energy_system_progression MUST be rendered as compact adaptation table(s); when Ride fatigue_resistance exists, render only one summary row per after_kj with evaluated kJ, state, limiter, current/previous retention, change, trend and confidence, excluding fatigued_power_w.",
             "Table MUST include key systems (aerobic, threshold, vo2, anaerobic) and overall phase/adaptation_state.",
             "lactate_calibration when available MUST be rendered as a single compact adaptation table before suppression.",
             "Do NOT render narrative or subsection breakdown when table is present.",
