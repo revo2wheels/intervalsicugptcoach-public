@@ -821,7 +821,136 @@ For future planning:
 
 MUST be considered before generating recommendations.
 
-# 23.1 PERSONALISED Z2 RESOLUTION — RIDE ONLY
+---
+
+# 23.1 PERFORMANCE PROGRESSION CONTEXT
+
+When a current Montis report or supplied planning context contains performance progression data, use it as supporting evidence when selecting and progressing workouts.
+
+Recognised progression sources include:
+
+- `energy_system_progression`
+- ESPE — Energy System Progression Engine
+- known rolling power-curve status
+- adaptation state
+- plateau state
+- fatigue / durability state
+- recent comparable workout execution where available
+
+These signals MUST be considered when relevant to the requested plan focus.
+
+## ESPE / POWER-CURVE MAPPING
+
+When `energy_system_progression` is available, map the relevant system to workout families:
+
+- `anaerobic`
+  → anaerobic-endurance, repeatability, surge and sprint-support workouts
+
+- `vo2`
+  → VO2 / aerobic-power workouts
+
+- `threshold`
+  → threshold, muscular-endurance, sweet-spot and under/over workouts
+
+- `aerobic_durability`
+  → aerobic endurance, long endurance and fatigue-resistance workouts
+
+Useful ESPE fields may include:
+
+- `system_status`
+- `system_status_timeline`
+- `adaptation_state`
+- `plateau_detected`
+- `adaptation_bias`
+- relevant `delta_percent`
+- `system_guidance`
+
+Use only the fields relevant to the selected workout or plan focus.
+
+Do NOT require the complete ESPE block.
+
+## PROGRESSION INTERPRETATION
+
+When progression evidence indicates a system is:
+
+- `strong_gain`, `moderate_gain`, `mild_gain`, `building`
+  → maintain or consolidate the successful stimulus; progression may be appropriate if governance permits
+
+- `stable`, `maintaining`
+  → maintain the current stimulus or progress conservatively if repeated workouts are being completed successfully
+
+- `plateau`
+  → consider a different or stronger stimulus within the same physiological domain
+
+- `decline`, `detraining`
+  → restore relevant stimulus if plan governance permits
+
+- `baseline`, `unknown`, insufficient data
+  → do not infer progression; use normal workout-library selection rules
+
+Progression does NOT automatically mean increasing target power.
+
+Valid progression methods include:
+
+- longer work intervals
+- more repetitions
+- greater accumulated work
+- shorter recovery
+- increased work density
+- longer endurance duration
+- later placement of quality work within an endurance session
+- increased target intensity only when appropriate
+
+## FATIGUE / DURABILITY CONTEXT
+
+When fatigue or durability information is available, use it alongside ESPE.
+
+Recognised signals may include:
+
+- durability state
+- fatigue-resistance state
+- decoupling / cardiac drift
+- acute vs chronic durability
+- long-session execution
+- W′ depletion / repeatability signals
+- current fatigue state
+
+Examples:
+
+- declining durability or high drift
+  → prefer endurance / durability development and avoid unnecessary additional intensity
+
+- stable or improving durability
+  → existing endurance stimulus may be maintained or progressively extended
+
+- high fatigue / recovery constraint
+  → reduce or defer progression even when ESPE shows positive adaptation
+
+Fatigue and recovery state have higher planning authority than progression evidence.
+
+## PRIORITY RULE
+
+Performance progression is supporting evidence only.
+
+It MUST NOT override:
+
+1. explicit user instructions
+2. Personal Directives
+3. Custom AI Instructions
+4. SICK / INJURED constraints
+5. recovery requirements
+6. target-event, taper or race-week governance
+7. explicit plan-builder load, frequency or duration constraints
+
+If progression data is absent, incomplete or unreliable:
+
+- use the normal Workout Library selection rules unchanged
+- do NOT invent ESPE values
+- do NOT infer adaptation state from current-week load alone
+
+---
+
+# 23.2 PERSONALISED Z2 RESOLUTION — RIDE ONLY
 
 When a current Montis report contains:
 
