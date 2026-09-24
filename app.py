@@ -1141,6 +1141,41 @@ async def run_audit_with_data(
             )
 
             # ---------------------------------------------------------
+            # RAILWAY-ONLY WELLNESS PREFETCH
+            # ---------------------------------------------------------
+            # This marker is intentionally created in the authenticated
+            # HTTP entry point, never in normalize_prefetched_context().
+            # report.py also imports that normalizer for local execution,
+            # and local/direct runs must retain their activity requirements.
+            wellness_only_requested = (
+                str(request.query_params.get("wellness_only", "")).lower()
+                in {"1", "true", "yes"}
+            )
+            railway_wellness_only = (
+                wellness_only_requested
+                and str(report_range).lower() == "wellness"
+                and light_empty
+                and full_empty
+            )
+
+            if railway_wellness_only:
+                df_wellness = prefetch_context.get("df_wellness")
+
+                if not isinstance(df_wellness, pd.DataFrame) or df_wellness.empty:
+                    return JSONResponse({
+                        "status": "no_data",
+                        "error_type": "NO_WELLNESS_DATA",
+                        "report_type": "wellness",
+                        "message": "No wellness records were available for this period."
+                    }, status_code=200)
+
+                prefetch_context["railway_wellness_only"] = True
+
+                # The wellness-only path returns the existing semantic graph.
+                # It does not run the markdown/activity rendering stack.
+                fmt = "semantic"
+
+            # ---------------------------------------------------------
             # LIGHT exists but FULL missing (only critical for weekly/season)
             # ---------------------------------------------------------
             if report_range == "weekly" and not light_empty and full_empty:
@@ -1252,7 +1287,7 @@ async def run_audit_with_data(
                 )
 
             # Abort only if NO activity data at all
-            if light_empty and full_empty:
+            if light_empty and full_empty and not railway_wellness_only:
                 return JSONResponse({
                     "status": "no_data",
                     "report_type": report_range,
@@ -1900,4 +1935,3 @@ def handle_audit_halt(e, report_range, buffer=None, header=None, context=None):
         "compliance": {},
         "logs": buffer.getvalue()[-20000:] if buffer else ""
     })
-    

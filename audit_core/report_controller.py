@@ -24,7 +24,11 @@ from audit_core.utils import (
     validate_dataset_integrity as validate_calculation_integrity,
     validate_wellness_alignment as validate_wellness,
 )
-from audit_core.tier2_derived_metrics import compute_derived_metrics
+from audit_core.tier2_derived_metrics import (
+    compute_derived_metrics,
+    compute_wellness_coverage,
+    normalise_hrv,
+)
 from audit_core.tier2_actions import evaluate_actions
 from audit_core.tier2_extended_metrics import compute_extended_metrics
 from semantic_json_builder import build_semantic_json
@@ -34,6 +38,160 @@ from audit_core.tier3_performance_intelligence import compute_performance_intell
 from audit_core.tier3_espe import run_espe
 from audit_core.tier3_adaptive_decision_engine import run_adaptive_decision_engine
 from audit_core.tier3_future_forecast import run_future_forecast
+
+
+def _run_railway_wellness_only(context, render_mode):
+    """Build a wellness report from an authenticated Railway prefetch only."""
+    raw_wellness = context.get("df_wellness")
+
+    if not isinstance(raw_wellness, pd.DataFrame):
+        raw_wellness = pd.DataFrame(context.get("wellness") or [])
+
+    if raw_wellness.empty:
+        raise AuditHalt(
+            "No wellness records were available for this period.",
+            code="NO_WELLNESS_DATA",
+            severity="info",
+        )
+
+    df_wellness = raw_wellness.copy()
+    df_wellness.columns = [str(col).strip().lower() for col in df_wellness.columns]
+    df_wellness.rename(
+        columns={
+            "restinghr": "rest_hr",
+            "resting_hr": "rest_hr",
+            "fatigue_score": "fatigue",
+            "stress_score": "stress",
+            "readiness_score": "readiness",
+            "atl_load": "atl",
+            "ctl_load": "ctl",
+            "atlload": "atl",
+            "ctlload": "ctl",
+        },
+        inplace=True,
+    )
+    df_wellness = df_wellness.loc[:, ~df_wellness.columns.duplicated()].copy()
+
+    if "date" not in df_wellness.columns and "id" in df_wellness.columns:
+        df_wellness.rename(columns={"id": "date"}, inplace=True)
+
+    if "date" not in df_wellness.columns:
+        raise AuditHalt(
+            "Wellness records did not contain a usable date.",
+            code="NO_WELLNESS_DATA",
+            severity="info",
+        )
+
+    df_wellness["date"] = pd.to_datetime(df_wellness["date"], errors="coerce")
+    df_wellness = (
+        df_wellness
+        .dropna(subset=["date"])
+        .sort_values("date")
+        .reset_index(drop=True)
+    )
+
+    if df_wellness.empty:
+        raise AuditHalt(
+            "Wellness records did not contain a usable date.",
+            code="NO_WELLNESS_DATA",
+            severity="info",
+        )
+
+    numeric_fields = {
+        "hrv", "rest_hr", "fatigue", "stress", "readiness", "soreness",
+        "mood", "motivation", "injury", "hydration", "ctl", "atl", "tsb",
+        "sleepscore", "sleepsecs", "sleepquality",
+    }
+    for field in numeric_fields.intersection(df_wellness.columns):
+        df_wellness[field] = pd.to_numeric(df_wellness[field], errors="coerce")
+
+    df_wellness = normalise_hrv(df_wellness, context)
+    compute_wellness_coverage(df_wellness, context)
+
+    context["df_wellness"] = df_wellness
+    context["wellness"] = df_wellness.to_dict(orient="records")
+    context["wellness_daily"] = df_wellness.to_dict(orient="records")
+    context["dailyMerged"] = df_wellness.copy()
+
+    wellness_summary = {}
+
+    if "rest_hr" in df_wellness.columns:
+        rest_hr = df_wellness["rest_hr"].dropna().tail(7)
+        if not rest_hr.empty:
+            wellness_summary["rest_hr"] = round(float(rest_hr.mean()), 1)
+
+    if "hrv" in df_wellness.columns:
+        hrv = df_wellness["hrv"].dropna()
+        if not hrv.empty:
+            hrv_mean = float(hrv.mean())
+            hrv_latest = float(hrv.iloc[-1])
+            wellness_summary["hrv_ratio"] = (
+                round(hrv_latest / hrv_mean, 2) if hrv_mean > 0 else None
+            )
+            if len(hrv) >= 14:
+                wellness_summary["hrv_trend"] = round(
+                    float(hrv.tail(7).mean() - hrv.head(7).mean()),
+                    1,
+                )
+
+    # Preserve only load-state values supplied by Intervals wellness.
+    # Do not project or synthesize CTL, ATL or TSB without activities.
+    for field in ("ctl", "atl", "tsb"):
+        if field in df_wellness.columns:
+            values = df_wellness[field].dropna()
+            if not values.empty:
+                wellness_summary[field] = round(float(values.iloc[-1]), 2)
+
+    subjective_fields = (
+        "fatigue", "stress", "readiness", "soreness", "mood",
+        "motivation", "injury", "hydration",
+    )
+    subjective_metrics = {}
+    for field in subjective_fields:
+        if field in df_wellness.columns:
+            values = df_wellness[field].dropna()
+            if not values.empty:
+                subjective_metrics[field] = round(float(values.mean()), 1)
+
+    context["wellness_summary"] = wellness_summary
+    context["wellness_metrics"] = wellness_summary.copy()
+    context["subjective_metrics"] = subjective_metrics
+    context["period"] = {
+        "start": df_wellness["date"].min().strftime("%Y-%m-%d"),
+        "end": df_wellness["date"].max().strftime("%Y-%m-%d"),
+    }
+
+    empty_activities = pd.DataFrame(
+        columns=["start_date_local", "moving_time", "distance", "icu_training_load", "type"]
+    )
+    context["df_master"] = empty_activities.copy()
+    context["df_full"] = empty_activities.copy()
+    context["df_light"] = empty_activities.copy()
+    context["df_events"] = empty_activities.copy()
+    context["_df_scope_full"] = empty_activities.copy()
+    context["_df_light_90d"] = empty_activities.copy()
+    context["df_daily"] = pd.DataFrame(columns=["date", "icu_training_load"])
+    context["activities_light"] = []
+    context["activities_full"] = []
+    context["auditFinal"] = True
+    context["auditPartial"] = False
+    context["auditPrecision"] = "wellness_only"
+    context["fetch_status"] = "complete"
+    context["render_mode"] = render_mode
+
+    debug(
+        context,
+        f"[WELLNESS-ONLY] Building semantic report from {len(df_wellness)} wellness rows",
+    )
+
+    semantic_output = build_semantic_json(context)
+    final_output = {
+        "status": "ok",
+        "message": "Wellness Semantic Report Generated",
+        "semantic_graph": semantic_output,
+        "context": context,
+    }
+    return final_output, True
 
 
 def run_report(
@@ -291,6 +449,14 @@ def run_report(
 
 
     debug(context, f"[T0] Config → light={light_days}d full={full_days}d chunk={chunk}")
+
+    # Railway's authenticated /run route is the only caller allowed to set
+    # this marker. Local report.py and direct Tier-0 runs never receive it.
+    if (
+        context.get("railway_wellness_only") is True
+        and context.get("report_type") == "wellness"
+    ):
+        return _run_railway_wellness_only(context, render_mode)
 
     # --- Tier-0 Full Audit (canonical, single execution) ---
 
