@@ -44,6 +44,21 @@ else:
 
 app = FastAPI(title="Montis.icu GPT Coach Railway API", version="2.0")
 
+NO_ACTIVITY_DATA_MESSAGE = (
+    "No activity data found for this period. "
+    "Run a weekly demo report to see what you are missing."
+)
+
+
+def _is_wellness_no_activity_response(payload):
+    """Limit the no-activity fallback to the regular wellness report."""
+    return (
+        isinstance(payload, dict)
+        and payload.get("status") == "no_data"
+        and str(payload.get("report_type", "")).lower() == "wellness"
+        and payload.get("message") == NO_ACTIVITY_DATA_MESSAGE
+    )
+
 
 # ============================================================
 # 🧹 SANITIZER
@@ -1151,26 +1166,14 @@ async def run_audit_with_data(
                 str(request.query_params.get("wellness_only", "")).lower()
                 in {"1", "true", "yes"}
             )
-            wellness_activity_fallback = (
-                not wellness_only_requested
-                and str(report_range).lower() == "wellness"
-                and light_empty
-                and full_empty
-            )
             railway_wellness_only = (
-                (wellness_only_requested or wellness_activity_fallback)
+                wellness_only_requested
                 and str(report_range).lower() == "wellness"
                 and light_empty
                 and full_empty
             )
 
             if railway_wellness_only:
-                if wellness_activity_fallback:
-                    logger.info(
-                        "[WELLNESS-ONLY] No activities found; retrying the regular wellness request "
-                        "through the prefetched wellness-only path"
-                    )
-
                 df_wellness = prefetch_context.get("df_wellness")
 
                 if not isinstance(df_wellness, pd.DataFrame) or df_wellness.empty:
@@ -1300,12 +1303,33 @@ async def run_audit_with_data(
 
             # Abort only if NO activity data at all
             if light_empty and full_empty and not railway_wellness_only:
-                return JSONResponse({
+                no_activity_payload = {
                     "status": "no_data",
                     "report_type": report_range,
-                    "message": "No activity data found for this period. Run a weekly demo report to see what you are missing.",
+                    "message": NO_ACTIVITY_DATA_MESSAGE,
                     "next_step": "run a weekly demo report"
-                }, status_code=200)
+                }
+
+                if _is_wellness_no_activity_response(no_activity_payload):
+                    df_wellness = prefetch_context.get("df_wellness")
+
+                    if not isinstance(df_wellness, pd.DataFrame) or df_wellness.empty:
+                        return JSONResponse({
+                            "status": "no_data",
+                            "error_type": "NO_WELLNESS_DATA",
+                            "report_type": "wellness",
+                            "message": "No wellness records were available for this period."
+                        }, status_code=200)
+
+                    logger.info(
+                        "[WELLNESS-ONLY] Regular wellness returned no activity data; "
+                        "falling back to the prefetched wellness-only path"
+                    )
+                    prefetch_context["railway_wellness_only"] = True
+                    railway_wellness_only = True
+                    fmt = "semantic"
+                else:
+                    return JSONResponse(no_activity_payload, status_code=200)
                 
             # now run the unified audit (SAFE WRAPPED)
             # ---------------------------------------------------------
