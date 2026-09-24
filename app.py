@@ -1151,14 +1151,26 @@ async def run_audit_with_data(
                 str(request.query_params.get("wellness_only", "")).lower()
                 in {"1", "true", "yes"}
             )
+            wellness_activity_fallback = (
+                not wellness_only_requested
+                and str(report_range).lower() == "wellness"
+                and light_empty
+                and full_empty
+            )
             railway_wellness_only = (
-                wellness_only_requested
+                (wellness_only_requested or wellness_activity_fallback)
                 and str(report_range).lower() == "wellness"
                 and light_empty
                 and full_empty
             )
 
             if railway_wellness_only:
+                if wellness_activity_fallback:
+                    logger.info(
+                        "[WELLNESS-ONLY] No activities found; retrying the regular wellness request "
+                        "through the prefetched wellness-only path"
+                    )
+
                 df_wellness = prefetch_context.get("df_wellness")
 
                 if not isinstance(df_wellness, pd.DataFrame) or df_wellness.empty:
