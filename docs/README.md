@@ -68,8 +68,6 @@ Some documents remain for historical or reference purposes and may describe earl
 
 Historical material should not override the current architecture described in the root README, this documentation index, or the current engine source.
 
-Before moving or deleting documentation or integration resources, confirm that they are not referenced by an active runtime or external integration.
-
 ## Public product documentation
 
 - Product: https://www.montis.icu/
