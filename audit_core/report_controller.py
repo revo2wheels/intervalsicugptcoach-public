@@ -147,11 +147,14 @@ def _run_railway_wellness_only(context, render_mode):
         "motivation", "injury", "hydration",
     )
     subjective_metrics = {}
+    today_subjective = df_wellness.loc[
+        df_wellness["date"].dt.date == context["athlete_today"].date()
+    ]
     for field in subjective_fields:
-        if field in df_wellness.columns:
-            values = df_wellness[field].dropna()
+        if field in today_subjective.columns:
+            values = today_subjective[field].dropna()
             if not values.empty:
-                subjective_metrics[field] = round(float(values.mean()), 1)
+                subjective_metrics[field] = round(float(values.iloc[-1]), 1)
 
     context["wellness_summary"] = wellness_summary
     context["wellness_metrics"] = wellness_summary.copy()

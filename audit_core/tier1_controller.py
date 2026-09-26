@@ -1143,13 +1143,14 @@ def run_tier1_controller(df_master, wellness, context):
             "readiness"
         ]
 
-        subjective_avgs = {}
+        subjective_metrics = {}
+        today_subjective = df_well.loc[df_well["date"].dt.date == today.date()]
 
         for field in subjective_fields:
-            if field in df_well.columns:
-                val = pd.to_numeric(df_well[field], errors="coerce").mean(skipna=True)
-                if pd.notna(val):
-                    subjective_avgs[field] = round(val, 1)
+            if field in today_subjective.columns:
+                values = pd.to_numeric(today_subjective[field], errors="coerce").dropna()
+                if not values.empty:
+                    subjective_metrics[field] = round(float(values.iloc[-1]), 1)
 
         wellness_metrics = {
             "rest_hr": rest_hr,
@@ -1163,7 +1164,7 @@ def run_tier1_controller(df_master, wellness, context):
         context.setdefault("wellness_summary", {}).update(wellness_metrics)
 
         # keep subjective values but outside the wellness summary
-        context["subjective_metrics"] = subjective_avgs
+        context["subjective_metrics"] = subjective_metrics
 
         debug(context, f"[T1] Wellness summary → rest_days={rest_days}, rest_hr={rest_hr}, hrv_trend={hrv_trend}")
 
