@@ -14,6 +14,13 @@ from coaching_profile import COACH_PROFILE
 from coaching_heuristics import HEURISTICS
 from coaching_cheat_sheet import CHEAT_SHEET, CLASSIFICATION_ALIASES
 
+
+def _normalise_icu_intensity(values):
+    """Return intensity as float ratios, accepting either 0-1 or percentage input."""
+    intensity = pd.to_numeric(values, errors="coerce").astype(float)
+    return intensity.where(intensity <= 10, intensity / 100.0)
+
+
 def normalise_hrv(df_well, context=None):
     """
     Tier-2 HRV Normalisation — vendor-agnostic harmonisation across Garmin, Whoop, Oura, etc.
@@ -246,7 +253,7 @@ def compute_polarisation_index(context):
 
     try:
         tmp = df[["icu_intensity", "moving_time"]].copy()
-        tmp["icu_intensity"] = pd.to_numeric(tmp["icu_intensity"], errors="coerce")
+        tmp["icu_intensity"] = _normalise_icu_intensity(tmp["icu_intensity"])
         tmp["moving_time"] = pd.to_numeric(tmp["moving_time"], errors="coerce").fillna(0)
         tmp = tmp.dropna(subset=["icu_intensity"])
         tmp = tmp[tmp["moving_time"] > 0]
@@ -254,7 +261,6 @@ def compute_polarisation_index(context):
             debug_fn(context, "[POL] ⚠ icu_intensity fallback has no valid rows → 0.0")
             return 0.0
 
-        tmp.loc[tmp["icu_intensity"] > 10, "icu_intensity"] /= 100.0
         total_time = float(tmp["moving_time"].sum())
         if total_time <= 0:
             return 0.0
@@ -868,12 +874,7 @@ def compute_derived_metrics(df_events, context):
     if_proxy = 0.7  # fallback when usable intensity data is unavailable
 
     if "icu_intensity" in df_events.columns:
-        intensity = pd.to_numeric(
-            df_events["icu_intensity"],
-            errors="coerce"
-        )
-
-        intensity.loc[intensity > 10] /= 100
+        intensity = _normalise_icu_intensity(df_events["icu_intensity"])
         valid_intensity = intensity.dropna()
 
         if not valid_intensity.empty:

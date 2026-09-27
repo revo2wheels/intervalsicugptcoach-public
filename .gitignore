@@ -31,6 +31,7 @@ Thumbs.db
 
 # Python
 __pycache__/
+/tests/
 
 # Root-only generated dirs
 /archive/
