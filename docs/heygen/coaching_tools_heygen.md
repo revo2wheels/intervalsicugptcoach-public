@@ -59,7 +59,7 @@ Logo: use the attached montis-logo-512.png (the Montis mountain logo) on the ope
 Screens: the attached PNGs are real Montis app screens with made-up example people and data. Show each one large in a clean rounded frame, with gentle zoom or pan and simple highlight callouts on what the voiceover mentions. Never redraw, crop out or change what the screens show.
 Callouts: keep highlight callouts small; never cover a screen with rings, circles or large shapes.
 Layout: text, labels and cards never overlap each other or run off the frame; keep everything at least 60px inside the edges.
-Intervals.icu: write it as plain text. Never draw or invent an Intervals.icu logo.
+Intervals.icu: the script never says it; don't add it to any scene, and never draw or invent its logo.
 Motion: real Montis App screens (linked in each scene), with pointer, highlight and zoom; simple fades between scenes; captions on.
 
 Script rules: follow the scenes in order. Each VO line is exactly what the presenter says, word for word. Do not add, remove or reword any sentence, and never add your own summaries, conclusions or claims. If the voiceover runs shorter than the target length, make the video shorter instead of adding words. On-screen text appears exactly as written.
@@ -79,11 +79,10 @@ Do not say or imply that:
 - athletes can see each other;
 - the example people or AI answers are real.
 Use these facts instead:
-- every number comes from the Montis coaching engine, from the athlete's Intervals.icu data;
+- every number comes from the Montis coaching engine, from the athlete's own training data;
 - the AI explains, drafts and answers questions; the coach decides;
 - changes to an athlete's calendar or chat need Confirm first;
-- emails go to the coach's own or a coached athlete's Intervals.icu email; the workflow report copies the coach in;
-- Intervals.icu stays the source of truth.
+- emails go to the coach's own or a coached athlete's known email; the workflow report copies the coach in;
 
 Scenes:
 
@@ -127,7 +126,7 @@ VO: "The Coaching Workflow is Lena's whole week on one page: what she did agains
 ### Scene 6 (3:00–3:30) — Send Lena her report
 Visual: Anna types a short comment in the email box and presses SEND. Cut to Lena's inbox: the Coaching Workflow Report in Anna's brand colour, with her logo, her comment at the top, and the six sections below.
 On-screen text: "Your comment on top. Your branding throughout."
-Director's note: Montis only emails the coach's own address or a coached athlete's Intervals.icu email. Don't show typing an unrelated address.
+Director's note: Montis only emails the coach's own address or a coached athlete's known email. Don't show typing an unrelated address.
 Show: workflow-email-box.png (attached), workflow-email-report.png (attached)
 VO: "Anna adds a note — "Great week, keep Thursday indoors" — and presses Send. Lena gets the whole report as an email with Anna's logo and colours, and Anna gets a copy."
 

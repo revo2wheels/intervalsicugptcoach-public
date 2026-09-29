@@ -11,7 +11,7 @@ Made from [coaching_setup_storyboard.md](../coaching_setup_storyboard.md) on 29 
 5. After the render, fix small things in **Edit in AI Studio → Edit a copy**, changing only that element; the re-render costs a few credits. Don't ask the agent chat for changes at this point: it regenerates the whole video.
 6. Download the MP4, the MP4 with captions and the SRT captions. Give them plain names before uploading to media.montis.icu, for example `montis-coaching-setup.mp4`, `montis-coaching-setup-captions.mp4` and `montis-coaching-setup.en.srt`. HeyGen's own file names contain characters that break links.
 
-## Files to attach (13)
+## Files to attach (12)
 
 - [montis-logo-512.png](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/brand/montis-logo-512.png)
 - [invite-coaching-tab.png](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/coached-athletes/invite-coaching-tab.png)
@@ -25,18 +25,17 @@ Made from [coaching_setup_storyboard.md](../coaching_setup_storyboard.md) on 29 
 - [invite-page-confirm-mono.png](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/coached-athletes/invite-page-confirm-mono.png)
 - [branding-app-black-white.png](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/coached-athletes/branding-app-black-white.png)
 - [invite-athlete-your-coaches.png](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/coached-athletes/invite-athlete-your-coaches.png)
-- [invite-folder-banner.png](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/coached-athletes/invite-folder-banner.png)
 
 ## PROMPT START
 
-Make a 4:00–4:20 landscape (16:9) explainer video titled "Montis Coaching 101 — Setup".
+Make a 3:50–4:10 landscape (16:9) explainer video titled "Montis Coaching 101 — Setup".
 
 What it is:
 Create a short, human video that shows how a coach connects athletes to Montis with an invite link, and how the athlete stays in control of what they share.
 The story follows:
 - Anna Weber, an endurance coach who runs Anna Weber Coaching.
 - Lena Brandt, one of her athletes, a cyclist training for the Gran Fondo Wachau.
-Anna invites Lena with one link. Lena opens it on her phone, signs in with Intervals.icu and accepts. From then on Anna can coach Lena through Montis, and Lena can stop sharing at any time.
+Anna invites Lena with one link. Lena opens it on her phone, signs in and accepts. From then on Anna can coach Lena through Montis, and Lena can stop sharing at any time.
 This is the first coaching video. The second, Montis Coaching 101 — Tools, shows what Anna does once her athletes are connected.
 The story in one sentence: Anna creates an invite link, Lena accepts it, and both of them can see and control the connection from the Montis hub.
 Primary message: one link per athlete; the athlete agrees to exactly what is shared, and can stop at any time
@@ -54,7 +53,8 @@ Logo: use the attached montis-logo-512.png (the Montis mountain logo) on the ope
 Screens: the attached PNGs are real Montis app screens with made-up example people and data. Show each one large in a clean rounded frame, with gentle zoom or pan and simple highlight callouts on what the voiceover mentions. Never redraw, crop out or change what the screens show.
 Callouts: keep highlight callouts small; never cover a screen with rings, circles or large shapes.
 Layout: text, labels and cards never overlap each other or run off the frame; keep everything at least 60px inside the edges.
-Intervals.icu: write it as plain text. Never draw or invent an Intervals.icu logo.
+Intervals.icu: mention it once only, in Scene 0, as plain text. Never draw or invent an Intervals.icu logo, and don't add it to other scenes.
+Pronunciation: the presenter says montis.icu as "Montis dot I-C-U".
 Motion: real Montis screens (linked in each scene), with light motion and callouts; simple fades between scenes; captions on.
 
 Script rules: follow the scenes in order. Each VO line is exactly what the presenter says, word for word. Do not add, remove or reword any sentence, and never add your own summaries, conclusions or claims. If the voiceover runs shorter than the target length, make the video shorter instead of adding words. On-screen text appears exactly as written.
@@ -68,34 +68,33 @@ Do not say or imply that:
 - Montis sends the invite link or messages athletes;
 - an invite link works for more than one athlete, or forever;
 - athletes can see each other or the coach's list;
-- the athlete gives Montis their Intervals.icu password;
+- the athlete gives Montis their password;
 - athletes need a paid membership;
 - a Supporter payment includes coaching.
 Use these facts instead:
 - one link, one athlete, 14 days; the coach sends it;
-- the athlete signs in on Intervals.icu itself and accepts on the invite page;
+- the athlete signs in on their own training account and accepts on the invite page;
 - the invite page lists exactly what the coach can do;
-- either side can end the sharing at any time;
-- Intervals.icu stays the source of truth.
+- either side can end the sharing at any time.
 
 Scenes:
 
 ### Scene 0 (0:00–0:25) — Coaching with Montis
-Visual: Anna at her desk. Five athlete cards float around her laptop: Lena, Marco, Sofia, Tom and Sam. Each card sits on its own Intervals.icu account. A single link joins each athlete to Anna's Montis coaching.
-On-screen text: "Your athletes keep Intervals.icu. You coach them through Montis."
+Visual: Anna at her desk. Five athlete cards float around her laptop: Lena, Marco, Sofia, Tom and Sam. Each card sits on its own training account. A single link joins each athlete to Anna's Montis coaching.
+On-screen text: "Your athletes keep their own accounts. You coach them through Montis."
 VO: "This is Anna. She coaches five endurance athletes, and every one of them trains with their own Intervals.icu account. Montis lets Anna coach all of them in one place, without taking over anyone's account. It starts with one simple thing: an invite link."
 
 ### Scene 1 (0:25–0:45) — Who needs what
-Visual: A two-column card: Coach and Athlete. | | Coach | Athlete | |---|---|---| | Montis membership | Montis Subscriber | None — free | | Intervals.icu account | Yes | Yes — a free account is fine | | Email | Intervals.icu email matches the membership email | Nothing to match |
+Visual: A two-column card: Coach and Athlete. | | Coach | Athlete | |---|---|---| | Montis membership | Montis Subscriber | None — free | | Training account | Yes | Yes — a free account is fine | | Email | Sign-in email matches the membership email | Nothing to match |
 On-screen text: "Only the coach pays. Athletes use Montis free."
 Director's note: A one-off Supporter payment does not include coaching. Don't show prices in the video.
-VO: "Only the coach needs a membership. Anna has a Montis Subscriber membership, and her Intervals.icu email matches her membership email, so Montis can find it. Her athletes use Montis for free."
+VO: "Only the coach needs a membership. Anna has a Montis Subscriber membership, and her sign-in email matches her membership email, so Montis can find it. Her athletes use Montis for free."
 
 ### Scene 2 (0:45–1:05) — The Coaching tab
 Visual: Anna opens montis.icu/app and the Coaching tab. Highlight the two halves: Your athletes on the left, Invite an athlete on the right.
 On-screen text: "montis.icu/app → Coaching"
 Show: invite-coaching-tab.png (attached)
-VO: "Anna opens the Montis hub at montis.icu slash app and goes to the Coaching tab. On the left, her athletes. On the right, a box to invite a new one."
+VO: "Anna opens the Montis hub at Montis dot I-C-U slash app and goes to the Coaching tab. On the left, her athletes. On the right, a box to invite a new one."
 
 ### Scene 3 (1:05–1:25) — Create an invite link
 Visual: Anna types a private note so she knows who the link is for, presses Create invite link, and the panel shows Link ready and copied.
@@ -115,10 +114,10 @@ Show: invite-page-signed-out.png (attached), invite-page-in-app-warning.png (att
 VO: "Lena taps the link. She sees who invited her — Anna's logo and website. If the link opens inside WhatsApp or Instagram, Montis asks her to open it in Safari or Chrome first, because signing in doesn't work in those in-app browsers."
 
 ### Scene 6 (2:05–2:35) — Lena sees exactly what she shares
-Visual: Lena signs in with Intervals.icu. The page shows Signed in as Lena Brandt and the list of what Anna will be able to do. Highlight Accept and share and No thanks.
+Visual: Lena signs in. The page shows Signed in as Lena Brandt and the list of what Anna will be able to do. Highlight Accept and share and No thanks.
 On-screen text: "Nothing is shared until the athlete accepts."
 Show: invite-page-confirm.png (attached)
-VO: "Lena signs in on Intervals.icu itself — her password never touches Montis. Then Montis shows her exactly what she's agreeing to: Anna can see her training, wellness and calendar, plan or change workouts, and use all of it with Claude, ChatGPT or Gemini through Montis. Nothing is shared until Lena presses Accept and share."
+VO: "Lena signs in with her own training account — her password never touches Montis. Then Montis shows her exactly what she's agreeing to: Anna can see her training, wellness and calendar, plan or change workouts, and use all of it with Claude, ChatGPT or Gemini through Montis. Nothing is shared until Lena presses Accept and share."
 
 ### Scene 7 (2:35–2:50) — Accepted
 Visual: Lena presses Accept and share. The page confirms: You're now sharing with Anna Weber Coaching.
@@ -143,13 +142,7 @@ On-screen text: "Stop sharing at any time."
 Show: invite-athlete-your-coaches.png (attached)
 VO: "And Lena stays in control. Her own hub lists her coaches, and Stop sharing ends it at any time. Athletes never see each other, and Anna sees only the athletes who chose to share with her."
 
-### Scene 11 (3:55–4:10) — Coaches who used the folder
-Visual: A short aside for existing coaches: the banner on the Coaching tab about the old `Coached_Athletes` folder.
-Director's note: Optional scene. Cut it for audiences of new coaches.
-Show: invite-folder-banner.png (attached)
-VO: "If you coached with the old Coached_Athletes folder in Intervals.icu, Montis has already moved those athletes across. The banner tells you when the folder can go — just send an invite to anyone still marked Folder only first."
-
-### Scene 12 (4:10–4:20) — Ready to coach
+### Scene 11 (3:55–4:05) — Ready to coach
 Visual: Anna's list fills up: Lena, Marco, Sofia and Tom signed in; Sam still waiting. The screen slides towards the Coach Cockpit.
 Final title: "Montis Coaching 101 — next: the coaching tools"
 VO: "That's it: one link per athlete, and Anna is ready to coach. Next, we'll see what she does with it."
