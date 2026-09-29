@@ -1,4 +1,4 @@
-# Montis Intelligence Stack — Janet & John Storyboard
+# Montis 101 — Janet & John Storyboard
 
 ## Purpose
 

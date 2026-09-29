@@ -4,8 +4,8 @@ Coach your athletes in the Montis App. Each athlete keeps their own Intervals.ic
 
 **Guides (PDF)**
 
-- [Coaching athletes with Montis.icu](https://github.com/revo2wheels/intervalsicugptcoach-public/blob/main/docs/Coaching_Athletes.pdf): invite links, accepting an invite, managing your athletes, branding and privacy.
-- [The Montis coaching platform](https://github.com/revo2wheels/intervalsicugptcoach-public/blob/main/docs/Coaching_Platform.pdf): Coach Cockpit, the AI roster review, the Coaching Workflow, email reports and working as an athlete.
+- [Coaching athletes with Montis.icu](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/docs/Coaching_Athletes.pdf): invite links, accepting an invite, managing your athletes, branding and privacy.
+- [The Montis coaching platform](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/docs/Coaching_Platform.pdf): Coach Cockpit, the AI roster review, the Coaching Workflow, email reports and working as an athlete.
 
 ## What you get
 
@@ -106,7 +106,7 @@ While you act as an athlete, these actions write straight to their Intervals.icu
 - **AI Coach Chat**: **Add to Calendar** on a suggested workout.
 - **AI Builder v2**: committing a plan first removes the existing workouts on the dates of the weeks you selected, then writes the new plan.
 - **Coaching Workflow**: **Delete Target Event**, then **Confirm Delete**, removes a target event.
-- **The AI Coach** (the chat and the AI Coach panels) can add, change or delete workouts, and send the athlete a message in Intervals.icu chat, when you ask it to. It doesn't ask you to confirm first, so say exactly what you want.
+- **The AI Coach** (the chat and the AI Coach panels) can add, change or delete workouts, and send the athlete a message in Intervals.icu chat, when you ask it to. It asks first: a card shows what will change and whose calendar, with **Confirm** and **Cancel**. Nothing changes until you press **Confirm**.
 
 Changes show in the athlete's Intervals.icu straight away.
 

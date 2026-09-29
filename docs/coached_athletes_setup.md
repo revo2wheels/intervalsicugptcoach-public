@@ -176,21 +176,29 @@ When your membership is active again, your athletes come back. Nothing is delete
 
 ## Coach branding (optional)
 
-Add your logo, website and brand colour in **Your coach branding** on the **Coaching** tab.
+Add your logo, team name, website, brand colour and theme in **Your coach branding** on the **Coaching** tab.
 
-- **Logo.** Press **Upload image** (later **Replace**). PNG, JPG or WebP · square works best · at least 256 × 256 px · up to 1 MB. **Remove** takes it away.
+- **Logo.** Press **Upload image** (later **Replace**). PNG, JPG or WebP · square works best · at least 256 × 256 px · up to 1 MB. **Remove** takes it away. A white logo on a see-through background is put on a black square when you upload it, so it shows everywhere.
+- **Team or club name (optional).** For example *Anna Weber Coaching*, up to 60 characters. With the black & white theme it's shown at the top of the Montis App in place of "Intelligence Lab".
+- **Short name (optional).** For example *AW COACHING*, up to 16 characters. With the black & white theme it's shown next to your logo in the Montis App menu.
 - **Website (optional).** Shown under your name. https:// is added for you.
 - **Brand colour.** Type a hex colour such as `#E11D48`, or press the swatch to pick one. **From your logo:** suggests colours taken from your logo. **Use Montis green** goes back to the default.
-- **Preview** shows a button in your colour. Text on your colour switches between black and white automatically so it stays readable. Status colours (green, amber, red) stay the same for everyone.
-- Press **Save** for the website and colour. The logo is saved when you upload it.
+- **Black & white theme for me and my athletes.** Uses black and white in the Montis App for you and your athletes, and on your invite page. Status colours stay the same.
+- **Preview** shows a button in your colour. Text on your colour switches between black and white automatically so it stays readable.
+- Press **Save** for the team name, website, colour and theme. The logo is saved when you upload it.
+
+![Your coach branding card](../assets/user-guides/coached-athletes/invite-branding-card.png)
 
 Where it shows:
 
-- Athletes see your logo and website on your invite page and in their list of coaches.
-- The Montis App and your emails also use your brand colour.
-- Without a logo, athletes see your initials.
+- Athletes see your logo and website on your invite page and in their list of coaches. Without a logo, they see your initials.
+- The Montis App and your emails use your brand colour.
+- With the **black & white theme**, the Montis App is black and white for you and your athletes, with your logo and short name in the menu and your team name at the top. Your invite page is black and white too. Emails still use your brand colour.
+- Your athletes can choose **Use Montis colours** on their Athlete Profile instead.
 
-![Your coach branding card](../assets/user-guides/coached-athletes/invite-branding-card.png)
+![The Montis App with the black & white theme](../assets/user-guides/coached-athletes/branding-app-black-white.png)
+
+![Your invite page with the black & white theme](../assets/user-guides/coached-athletes/invite-page-confirm-mono.png)
 
 ## Moving from the Coached_Athletes folder
 
