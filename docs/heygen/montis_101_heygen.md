@@ -51,7 +51,7 @@ Intelligence Stack: the attached montis-intelligence-stack-dark.png is the offic
 Screens: the attached PNGs are real Montis app screens with made-up example people and data. Show each one large in a clean rounded frame, with gentle zoom or pan and simple highlight callouts on what the voiceover mentions. Never redraw, crop out or change what the screens show.
 Motion: one continuous left-to-right journey; Montis tier colours remain consistent; simple fades between scenes; captions on.
 
-Script rules: follow the scenes in order. Each VO line is exactly what the presenter says, word for word. On-screen text appears exactly as written.
+Script rules: follow the scenes in order. Each VO line is exactly what the presenter says, word for word. Do not add, remove or reword any sentence, and never add your own summaries, conclusions or claims. If the voiceover runs shorter than the target length, make the video shorter instead of adding words. On-screen text appears exactly as written.
 Keep it human:
 Use the plain questions repeatedly:
 1. What stress was applied?
