@@ -4,14 +4,15 @@ Made from [montis_intelligence_stack_storyboard.md](../montis_intelligence_stack
 
 ## How to use
 
-1. In HeyGen, open **Video Agent** and choose the **Montis** Brand Kit if you have set one up.
+1. In HeyGen, open **Video Agent** and choose the **Montis** Brand Kit. Set it up once from [assets/brand](../../assets/brand/README.md).
 2. Attach the files below. Download them from the links; HeyGen refers to them by file name.
 3. Paste everything between **PROMPT START** and **PROMPT END**.
 4. Check the video plan HeyGen shows, and ask for changes in the chat before you say **Proceed**.
 
-## Files to attach (12)
+## Files to attach (13)
 
-- [icon-512.png](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/public/icons/icon-512.png)
+- [montis-logo-512.png](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/brand/montis-logo-512.png)
+- [montis-intelligence-stack-dark.png](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/brand/montis-intelligence-stack-dark.png)
 - [micro.png](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/montis-101/micro.png)
 - [wellness.png](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/montis-101/wellness.png)
 - [performance-cards.png](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/montis-101/performance-cards.png)
@@ -42,10 +43,11 @@ Tone: warm, simple, visual, athlete-first.
 
 Style: Montis — a calm, clean product explainer on dark backgrounds.
 Colours: Night #071310 (backgrounds), Deep green #0c201b (panels), Montis green #19b77a (highlights and buttons), Aqua #55d7c0 (accents), Paper #f4f6f0 and Ink #0b1816 (light cards and their text).
-Tier colours (keep them consistent everywhere): Tier 1: orange — load/stress; Tier 2: green — physiology/recovery; Tier 3: blue — performance behaviour; Tier 4: purple — adaptation/progression; Tier 5: red — decision/governance.
+Tier colours (keep them consistent everywhere): Tier 1: orange #ff6900 — load/stress; Tier 2: green #00bc7d — physiology/recovery; Tier 3: blue #2b7fff — performance behaviour; Tier 4: purple #8e51ff — adaptation/progression; Tier 5: red #fb2c36 — decision/governance.
 Terms: Montis Coaching Engine: the protected evidence-led calculation layer, not a conversational AI. Intelligence Lab: the athlete-facing place to explore the result. Intelligence Stack: the five governed coaching layers. Governed report: a clean structured package. AI/App: two presentation windows receiving the same package.
 Fonts: Manrope for titles, DM Sans for body text.
-Logo: use the attached icon-512.png (the Montis mountain logo) on the opening and closing title cards, and small in a corner during the video.
+Logo: use the attached montis-logo-512.png (the Montis mountain logo) on the opening and closing title cards, and small in a corner during the video.
+Intelligence Stack: the attached montis-intelligence-stack-dark.png is the official five-tier Montis Intelligence Stack. Base the stack and tier graphics on it (same order, names and colours).
 Screens: the attached PNGs are real Montis app screens with made-up example people and data. Show each one large in a clean rounded frame, with gentle zoom or pan and simple highlight callouts on what the voiceover mentions. Never redraw, crop out or change what the screens show.
 Motion: one continuous left-to-right journey; Montis tier colours remain consistent; simple fades between scenes; captions on.
 
