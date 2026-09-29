@@ -44,6 +44,7 @@ Tone: warm, simple, step by step, coach-first.
 
 Style: Montis — a calm, clean product explainer on dark backgrounds.
 Colours: Night #071310 (backgrounds), Deep green #0c201b (panels), Montis green #19b77a (highlights and buttons), Aqua #55d7c0 (accents), Paper #f4f6f0 and Ink #0b1816 (light cards and their text).
+Panels: always solid (full opacity, never see-through), with at least 40px padding so text never touches the edge. Keep scene backgrounds dark; no white scene backgrounds.
 Fonts: Manrope for titles, DM Sans for body text.
 Logo: use the attached montis-logo-512.png (the Montis mountain logo) on the opening and closing title cards, and small in a corner during the video.
 

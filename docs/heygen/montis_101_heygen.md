@@ -43,6 +43,7 @@ Tone: warm, simple, visual, athlete-first.
 
 Style: Montis — a calm, clean product explainer on dark backgrounds.
 Colours: Night #071310 (backgrounds), Deep green #0c201b (panels), Montis green #19b77a (highlights and buttons), Aqua #55d7c0 (accents), Paper #f4f6f0 and Ink #0b1816 (light cards and their text).
+Panels: always solid (full opacity, never see-through), with at least 40px padding so text never touches the edge. Keep scene backgrounds dark; no white scene backgrounds.
 Tier colours (keep them consistent everywhere): Tier 1: orange #ff6900 — load/stress; Tier 2: green #00bc7d — physiology/recovery; Tier 3: blue #2b7fff — performance behaviour; Tier 4: purple #8e51ff — adaptation/progression; Tier 5: red #fb2c36 — decision/governance.
 Terms: Montis Coaching Engine: the protected evidence-led calculation layer, not a conversational AI. Intelligence Lab: the athlete-facing place to explore the result. Intelligence Stack: the five governed coaching layers. Governed report: a clean structured package. AI/App: two presentation windows receiving the same package.
 Fonts: Manrope for titles, DM Sans for body text.
