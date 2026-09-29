@@ -1,4 +1,4 @@
-# Montis 101 — Janet & John Storyboard
+# Montis 101 — Marco & Anna Storyboard
 
 ## Purpose
 
@@ -6,10 +6,10 @@ Create a clear, human video that explains how Montis turns athlete data into a g
 
 The story follows:
 
-- **Janet**, an endurance athlete preparing for a Sunday event.
-- **John**, her coach, who uses an AI connected to Montis.
+- **Marco Rossi**, an endurance athlete preparing for a Sunday event.
+- **Anna Weber**, his coach, who uses an AI connected to Montis.
 
-Janet sees the result in the Montis app. John asks an AI connected to Montis about the same athlete. Both receive the same governed coaching truth because both experiences use the Montis Coaching Engine and five-layer Intelligence Stack.
+Marco sees the result in the Montis app. Anna asks an AI connected to Montis about the same athlete. Both receive the same governed coaching truth because both experiences use the Montis Coaching Engine and five-layer Intelligence Stack.
 
 ## Format
 
@@ -22,7 +22,7 @@ Janet sees the result in the Montis app. John asks an AI connected to Montis abo
 
 ## The story in one sentence
 
-Janet asks, “What should I do today?” Montis checks what she did, how her body responded, how her performance behaved, whether she is adapting, and where she is in her plan—then gives Janet and John one explainable decision.
+Marco asks, “What should I do today?” Montis checks what he did, how his body responded, how his performance behaved, whether he is adapting, and where he is in his plan—then gives Marco and Anna one explainable decision.
 
 ---
 
@@ -48,7 +48,7 @@ Open on an athlete surrounded by disconnected charts, scores and notifications. 
 
 **Transition**
 
-The five coloured layers move aside to reveal Janet preparing for her event.
+The five coloured layers move aside to reveal Marco preparing for his event.
 
 ---
 
@@ -58,15 +58,15 @@ The five coloured layers move aside to reveal Janet preparing for her event.
 
 **Visual**
 
-Early morning. Janet looks at her bike and then at her phone. Her calendar shows a target event on Sunday. John appears in a second frame at his desk.
+Early morning. Marco looks at his bike and then at his phone. His calendar shows a target event on Sunday. Anna appears in a second frame at her desk.
 
 **Voiceover**
 
-> This is Janet. She has an important endurance event on Sunday. She feels reasonably good and asks a simple question: “What should I do today?” Her coach, John, wants the same answer—but he also wants to know why.
+> This is Marco. He has an important endurance event on Sunday. He feels reasonably good and asks a simple question: “What should I do today?” His coach, Anna, wants the same answer—but she also wants to know why.
 
 **On-screen text**
 
-`What should Janet do today?`
+`What should Marco do today?`
 
 **Production note**
 
@@ -94,7 +94,7 @@ Add small labels: `Measured`, `Platform-modelled`, `Montis-derived`, `Decision`.
 
 **Voiceover**
 
-> Montis starts with evidence from Janet’s connected Intervals.icu account: her training, wellness, athlete settings, calendar and event targets. Some values are measured. Some are modelled by the training platform. Montis keeps those separate from what it derives and from the coaching decision it eventually makes.
+> Montis starts with evidence from Marco’s connected Intervals.icu account: his training, wellness, athlete settings, calendar and event targets. Some values are measured. Some are modelled by the training platform. Montis keeps those separate from what it derives and from the coaching decision it eventually makes.
 
 **On-screen text**
 
@@ -114,13 +114,13 @@ Add small labels: `Measured`, `Platform-modelled`, `Montis-derived`, `Decision`.
 
 Animate the product journey:
 
-`Janet / John → Montis Coaching Engine → Intelligence Stack → Governed answer`
+`Marco / Anna → Montis Coaching Engine → Intelligence Stack → Governed answer`
 
-Show Janet entering through the Montis app and John through a connected AI. Their paths meet at the Montis Coaching Engine, pass through the same five-layer Intelligence Stack and emerge as the same answer.
+Show Marco entering through the Montis app and Anna through a connected AI. Their paths meet at the Montis Coaching Engine, pass through the same five-layer Intelligence Stack and emerge as the same answer.
 
 **Voiceover**
 
-> Janet uses the Montis app. John uses an AI connected to Montis. Although they ask in different ways, both requests reach the same protected athlete connection and the same Montis Coaching Engine. The five-layer Intelligence Stack applies the same evidence and coaching logic, so the interface never becomes the source of truth.
+> Marco uses the Montis app. Anna uses an AI connected to Montis. Although they ask in different ways, both requests reach the same protected athlete connection and the same Montis Coaching Engine. The five-layer Intelligence Stack applies the same evidence and coaching logic, so the interface never becomes the source of truth.
 
 **On-screen text**
 
@@ -136,11 +136,11 @@ Show Janet entering through the Montis app and John through a connected AI. Thei
 
 **Visual**
 
-Janet’s last seven days appear as training blocks. Fitness, fatigue and form lines move across the week. A second, quieter background band shows longer-term context.
+Marco’s last seven days appear as training blocks. Fitness, fatigue and form lines move across the week. A second, quieter background band shows longer-term context.
 
 **Voiceover**
 
-> Tier One is Training Load. It asks: “What stress was applied?” Montis checks Janet’s recent volume, intensity and training load against her established capacity and recent baseline. It does not assume that more training is automatically better.
+> Tier One is Training Load. It asks: “What stress was applied?” Montis checks Marco’s recent volume, intensity and training load against his established capacity and recent baseline. It does not assume that more training is automatically better.
 
 **Inputs shown**
 
@@ -160,13 +160,13 @@ Janet’s last seven days appear as training blocks. Fitness, fatigue and form l
 - intensity-distribution context;
 - forward load trajectory.
 
-**Janet example**
+**Marco example**
 
 `Load pattern: BALANCED`
 
 **Simple translation**
 
-`Janet has trained enough to create a stimulus, without a clear load alarm.`
+`Marco has trained enough to create a stimulus, without a clear load alarm.`
 
 ---
 
@@ -178,11 +178,11 @@ Janet’s last seven days appear as training blocks. Fitness, fatigue and form l
 
 **Visual**
 
-A simple body outline appears beside small trend lines for HRV, resting HR and sleep. Janet taps a short subjective check-in. Avoid presenting any single signal as a verdict.
+A simple body outline appears beside small trend lines for HRV, resting HR and sleep. Marco taps a short subjective check-in. Avoid presenting any single signal as a verdict.
 
 **Voiceover**
 
-> Tier Two is Physiology Response. It asks: “How is Janet’s body responding to that stress?” HRV, resting heart rate, sleep, form and Janet’s own check-in are read together and against her personal history. One poor night does not become a diagnosis, and a missing signal does not become an invented one.
+> Tier Two is Physiology Response. It asks: “How is Marco’s body responding to that stress?” HRV, resting heart rate, sleep, form and Marco’s own check-in are read together and against his personal history. One poor night does not become a diagnosis, and a missing signal does not become an invented one.
 
 **Inputs shown**
 
@@ -202,13 +202,13 @@ A simple body outline appears beside small trend lines for HRV, resting HR and s
 - evidence coverage and confidence;
 - a supporting recovery signal for downstream decisions.
 
-**Janet example**
+**Marco example**
 
 `Physiology reserve: WATCH`
 
 **Simple translation**
 
-`Janet is broadly coping, but a few recovery signals deserve attention.`
+`Marco is broadly coping, but a few recovery signals deserve attention.`
 
 ---
 
@@ -220,7 +220,7 @@ A simple body outline appears beside small trend lines for HRV, resting HR and s
 
 **Visual**
 
-Show Janet riding:
+Show Marco riding:
 
 1. a hard effort depletes a small “high-intensity battery”;
 2. a long ride compares power with heart-rate drift;
@@ -230,7 +230,7 @@ Label these three lenses `WDRM`, `ISDM`, `NDLI`, then immediately translate them
 
 **Voiceover**
 
-> Tier Three is Performance Intelligence. It asks: “How is Janet’s fitness behaving when stress is applied?” Montis looks at three things: how deeply she uses her finite high-intensity reserve, whether her aerobic efficiency survives long sessions, and whether hard work is being packed too densely.
+> Tier Three is Performance Intelligence. It asks: “How is Marco’s fitness behaving when stress is applied?” Montis looks at three things: how deeply he uses his finite high-intensity reserve, whether his aerobic efficiency survives long sessions, and whether hard work is being packed too densely.
 
 **Inputs shown**
 
@@ -248,7 +248,7 @@ Label these three lenses `WDRM`, `ISDM`, `NDLI`, then immediately translate them
 - **NDLI:** rolling high-intensity work, hard-day count, mean IF/EF/VI and density context;
 - consolidated operational state: `load_accepting` or `recovery_priority`.
 
-**Janet example**
+**Marco example**
 
 `Cardiovascular strain: HEAT INDUCED`
 
@@ -258,7 +258,7 @@ Label these three lenses `WDRM`, `ISDM`, `NDLI`, then immediately translate them
 
 **Simple translation**
 
-`The heat raised Janet’s cardiovascular cost, but her endurance remained stable and there is no major operational stop signal.`
+`The heat raised Marco’s cardiovascular cost, but his endurance remained stable and there is no major operational stop signal.`
 
 ---
 
@@ -274,7 +274,7 @@ Two power-duration curves appear: `previous window` and `current window`. Highli
 
 **Voiceover**
 
-> Tier Four is Adaptation Progression, called ESPE. Load tells Montis what Janet did. ESPE asks whether it worked. It compares equivalent power-curve windows across the energy systems, so one personal best cannot pretend to represent the whole athlete.
+> Tier Four is Adaptation Progression, called ESPE. Load tells Montis what Marco did. ESPE asks whether it worked. It compares equivalent power-curve windows across the energy systems, so one personal best cannot pretend to represent the whole athlete.
 
 **Inputs shown**
 
@@ -294,7 +294,7 @@ Two power-duration curves appear: `previous window` and `current window`. Highli
 - curve profile and system guidance;
 - model quality and confidence context.
 
-**Janet example**
+**Marco example**
 
 `Adaptation profile: VO₂ / THRESHOLD DECLINE`
 
@@ -302,7 +302,7 @@ Two power-duration curves appear: `previous window` and `current window`. Highli
 
 **Simple translation**
 
-`Janet’s recent high-aerobic performance is lower, while her ability to hold performance deep into a ride is improving.`
+`Marco’s recent high-aerobic performance is lower, while his ability to hold performance deep into a ride is improving.`
 
 **Boundary callout**
 
@@ -310,7 +310,7 @@ Two power-duration curves appear: `previous window` and `current window`. Highli
 
 ---
 
-## Scene 8 — Tier 5: What can Janet tolerate now?
+## Scene 8 — Tier 5: What can Marco tolerate now?
 
 **Time:** 3:50–4:17
 
@@ -322,7 +322,7 @@ The first four coloured streams converge into a large ADE dial. The dial is labe
 
 **Voiceover**
 
-> Tier Five is the Adaptive Decision Engine. First it answers “Can”: what can Janet tolerate now? It combines the operational state, risk and fatigue forecast, load direction, HRV guardrail, adaptation state, event context and sufficiently confident nutrition context.
+> Tier Five is the Adaptive Decision Engine. First it answers “Can”: what can Marco tolerate now? It combines the operational state, risk and fatigue forecast, load direction, HRV guardrail, adaptation state, event context and sufficiently confident nutrition context.
 
 **Inputs shown**
 
@@ -341,7 +341,7 @@ The first four coloured streams converge into a large ADE dial. The dial is labe
 - capacity state;
 - base directive—what the athlete **can** tolerate.
 
-**Janet example**
+**Marco example**
 
 `ADE base score: 92 / 100`
 
@@ -359,7 +359,7 @@ The ADE dial remains visible. A calendar and Sunday event now slide over it. The
 
 **Voiceover**
 
-> But what Janet can tolerate is not always what she should do. Her phase, recovery needs, event timing, taper and projected event form now govern the strategy. Janet may be capable of more work, but with Sunday approaching, the correct choice is to protect freshness.
+> But what Marco can tolerate is not always what he should do. His phase, recovery needs, event timing, taper and projected event form now govern the strategy. Marco may be capable of more work, but with Sunday approaching, the correct choice is to protect freshness.
 
 **Governance inputs shown**
 
@@ -379,7 +379,7 @@ The ADE dial remains visible. A calendar and Sunday event now slide over it. The
 - resolution state: `honoured`, `honoured_with_sharpening`, `overridden_by_phase` or `historical_only`;
 - reasons, safeguards and future actions.
 
-**Janet example**
+**Marco example**
 
 `CAN: Maintain training structure`
 
@@ -429,17 +429,17 @@ The five tier cards fold into a clean package labelled `Montis Governed Report`.
 
 ---
 
-## Scene 11 — Janet sees it in the Montis app
+## Scene 11 — Marco sees it in the Montis app
 
 **Time:** 5:00–5:20
 
 **Visual**
 
-Show the Montis app. Introduce its Intelligence Lab and five-layer Intelligence Stack, then zoom briefly through the Today, Micro, Wellness, Meso, Macro and Readiness views.
+Show the Montis app. Introduce its Intelligence Lab and five-layer Intelligence Stack, then zoom briefly through the Overview (today), Micro, Wellness, Meso, Macro and Readiness views.
 
 **Voiceover**
 
-> Janet opens Montis. The Overview gives her today’s resolved picture. Wellness explains her current physiology. Micro shows the recent week. Meso and Macro reveal the block and longer pattern. Readiness connects the same intelligence to Sunday’s event.
+> Marco opens Montis. The Overview gives him today’s resolved picture. Wellness explains his current physiology. Micro shows the recent week. Meso and Macro reveal the block and longer pattern. Readiness connects the same intelligence to Sunday’s event.
 
 **Horizon mapping shown**
 
@@ -452,13 +452,13 @@ Show the Montis app. Introduce its Intelligence Lab and five-layer Intelligence 
 
 ---
 
-## Scene 12 — John asks through a connected AI
+## Scene 12 — Anna asks through a connected AI
 
 **Time:** 5:20–5:40
 
 **Visual**
 
-John types: `Why is Janet tapering if her ADE score is high?`
+Anna types: `Why is Marco tapering if his ADE score is high?`
 
 Animate:
 
@@ -466,11 +466,11 @@ Animate:
 
 **Voiceover**
 
-> John asks the same question through an AI connected to Montis. The AI does not receive Janet’s credentials and does not invent a new training state. It asks the Montis Coaching Engine, receives the same governed answer, and explains the difference between what Janet can do and what her plan says she should do.
+> Anna asks the same question through an AI connected to Montis. The AI does not receive Marco’s credentials and does not invent a new training state. It asks the Montis Coaching Engine, receives the same governed answer, and explains the difference between what Marco can do and what his plan says he should do.
 
 **Example AI response on screen**
 
-> Janet is load-accepting, but the event is close. Montis is preserving taper freshness rather than adding unnecessary load.
+> Marco is load-accepting, but the event is close. Montis is preserving taper freshness rather than adding unnecessary load.
 
 **Boundary callout**
 
@@ -484,15 +484,23 @@ Animate:
 
 **Visual**
 
-John suggests changing a workout. A confirmation card appears before the calendar changes.
+Anna suggests changing a workout. A confirmation card appears before the calendar changes.
 
 **Voiceover**
 
-> Conversation can lead to action, but calendar changes remain explicit. The AI may suggest an adjustment. It must use a typed tool action, and Janet or John confirms the change before it is written.
+> Conversation can lead to action, but calendar changes remain explicit. The AI may suggest an adjustment. It must use a typed tool action, and Marco or Anna confirms the change before it is written.
 
 **On-screen text**
 
 `Explain freely. Change deliberately.`
+
+**Screen**
+
+[ai-confirm-card.png](../assets/user-guides/coaching-platform/ai-confirm-card.png)
+
+**Production note**
+
+In the Montis App the AI Coach shows this card: what will change and on whose calendar, with **Confirm** and **Cancel**. Nothing is written until the user presses Confirm. In Claude or ChatGPT, the confirmation is the AI app’s own approval prompt for the tool call, not the Montis card.
 
 ---
 
@@ -502,11 +510,11 @@ John suggests changing a workout. A confirmation card appears before the calenda
 
 **Visual**
 
-Janet completes an easy taper ride. The activity flows back into Intervals.icu. The loop closes and the stack waits for the next decision.
+Marco completes an easy taper ride. The activity flows back into Intervals.icu. The loop closes and the stack waits for the next decision.
 
 **Voiceover**
 
-> Janet completes the right session for the right reason. That new evidence returns to her training history, and tomorrow Montis resolves the picture again. Measure. Respond. Adapt. Decide. Evolve.
+> Marco completes the right session for the right reason. That new evidence returns to his training history, and tomorrow Montis resolves the picture again. Measure. Respond. Adapt. Decide. Evolve.
 
 **Final title**
 
@@ -584,7 +592,7 @@ The internal software tiers (`Tier-0` through `Tier-3`) are implementation and v
 ## Presenter treatment
 
 - Use one presenter for continuity.
-- Let Janet and John appear as illustrated or lightweight cinematic characters rather than additional talking avatars.
+- Let Marco and Anna appear as illustrated or lightweight cinematic characters rather than additional talking avatars.
 - Keep the presenter in frame for the opening, tier transitions and conclusion.
 - Use full-screen motion graphics for the architecture and five tiers.
 
