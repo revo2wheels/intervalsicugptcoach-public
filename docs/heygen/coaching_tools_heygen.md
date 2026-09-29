@@ -4,10 +4,12 @@ Made from [coaching_tools_storyboard.md](../coaching_tools_storyboard.md) on 29 
 
 ## How to use
 
-1. In HeyGen, open **Video Agent** and choose the **Montis** Brand Kit. Set it up once from [assets/brand](../../assets/brand/README.md).
-2. Attach the files below. Download them from the links; HeyGen refers to them by file name.
+1. In HeyGen, open **Video Agent** and choose the **Montis** Brand Kit. Set it up once from [assets/brand](../../assets/brand/README.md). Pick the Werner avatar (Werner in cycling gear), the Fabian voice and Avatar IV, as in Montis 101.
+2. Attach the files below. Download them from the links; HeyGen refers to them by file name. Make each screen 16:9 first (centred on Night #071310, nothing cut off), or HeyGen crops or shrinks it.
 3. Paste everything between **PROMPT START** and **PROMPT END**.
 4. Check the video plan HeyGen shows, and ask for changes in the chat before you say **Proceed**.
+5. After the render, fix small things in **Edit in AI Studio → Edit a copy**, changing only that element; the re-render costs a few credits. Don't ask the agent chat for changes at this point: it regenerates the whole video.
+6. Download the MP4, the MP4 with captions and the SRT captions. Give them plain names before uploading to media.montis.icu, for example `montis-coaching-tools.mp4`, `montis-coaching-tools-captions.mp4` and `montis-coaching-tools.en.srt`. HeyGen's own file names contain characters that break links.
 
 ## Files to attach (14)
 
@@ -45,6 +47,7 @@ The story in one sentence: Anna opens the Coach Cockpit, sees Sofia and Lena nee
 Primary message: Montis shows the coach who needs attention and why; the AI explains and drafts, the coach decides
 
 Presenter: one presenter/avatar, conversational rather than technical. Use the same presenter as Montis 101 and the Setup video. Show Anna as an illustrated or lightweight cinematic character; the athletes appear only as their cards and screens. Use the real screens for every step; animate the pointer, highlight and zoom.
+Avatar and voice: Werner (Werner in cycling gear) with the Fabian voice on Avatar IV, the same as Montis 101.
 Tone: warm, practical, coach-first.
 
 Style: Montis — a calm, clean product explainer on dark backgrounds.
@@ -54,6 +57,9 @@ Fonts: Manrope for titles, DM Sans for body text.
 Logo: use the attached montis-logo-512.png (the Montis mountain logo) on the opening and closing title cards, and small in a corner during the video.
 
 Screens: the attached PNGs are real Montis app screens with made-up example people and data. Show each one large in a clean rounded frame, with gentle zoom or pan and simple highlight callouts on what the voiceover mentions. Never redraw, crop out or change what the screens show.
+Callouts: keep highlight callouts small; never cover a screen with rings, circles or large shapes.
+Layout: text, labels and cards never overlap each other or run off the frame; keep everything at least 60px inside the edges.
+Intervals.icu: write it as plain text. Never draw or invent an Intervals.icu logo.
 Motion: real Montis App screens (linked in each scene), with pointer, highlight and zoom; simple fades between scenes; captions on.
 
 Script rules: follow the scenes in order. Each VO line is exactly what the presenter says, word for word. Do not add, remove or reword any sentence, and never add your own summaries, conclusions or claims. If the voiceover runs shorter than the target length, make the video shorter instead of adding words. On-screen text appears exactly as written.
