@@ -168,6 +168,10 @@ Marco’s last seven days appear as training blocks. Fitness, fatigue and form l
 
 `Marco has trained enough to create a stimulus, without a clear load alarm.`
 
+**Screen**
+
+[micro.png](../assets/user-guides/montis-101/micro.png)
+
 ---
 
 ## Scene 5 — Tier 2: How is the body responding?
@@ -209,6 +213,10 @@ A simple body outline appears beside small trend lines for HRV, resting HR and s
 **Simple translation**
 
 `Marco is broadly coping, but a few recovery signals deserve attention.`
+
+**Screen**
+
+[wellness.png](../assets/user-guides/montis-101/wellness.png)
 
 ---
 
@@ -260,6 +268,10 @@ Label these three lenses `WDRM`, `ISDM`, `NDLI`, then immediately translate them
 
 `The heat raised Marco’s cardiovascular cost, but his endurance remained stable and there is no major operational stop signal.`
 
+**Screen**
+
+[performance-cards.png](../assets/user-guides/montis-101/performance-cards.png)
+
 ---
 
 ## Scene 7 — Tier 4: Is the training actually working?
@@ -308,6 +320,10 @@ Two power-duration curves appear: `previous window` and `current window`. Highli
 
 `A decline is evidence to interpret—not proof of fatigue by itself.`
 
+**Screen**
+
+[espe-power-curve.png](../assets/user-guides/montis-101/espe-power-curve.png)
+
 ---
 
 ## Scene 8 — Tier 5: What can Marco tolerate now?
@@ -346,6 +362,10 @@ The first four coloured streams converge into a large ADE dial. The dial is labe
 `ADE base score: 92 / 100`
 
 `CAN: Maintain training structure`
+
+**Screen**
+
+[cockpit-can-should.png](../assets/user-guides/montis-101/cockpit-can-should.png)
 
 ---
 
@@ -388,6 +408,10 @@ The ADE dial remains visible. A calendar and Sunday event now slide over it. The
 `Phase alignment: ALIGNED`
 
 `Resolution state: OVERRIDDEN_BY_PHASE`
+
+**Screen**
+
+[cockpit-can-should.png](../assets/user-guides/montis-101/cockpit-can-should.png)
 
 **Production note**
 
@@ -450,6 +474,20 @@ Show the Montis app. Introduce its Intelligence Lab and five-layer Intelligence 
 - **Macro / Summary:** chronic pattern plus acute overlay;
 - **Readiness:** event, taper and projected-form governance.
 
+**Screen**
+
+[overview.png](../assets/user-guides/montis-101/overview.png)
+
+[micro.png](../assets/user-guides/montis-101/micro.png)
+
+[wellness.png](../assets/user-guides/montis-101/wellness.png)
+
+[meso.png](../assets/user-guides/montis-101/meso.png)
+
+[macro.png](../assets/user-guides/montis-101/macro.png)
+
+[readiness.png](../assets/user-guides/montis-101/readiness.png)
+
 ---
 
 ## Scene 12 — Anna asks through a connected AI
@@ -476,6 +514,10 @@ Animate:
 
 `The AI explains. Montis decides.`
 
+**Screen**
+
+[ai-chat-taper.png](../assets/user-guides/montis-101/ai-chat-taper.png)
+
 ---
 
 ## Scene 13 — Action remains explicit
@@ -496,7 +538,7 @@ Anna suggests changing a workout. A confirmation card appears before the calenda
 
 **Screen**
 
-[ai-confirm-card.png](../assets/user-guides/coaching-platform/ai-confirm-card.png)
+[ai-confirm-marco.png](../assets/user-guides/montis-101/ai-confirm-marco.png)
 
 **Production note**
 
