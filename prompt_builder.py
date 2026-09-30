@@ -249,12 +249,8 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
         - One sentence per line. Do not add a separate Closing Reflection section.
         """).strip()
 
-        # Profiles that used to end with a Closing Reflection keep the engine's one question.
-        if question_themes:
-            what_next_block += (
-                "\n- After the What next section, if actions contains a reflection,"
-                " add one final line with its question, worded as the athlete would ask it."
-            )
+        # The engine's reflection question stays in the data but is not shown (Clive, 2026-09-30).
+        what_next_block += "\n- Do not show the reflection question from actions anywhere in the report."
 
     #-----------------------------------------------------------------
     post_render_block = ""
