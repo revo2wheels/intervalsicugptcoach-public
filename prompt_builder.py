@@ -236,17 +236,25 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
         what_next_block = dedent("""
         WHAT NEXT (REQUIRED):
         At the end of the report (after the closing note, if there is one), render a section headed "What next" with exactly these three lines, in this order:
-        - Today: whether to keep, adjust or reduce today's planned session, naming the session. If nothing is planned today, say so.
+        - Today: whether to keep, adjust or reduce today's planned session, naming the session. If today's session is already completed (an entry in events dated today), say it is done. If nothing is planned today, say so.
         - Next days: whether any planned sessions in the coming days should change, naming them, or state that no changes are needed.
         - Why: the one or two signals that drive this, in plain words.
 
         WHAT NEXT RULES:
-        - "Today" is the date of meta.generated_at.local. If meta.period ends more than one day before that date, the report covers an earlier week: give only the Why line.
+        - "Today" is the date of meta.generated_at.local. If meta.recency.is_current is false, or meta.period ends more than one day before that date, the report covers an earlier week: give only the Why line.
         - Restate the final directive; never form a different decision. Final directive precedence: training_guidance > adaptive_summary.taper_governance.recommended_adjustment > adaptive_summary.directive.
+        - If phase_alignment.alignment is aligned, the planned sessions already fit the required phase: say no changes are needed, unless taper_governance.recommended_adjustment or future_actions asks for one.
         - Use only planned sessions present in the data (planned_summary_by_date, planned_events_7d, events, future_actions, planned_summary_by_iso_week). Never invent a session, date, duration or number.
         - Translate engine labels into plain words (for example, overridden_by_phase means the plan's phase takes priority over what the athlete could handle today).
         - One sentence per line. Do not add a separate Closing Reflection section.
         """).strip()
+
+        # Profiles that used to end with a Closing Reflection keep the engine's one question.
+        if question_themes:
+            what_next_block += (
+                "\n- After the What next section, if actions contains a reflection,"
+                " add one final line with its question, worded as the athlete would ask it."
+            )
 
     #-----------------------------------------------------------------
     post_render_block = ""
@@ -270,10 +278,6 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
         if what_next_enabled:
             post_render_block = post_render_block.replace(
                 "after the closing reflection section", "after the What next section"
-            )
-            post_render_block += (
-                "\n- If actions contains a reflection, show its question first in this list,"
-                " worded as the athlete would ask it."
             )
     #-----------------------------------------------------------------
     coaching_block = ""

@@ -1058,7 +1058,8 @@ RENDERER_PROFILES = {
         "what_next": {"enabled": True},
         "post_render": {
             "explore_deeper": {
-                "enabled": True,
+                # Follow-up command list switched off for now (Clive, 2026-09-30).
+                "enabled": False,
                 "style": "command_suggestions",
                 "placement": "after_report",
                 "commands": [
