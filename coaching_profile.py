@@ -568,7 +568,11 @@ RENDERER_PROFILES = {
             "Performance intelligence, durability, neural density, W′/anaerobic signal, ESPE progression.",
             "## ✅ Coach Verdict",
             "One short verdict with next action.",
+            "## ➡️ What next",
+            "Today, Next days and Why, as the WHAT NEXT rule describes.",
         ],
+
+        "what_next": {"enabled": True},
 
         "closing_note": {
             "required": True,
@@ -749,8 +753,12 @@ RENDERER_PROFILES = {
             "## 📈 Adaptation",
             "Compact adaptation table.",
             "## 🎯 Decision / Event Focus",
-            "Action and next event."
+            "Action and next event.",
+            "## ➡️ What next",
+            "Today, Next days and Why, as the WHAT NEXT rule describes."
         ],
+
+        "what_next": {"enabled": True},
 
         "override_rules": [
             "If decision_context.phase_override is true, training_guidance is the final directive.",
@@ -1047,6 +1055,7 @@ RENDERER_PROFILES = {
             "intent_rule": "Assess whether acute load and recovery state align with immediate training intent.",
             "max_sentences": 4
         },
+        "what_next": {"enabled": True},
         "post_render": {
             "explore_deeper": {
                 "enabled": True,

@@ -227,6 +227,28 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
             for s in sentence_structure:
                 closing_note_block += f"\n  {s}"
     #-----------------------------------------------------------------
+    # WHAT NEXT: the decision translated onto the athlete's planned sessions.
+    # Replaces the open Closing Reflection question where a profile enables it.
+    what_next_enabled = report_profile.get("what_next", {}).get("enabled", False)
+    what_next_block = ""
+
+    if what_next_enabled:
+        what_next_block = dedent("""
+        WHAT NEXT (REQUIRED):
+        At the end of the report (after the closing note, if there is one), render a section headed "What next" with exactly these three lines, in this order:
+        - Today: whether to keep, adjust or reduce today's planned session, naming the session. If nothing is planned today, say so.
+        - Next days: whether any planned sessions in the coming days should change, naming them, or state that no changes are needed.
+        - Why: the one or two signals that drive this, in plain words.
+
+        WHAT NEXT RULES:
+        - "Today" is the date of meta.generated_at.local. If meta.period ends more than one day before that date, the report covers an earlier week: give only the Why line.
+        - Restate the final directive; never form a different decision. Final directive precedence: training_guidance > adaptive_summary.taper_governance.recommended_adjustment > adaptive_summary.directive.
+        - Use only planned sessions present in the data (planned_summary_by_date, planned_events_7d, events, future_actions, planned_summary_by_iso_week). Never invent a session, date, duration or number.
+        - Translate engine labels into plain words (for example, overridden_by_phase means the plan's phase takes priority over what the athlete could handle today).
+        - One sentence per line. Do not add a separate Closing Reflection section.
+        """).strip()
+
+    #-----------------------------------------------------------------
     post_render_block = ""
 
     post_cfg = report_profile.get("post_render", {}).get("explore_deeper", {})
@@ -244,6 +266,15 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
         Suggested follow up questions:
         {chr(10).join([f'- "{cmd}"' for cmd in commands])}
         """).strip()
+
+        if what_next_enabled:
+            post_render_block = post_render_block.replace(
+                "after the closing reflection section", "after the What next section"
+            )
+            post_render_block += (
+                "\n- If actions contains a reflection, show its question first in this list,"
+                " worded as the athlete would ask it."
+            )
     #-----------------------------------------------------------------
     coaching_block = ""
     if coaching_enabled and coaching_max > 0:
@@ -259,7 +290,7 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
 
     #-----------------------------------------------------------------
     question_block = ""
-    if coaching_enabled and question_themes:
+    if coaching_enabled and question_themes and not what_next_enabled:
         question_block = dedent(f"""
         CLOSING REFLECTION RULE:
         After the full report is produced, generate exactly ONE short reflective coaching question.
@@ -486,7 +517,7 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
 
     {closing_note_block}
 
-    {question_block}
+    {what_next_block or question_block}
 
     {post_render_block}
     
