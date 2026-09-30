@@ -13,6 +13,8 @@ Made from [coaching_tools_storyboard.md](../coaching_tools_storyboard.md) on 29 
 
 ## Files to attach (14)
 
+Also attach the 8 focused crops kept in the local HeyGen folder (`focus-*.png`, 16:9 on Night #071310). `coach-cockpit.png`, `cockpit-roster-review.png` and `coaching-workflow.png` are no longer used.
+
 - [montis-logo-512.png](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/brand/montis-logo-512.png)
 - [coach-cockpit.png](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/coaching-platform/coach-cockpit.png)
 - [coach-cockpit-athlete.png](https://raw.githubusercontent.com/revo2wheels/intervalsicugptcoach-public/main/assets/user-guides/coaching-platform/coach-cockpit-athlete.png)
@@ -30,7 +32,7 @@ Made from [coaching_tools_storyboard.md](../coaching_tools_storyboard.md) on 29 
 
 ## PROMPT START
 
-Make a 5:15–5:40 landscape (16:9) explainer video titled "Montis Coaching 101 — Tools".
+Make a 3:40–4:10 landscape (16:9) explainer video titled "Montis Coaching 101 — Tools".
 
 What it is:
 Create a clear, human video that shows what a coach does in the Montis App once athletes are connected: see who needs attention, understand why, act, and tell the athlete.
@@ -54,11 +56,16 @@ Style: Montis — a calm, clean product explainer on dark backgrounds.
 Colours: Night #071310 (backgrounds), Deep green #0c201b (panels), Montis green #19b77a (highlights and buttons), Aqua #55d7c0 (accents), Paper #f4f6f0 and Ink #0b1816 (light cards and their text).
 Panels: always solid (full opacity, never see-through), with at least 40px padding so text never touches the edge. Keep scene backgrounds dark; no white scene backgrounds.
 Fonts: Manrope for titles, DM Sans for body text.
-Logo: use the attached montis-logo-512.png (the Montis mountain logo) on the opening and closing title cards, and small in a corner during the video.
+Logo: use the attached montis-logo-512.png (the Montis mountain logo) on the opening and closing title cards, and small in a corner during the video. This file is the only Montis logo: never draw, redraw or invent a Montis logo, icon or wordmark, and never write MONTIS as a logo.
 
-Screens: the attached PNGs are real Montis app screens with made-up example people and data. Show each one large in a clean rounded frame, with gentle zoom or pan and simple highlight callouts on what the voiceover mentions. Never redraw, crop out or change what the screens show.
+Screens: the attached PNGs are real Montis app screens with made-up example people and data. Show each one large in a clean rounded frame, with gentle zoom or pan and simple highlight callouts on what the voiceover mentions. Never redraw, crop out or change what the screens show. Never build mock-up app screens, dashboards, menus or numbers of your own: every app view must be one of the attached PNGs.
 Callouts: keep highlight callouts small; never cover a screen with rings, circles or large shapes.
 Layout: text, labels and cards never overlap each other or run off the frame; keep everything at least 60px inside the edges.
+No extra text: show only the On-screen text and Final title written in the scenes. Never add your own titles, headers, labels, badges (for example PRO), taglines or text from other videos.
+Focus: each scene's Focus line says exactly which part of the screen the voiceover is about. Zoom and highlight only that part; never zoom into the sidebar menu.
+Screens stay bright: never fade or dim a screen behind other elements.
+Pacing: calm and unhurried. Hold each screen for at least 6 seconds, show only the screens listed for that scene, and move the highlight only when the voiceover reaches that item. Leave a 1-second pause between scenes. Use the extra time for these holds and pauses, never for extra words.
+Opening and closing: open on the presenter with the logo, never on an empty frame. The closing title card appears once, at the very end.
 Intervals.icu: the script never says it; don't add it to any scene, and never draw or invent its logo.
 Motion: real Montis App screens (linked in each scene), with pointer, highlight and zoom; simple fades between scenes; captions on.
 
@@ -87,7 +94,7 @@ Use these facts instead:
 Scenes:
 
 ### Scene 0 (0:00–0:20) — Anna's Monday
-Visual: Monday morning. Anna, coffee, laptop. Five athlete cards, each with a busy weekend of training data behind it.
+Visual: The presenter on a dark background. Beside him, five simple dark cards with the athletes' names only: Sofia Lind, Lena Brandt, Marco Rossi, Tom Berger, Sam Carter.
 On-screen text: "Who needs me first?"
 VO: "It's Monday, and Anna's five athletes all trained over the weekend. She has one question before anything else: who needs me first?"
 
@@ -95,32 +102,37 @@ VO: "It's Monday, and Anna's five athletes all trained over the weekend. She has
 Visual: Anna opens Coaches → Coach Cockpit. Highlight the order of the rows: Sofia (red), Lena (amber), Marco, Tom, and Sam greyed out with INSUFFICIENT DATA.
 On-screen text: "Most critical flags first · then watch flags · then the soonest event"
 Director's note: Status colours carry meaning: green is fine, amber is watch, red is critical. Keep them exactly as on the screen.
-Show: coach-cockpit.png (attached)
+Show: focus-cockpit-rows.png (attached)
+Focus: the five athlete rows, top to bottom, in the order the voiceover names them: Sofia's row (red STRAINED), Lena's row (amber WATCH), Marco, Tom, then Sam (greyed out).
 VO: "The Coach Cockpit puts every athlete's week on one page, and puts the athletes who need Anna first at the top. Sofia is strained and her plan doesn't match the recovery she needs. Lena is fine, but the heat has added load. Marco is tapering, six days from his race. Tom is steady. And Sam has no recent data yet."
 
 ### Scene 2 (0:55–1:35) — Why Lena is on watch
 Visual: Anna clicks Lena's row. Nine cards open. Pan across them, pausing on three: Tier 1 · Load State, Tier 2 · Autonomic Readiness, and External Context (heat).
 On-screen text: "95% of target · HRV slightly low · heat load high"
 Director's note: Use the Montis 101 tier colours on the matching cards. Don't read every number; the presenter translates.
-Show: coach-cockpit-athlete.png (attached)
+Show: coach-cockpit-athlete.png (attached), focus-lena-load-hrv.png (attached), focus-lena-heat.png (attached)
+Focus: first the whole set of Lena's cards; then on focus-lena-load-hrv.png the 2026-W39 COMPLIANCE lines (312 of 330 TSS) for "ninety-five percent" and HRV Ratio 0.94 for the HRV; then focus-lena-heat.png (HIGH LOAD, heat) for the hot days.
 VO: "One click opens Lena's cards — the same five-layer Intelligence Stack from Montis 101, on one athlete. She hit ninety-five percent of her weekly target. Her HRV is a little below her usual range, and the External Context card shows why: two hot days. The decision engine says she can keep building — with more fluids and her intervals indoors while it stays hot."
 
 ### Scene 3 (1:35–2:05) — The AI roster review
 Visual: Anna presses AI COACH in the cockpit header. The Roster AI Coach Review writes the athlete priority order, then a decision for each athlete. Key facts appear as chips.
 On-screen text: "The AI explains the cockpit. It doesn't recalculate it."
-Show: cockpit-roster-review.png (attached)
+Show: focus-roster-review.png (attached)
+Focus: the Athlete Priority Order list, then Sofia's Decision, Reason and Watch next lines.
 VO: "For a second opinion across the whole roster, Anna asks the AI Coach. It reads only the cockpit data — it's told not to recalculate anything — and gives her a priority order, with a decision, a reason and what to watch for each athlete. She can ask follow-up questions right there."
 
 ### Scene 4 (2:05–2:30) — Working as Lena
 Visual: Anna picks Lena in the Coach Roster. The header now says Acting as: Lena Brandt, and the dashboards show Lena's week.
 On-screen text: "Acting as: Lena Brandt"
-Show: coach-roster.png (attached), acting-as-overview.png (attached)
+Show: coach-roster.png (attached), focus-acting-as.png (attached)
+Focus: Lena's row in the roster, then the green "Acting as: Lena Brandt" badge at the top.
 VO: "Anna picks Lena from her roster, and the whole app switches to her: the dashboards, Wellness, her profile, the workout builders, the Session Intensity Lab — everything now shows Lena's data, and anything Anna plans goes to Lena's calendar."
 
 ### Scene 5 (2:30–3:00) — The Coaching Workflow
 Visual: The Coaching tab opens on Lena's week. Scroll gently through the six sections: execution against the plan, fatigue and recovery, readiness, HRV and wellness, performance progression, and the phases ahead.
 On-screen text: "One athlete. One week. Six sections."
-Show: coaching-workflow.png (attached)
+Show: focus-workflow.png (attached)
+Focus: Lena's workflow header, then the Training Execution vs Prescription and Fatigue and Recovery Trends sections.
 VO: "The Coaching Workflow is Lena's whole week on one page: what she did against the plan, how she's recovering, what the decision engine recommends, how her fitness is progressing, and the phases coming up before her race."
 
 ### Scene 6 (3:00–3:30) — Send Lena her report
@@ -128,39 +140,44 @@ Visual: Anna types a short comment in the email box and presses SEND. Cut to Len
 On-screen text: "Your comment on top. Your branding throughout."
 Director's note: Montis only emails the coach's own address or a coached athlete's known email. Don't show typing an unrelated address.
 Show: workflow-email-box.png (attached), workflow-email-report.png (attached)
+Focus: the comment box and the SEND button, then the top of the report email with Anna's logo and comment.
 VO: "Anna adds a note — "Great week, keep Thursday indoors" — and presses Send. Lena gets the whole report as an email with Anna's logo and colours, and Anna gets a copy."
 
 ### Scene 7 (3:30–3:55) — One session, analysed
 Visual: From the workflow, Anna presses Analyse next to Lena's Sweet Spot 3x12. The Session Intensity Lab opens; she chooses the AI Coach tab and asks for an analysis.
 On-screen text: "Sweet Spot 3x12 · 3 × 12 min at 240–243 W"
-Show: sil-ai-coach.png (attached)
+Show: sil-ai-coach.png (attached), focus-sil-analysis.png (attached)
+Focus: the Sweet Spot 3x12 title and the AI COACH tab, then the Session summary and What went well lines.
 VO: "Lena's Thursday session caught Anna's eye. The Session Intensity Lab opens it, and the AI Coach reads the power, heart rate, intervals and curves: three steady efforts, with her heart rate creeping up as the morning warmed."
 
 ### Scene 8 (3:55–4:20) — Email the analysis
 Visual: Anna presses Email under the answer. The composer opens with Lena's address, a subject and the analysis; Anna adds a line at the top and presses Send Email. Cut to the email Lena receives.
 On-screen text: "Edit before you send."
 Show: sil-email-composer.png (attached), sil-email.png (attached)
+Focus: the message body and the Send Email button, then the email Lena receives.
 VO: "Anna presses Email, adds a personal line, and sends it. Lena gets the analysis in Anna's colours — and Anna stayed in charge of every word."
 
 ### Scene 9 (4:20–4:50) — Plan a change, deliberately
 Visual: In the AI Coach Chat, still acting as Lena, Anna types: `Please add a recovery ride on Friday, and make Sunday a long endurance ride.` A card appears above the chat box listing both workouts on Lena Brandt's calendar, with Confirm and Cancel. Anna presses Confirm.
 On-screen text: "Explain freely. Change deliberately."
 Director's note: This matches Scene 13 of Montis 101. Cancel changes nothing, and the AI is told the coach said no.
-Show: ai-confirm-card.png (attached)
+Show: ai-confirm-card.png (attached), focus-confirm-card.png (attached)
+Focus: Anna's request at the top, then the card with the two workouts and the Confirm button.
 VO: "Now Anna plans Lena's weekend in plain words. The AI Coach drafts the change — but before anything touches Lena's calendar, Montis shows exactly what will change and on whose calendar. Nothing happens until Anna presses Confirm."
 
 ### Scene 10 (4:50–5:05) — Everything else, for each athlete
-Visual: A quick montage while acting as Lena: Overview, Micro, Meso, Macro, Calendar, Readiness, Wellness, AI Builder v2.
+Visual: One slow pan across Lena's Overview. No labels or titles on it.
 Show: acting-as-overview.png (attached)
 VO: "And everything else in Montis works the same way for each athlete: the dashboards from today to the whole season, readiness for her race, wellness, and AI Builder v2 to plan the next block."
 
 ### Scene 11 (5:05–5:20) — Anna's brand, everywhere
 Visual: The app switches to Anna's black-and-white theme: her logo and AW COACHING in the menu, Anna Weber Coaching at the top.
 Show: branding-app-black-white.png (attached)
+Focus: Anna's logo and AW COACHING in the menu, and Anna Weber Coaching at the top. Scene 11 must use this screen, not the cockpit.
 VO: "With her branding on, all of this carries Anna's name and logo — for Anna, and for every athlete she coaches."
 
 ### Scene 12 (5:20–5:35) — Close
-Visual: Back to the cockpit. Sofia's row is now amber rather than red; the loop starts again next week.
+Visual: The closing title card only: the logo and the Final title on Night #071310. Don't show the cockpit again, and show this card once.
 Final title: "Montis.icu — Coach more athletes, with every decision explained."
 VO: "Who needs me first, why, and what's next — answered in minutes, with the coach deciding every step. That's coaching with Montis."
 

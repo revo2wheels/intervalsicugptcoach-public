@@ -48,9 +48,9 @@ Style: Montis — a calm, clean product explainer on dark backgrounds.
 Colours: Night #071310 (backgrounds), Deep green #0c201b (panels), Montis green #19b77a (highlights and buttons), Aqua #55d7c0 (accents), Paper #f4f6f0 and Ink #0b1816 (light cards and their text).
 Panels: always solid (full opacity, never see-through), with at least 40px padding so text never touches the edge. Keep scene backgrounds dark; no white scene backgrounds.
 Fonts: Manrope for titles, DM Sans for body text.
-Logo: use the attached montis-logo-512.png (the Montis mountain logo) on the opening and closing title cards, and small in a corner during the video.
+Logo: use the attached montis-logo-512.png (the Montis mountain logo) on the opening and closing title cards, and small in a corner during the video. This file is the only Montis logo: never draw, redraw or invent a Montis logo, icon or wordmark, and never write MONTIS as a logo.
 
-Screens: the attached PNGs are real Montis app screens with made-up example people and data. Show each one large in a clean rounded frame, with gentle zoom or pan and simple highlight callouts on what the voiceover mentions. Never redraw, crop out or change what the screens show.
+Screens: the attached PNGs are real Montis app screens with made-up example people and data. Show each one large in a clean rounded frame, with gentle zoom or pan and simple highlight callouts on what the voiceover mentions. Never redraw, crop out or change what the screens show. Never build mock-up app screens, dashboards, menus or numbers of your own: every app view must be one of the attached PNGs.
 Callouts: keep highlight callouts small; never cover a screen with rings, circles or large shapes.
 Layout: text, labels and cards never overlap each other or run off the frame; keep everything at least 60px inside the edges.
 Intervals.icu: mention it once only, in Scene 0, as plain text. Never draw or invent an Intervals.icu logo, and don't add it to other scenes.

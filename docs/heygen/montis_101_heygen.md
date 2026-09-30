@@ -50,9 +50,9 @@ Panels: always solid (full opacity, never see-through), with at least 40px paddi
 Tier colours (keep them consistent everywhere): Tier 1: orange #ff6900 — load/stress; Tier 2: green #00bc7d — physiology/recovery; Tier 3: blue #2b7fff — performance behaviour; Tier 4: purple #8e51ff — adaptation/progression; Tier 5: red #fb2c36 — decision/governance.
 Terms: Montis Coaching Engine: the protected evidence-led calculation layer, not a conversational AI. Intelligence Lab: the athlete-facing place to explore the result. Intelligence Stack: the five governed coaching layers. Governed report: a clean structured package. AI/App: two presentation windows receiving the same package.
 Fonts: Manrope for titles, DM Sans for body text.
-Logo: use the attached montis-logo-512.png (the Montis mountain logo) on the opening and closing title cards, and small in a corner during the video.
+Logo: use the attached montis-logo-512.png (the Montis mountain logo) on the opening and closing title cards, and small in a corner during the video. This file is the only Montis logo: never draw, redraw or invent a Montis logo, icon or wordmark, and never write MONTIS as a logo.
 Intelligence Stack: the attached montis-intelligence-stack-dark.png is the official five-tier Montis Intelligence Stack. Base the stack and tier graphics on it (same order, names and colours).
-Screens: the attached PNGs are real Montis app screens with made-up example people and data. Show each one large in a clean rounded frame, with gentle zoom or pan and simple highlight callouts on what the voiceover mentions. Never redraw, crop out or change what the screens show.
+Screens: the attached PNGs are real Montis app screens with made-up example people and data. Show each one large in a clean rounded frame, with gentle zoom or pan and simple highlight callouts on what the voiceover mentions. Never redraw, crop out or change what the screens show. Never build mock-up app screens, dashboards, menus or numbers of your own: every app view must be one of the attached PNGs.
 Callouts: keep highlight callouts small; never cover a screen with rings, circles or large shapes.
 Layout: text, labels and cards never overlap each other or run off the frame; keep everything at least 60px inside the edges.
 Intervals.icu: write it as plain text. Never draw or invent an Intervals.icu logo.
