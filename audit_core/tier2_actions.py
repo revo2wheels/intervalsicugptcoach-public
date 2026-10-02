@@ -51,7 +51,7 @@ def get_dynamic_heuristics():
     th = CHEAT_SHEET["thresholds"]
     return {
         "polarisation_target":
-            sum(th["Polarisation"]["green"]) / 2,
+            (sum(th["Polarisation"]["green"]) / 2) if th.get("Polarisation", {}).get("green") else None,
         "recovery_floor":
             th["LoadVariabilityIndex"]["amber"][1],
         "fatigue_delta_green":

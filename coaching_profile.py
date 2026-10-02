@@ -1940,40 +1940,39 @@ COACH_PROFILE = {
             "formula": "1 - (PowerDrop% / 100)",
         },
         "Polarisation": {
-            "framework": "Seiler 3-Zone Contrast Model",
-            "formula": "(Z1 + Z3+) / (2 × Z2)  (3-zone collapsed, renormalised)",
+            "framework": "Seiler 3-Zone Intensity Distribution (Seiler 2010; Stöggl & Sperlich 2015)",
+            "formula": "% time in Seiler zone 1 (Z1+Z2 of Z1+Z2 | Z3+Z4 | Z5–Z7); type from zone order",
             "criteria": {
-                "z2_dominant": "< 0.65",
-                "pyramidal": "0.65–0.84",
-                "polarised": "0.85–1.25",
-                "high_contrast": "> 1.25"
+                "hiit": "Z3 > Z2 and Z3 > 0.499 × (Z1 + Z2)",
+                "polarised": "Z3 > Z2 and Z1 > Z2",
+                "base": "Z1 > 3.99 × Z2 and Z1 > 3 × (Z2 + Z3)",
+                "pyramidal": "1.4 × Z2 < Z1 < 3.01 × Z2 and Z2 > 1.4 × Z3",
+                "threshold": "Z1 < 4 × Z2 and Z2 > 0.5 × Z3",
+                "unique": "none of the above"
             },
         },
         "PolarisationIndex": {
             "framework": "Treff 2019 Polarization-Index",
-            "formula": "log10( Z1 / (Z2 × Z3) × 100 )  (3-zone collapsed)",
+            "formula": "log10( (Z1 / Z2) × Z3 × 100 )  (3-zone collapsed: Z1+Z2 | Z3+Z4 | Z5–Z7)",
             "criteria": {
-                "threshold_dominant": "< 1.5",
-                "pyramidal": "1.5–1.99",
-                "polarised": "≥ 2.0"
+                "not_polarised": "≤ 2.00",
+                "polarised": "> 2.00"
             },
         },
         "Polarisation_fused": {
-            "framework": "Seiler / Stöggl / Issurin (HR+Power fused)",
-            "formula": "Normalized intensity-domain distribution (fused HR+Power)",
+            "framework": "Treff 2019 Polarization-Index (HR+Power fused, dominant sport)",
+            "formula": "log10( (Z1 / Z2) × Z3 × 100 )  on zones.fused (3-zone collapsed: Z1+Z2 | Z3+Z4 | Z5–Z7)",
             "criteria": {
-                "polarised": "≥ 0.80",
-                "pyramidal": "0.65–0.79",
-                "threshold_dominant": "< 0.65"
+                "not_polarised": "≤ 2.00",
+                "polarised": "> 2.00"
             },
         },
         "Polarisation_combined": {
-            "framework": "Seiler / Stöggl / Issurin (multi-sport combined)",
-            "formula": "Normalized global intensity-domain distribution",
+            "framework": "Treff 2019 Polarization-Index (HR+Power combined, all sports)",
+            "formula": "log10( (Z1 / Z2) × Z3 × 100 )  on zones.combined (3-zone collapsed: Z1+Z2 | Z3+Z4 | Z5–Z7)",
             "criteria": {
-                "polarised": "≥ 0.78",
-                "pyramidal": "0.65–0.77",
-                "threshold_dominant": "< 0.65"
+                "not_polarised": "≤ 2.00",
+                "polarised": "> 2.00"
             },
         },
         "TRIMP": {

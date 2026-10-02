@@ -181,7 +181,9 @@ def compute_zone_intensity(df, context=None):
 
     # Convert to numeric safely
     zdf = df[zcols].apply(pd.to_numeric, errors="coerce").fillna(0)
-    total_time = float(np.nansum(zdf.to_numpy()))
+    # Sweet Spot overlaps Z3/Z4, so it is not added to the total a second time.
+    ss_cols = [c for c in zdf.columns if c.lower().endswith("power_z8") or "sweetspot" in c.lower()]
+    total_time = float(np.nansum(zdf.drop(columns=ss_cols).to_numpy()))
     if total_time <= 0:
         debug(context, "[ZQI] ⚠️ All zone values zero or missing.")
         return 0.0
@@ -370,6 +372,58 @@ def safe(df, col, fn="sum"):
         return 0.0
     val = df[col].fillna(0) if col in df else pd.Series([0])
     return float(val.sum()) if fn == "sum" else float(val.mean())
+
+
+def seiler_3zone_split(get_zone):
+    """
+    Collapse 7 training zones into Seiler's 3 zones, as fractions (sum = 1).
+    Seiler Z1 = below LT1 (Z1+Z2), Z2 = LT1–LT2 (Z3+Z4), Z3 = above LT2 ≈ FTP (Z5–Z7).
+    Same grouping as Intervals.icu's own Polarization Index. Sweet Spot is not read:
+    it overlaps Z3/Z4 and is not a zone of its own. Returns None when there is no zone time.
+    """
+    low = get_zone("z1") + get_zone("z2")
+    mid = get_zone("z3") + get_zone("z4")
+    high = get_zone("z5") + get_zone("z6") + get_zone("z7")
+    total = low + mid + high
+    if total <= 0:
+        return None
+    return low / total, mid / total, high / total
+
+
+def treff_polarization_index(z1, z2, z3):
+    """
+    Treff et al. 2019 Polarization-Index on 3-zone fractions.
+    Eq. 1: PI = log10( (Z1 / Z2) × Z3 × 100 ).
+    Eq. 2 (Z2 = 0): PI = log10( Z1 / 0.01 × (Z3 − 0.01) × 100 ).
+    Z3 = 0 → PI is zero by definition. Z3 > Z1 → not valid, must not be calculated (None).
+    Polarised only when PI > 2.00.
+    """
+    if z3 == 0:
+        return 0.0
+    if z3 > z1:
+        return None
+    if z2 == 0:
+        return round(float(np.log10(z1 / 0.01 * (z3 - 0.01) * 100)), 3) if z3 > 0.01 else 0.0
+    return round(float(np.log10((z1 / z2) * z3 * 100)), 3)
+
+
+def seiler_distribution_type(z1, z2, z3):
+    """
+    Training-intensity-distribution type from the Seiler 3-zone split (zone order;
+    Seiler 2010, Stöggl & Sperlich 2015), using Intervals.icu's published rules so the
+    labels match Intervals.icu: hiit, polarised, base, pyramidal, threshold, unique.
+    """
+    if z3 > z2 and z3 > 0.499 * (z1 + z2):
+        return "hiit"
+    if z3 > z2 and z1 > z2:
+        return "polarised"
+    if z1 > 3.99 * z2 and z1 > 3 * (z2 + z3):
+        return "base"
+    if 1.4 * z2 < z1 < 3.01 * z2 and z2 > 1.4 * z3:
+        return "pyramidal"
+    if z1 < 4 * z2 and z2 > 0.5 * z3:
+        return "threshold"
+    return "unique"
 
 
 def compute_derived_metrics(df_events, context):
@@ -730,7 +784,9 @@ def compute_derived_metrics(df_events, context):
                 continue
 
             fused_df = pd.DataFrame(fused_rows).fillna(0)
-            total = fused_df.sum().sum()
+            # Sweet Spot overlaps Z3/Z4, so keep it out of the total (it is still reported).
+            ss_cols = [c for c in fused_df.columns if c.endswith("power_z8") or "sweetspot" in c]
+            total = fused_df.drop(columns=ss_cols).sum().sum()
             if total <= 0:
                 debug(context, f"[T2-FUSED] ⚠️ {sport_group}: total zone sum <= 0, skipping.")
                 continue
@@ -783,7 +839,9 @@ def compute_derived_metrics(df_events, context):
         else:
             zdf = df[fused_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
 
-            total_time = zdf.sum().sum()
+            # Sweet Spot overlaps Z3/Z4, so keep it out of the total (it is still reported).
+            ss_cols = [c for c in fused_cols if c.endswith("power_z8") or "sweetspot" in c]
+            total_time = zdf.drop(columns=ss_cols).sum().sum()
             if total_time <= 0:
                 debug(context, "[T2-COMBINED] ⚠️ Total fused time = 0")
                 context["zone_dist_combined"] = {}
@@ -814,7 +872,7 @@ def compute_derived_metrics(df_events, context):
                 # --------------------------------------------------
                 # 3️⃣ Final normalisation guard (should ≈100 already)
                 # --------------------------------------------------
-                total = sum(collapsed.values())
+                total = sum(v for k, v in collapsed.items() if k not in ("z8", "sweetspot"))
                 if total > 0:
                     collapsed = {
                         k: round(v / total * 100, 1)
@@ -906,55 +964,53 @@ def compute_derived_metrics(df_events, context):
             zones.get(z, 0.0)))
         )
 
-    # 2️⃣ Collapse 7-zone → Seiler 3-zone
-    z1_raw = get_zone("z1")
-    z2_raw = get_zone("z2")
-    z3_raw = (
-        get_zone("z3")
-        + get_zone("z4")
-        + get_zone("z5")
-        + get_zone("z6")
-        + get_zone("z7")
+    # 2️⃣ Collapse 7-zone → Seiler 3-zone (Z1+Z2 | Z3+Z4 | Z5–Z7, as fractions)
+    split = seiler_3zone_split(get_zone)
+    z1, z2, z3 = split if split else (0.0, 0.0, 0.0)
+
+    # -------------------------------------------------
+    # 3️⃣ Seiler 3-zone distribution (Seiler 2010; Stöggl & Sperlich 2015)
+    # value = share of time in Seiler zone 1 (%), type = distribution by zone order
+    # -------------------------------------------------
+    if split:
+        polarisation = round(z1 * 100, 1)
+        polarisation_type = seiler_distribution_type(z1, z2, z3)
+        debug(context, f"[POL] Seiler 3-zone → Z1={z1:.3f} Z2={z2:.3f} Z3={z3:.3f} → type={polarisation_type}")
+    else:
+        polarisation = None
+        polarisation_type = None
+        debug(context, "[POL] Seiler 3-zone → no zone data")
+
+    # -------------------------------------------------
+    # 4️⃣ Treff Polarization-Index (Treff et al. 2019)
+    # -------------------------------------------------
+    polarisation_index = treff_polarization_index(z1, z2, z3) if split else None
+    debug(context, f"[POL] Treff PI → {polarisation_index}")
+
+    # -------------------------------------------------
+    # 4b️⃣ Treff PI on the fused (dominant sport) and combined (all sports, HR where
+    # no power) distributions — for athletes training mostly without power, or mixed.
+    # -------------------------------------------------
+    def zone_reader(dist, prefixes):
+        def get(z):
+            if not isinstance(dist, dict):
+                return 0.0
+            return float(sum(float(dist.get(f"{p}{z}", 0.0) or 0.0) for p in prefixes))
+        return get
+
+    fused_all = context.get("zone_dist_fused") or {}
+    fused_dist = fused_all.get(context.get("polarisation_sport")) if isinstance(fused_all, dict) else None
+    fused_split = seiler_3zone_split(zone_reader(fused_dist, ("_fused_power_", "_fused_hr_"))) if fused_dist else None
+    combined_dist = (context.get("zone_dist_combined") or {}).get("distribution")
+    combined_split = seiler_3zone_split(zone_reader(combined_dist, ("",))) if combined_dist else None
+
+    context["Polarisation_fused"] = treff_polarization_index(*fused_split) if fused_split else None
+    context["Polarisation_combined"] = treff_polarization_index(*combined_split) if combined_split else None
+    debug(
+        context,
+        f"[POL] Treff PI fused={context['Polarisation_fused']} (sport={context.get('polarisation_sport')}) | "
+        f"combined={context['Polarisation_combined']}"
     )
-
-    total = z1_raw + z2_raw + z3_raw
-
-    if total > 0:
-        z1 = z1_raw / total
-        z2 = z2_raw / total
-        z3 = z3_raw / total
-    else:
-        z1 = z2 = z3 = 0.0
-
-    # -------------------------------------------------
-    # 3️⃣ Seiler-style Contrast Ratio
-    # (heuristic operationalisation of 3-zone model)
-    # -------------------------------------------------
-    if z2 > 0:
-        polarisation = round((z1 + z3) / (2 * z2), 3)
-        debug(context, f"[POL] Seiler 3-zone → Z1={z1:.3f} Z2={z2:.3f} Z3+={z3:.3f} → Ratio={polarisation}")
-    else:
-        polarisation = 0.0
-        debug(context, "[POL] Seiler ratio fallback → Z2=0")
-
-    # -------------------------------------------------
-    # 4️⃣ Treff Polarization-Index (2019)
-    # PI = log10( Z1 / (Z2 × Z3) × 100 )
-    # Requires all 3 collapsed zones to be positive.
-    # -------------------------------------------------
-    if z1 > 0 and z2 > 0 and z3 > 0:
-        polarisation_index = round(
-            float(np.log10((z1 / (z2 * z3)) * 100)),
-            3
-        )
-        debug(context, f"[POL] Treff PI → {polarisation_index}")
-    else:
-        polarisation_index = 0.0
-        debug(
-            context,
-            f"[POL] Treff PI fallback → invalid zone proportions "
-            f"Z1={z1:.3f} Z2={z2:.3f} Z3={z3:.3f}"
-        )
 
     # 5️⃣ Register
     context["Polarisation"] = polarisation
@@ -1163,13 +1219,14 @@ def compute_derived_metrics(df_events, context):
             "value": polarisation,
             "classification": classified["Polarisation"]["state"],
             "icon": classified["Polarisation"]["icon"],
-            "desc": "Seiler 3-zone polarisation ratio (Z1+Z3)/(2×Z2)",
+            "desc": "Seiler 3-zone distribution: % time in Seiler zone 1, with distribution type",
+            "semantic_state": polarisation_type,
         },
         "PolarisationIndex": {
             "value": polarisation_index,
             "classification": classified["PolarisationIndex"]["state"],
             "icon": classified["PolarisationIndex"]["icon"],
-            "desc": "Seiler 80/20 intensity distribution compliance",
+            "desc": "Treff 2019 Polarization-Index (polarised when > 2.00)",
         },
         "FOxI": {
             "value": foxi,

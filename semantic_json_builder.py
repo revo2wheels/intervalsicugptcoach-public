@@ -1486,7 +1486,8 @@ def build_semantic_json(context):
             return block
 
         # --- Fused (sport-specific HR+Power)
-        pi_fused = context.get("Polarisation_fused") or context.get("Polarisation")
+        # No fallback to another metric: if the fused index isn't computed, leave it out.
+        pi_fused = context.get("Polarisation_fused")
         if pi_fused is not None:
             polarisation_variants["fused"] = build_variant(
                 "Polarisation_fused",
@@ -1497,7 +1498,7 @@ def build_semantic_json(context):
             debug(context, f"[SEMANTIC] Polarisation_fused={pi_fused}")
 
         # --- Combined (multi-sport HR+Power)
-        pi_combined = context.get("Polarisation_combined") or context.get("PolarisationIndex")
+        pi_combined = context.get("Polarisation_combined")
         if pi_combined is not None:
             polarisation_variants["combined"] = build_variant(
                 "Polarisation_combined",
@@ -3478,6 +3479,9 @@ def build_semantic_json(context):
 
         if info.get("coaching_implication"):
             block["coaching_implication"] = info["coaching_implication"]
+
+        if info.get("semantic_state"):
+            block["semantic_state"] = info["semantic_state"]
 
         semantic["metrics"][metric_name] = block
         

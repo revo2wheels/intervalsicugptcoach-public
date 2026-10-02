@@ -333,7 +333,11 @@ def collect_zone_distributions(df_master, athlete_profile, context):
         debug(context, f"[DEBUG-ZONES] FULL {label} dataset:\n{raw_data}")
         debug(context, f"[DEBUG-ZONES] Processed subset:\n{subset}")
 
-        total = subset.sum().sum()
+        # Sweet Spot (power_z8 / sweetspot) overlaps Z3/Z4: Intervals.icu counts that time
+        # inside those zones, so it must not be added to the total a second time.
+        # Its share is still reported, as a % of the Z1–Z7 total.
+        ss_cols = [c for c in subset.columns if c.endswith("_z8") or "sweetspot" in c] if label == "power" else []
+        total = subset.drop(columns=ss_cols).sum().sum()
 
         if total <= 0:
             debug(context, f"[DEBUG-ZONES] ⚠ No valid {label} data — total=0")

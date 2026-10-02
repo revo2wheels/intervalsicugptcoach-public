@@ -161,53 +161,34 @@ CHEAT_SHEET["thresholds"] = {
     },
     # ================== POLARISATION THRESHOLDS ==================
     # IMPORTANT SEMANTIC NOTE:
-    # - "Polarisation" (power-based) follows the Seiler ratio definition:
-    #     (Z1 + Z3) / (2 × Z2)
-    #   Canonical Seiler polarisation requires ≥ 1.0.
-    #   Green / amber ranges below are *heuristic coaching bands* for weekly feedback,
-    #   not strict physiological definitions.
+    # - "Polarisation" is the Seiler 3-zone intensity distribution (Seiler 2010;
+    #   Stöggl & Sperlich 2015): value = % time in Seiler zone 1, semantic_state =
+    #   distribution type by zone order. No published good/bad bands, so it has no
+    #   thresholds here and classifies as informational.
     #
-    # - "PolarisationIndex" is a normalized 0–1 power-only index (Z1+Z2 share),
-    #   interpreted contextually by training phase.
+    # - "PolarisationIndex" is the Treff et al. 2019 Polarization-Index:
+    #   log10((Z1 / Z2) × Z3 × 100) on the 3-zone collapse Z1+Z2 | Z3+Z4 | Z5–Z7
+    #   (same as Intervals.icu). Single published cut-off: > 2.00 = polarised.
     #
-    # - "Polarisation_fused" and "Polarisation_combined" are normalized intensity
-    #   distribution indices derived using Seiler / Stöggl / Issurin methodology.
-    #   Their green / amber bands represent polarised vs pyramidal vs threshold-dominant
-    #   patterns at the *weekly* level (not session-level judgments).
+    # - "Polarisation_fused" and "Polarisation_combined" are the same Treff index
+    #   computed on zones.fused (dominant sport) and zones.combined (all sports,
+    #   HR where no power). Same single cut-off.
 
-    # --- Power-based (Seiler ratio; power only) ---
-    "Polarisation": {
-        # <0.65 → threshold-heavy / Z2 dominant
-        "red": (0.00, 0.65),
-        # 0.65–0.85 → pyramidal
-        "amber": (0.65, 0.85),
-        # 0.85–1.25 → classical polarised (balanced 80/20)
-        "green": (0.85, 3.00),
-        # >1.25 → high-contrast polarised (very low Z2 exposure)
-    },
     # --- Power-only Treff Polarization-Index (2019) ---
     "PolarisationIndex": {
-        # Treff PI classification:
-        # >2.0 = Polarised
-        # ~1.5–2.0 = Pyramidal
-        # <1.5 = Threshold-heavy
-        "red":   (0.00, 1.50),   # threshold-dominant / Z2 heavy
-        "amber": (1.50, 2.00),   # pyramidal
-        "green": (2.00, 4.00),   # canonical polarised
+        # Treff 2019 has one cut-off: > 2.00 = polarised.
+        # Below it the distribution is "not polarised" (no good/bad band),
+        # so it classifies as informational.
+        "green": (2.00, 10.00),  # polarised
     },
-    # --- Fused HR + Power (sport-specific, normalized) ---
+    # --- Fused HR + Power (dominant sport), Treff index ---
     "Polarisation_fused": {
-        "red": (0.00, 0.64),
-        "green": (0.80, 3.00),
-        "amber": (0.65, 0.80),
-
-    },  # Seiler / Stöggl / Issurin (dominant-sport signal)
-    # --- Combined HR + Power (multi-sport, normalized) ---
+        "green": (2.00, 10.00),  # polarised (Treff 2019)
+    },
+    # --- Combined HR + Power (all sports), Treff index ---
     "Polarisation_combined": {
-        "red": (0.00, 0.59),
-        "green": (0.78, 3.00),
-        "amber": (0.60, 0.78),
-    },  # Global descriptor; lower precision than sport-specific
+        "green": (2.00, 10.00),  # polarised (Treff 2019)
+    },
     "TSB": {
         "transition": [10, 999],
         "fresh": [5, 10],
@@ -721,20 +702,7 @@ CHEAT_SHEET["metric_groups"] = {
 
 
 # === Phase-Aware Threshold Adjustments (optional overrides) ===
-CHEAT_SHEET["phase_thresholds"] = {
-    "Polarisation": {
-        "base":  {"green": (0.60, 0.80), "amber": (0.50, 0.90)},
-        "build": {"green": (0.75, 1.00), "amber": (0.60, 0.75)},
-        "peak":  {"green": (0.80, 1.00), "amber": (0.65, 0.80)},
-        "recovery": {"green": (0.70, 0.95), "amber": (0.55, 0.75)},
-    },
-    "PolarisationIndex": {
-        "base":  {"green": (1.70, 3.50), "amber": (1.40, 1.70)},
-        "build": {"green": (2.00, 3.50), "amber": (1.60, 2.00)},
-        "peak":  {"green": (2.10, 3.50), "amber": (1.70, 2.10)},
-        "recovery": {"green": (1.80, 3.50), "amber": (1.50, 1.80)},
-    },
-}
+CHEAT_SHEET["phase_thresholds"] = {}
 
 CHEAT_SHEET["subjective_scales"] = {
 
@@ -839,60 +807,23 @@ CHEAT_SHEET["subjective_scales"] = {
 CHEAT_SHEET["polarisation_models"] = {
     "PolarisationIndex": [
         {
-            "label": "threshold",
-            "range": (0.00, 1.50),
-            "description": "Threshold-dominant distribution. Z2 proportion elevated relative to Z1 and Z3."
-        },
-        {
-            "label": "pyramidal",
-            "range": (1.50, 2.00),
-            "description": "Pyramidal intensity structure. Z1 > Z2 > Z3."
+            "label": "not_polarised",
+            "range": (0.00, 2.00),
+            "description": "Not polarised (Treff 2019, PI ≤ 2.00)."
         },
         {
             "label": "polarised",
-            "range": (2.00, 4.00),
-            "description": "Treff-defined polarised intensity distribution (>2.0). Strong Z1–Z3 contrast."
+            "range": (2.00, 10.00),
+            "description": "Treff-defined polarised intensity distribution (PI > 2.00)."
         },
     ],
     "Polarisation": [
-        {
-            "label": "threshold",
-            "range": (0.00, 0.65),
-            "description": (
-                "Z2-dominant or threshold-leaning structure. "
-                "Moderate-intensity work outweighs low/high contrast. "
-                "Appropriate during aerobic foundation or durability blocks, "
-                "but excessive persistence may limit intensity contrast."
-            )
-        },
-        {
-            "label": "pyramidal",
-            "range": (0.65, 0.85),
-            "description": (
-                "Mixed intensity distribution. "
-                "Moderate-intensity still prominent, but low/high contrast emerging. "
-                "Typical of transitional or early build phases."
-            )
-        },
-        {
-            "label": "polarised",
-            "range": (0.85, 1.25),
-            "description": (
-                "Balanced polarised structure. "
-                "Clear low- and high-intensity contrast relative to moderate work. "
-                "Reflects classic Seiler 80/20 intensity architecture at the weekly level."
-            )
-        },
-        {
-            "label": "high_contrast",
-            "range": (1.25, 9.99),
-            "description": (
-                "High-contrast polarisation. "
-                "Very low Z2 exposure with strong separation between easy and hard work. "
-                "Can be effective during peak or race-specific phases, "
-                "but requires adequate recovery monitoring."
-            )
-        },
+        {"label": "hiit", "rule": "Z3 > Z2 and Z3 > 0.499 × (Z1 + Z2)", "description": "High-intensity dominant distribution."},
+        {"label": "polarised", "rule": "Z3 > Z2 and Z1 > Z2", "description": "Polarised: mostly low intensity, more high than moderate."},
+        {"label": "base", "rule": "Z1 > 3.99 × Z2 and Z1 > 3 × (Z2 + Z3)", "description": "Base: low intensity strongly dominant."},
+        {"label": "pyramidal", "rule": "1.4 × Z2 < Z1 < 3.01 × Z2 and Z2 > 1.4 × Z3", "description": "Pyramidal: low > moderate > high."},
+        {"label": "threshold", "rule": "Z1 < 4 × Z2 and Z2 > 0.5 × Z3", "description": "Threshold: substantial moderate (LT1–LT2) work."},
+        {"label": "unique", "rule": "none of the above", "description": "Does not match a standard distribution type."},
     ],
 }
 
@@ -1020,37 +951,34 @@ CHEAT_SHEET["context"] = {
     "HRVTrend": "Direction of HRV change — rising indicates improving recovery.",
     # --- Polarisation Variants (clarified sources) ---
     "Polarisation": (
-        "Power-based Seiler Polarisation Ratio (Z1 + Z3) / (2 × Z2), showing the balance "
-        "between low- and high-intensity work relative to moderate (Z2) training. "
-        "<0.65 = Z2-dominant distribution, 0.65–0.84 = mixed intensity distribution, "
-        "0.85–1.25 = balanced polarised structure (classic 80/20), "
-        ">1.25 = high-contrast polarisation with minimal Z2 exposure. "
-        "⚙️ *Power-only metric — HR ignored.* Use primarily during power-measured cycling phases."
+        "Seiler 3-zone intensity distribution (Seiler 2010; Stöggl & Sperlich 2015). "
+        "7 power zones are collapsed to Seiler's 3 (Z1+Z2 | Z3+Z4 | Z5–Z7, same grouping as Intervals.icu). "
+        "The value is the % of training time in Seiler zone 1 (below LT1); the distribution type "
+        "(polarised, pyramidal, threshold, base, HIIT or unique) comes from the zone order, using "
+        "Intervals.icu's rules. ⚙️ *Power-based; HR used only when no power.*"
     ),
     "PolarisationIndex": (
-        "Treff Polarization-Index (2019). "
-        "Calculated as log10(z1 / (z2 × z3) × 100) after collapsing 7-zone power data "
-        "to the 3-zone Seiler model (z1=z1, z2=z2, z3=z3+z4+z5+z6+z7), "
+        "Treff Polarization-Index (Treff et al. 2019). "
+        "Calculated as log10((z1 / z2) × z3 × 100) after collapsing 7-zone power data "
+        "to the 3-zone Seiler model (z1=Z1+Z2, z2=Z3+Z4, z3=Z5+Z6+Z7; the same grouping Intervals.icu uses), "
         "then renormalising the collapsed zones so z1+z2+z3=1 before applying the formula. "
-        "Uses proportional (0–1) zone distribution, not raw time or displayed percentages. "
-        ">2.0 = polarised distribution, 1.5–2.0 = pyramidal, <1.5 = threshold-heavy. "
+        "If z2 = 0, Treff's Eq. 2 is used: log10(z1 / 0.01 × (z3 − 0.01) × 100). "
+        "If z3 = 0 the index is 0 by definition; it is not valid (null) when z3 > z1. "
+        ">2.00 = polarised distribution; ≤2.00 = not polarised. "
         "⚙️ Power-only metric using normalised 3-zone distribution."
     ),
     "Polarisation_fused": (
-        "Sport-specific Polarisation derived from fused HR+Power data. "
-        "Represents how the athlete distributes intensity within the dominant discipline. "
-        "Dominance reflects the sport providing the clearest and most internally consistent "
-        "intensity (zone) signal — not the sport with the greatest volume, duration, or load. "
-        "≥0.80 = polarised, 0.65–0.79 = pyramidal, <0.65 = threshold-dominant. "
-        "⚙️ *HR fills gaps when power unavailable; low-intensity HR-only activities may dominate "
-        "the signal when cycling intensity is spread across Z2–Z4.*"
+        "Treff 2019 Polarization-Index computed on the dominant sport's fused zones "
+        "(power where available, HR otherwise), using the same 3-zone collapse (Z1+Z2 | Z3+Z4 | Z5–Z7). "
+        ">2.00 = polarised; ≤2.00 = not polarised. "
+        "⚙️ *HR-based zones have no published 7-to-3 mapping, so treat HR-only values as indicative.*"
     ),
     "Polarisation_combined": (
-        "Global HR+Power combined Polarisation Index across all sports. "
-        "Reflects total weekly distribution and load balance for multi-sport athletes. "
-        "Dominance reflects intensity signal strength, not training volume. "
-        "≥0.80 = polarised, 0.65–0.79 = pyramidal, <0.65 = threshold-heavy. "
-        "⚙️ *Cross-discipline index — lower precision, but best overall summary of load contrast.*"
+        "Treff 2019 Polarization-Index computed on the combined distribution across all endurance "
+        "sports (power where available, HR otherwise), using the same 3-zone collapse. "
+        "Intended for athletes training mostly without power, or mixed. "
+        ">2.00 = polarised; ≤2.00 = not polarised. "
+        "⚙️ *Cross-discipline summary — lower precision than the power-based index.*"
     ),
     "WBalDepletion": (
         "Mean weekly W′ balance depletion expressed as a fraction of total W′ capacity. "
@@ -1154,25 +1082,22 @@ CHEAT_SHEET["coaching_links"] = {
     "LoadVariabilityIndex": "Low values indicate load is exceeding current physiological tolerance; moderate values suggest manageable stress; high values reflect positive load variability with adequate systemic capacity.",
         # --- Polarisation Variants Coaching Links ---
     "Polarisation": (
-        "If Polarisation <0.65 during base, this reflects aerobic Z2 dominance (✅ normal). "
-        "If in Build/Peak, reduce Z2 time and increase Z1/Z3 contrast. "
-        "Maintain ≥0.85 for ideal 80/20 balance in power-measured disciplines."
+        "Read the distribution type against the training phase: base, pyramidal or threshold "
+        "weeks are normal in foundation blocks; a polarised structure is typical in build or peak "
+        "phases when high-intensity work is prescribed. Seiler's 80/20 refers to sessions, not minutes."
     ),
     "PolarisationIndex": (
-        "If PolarisationIndex <1.5, training is threshold-heavy. "
-        "Between 1.5–2.0 reflects pyramidal distribution. "
-        "Target >2.0 for classical polarised structure during build or peak phases. "
-        "Interpret relative to normalised 3-zone balance (z1 vs z2×z3), not absolute time in zones."
+        "PolarisationIndex >2.00 means a polarised week (Treff 2019); ≤2.00 means not polarised, "
+        "which is normal for base or pyramidal blocks. "
+        "Interpret alongside the 3-zone split (Z1+Z2 | Z3+Z4 | Z5–Z7), not as a target on its own."
     ),
     "Polarisation_fused": (
-        "If fused Polarisation Index <0.65, the dominant sport is intensity-heavy — "
-        "increase Z1/Z2 duration or insert a recovery microcycle. "
-        "Maintain ≥0.80 for a robust endurance foundation."
+        "Fused Polarization-Index >2.00 means the dominant sport's week is polarised (Treff 2019); "
+        "≤2.00 means not polarised, which is normal for base or pyramidal blocks."
     ),
     "Polarisation_combined": (
-        "If combined Polarisation Index <0.65, total weekly load is intensity-heavy. "
-        "Add endurance-focused sessions or recovery days to preserve a healthy 80/20 ratio. "
-        "Ideal global range ≥0.78 for mixed-sport athletes."
+        "Combined Polarization-Index >2.00 means the whole week across sports is polarised (Treff 2019); "
+        "≤2.00 means not polarised. Use as a summary; it should not trigger changes on its own."
     ),
     "WBalDepletion": (
         "High W′ depletion (>45%) indicates repeated deep anaerobic stress. "
@@ -1284,7 +1209,7 @@ CHEAT_SHEET["coaching_links"] = {
 }
 
 CHEAT_SHEET["display_names"] = {
-    "Polarisation": "Polarisation (Power-based, Seiler ratio)",
+    "Polarisation": "Polarisation (Seiler 3-zone distribution)",
     "PolarisationIndex": "Polarisation Index (Treff 2019, Power 3-zone)",
     "Polarisation_fused": "Polarisation Index (Fused HR+Power, sport-specific)",
     "Polarisation_combined": "Polarisation Index (Combined HR+Power, multi-sport)",
@@ -1362,51 +1287,24 @@ CHEAT_SHEET["advice"] = {
         "stable": "✅ IF Drift stable ({:.2%}) — aerobic durability solid.",
         "high": "⚠ IF Drift high ({:.2%}) — improve aerobic durability or reduce fatigue load."
     },
-    # Base metric: Polarisation (Power-only)
+    # Base metric: Polarisation (Seiler 3-zone distribution type)
     "Polarisation": {
-        "low": (
-            "⚠ Seiler Polarisation ratio low ({:.2f}) — increase Z1–Z3 contrast "
-            "unless this is an intentional base or durability-focused week."
-        ),
-        "z2_base": (
-            "🧱 Seiler Z2-base dominant ({:.2f}) — expected during aerobic foundation "
-            "or endurance development phases."
-        ),
-        "optimal": (
-            "✅ Seiler 80/20 Polarisation optimal ({:.2f}) — clear low–high intensity separation."
-        )
+        "threshold": "🟠 Seiler threshold distribution — substantial LT1–LT2 work; fine if phase-intentional.",
+        "pyramidal": "🧱 Seiler pyramidal distribution — low > moderate > high; typical of base and build blocks.",
+        "polarised": "✅ Seiler polarised distribution — mostly easy, with more hard than moderate work.",
+        "base": "🧱 Seiler base distribution — low intensity strongly dominant.",
+        "hiit": "⚠ High-intensity dominant distribution — monitor recovery.",
+        "unique": "ℹ️ Distribution does not match a standard Seiler type."
     },
-    # Fused HR+Power variant (sport-specific)
+    # Fused HR+Power variant (dominant sport, Treff index)
     "Polarisation_fused": {
-        "low": (
-            "⚠ Seiler / Stöggl / Issurin methodology (HR+Power fused): polarisation low ({:.2f}) — "
-            "dominant sport intensity-domain distribution is threshold-heavy; "
-            "add endurance work only if this is not phase-intentional."
-        ),
-        "z2_base": (
-            "🧱 Seiler / Stöggl / Issurin methodology (HR+Power fused): ({:.2f}) — "
-            "Z2-base dominant intensity distribution, normal for aerobic development."
-        ),
-        "optimal": (
-            "✅ Seiler / Stöggl / Issurin methodology (HR+Power fused): optimal ({:.2f}) — "
-            "healthy intensity-domain contrast within the dominant sport."
-        )
+        "polarised": "✅ Dominant sport polarised (Treff index {:.2f} > 2.00).",
+        "not_polarised": "ℹ️ Dominant sport not polarised (Treff index {:.2f} ≤ 2.00) — normal for base or pyramidal blocks."
     },
-    # Multi-sport combined variant
+    # Multi-sport combined variant (Treff index)
     "Polarisation_combined": {
-        "low": (
-            "⚠ Seiler / Stöggl / Issurin methodology (multi-sport combined): polarisation low ({:.2f}) — "
-            "global weekly intensity-domain distribution is threshold-heavy; "
-            "increase endurance ratio if not phase-intentional."
-        ),
-        "z2_base": (
-            "🧱 Seiler / Stöggl / Issurin methodology (multi-sport combined): ({:.2f}) — "
-            "pyramidal intensity distribution, acceptable in build or mixed-focus weeks."
-        ),
-        "optimal": (
-            "✅ Seiler / Stöggl / Issurin methodology (multi-sport combined): optimal ({:.2f}) — "
-            "balanced global endurance–intensity contrast across sports."
-        )
+        "polarised": "✅ Combined week polarised (Treff index {:.2f} > 2.00).",
+        "not_polarised": "ℹ️ Combined week not polarised (Treff index {:.2f} ≤ 2.00) — summary only."
     },
     # --- Load Variability Index ---
     "LoadVariabilityIndex": {
@@ -1719,9 +1617,9 @@ CHEAT_SHEET["metric_confidence"] = {
             "min_intensity_sessions": 2
         },
         "notes": (
-            "Power-based Seiler polarisation is only actionable when "
+            "The Seiler distribution type is only actionable when "
             "intensity contrast is intentionally prescribed. "
-            "Z2-dominant values are expected during base, recovery, "
+            "Base, pyramidal or threshold types are expected during base, recovery, "
             "or durability-focused weeks."
         )
     },
@@ -1747,9 +1645,9 @@ CHEAT_SHEET["metric_confidence"] = {
             "min_sessions": 4
         },
         "notes": (
-            "Fused polarisation reflects intensity distribution within "
-            "the dominant sport. Confidence depends on signal quality, "
-            "not volume."
+            "Fused Treff index reflects intensity distribution within "
+            "the dominant sport. Confidence depends on signal quality "
+            "(power over HR), not volume."
         )
     },
     # --- Combined multi-sport ---
