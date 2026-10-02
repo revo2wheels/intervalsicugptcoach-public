@@ -3346,11 +3346,24 @@ def build_semantic_json(context):
 
                 planned_summary_by_iso_week = {}
 
+                today_date = pd.Timestamp(today).date()
+
+                def _on_or_after_today(e):
+                    d = pd.to_datetime(e.get("date"), errors="coerce")
+                    return pd.isna(d) or d.date() >= today_date
+
                 for week, events in planned_by_week.items():
 
-                    total_load = sum((e.get("icu_training_load") or 0) for e in events)
-
                     is_current = (week == current_week_key)
+
+                    # The current week counts only sessions still to come (today onwards), the same
+                    # rule as current_ISO_weekly_microcycle.planned_remaining_tss. Earlier days'
+                    # unexecuted sessions are missed_tss there, and must not count as remaining too
+                    # (the calendar window starts at report_end, which can be yesterday).
+                    if is_current:
+                        events = [e for e in events if _on_or_after_today(e)]
+
+                    total_load = sum((e.get("icu_training_load") or 0) for e in events)
 
                     planned_summary_by_iso_week[week] = {
                         "total_events": len(events),
