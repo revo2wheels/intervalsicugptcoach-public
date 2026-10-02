@@ -276,6 +276,13 @@ def semantic_block_for_metric(name, value, context):
                         # 🔥 KEY: NO traffic light mapping
                         classification = "informational"
 
+                    except ValueError:
+                        # Text rules (e.g. the Seiler week types) or limits with units (e.g. "100kJ")
+                        # aren't numeric thresholds: no state from criteria, same result as before,
+                        # logged as a note so real errors still stand out.
+                        debug(context, f"[CRITERIA][{metric_name}] non-numeric criteria, no state from criteria")
+                        classification = "informational"
+                        semantic_state = None
                     except Exception as e:
                         debug(context, f"[CRITERIA][{metric_name}] ERROR", str(e))
                         classification = "informational"
