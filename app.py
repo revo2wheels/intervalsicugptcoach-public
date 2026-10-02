@@ -445,6 +445,54 @@ def normalize_prefetched_context(data):
 
             return None
 
+        # Which window is which. The worker sends the ids it asked for; Intervals
+        # leaves an empty window out, so a lone previous window must not be read
+        # as current. Older workers don't send the ids: then the latest window end
+        # across all sports marks the current window.
+        curve_windows = data.get("power_curve_windows")
+        curve_windows = curve_windows if isinstance(curve_windows, dict) else {}
+        expected_previous_id = str(curve_windows.get("previous") or "")
+        expected_current_id = str(curve_windows.get("current") or "")
+
+        def window_end(block):
+            return str(block.get("end_date_local") or "")[:10]
+
+        latest_window_end = ""
+        if isinstance(power_curve, dict):
+            for payload in power_curve.values():
+                for block in (payload.get("list") or []) if isinstance(payload, dict) else []:
+                    if isinstance(block, dict) and fatigue_slot(block.get("id")) is None:
+                        latest_window_end = max(latest_window_end, window_end(block))
+
+        def assign_windows(sport, normal_curve_list):
+            if expected_previous_id or expected_current_id:
+                by_id = {str(block.get("id") or ""): block for block in normal_curve_list}
+                prev = by_id.get(expected_previous_id, {}) if expected_previous_id else {}
+                curr = by_id.get(expected_current_id, {}) if expected_current_id else {}
+                if prev or curr:
+                    return prev, curr
+                debug(
+                    context,
+                    f"[NORM] ⚠ curve ids didn't match the requested windows for {sport} — using dates"
+                )
+
+            if len(normal_curve_list) >= 2:
+                return normal_curve_list[-2], normal_curve_list[-1]
+
+            only = normal_curve_list[0]
+            if latest_window_end and window_end(only) and window_end(only) < latest_window_end:
+                debug(
+                    context,
+                    f"[NORM] ⚠ only the previous window for {sport} — no current data"
+                )
+                return only, {}
+
+            debug(
+                context,
+                f"[NORM] ⚠ single normal window only for {sport} — using it as current"
+            )
+            return {}, only
+
         if isinstance(power_curve, dict):
 
             for sport, payload in power_curve.items():
@@ -490,16 +538,7 @@ def normalize_prefetched_context(data):
                     )
                 )
 
-                if len(normal_curve_list) == 1:
-                    debug(
-                        context,
-                        f"[NORM] ⚠ single normal window only for {sport} — using fallback"
-                    )
-                    prev = {}
-                    curr = normal_curve_list[0]
-                else:
-                    prev = normal_curve_list[-2]
-                    curr = normal_curve_list[-1]
+                prev, curr = assign_windows(sport, normal_curve_list)
 
                 current_curve_id = str(curr.get("id") or "")
                 previous_curve_id = str(prev.get("id") or "")
@@ -613,6 +652,13 @@ def normalize_prefetched_context(data):
                         "current": fatigued_current,
                         "previous": fatigued_previous,
                     }
+
+                    debug(
+                        context,
+                        "[NORM] Fatigued Ride curves normalized → "
+                        f"current={list(fatigued_current.keys())} "
+                        f"previous={list(fatigued_previous.keys())}"
+                    )
                 normalized_curves[sport] = sport_block
 
                 if not sport_block["current"].get("5m"):
@@ -625,14 +671,6 @@ def normalize_prefetched_context(data):
                     context,
                     f"[NORM] ESPE anchors normalized → {sport}",
                     list(sport_block["current"].keys())
-                )
-
-            if sport == "Ride":
-                debug(
-                    context,
-                    "[NORM] Fatigued Ride curves normalized → "
-                    f"current={list(sport_block['fatigued']['current'].keys())} "
-                    f"previous={list(sport_block['fatigued']['previous'].keys())}"
                 )
 
             context["power_curve"] = normalized_curves
