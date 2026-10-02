@@ -1442,8 +1442,8 @@ def compute_external_load_context(context, df_full):
     # A "hot" ride scores > 1.0 (device temp > 23 °C on the ambient-temp
     # source). Current heat strain (readiness heat_flag) needs a hot ride in
     # the 72 h before the report end; older hot rides are past context only.
-    # "heat_induced" drift needs the SAME hot ride to show decoupling above
-    # the engine's 5% drift line (as ISDM high_drift_sessions_7d, Friel).
+    # "heat_induced" drift needs the SAME hot ride, inside those 72 h, to show
+    # decoupling above the engine's 5% drift line (as ISDM high_drift_sessions_7d, Friel).
 
     HEAT_HOT_SCORE = 1.0
     HEAT_RECENT_HOURS = 72
@@ -1488,6 +1488,7 @@ def compute_external_load_context(context, df_full):
     recent_hot_rides = 0
     older_hot_rides = 0
     hot_rides_with_drift = 0
+    recent_hot_rides_with_drift = 0
 
     for i in range(len(df_full)):
         ride_date = _ride_val(ride_dates, i)
@@ -1505,11 +1506,14 @@ def compute_external_load_context(context, df_full):
             is_hot and ride_drift is not None
             and ride_drift > DRIFT_THRESHOLD_PCT
         )
+        # Heat-induced drift is acute: the hot, drifting ride must also be in the last 72 h.
+        has_recent_drift = bool(has_drift and is_recent)
 
         hot_rides += int(is_hot)
         recent_hot_rides += int(is_recent)
         older_hot_rides += int(is_older)
         hot_rides_with_drift += int(has_drift)
+        recent_hot_rides_with_drift += int(has_recent_drift)
 
         debug(
             context,
@@ -1532,6 +1536,7 @@ def compute_external_load_context(context, df_full):
         "recent_hot_rides": recent_hot_rides,
         "older_hot_rides": older_hot_rides,
         "hot_rides_with_drift": hot_rides_with_drift,
+        "recent_hot_rides_with_drift": recent_hot_rides_with_drift,
     }
 
     # --------------------------------------------------
@@ -1543,7 +1548,7 @@ def compute_external_load_context(context, df_full):
     # Heat-driven cardiovascular strain: only when the SAME hot ride also
     # drifted (decoupling > 5%). Temperature alone does not prove the drift
     # (duration and dehydration also cause it), so otherwise leave it unset.
-    if hot_rides_with_drift > 0:
+    if recent_hot_rides_with_drift > 0:
         modifiers["cardiovascular_drift"] = "heat_induced"
 
     # Terrain only matters if it alters physiology
@@ -1644,6 +1649,7 @@ def compute_external_load_context(context, df_full):
         f"hot_rides={hot_rides}",
         f"recent_hot={recent_hot_rides}",
         f"hot_with_drift={hot_rides_with_drift}",
+        f"recent_hot_with_drift={recent_hot_rides_with_drift}",
         f"recent_window={recent_from} to {report_end}",
         f"dominant={dominant}",
         f"modifiers={modifiers}"
