@@ -248,26 +248,40 @@ def semantic_block_for_metric(name, value, context):
                 semantic_state = None
 
                 if criteria:
+                    # A limit may carry "kJ": work metrics are reported in joules, so kJ limits
+                    # are compared as joules (x1000). Other text still raises ValueError below.
+                    def _num_unit(tok):
+                        tok = tok.strip()
+                        if tok.lower().endswith("kj"):
+                            return float(tok[:-2]), 1000.0
+                        return float(tok), None
+
                     try:
                         for key, rule in criteria.items():
                             rule_clean = rule.replace("–", "-")
 
                             if "<" in rule_clean:
-                                limit = float(rule_clean.split("<")[1].split()[0])
+                                n, scale = _num_unit(rule_clean.split("<")[1].split()[0])
+                                limit = n * (scale or 1.0)
                                 if v < limit:
                                     semantic_state = key
                                     break
 
                             elif ">" in rule_clean:
-                                limit = float(rule_clean.split(">")[1].split()[0])
+                                n, scale = _num_unit(rule_clean.split(">")[1].split()[0])
+                                limit = n * (scale or 1.0)
                                 if v > limit:
                                     semantic_state = key
                                     break
 
                             elif "-" in rule_clean:
                                 low, high = rule_clean.split("-")
-                                low = float(low)
-                                high = float(high.split()[0])
+                                low_n, low_scale = _num_unit(low)
+                                high_n, high_scale = _num_unit(high.split()[0])
+                                # "100–250kJ": the unit on either end applies to both
+                                scale = low_scale or high_scale or 1.0
+                                low = low_n * scale
+                                high = high_n * scale
 
                                 if low <= v <= high:
                                     semantic_state = key
