@@ -1927,7 +1927,7 @@ COACH_PROFILE = {
         },
         "ZQI": {
             "framework": "Seiler Intensity Distribution (power-zone mapped)",
-            "formula": "% time in Z4–Z7 (proxy for Seiler Z3 high-intensity)",
+            "formula": "% time in Z4–Z7 (high-intensity share; not Seiler zone 3, which is Z5–Z7)",
             "criteria": {
                 "low": "<5",
                 "optimal": "5–15",

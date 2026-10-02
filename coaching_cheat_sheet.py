@@ -174,20 +174,20 @@ CHEAT_SHEET["thresholds"] = {
     #   computed on zones.fused (dominant sport) and zones.combined (all sports,
     #   HR where no power). Same single cut-off.
 
-    # --- Power-only Treff Polarization-Index (2019) ---
+    # --- Treff Polarization-Index (2019), power preferred, HR fallback ---
     "PolarisationIndex": {
         # Treff 2019 has one cut-off: > 2.00 = polarised.
         # Below it the distribution is "not polarised" (no good/bad band),
         # so it classifies as informational.
-        "green": (2.00, 10.00),  # polarised
+        "green": (2.001, 10.00),  # polarised
     },
     # --- Fused HR + Power (dominant sport), Treff index ---
     "Polarisation_fused": {
-        "green": (2.00, 10.00),  # polarised (Treff 2019)
+        "green": (2.001, 10.00),  # polarised (Treff 2019)
     },
     # --- Combined HR + Power (all sports), Treff index ---
     "Polarisation_combined": {
-        "green": (2.00, 10.00),  # polarised (Treff 2019)
+        "green": (2.001, 10.00),  # polarised (Treff 2019)
     },
     "TSB": {
         "transition": [10, 999],
@@ -813,7 +813,7 @@ CHEAT_SHEET["polarisation_models"] = {
         },
         {
             "label": "polarised",
-            "range": (2.00, 10.00),
+            "range": (2.001, 10.00),
             "description": "Treff-defined polarised intensity distribution (PI > 2.00)."
         },
     ],
@@ -965,7 +965,7 @@ CHEAT_SHEET["context"] = {
         "If z2 = 0, Treff's Eq. 2 is used: log10(z1 / 0.01 × (z3 − 0.01) × 100). "
         "If z3 = 0 the index is 0 by definition; it is not valid (null) when z3 > z1. "
         ">2.00 = polarised distribution; ≤2.00 = not polarised. "
-        "⚙️ Power-only metric using normalised 3-zone distribution."
+        "⚙️ Power-based; Ride HR zones are used only when there is no power data."
     ),
     "Polarisation_fused": (
         "Treff 2019 Polarization-Index computed on the dominant sport's fused zones "
@@ -1489,7 +1489,7 @@ CHEAT_SHEET["zone_semantics"] = {
         "label": "Cycling Power Zones",
         "description": (
             "Distribution of training time by cycling power zones. Derived from Intervals.icu power zone times for Ride-based activities. "
-            "SS = Sweetspot"
+            "SS = Sweet Spot; it overlaps Z3/Z4 and is shown as a % of the Z1–Z7 total, not added to it."
         ),
     },
     "hr": {
@@ -1514,7 +1514,7 @@ CHEAT_SHEET["zone_semantics"] = {
             "distribution is defined by time spent in intensity domains, with sensors "
             "treated as interchangeable proxies rather than distinct categories "
             "(Seiler 2010; Stöggl & Sperlich 2015; Issurin 2008) "
-            "SS = Sweetspot."
+            " SS = Sweet Spot; it overlaps Z3/Z4 and is shown as a % of the Z1–Z7 total, not added to it."
         ),
     },
     "combined": {
@@ -1524,7 +1524,7 @@ CHEAT_SHEET["zone_semantics"] = {
             "for all endurance activities. Power is prioritised where available, "
             "heart rate otherwise. Normalised once across total training time "
             "(Seiler / Stöggl / Issurin methodology) "
-            "SS = Sweetspot."
+            " SS = Sweet Spot; it overlaps Z3/Z4 and is shown as a % of the Z1–Z7 total, not added to it."
         ),
     },
 }
@@ -1608,7 +1608,7 @@ CHEAT_SHEET["wbal_patterns"] = {
 
 CHEAT_SHEET["metric_confidence"] = {
 
-    # --- Power-only Seiler Ratio ---
+    # --- Seiler 3-zone distribution type ---
     "Polarisation": {
         "default": "contextual",
         "high_confidence_when": {
@@ -1632,7 +1632,7 @@ CHEAT_SHEET["metric_confidence"] = {
         },
         "notes": (
             "Treff Polarization-Index reflects structural intensity contrast using "
-            "normalised 3-zone power distribution (z1+z2+z3=1 after collapse). "
+            "normalised 3-zone distribution, power or HR when no power (z1+z2+z3=1 after collapse). "
             "High confidence when at least 4 sessions and ≥2 high-intensity sessions exist."
         )
     },

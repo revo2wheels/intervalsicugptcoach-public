@@ -164,7 +164,8 @@ def compute_wellness_coverage(df_well, context=None):
 
 def compute_zone_intensity(df, context=None):
     """
-    Sieler aligned Zone Quality Index (ZQI) — percentage of total training time spent in high-intensity zones (Z4–Z7).
+    Zone Quality Index (ZQI) — percentage of total training time spent in Z4–Z7 (high-intensity share;
+    not Seiler zone 3, which is Z5–Z7).
     Correctly scaled to 0–100% (not ×100 again) and includes detailed debug logging.
     """
     import pandas as pd, numpy as np
@@ -724,6 +725,7 @@ def compute_derived_metrics(df_events, context):
         from coaching_cheat_sheet import CHEAT_SHEET
         groups = CHEAT_SHEET.get("sport_groups", {})
         fused = {}
+        fused_time = {}  # real Z1–Z7 time per sport group (Sweet Spot excluded)
 
         debug(context, f"[T2-FUSED] 🔍 Starting fused zone computation")
         debug(context, f"[T2-FUSED] df_events shape={df_events.shape}")
@@ -794,6 +796,7 @@ def compute_derived_metrics(df_events, context):
             # Aggregate and normalize
             dist = (fused_df.sum() / total * 100).round(1).to_dict()
             fused[sport_group] = dist
+            fused_time[sport_group] = float(total)
 
             # --- Sanity check: warn if both HR and Power > 0
             hr_sum = sum(v for k, v in dist.items() if k.startswith("hr_z"))
@@ -809,7 +812,7 @@ def compute_derived_metrics(df_events, context):
 
         # --- Outcome
         if fused:
-            dominant = max(fused.keys(), key=lambda k: sum(fused[k].values()))
+            dominant = max(fused.keys(), key=lambda k: fused_time.get(k, 0.0))
             context["zone_dist_fused"] = fused
             context["polarisation_sport"] = dominant
             debug(context, f"[T2-FUSED] ✅ Fused zones computed → sports={list(fused.keys())}, dominant={dominant}")
@@ -829,7 +832,12 @@ def compute_derived_metrics(df_events, context):
 
         df = df_events.copy()
 
-        # Operate ONLY on fused columns (already exclusive per activity)
+        # Endurance sports only (same scope as the per-sport fused loop above)
+        excluded_types = set(CHEAT_SHEET.get("sport_groups", {}).get("Excluded", []))
+        if "type" in df.columns and excluded_types:
+            df = df[~df["type"].isin(excluded_types)]
+
+        # Operate ONLY on fused columns (power and HR copies; exclusivity applied below)
         fused_cols = [c for c in df.columns if c.startswith("_fused_")]
 
         if not fused_cols:
@@ -838,6 +846,14 @@ def compute_derived_metrics(df_events, context):
 
         else:
             zdf = df[fused_cols].apply(pd.to_numeric, errors="coerce").fillna(0)
+
+            # Power where available, HR otherwise: an activity with power data does not
+            # also count its HR zone time (otherwise it is counted twice).
+            pcols = [c for c in fused_cols if c.startswith("_fused_power_z")]
+            hcols = [c for c in fused_cols if c.startswith("_fused_hr_z")]
+            if pcols and hcols:
+                has_power = zdf[pcols].sum(axis=1) > 0
+                zdf.loc[has_power, hcols] = 0.0
 
             # Sweet Spot overlaps Z3/Z4, so keep it out of the total (it is still reported).
             ss_cols = [c for c in fused_cols if c.endswith("power_z8") or "sweetspot" in c]

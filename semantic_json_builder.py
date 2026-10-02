@@ -1486,27 +1486,26 @@ def build_semantic_json(context):
             return block
 
         # --- Fused (sport-specific HR+Power)
-        # No fallback to another metric: if the fused index isn't computed, leave it out.
+        # No fallback to another metric: when the index isn't computed its value is null,
+        # but the variant is always emitted so the JSON keys stay the same.
         pi_fused = context.get("Polarisation_fused")
-        if pi_fused is not None:
-            polarisation_variants["fused"] = build_variant(
-                "Polarisation_fused",
-                pi_fused,
-                f"Fused HR+Power",
-                "zones.fused",
-            )
-            debug(context, f"[SEMANTIC] Polarisation_fused={pi_fused}")
+        polarisation_variants["fused"] = build_variant(
+            "Polarisation_fused",
+            pi_fused,
+            f"Fused HR+Power",
+            "zones.fused",
+        )
+        debug(context, f"[SEMANTIC] Polarisation_fused={pi_fused}")
 
         # --- Combined (multi-sport HR+Power)
         pi_combined = context.get("Polarisation_combined")
-        if pi_combined is not None:
-            polarisation_variants["combined"] = build_variant(
-                "Polarisation_combined",
-                pi_combined,
-                "Power where available, HR otherwise (multi-sport weighted)",
-                "zones.combined",
-            )
-            debug(context, f"[SEMANTIC] Polarisation_combined={pi_combined}")
+        polarisation_variants["combined"] = build_variant(
+            "Polarisation_combined",
+            pi_combined,
+            "Power where available, HR otherwise (multi-sport weighted)",
+            "zones.combined",
+        )
+        debug(context, f"[SEMANTIC] Polarisation_combined={pi_combined}")
 
         # --- Inject into semantic
         if polarisation_variants:
