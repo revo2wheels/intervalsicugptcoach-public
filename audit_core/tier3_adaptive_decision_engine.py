@@ -5,6 +5,7 @@ ADE_VERSION = "ade_v2.21"
 from datetime import datetime, timedelta
 from audit_core.utils import debug
 from audit_core.event_readiness import estimate_event_ctl_atl_from_calendar_ewma
+from semantic_json_builder import classify_race_type, RACE_PROFILES
 
 def _extract_target_event(ev):
     name = (ev.get("name") or "").lower()
@@ -403,6 +404,8 @@ def run_adaptive_decision_engine(context):
 
             if t["dt"].date() < today:
                 continue
+
+            t["race_profile"] = RACE_PROFILES.get(classify_race_type(ev, (ev.get("name") or "").lower()), {})
 
             candidates.append(t)
 

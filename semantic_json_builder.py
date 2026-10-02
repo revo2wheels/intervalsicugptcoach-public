@@ -1240,6 +1240,119 @@ def build_insights(semantic):
 
 
 
+def classify_race_type(e, name):
+
+    sport = str(e.get("type") or "").lower()
+
+    moving_time = e.get("moving_time")
+    distance = e.get("distance")
+
+    duration_h = (
+        float(moving_time) / 3600
+        if moving_time is not None
+        else None
+    )
+
+    distance_km = (
+        float(distance) / 1000
+        if distance is not None
+        else None
+    )
+
+    # -----------------------------
+    # 🚴 RIDING
+    # -----------------------------
+    if "ride" in sport:
+
+        # Explicit intent — strongest signal
+        if any(k in name for k in ["tt", "time trial"]):
+            return "tt"
+
+        if any(k in name for k in ["crit", "circuit", "loop"]):
+            return "crit"
+
+        if any(k in name for k in [
+            "fondo",
+            "gran fondo",
+            "sportive",
+            "etape",
+            "étape"
+        ]):
+            return "fondo"
+
+        # Structured duration fallback — only when duration exists
+        if duration_h is not None:
+            if duration_h >= 3.5:
+                return "fondo"
+
+            if duration_h <= 1.5:
+                return "short_ride"
+
+            return "tt"
+
+        # No race-shape evidence
+        return "ride_general"
+
+    # -----------------------------
+    # 🏃 RUNNING
+    # -----------------------------
+    if "run" in sport:
+
+        # Distance classification only when distance exists
+        if distance_km is not None:
+            if distance_km >= 30:
+                return "run_marathon"
+            if distance_km >= 18:
+                return "run_half"
+            if distance_km <= 6:
+                return "run_5k"
+            if distance_km <= 12:
+                return "run_10k"
+
+        return "run_general"
+
+    return "unknown"
+
+
+RACE_PROFILES = {
+    "fondo": {
+        "priority_systems": ["durability", "aerobic"],
+        "targets": {"tsb": [5, 15], "ndli": "low", "wdrm": "low-moderate"},
+        "durability_bounds": {"excellent": 3, "good": 5, "moderate": 8}
+    },
+    "tt": {
+        "priority_systems": ["threshold"],
+        "targets": {"tsb": [8, 18], "ndli": "low", "wdrm": "low"},
+        "durability_bounds": {"excellent": 2, "good": 4, "moderate": 6}
+    },
+    "crit": {
+        "priority_systems": ["anaerobic", "neural"],
+        "targets": {"tsb": [10, 20], "ndli": "controlled", "wdrm": "moderate"},
+        "durability_bounds": {"excellent": 4, "good": 7, "moderate": 10}
+    },
+    "run_marathon": {
+        "priority_systems": ["durability"],
+        "targets": {"tsb": [5, 15], "ndli": "low", "wdrm": "low"},
+        "durability_bounds": {"excellent": 3, "good": 5, "moderate": 8}
+    },
+    "run_half": {
+        "priority_systems": ["durability"],
+        "targets": {"tsb": [5, 15], "ndli": "low", "wdrm": "low"},
+        "durability_bounds": {"excellent": 3, "good": 5, "moderate": 8}
+    },
+    "run_10k": {
+        "priority_systems": ["vo2"],
+        "targets": {"tsb": [8, 18], "ndli": "controlled", "wdrm": "moderate"},
+        "durability_bounds": {"excellent": 4, "good": 7, "moderate": 10}
+    },
+    "run_5k": {
+        "priority_systems": ["anaerobic", "vo2"],
+        "targets": {"tsb": [10, 20], "ndli": "controlled", "wdrm": "moderate"},
+        "durability_bounds": {"excellent": 5, "good": 8, "moderate": 12}
+    }
+}
+
+
 # ---------------------------------------------------------
 # MAIN BUILDER
 # ---------------------------------------------------------
@@ -3030,118 +3143,6 @@ def build_semantic_json(context):
         # ---------------------------------------------------------
         # 🎯 EVENT TARGETS (COMPRESSED FOR LLM) + RACE CLASSIFICATION
         # ---------------------------------------------------------
-
-        def classify_race_type(e, name):
-
-            sport = str(e.get("type") or "").lower()
-
-            moving_time = e.get("moving_time")
-            distance = e.get("distance")
-
-            duration_h = (
-                float(moving_time) / 3600
-                if moving_time is not None
-                else None
-            )
-
-            distance_km = (
-                float(distance) / 1000
-                if distance is not None
-                else None
-            )
-
-            # -----------------------------
-            # 🚴 RIDING
-            # -----------------------------
-            if "ride" in sport:
-
-                # Explicit intent — strongest signal
-                if any(k in name for k in ["tt", "time trial"]):
-                    return "tt"
-
-                if any(k in name for k in ["crit", "circuit", "loop"]):
-                    return "crit"
-
-                if any(k in name for k in [
-                    "fondo",
-                    "gran fondo",
-                    "sportive",
-                    "etape",
-                    "étape"
-                ]):
-                    return "fondo"
-
-                # Structured duration fallback — only when duration exists
-                if duration_h is not None:
-                    if duration_h >= 3.5:
-                        return "fondo"
-
-                    if duration_h <= 1.5:
-                        return "short_ride"
-
-                    return "tt"
-
-                # No race-shape evidence
-                return "ride_general"
-
-            # -----------------------------
-            # 🏃 RUNNING
-            # -----------------------------
-            if "run" in sport:
-
-                # Distance classification only when distance exists
-                if distance_km is not None:
-                    if distance_km >= 30:
-                        return "run_marathon"
-                    if distance_km >= 18:
-                        return "run_half"
-                    if distance_km <= 6:
-                        return "run_5k"
-                    if distance_km <= 12:
-                        return "run_10k"
-
-                return "run_general"
-
-            return "unknown"
-
-
-        RACE_PROFILES = {
-            "fondo": {
-                "priority_systems": ["durability", "aerobic"],
-                "targets": {"tsb": [5, 15], "ndli": "low", "wdrm": "low-moderate"},
-                "durability_bounds": {"excellent": 3, "good": 5, "moderate": 8}
-            },
-            "tt": {
-                "priority_systems": ["threshold"],
-                "targets": {"tsb": [8, 18], "ndli": "low", "wdrm": "low"},
-                "durability_bounds": {"excellent": 2, "good": 4, "moderate": 6}
-            },
-            "crit": {
-                "priority_systems": ["anaerobic", "neural"],
-                "targets": {"tsb": [10, 20], "ndli": "controlled", "wdrm": "moderate"},
-                "durability_bounds": {"excellent": 4, "good": 7, "moderate": 10}
-            },
-            "run_marathon": {
-                "priority_systems": ["durability"],
-                "targets": {"tsb": [5, 15], "ndli": "low", "wdrm": "low"},
-                "durability_bounds": {"excellent": 3, "good": 5, "moderate": 8}
-            },
-            "run_half": {
-                "priority_systems": ["durability"],
-                "targets": {"tsb": [5, 15], "ndli": "low", "wdrm": "low"},
-                "durability_bounds": {"excellent": 3, "good": 5, "moderate": 8}
-            },
-            "run_10k": {
-                "priority_systems": ["vo2"],
-                "targets": {"tsb": [8, 18], "ndli": "controlled", "wdrm": "moderate"},
-                "durability_bounds": {"excellent": 4, "good": 7, "moderate": 10}
-            },
-            "run_5k": {
-                "priority_systems": ["anaerobic", "vo2"],
-                "targets": {"tsb": [10, 20], "ndli": "controlled", "wdrm": "moderate"},
-                "durability_bounds": {"excellent": 5, "good": 8, "moderate": 12}
-            }
-        }
 
         event_targets = {
             "exists": False,
