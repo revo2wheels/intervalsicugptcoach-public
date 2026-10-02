@@ -10,7 +10,8 @@ The audit outputs—derived from **Tier-2 actions** such as **ACWR**, **Strain**
 ## 🧭 Seiler 80/20 Polarisation Model
 
 ### Framework Description
-The **Seiler 80/20 Polarisation Model** proposes that approximately **80%** of endurance training should be performed at **low intensity (Zone 1)** and **20%** at **high intensity (Zone 3)**, with minimal training in the **moderate intensity (Zone 2)** range.  
+The **Seiler 80/20 Polarisation Model** proposes that approximately **80%** of endurance training should be performed at **low intensity (Zone 1)** and **20%** at **high intensity (Zone 3)**, with minimal training in the **moderate intensity (Zone 2)** range. Seiler's 80/20 counts **sessions, not minutes** (Seiler 2010).  
+The engine collapses the 7 zones into Seiler's 3: **Seiler Z1 = Z1+Z2** (below LT1), **Seiler Z2 = Z3+Z4** (LT1–LT2), **Seiler Z3 = Z5–Z7** (above LT2 ≈ FTP), the same grouping as Intervals.icu's Polarization Index, renormalised so Z1+Z2+Z3 = 1.  
 This structure maximises aerobic development, improves metabolic efficiency, and reduces threshold fatigue.
 
 ---
@@ -25,11 +26,13 @@ This structure maximises aerobic development, improves metabolic efficiency, and
 - **ACWR** *(Tier-2)* — Ensures week-over-week progression is safe (`EWMA₇d / EWMA₂₈d`).
 
 **Derived Intensity Metrics:**
-- **Polarisation (Ratio)** — `(Z1 + Z3) / (2 × Z2)`  
-  Displays as a percentage (e.g., 0.78 → 78%).  
-  Indicates the relative dominance of low- and high-intensity work compared to moderate intensity.
-- **PolarisationIndex (Normalized)** — `(Z1% + Z2%) / Total%`  
-  Internal 0–1 scale showing overall aerobic bias and time spent below LT2.
+- **Polarisation (Seiler 3-zone distribution)** — value = `% of time in Seiler Z1` (Seiler 2010; Stöggl & Sperlich 2015).  
+  `semantic_state` = distribution type from zone order (Intervals.icu rules, checked in order): **hiit** (Z3 > Z2 and Z3 > 0.499 × (Z1+Z2)); **polarised** (Z3 > Z2 and Z1 > Z2); **base** (Z1 > 3.99 × Z2 and Z1 > 3 × (Z2+Z3)); **pyramidal** (1.4 × Z2 < Z1 < 3.01 × Z2 and Z2 > 1.4 × Z3); **threshold** (Z1 < 4 × Z2 and Z2 > 0.5 × Z3); otherwise **unique**.  
+  Informational (no good/bad bands). Power-based; Ride HR zones only when no power.
+- **PolarisationIndex (Treff et al. 2019)** — `log10((Z1 / Z2) × Z3 × 100)` on the 3-zone fractions.  
+  If Z2 = 0: `log10(Z1 / 0.01 × (Z3 − 0.01) × 100)`; if Z3 = 0: PI = 0; if Z3 > Z1: not valid (null).  
+  PI > 2.00 = polarised, ≤ 2.00 = not polarised (informational). Power-based; Ride HR zones only when no power.  
+  **Polarisation_fused** applies the same index to `zones.fused` (dominant sport; power where available, HR otherwise) and **Polarisation_combined** to `zones.combined` (all endurance sports; lower-confidence summary), with the same > 2.00 cut-off.
 - **QualitySessionBalance** — Measures the relationship between high-quality (interval) sessions and recovery sessions.
 
 ---
@@ -38,8 +41,8 @@ This structure maximises aerobic development, improves metabolic efficiency, and
 
 | Metric | Purpose | Target Range |
 |:--|:--|:--|
-| **Polarisation (Ratio)** | Visible Seiler 80/20 ratio for time-in-zone | 0.75–0.9 (optimal) |
-| **PolarisationIndex** | Normalized factor (0–1) showing aerobic bias | ≥ 0.75 = polarised, < 0.6 = threshold-heavy |
+| **Polarisation** | Seiler Z1 time share + distribution type (hiit / polarised / base / pyramidal / threshold / unique) | Informational (no bands) |
+| **PolarisationIndex** | Treff PI on Seiler 3-zone fractions | > 2.00 = polarised, ≤ 2.00 = not polarised (informational) |
 | **Monotony** | Load variation (day-to-day balance) | ≤ 2.0 |
 | **Strain** | Cumulative training stress | ≤ 3500 |
 | **ACWR** | Acute:Chronic Load Ratio | 0.8–1.3 productive |
@@ -51,12 +54,10 @@ This structure maximises aerobic development, improves metabolic efficiency, and
 
 - **ACWR** governs progression rate — maintaining safe 7d:28d ratios (<1.3).  
 - **Strain** combined with **Monotony** ensures variability in load while keeping total stress below overload thresholds.  
-- **Polarisation Ratio** and **Polarisation Index** are evaluated together:  
-  - A **high ratio** (>0.75) with **low index** (<0.6) signals overemphasis on threshold work.  
-  - Balanced 80/20 occurs when both metrics align (ratio ≥ 0.75 and index ≥ 0.7).  
-- **Action Logic** from `tier2_actions.py` automatically recommends adjustments:  
-  - “⚠ Polarisation low (<70%) — increase Z1–Z2 share”  
-  - “✅ Polarisation optimal (78%) — maintain current structure.”
+- **Polarisation** and **Polarisation Index** are read together:  
+  - The **distribution type** (e.g. threshold or pyramidal) shows where moderate (Seiler Z2) work dominates.  
+  - **PI > 2.00** confirms a polarised distribution; ≤ 2.00 means not polarised. Neither is scored good/bad.  
+- **Action Logic** from `tier2_actions.py` treats both as informational context for intensity-distribution advice, not as pass/fail thresholds.
 
 ---
 
@@ -67,15 +68,15 @@ This structure maximises aerobic development, improves metabolic efficiency, and
 | **ACWR** | Load Management | Acute-to-chronic workload monitoring |
 | **Monotony** | Load Variability | Daily training variation index |
 | **Strain** | Training Load | Composite of total volume × monotony |
-| **Polarisation (Ratio)** | Training Intensity Distribution | Visible 80/20 ratio (% displayed) |
-| **PolarisationIndex** | Internal Validation (Hidden) | Normalized intensity factor (0–1) |
+| **Polarisation** | Training Intensity Distribution | % time in Seiler Z1 + distribution type |
+| **PolarisationIndex** | Training Intensity Distribution | Treff PI (> 2.00 = polarised) |
 | **QualitySessionBalance** | Session Quality | Ratio of intense vs recovery sessions |
 
 ---
 
 ### 🧠 Coaching Implication
-> “If **Polarisation <0.7**, increase Z1 (aerobic) volume and separate low/high-intensity days clearly.  
-> Maintain **Polarisation ≥1.0** (≈80/20) for optimal endurance adaptation and recovery efficiency.”
+> “If the distribution is **threshold** or **PI ≤ 2.00** and a polarised structure is the goal, shift moderate (Seiler Z2) time into Z1 and separate low/high-intensity days clearly.  
+> Judge 80/20 by **sessions, not minutes** (Seiler 2010); the metrics are informational, not good/bad scores.”
 
 ---
 

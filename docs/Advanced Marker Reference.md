@@ -63,13 +63,18 @@ Apply these scaling rows for:
 ## ⚡ Efficiency & Endurance Metrics  
 
 ### Polarisation Index  
-**Definition:** Quantifies training intensity distribution across zones.  
+**Definition:** Treff et al. 2019 index on Seiler 3-zone fractions (Z1 = Z1+Z2, Z2 = Z3+Z4, Z3 = Z5–Z7; renormalised to sum to 1).  
+**Calculation:** PI = log10((Z1 / Z2) × Z3 × 100). If Z2 = 0: log10(Z1 / 0.01 × (Z3 − 0.01) × 100). Power-based; Ride HR zones only when no power.  
 
 | Status | Threshold | Coaching Insight |
 |--------|-----------|------------------|
-| ✅ Green | ≥0.8     | Properly polarised (low + high intensity, little mid-zone) |
-| ⚠️ Amber | 0.6–0.8 | Mid-zone creep (too much tempo/threshold) |
-| ❌ Red   | <0.6     | Threshold-heavy, poor long-term adaptation |
+| Polarised | PI > 2.00 | Polarised distribution |
+| Not polarised | PI ≤ 2.00 | Not polarised (informational) |
+| PI = 0 | Z3 = 0 | No time above LT2, by definition |
+| Not calculated | Z3 > Z1 | Index not valid (null) |
+
+*Informational only — no good/bad bands. `Polarisation_fused` (dominant sport) and `Polarisation_combined` (all endurance sports, lower confidence) use the same index and > 2.00 cut-off.*  
+References: [Treff et al. 2019](https://pubmed.ncbi.nlm.nih.gov/31249533/)
 
 ---
 
@@ -85,14 +90,18 @@ Apply these scaling rows for:
 ---
 
 ### Training Distribution Model  
-**Definition:** Classification of training balance across intensity zones.  
+**Definition:** Seiler 3-zone distribution type (Seiler Z1 = Z1+Z2, Z2 = Z3+Z4, Z3 = Z5–Z7), using Intervals.icu's rules. `Polarisation` value = % of time in Seiler Z1. Power-based; Ride HR zones only when no power.  
 
-- **Types:**  
-  - Polarised (80% Z1/Z2, 20% Z4/Z5).  
-  - Pyramidal (Z1/Z2 heavy, some Z3, less Z4/Z5).  
-  - Threshold-heavy (excessive Z3/Z4).  
+- **Types (checked in this order):**  
+  - HIIT (Z3 > Z2 and Z3 > 0.499 × (Z1+Z2)).  
+  - Polarised (Z3 > Z2 and Z1 > Z2).  
+  - Base (Z1 > 3.99 × Z2 and Z1 > 3 × (Z2+Z3)).  
+  - Pyramidal (1.4 × Z2 < Z1 < 3.01 × Z2 and Z2 > 1.4 × Z3).  
+  - Threshold (Z1 < 4 × Z2 and Z2 > 0.5 × Z3).  
+  - Unique (none of the above).  
 
-*Note: Classification only — no fixed thresholds.*  
+*Note: Classification only — no good/bad bands. Seiler's "80/20" counts sessions, not minutes. Sweet Spot overlaps Z3/Z4 and is not added to the Z1–Z7 total.*  
+References: [Seiler 2010](https://pubmed.ncbi.nlm.nih.gov/20861519/), [Stöggl & Sperlich 2015](https://pubmed.ncbi.nlm.nih.gov/26578968/)
 
 ---
 
@@ -128,7 +137,7 @@ Knowledge: Strictly follows **Knowledge Reference Rule** (icons, thresholds, def
   {otherKmBlock: ({otherKm} km other)}  
 - **Load:** {totalTss} TSS, CTL {ctlStart}→{ctlEnd}, ATL {atlStart}→{atlEnd}, Form {formStart}→{formEnd}  
 - **Recovery:** HRV {hrvStart}→{hrvEnd}, RestHR {restingHrStart}→{restingHrEnd}, Sleep avg {sleepHoursAvg}h  
-- **Fitness:** VO₂max {vo2maxStart}→{vo2maxEnd}, PerfCond {perfCondMin}→{perfCondMax}, Cycling Decoup {avgPwHrDecoupling}%, Running Decoup {avgPaHrDecoupling}%, Polarisation {polarisationIndex}  
+- **Fitness:** VO₂max {vo2maxStart}→{vo2maxEnd}, PerfCond {perfCondMin}→{perfCondMax}, Cycling Decoup {avgPwHrDecoupling}%, Running Decoup {avgPaHrDecoupling}%, Polarisation Index (Treff) {polarisationIndex}  
 - **Subjective:** Feel ratings {feelingCounts}, RPE avg {avgRpe}, Feel trend {feelTrend}, Mood trend {moodTrend}  
 - **Advanced:** ACWR {acwrRaw} ({acwrEval}), Monotony {monotonyRaw} ({monotonyEval}), Strain {strainRaw} ({strainEval}), Recovery Index {recoveryIndexRaw} ({recoveryIndexEval})
 
@@ -144,7 +153,7 @@ Knowledge: Strictly follows **Knowledge Reference Rule** (icons, thresholds, def
 
 ### Unified Metric References
 Include optional derived markers if data present:
-- Training Distribution: classify Polarised / Pyramidal / Threshold-heavy (Z1–Z3 ratio).  
+- Training Distribution: classify Seiler 3-zone type — HIIT / Polarised / Base / Pyramidal / Threshold / Unique.  
 - Durability Index (>2h decoupling): Stable / Declining / Improving.  
 - VO₂max & PerfCond: trend if logged else “no data”.  
 - Mood / Stress / Soreness: daily trend if wellness logged else “no data”.  

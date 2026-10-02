@@ -1588,34 +1588,47 @@ def expand_zones(df, field, prefix):
     import numpy as np, pandas as pd, json
 
     def safe_parse(x):
+        """
+        Return {column: secs}. Intervals sends power zone times as
+        [{"id": "Z1", "secs": ...}, ..., {"id": "SS", "secs": ...}]. Map them by id
+        (Zn → zn, SS → z8, the engine's Sweet Spot column) rather than by position, so an
+        athlete with fewer than 7 zones doesn't get Sweet Spot counted as a top zone.
+        Plain number lists (HR zone times) stay positional.
+        """
         if x in [None, "null", "None", np.nan]:
-            return []
+            return {}
         if isinstance(x, str):
             try:
                 x = json.loads(x)
             except Exception:
-                return []
-        if isinstance(x, list):
-            flat = []
-            for z in x:
-                if isinstance(z, dict):
-                    flat.append(z.get("secs", 0))
-                elif isinstance(z, (int, float)):
-                    flat.append(z)
-            return flat
-        return []
+                return {}
+        if not isinstance(x, list):
+            return {}
+        ids = {str(z.get("id", "")).strip().upper() for z in x if isinstance(z, dict)}
+        out = {}
+        for i, z in enumerate(x):
+            if isinstance(z, dict):
+                zid = str(z.get("id", "")).strip().upper()
+                if zid.startswith("Z") and zid[1:].isdigit():
+                    key = f"z{int(zid[1:])}"
+                elif zid == "SS":
+                    key = "z8" if "Z8" not in ids else "sweetspot"
+                else:
+                    key = f"z{i + 1}"  # no usable id: keep the positional mapping
+                out[key] = out.get(key, 0) + (z.get("secs", 0) or 0)
+            elif isinstance(z, (int, float)):
+                out[f"z{i + 1}"] = z
+        return out
 
     if field not in df.columns or df.empty:
         return df
 
     parsed = df[field].apply(safe_parse)
-    max_len = parsed.map(len).max() if not parsed.empty else 0
-    if max_len == 0:
+    if parsed.empty or not parsed.map(len).max():
         return df
 
-    z = pd.DataFrame(parsed.tolist(), index=df.index)
-    z = z.reindex(columns=range(max_len)).fillna(0).astype(float)
-    z.columns = [f"{prefix}_z{i+1}" for i in range(max_len)]
+    z = pd.DataFrame(parsed.tolist(), index=df.index).fillna(0).astype(float)
+    z.columns = [f"{prefix}_{c}" for c in z.columns]
 
     base = df.drop(columns=[field])
 

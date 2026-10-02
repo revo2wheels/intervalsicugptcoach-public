@@ -18,7 +18,7 @@ With deep expertise across **triathlon, cycling, running, and endurance sports**
 |:--|:--|
 | **Load Management** | ACWR, Strain, Monotony (Foster), CTL/ATL/Form, TRIMP (Banister), W′/CP modeling (Skiba), load balance validation |
 | **Recovery Analysis** | Recovery Index (HRV + RestHR + Form), fatigue detection, sleep quality integration, readiness tracking (Noakes model), subjective recovery scaling |
-| **Training Quality** | Polarisation Index (Seiler 80/20), Durability Index (Sandbakk), Session Quality Ratio, FatOxidation Index (San Millán), training monotony harmonisation |
+| **Training Quality** | Polarisation Index (Treff 2019; Seiler 3-zone), Durability Index (Sandbakk), Session Quality Ratio, FatOxidation Index (San Millán), training monotony harmonisation |
 | **Fat-Oxidation & Endurance Physiology** | Zone 2 metabolic profiling (Iñigo San Millán), HR–Power decoupling, FatOxidation Index computation, mitochondrial efficiency modeling, Recovery–Polarisation interaction mapping |
 | **Performance Benchmarking & Periodisation** | FTP/LT testing (Coggan), BenchmarkIndex, SpecificityIndex, consistency tracking, microcycle (3:1 / 2:1) load ratios, age-adapted ATL modeling (Joe Friel) |
 | **Frameworks Applied** | Seiler 80/20 Polarisation • Banister TRIMP • Foster Monotony–Strain • Iñigo San Millán Zone 2 • Joe Friel Periodisation • Sandbakk Durability • Skiba W′/Critical Power • Coggan Power Zones • Noakes Central Governor • Hybrid Polarised–Sweet Spot |
@@ -45,7 +45,7 @@ With deep expertise across **triathlon, cycling, running, and endurance sports**
 - Included in weekly and seasonal reports (Section Advanced → Efficiency).  
 - Uses existing markers:  
   - `avgDecoupling` (Durability Index)  
-  - `PolarisationIndex` (distribution compliance)  
+  - `PolarisationIndex` (Treff PI, informational)  
   - `RecoveryIndex` (post-session adaptation)  
   - `IF`, `RPE`, `Feel` (effort validation)  
 - Classified:  
@@ -152,9 +152,10 @@ Sessions flagged with repeated high drift or elevated RPE should be classed as g
 
 ### 🧩 Seiler 80/20 Polarisation — Intensity Distribution & Quality Balance  
 \[
-PolarisationIndex = \frac{(Z1\% + Z3\%) - Z2\%}{100}
+PolarisationIndex = \log_{10}\left(\frac{Z1}{Z2} \times Z3 \times 100\right)
 \]  
-✅ > 0.50 = polarised ⚠️ 0.30–0.49 = mixed ❌ < 0.30 = threshold-biased  
+Seiler 3-zone fractions (Z1 = Z1+Z2, Z2 = Z3+Z4, Z3 = Z5–Z7, renormalised). Z2 = 0 → log₁₀(Z1 / 0.01 × (Z3 − 0.01) × 100); Z3 = 0 → 0; Z3 > Z1 → not calculated.  
+PI > 2.00 = polarised; PI ≤ 2.00 = not polarised (informational, Treff et al. 2019)  
 
 ### ⚙️ Banister TRIMP — Load & ACWR  
 \[

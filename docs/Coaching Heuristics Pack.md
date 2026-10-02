@@ -38,10 +38,18 @@ Report blocked if Σ(Event km) ≠ Weekly km or Σ(TSS) ≠ Weekly TSS.
 
 ## ⚡ Training Quality & Seiler’s Principles
 
-**Polarisation Index**  
-- Green ≥ 0.8 (≥ 70 % Z1/Z2, ≤ 20 % tempo, ~10 % high)  
-- Amber 0.6 – 0.8 (mid-zone creep)  
-- Red < 0.6 (threshold-heavy)  
+**Seiler 3-zone model** (Seiler 2010; Stöggl & Sperlich 2015)  
+- Seiler Z1 = Z1+Z2 (below LT1), Seiler Z2 = Z3+Z4 (LT1–LT2), Seiler Z3 = Z5–Z7 (above LT2 ≈ FTP); fractions renormalised to sum to 1 (same grouping as Intervals.icu's Polarization Index).  
+- Sweet Spot overlaps Z3/Z4: reported as its own % of the Z1–Z7 total, never added to it (Z1–Z7 = 100 %).  
+- **Polarisation** = % time in Seiler Z1; state = distribution type, checked in order: hiit → polarised → base → pyramidal → threshold → unique (Intervals.icu rules). Informational, no good/bad bands. Power-based; Ride HR zones only when no power.  
+- Seiler's "80/20" counts sessions, not minutes.  
+
+**Polarisation Index** (Treff et al. 2019)  
+- PI = log10((Z1 / Z2) × Z3 × 100) on the 3-zone fractions. Z2 = 0 → log10(Z1 / 0.01 × (Z3 − 0.01) × 100); Z3 = 0 → PI = 0; Z3 > Z1 → not calculated.  
+- PI > 2.00 = polarised; ≤ 2.00 = not polarised (informational, no good/bad band).  
+- Power-based (Ride HR zones only when no power). Polarisation_fused = same index on the dominant sport (power, else HR); Polarisation_combined = same index across all endurance sports (lower confidence).  
+
+**ZQI** = % time in Seiler zone 3 (Z5–Z7, above LT2 ≈ FTP). Informational, no good/bad bands (none are published); for reference, elites typically spend ~1–8 % of time above LT2 by time in zone, and polarised blocks ~15–20 % by session goal.  
 
 **Session Goals (Seiler Framework)**  
 - Long: 2–6 h low-intensity → build durability.  
@@ -91,7 +99,6 @@ ATL scale = 0.95 (< 35 y), 0.85 (35–50 y), 0.75 (> 50 y).
 - CTL > 100 sustained → strong base.  
 - VO₂max stable / ↑.  
 - HRV rebounds post-deload.  
-- Polarisation ≥ 0.8 (≥ 70 % Z1/Z2).  
 - Quality Session Balance achieved.  
 - Durability Index ≤ 5 %.
 
@@ -134,7 +141,7 @@ ATL scale = 0.95 (< 35 y), 0.85 (35–50 y), 0.75 (> 50 y).
 
 ### Gran Fondo / Road Cycling  
 - Volume 600–900 TSS/week.  
-- Polarisation > 0.9 typ.  
+- Polarisation: informational (no target band).  
 - Taper: 7–10 days.  
 
 ### Marathon  
@@ -149,7 +156,7 @@ ATL scale = 0.95 (< 35 y), 0.85 (35–50 y), 0.75 (> 50 y).
 
 ### Short-Course Tri / TT / 10 k  
 - Volume 8–14 h, intensity high.  
-- Polarisation 0.7–0.8 typ.  
+- Polarisation: informational (no target band).  
 - Taper: 5–7 days.  
 
 ---

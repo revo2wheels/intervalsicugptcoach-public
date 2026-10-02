@@ -1926,14 +1926,9 @@ COACH_PROFILE = {
             "related_metrics": ["FatOxEfficiency", "GR"]
         },
         "ZQI": {
-            "framework": "Seiler Intensity Distribution (power-zone mapped)",
-            "formula": "% time in Z4–Z7 (high-intensity share; not Seiler zone 3, which is Z5–Z7)",
-            "criteria": {
-                "low": "<5",
-                "optimal": "5–15",
-                "high": "15–25",
-                "excessive": ">25"
-            }
+            "framework": "Seiler 3-Zone Intensity Distribution (zone 3 share)",
+            "formula": "% time in Seiler zone 3 (power Z5–Z7, above LT2 ≈ FTP)",
+            "criteria": {}
         },
         "DurabilityIndex": {
             "framework": "Sandbakk Durability",

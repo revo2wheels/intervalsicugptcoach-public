@@ -42,11 +42,6 @@ CHEAT_SHEET["thresholds"] = {
     "GR": {"green": (0.5, 2.0), "amber": (0.3, 3.0)},         # Glucose Ratio
     "MES": {"green": (20, 100), "amber": (10, 120)},          # Metabolic Efficiency Score
     "ACWR_Risk": {"green": (0, 1), "amber": (1, 1)},          # Placeholder to silence undefined
-    "ZQI": {
-        "green": (5, 15),
-        "amber": (3, 5),
-        "red": (0, 3)
-    },
     "Durability": {"green": (0.9, 1.2),"amber": (0.7, 0.9),"red": (0.0, 0.7)},
     "IFDrift": {"green": (0.0, 0.05), "amber": (0.05, 0.10), "red": (0.10, 1.0)},
     "Lactate": {"lt1_mmol": 2.0,"lt2_mmol": 4.0,"corr_threshold": 0.6},
@@ -906,7 +901,7 @@ CHEAT_SHEET["context"] = {
         "A value near 0% indicates stable load, a positive value indicates recent "
         "load accumulation, and a negative value indicates unloading."
     ),
-    "ZQI": "Zone Quality Index (%) 5-15 high-intensity time is normal <3% too easy, >20% too intense or erratic pacing.",
+    "ZQI": "Zone Quality Index: % of training time in Seiler zone 3 (power Z5–Z7, above LT2 ≈ FTP; Ride HR zones only when no power). Informational, with no good/bad bands. For reference, elite endurance athletes typically spend about 1–8 % of their time above LT2 measured by time in zone (Seiler & Tønnessen 2009; Sylta et al. 2014); polarised blocks reach about 15–20 % when counted by session goal.",
     "FatOxEfficiency": "0.4–0.8 means balanced fat oxidation; lower = carb dependence.",
     "FOxI": "FatOx index %; higher values mean more efficient aerobic base.",
     "CUR": "Carbohydrate Utilisation Ratio; 30–70 indicates balanced metabolic use.",
@@ -1067,7 +1062,7 @@ CHEAT_SHEET["coaching_links"] = {
         "to the prior baseline — monitor recovery, intensity density, and planned load."
     ),
     "FatOxEfficiency": "If FatOxEfficiency is low (<0.6), focus on improving aerobic base with longer, low-intensity efforts.",
-    "ZQI": "If ZQI > 20%, review pacing strategy; excessive high-intensity time could indicate erratic pacing or overtraining. Aim for 5-15% ZQI for balanced training.",
+    "ZQI": "Read ZQI with the Seiler distribution type and the training phase: low values are normal in base or recovery blocks; higher values are expected when high-intensity work is prescribed. Time in zone understates high intensity compared with counting sessions.",
     "FOxI": "If FOxI is increasing, continue to prioritize low-intensity work to enhance fat metabolism. If it decreases, consider increasing your Zone 2 training duration.",
     "CUR": "If CUR is outside the green zone (30-70), adjust carbohydrate intake and fueling strategy to ensure balanced metabolic use during long sessions.",
     "GR": "If GR exceeds 2.0, focus on reducing glycolytic intensity and increase aerobic work. Ensure sufficient recovery to avoid over-reliance on carbs.",

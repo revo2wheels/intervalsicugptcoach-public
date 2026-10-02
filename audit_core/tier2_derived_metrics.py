@@ -164,8 +164,8 @@ def compute_wellness_coverage(df_well, context=None):
 
 def compute_zone_intensity(df, context=None):
     """
-    Zone Quality Index (ZQI) — percentage of total training time spent in Z4–Z7 (high-intensity share;
-    not Seiler zone 3, which is Z5–Z7).
+    Zone Quality Index (ZQI) — percentage of total training time in Seiler zone 3 (Z5–Z7, above
+    LT2 ≈ FTP). Informational: no good/bad bands (none are published).
     Correctly scaled to 0–100% (not ×100 again) and includes detailed debug logging.
     """
     import pandas as pd, numpy as np
@@ -182,6 +182,13 @@ def compute_zone_intensity(df, context=None):
 
     # Convert to numeric safely
     zdf = df[zcols].apply(pd.to_numeric, errors="coerce").fillna(0)
+    # Power where available, HR otherwise: an activity with power data does not also
+    # count its HR zone time (otherwise it is counted twice).
+    pcols = [c for c in zdf.columns if c.lower().startswith("power_z")]
+    hcols = [c for c in zdf.columns if c.lower().startswith("hr_z")]
+    if pcols and hcols:
+        has_power = zdf[pcols].sum(axis=1) > 0
+        zdf.loc[has_power, hcols] = 0.0
     # Sweet Spot overlaps Z3/Z4, so it is not added to the total a second time.
     ss_cols = [c for c in zdf.columns if c.lower().endswith("power_z8") or "sweetspot" in c.lower()]
     total_time = float(np.nansum(zdf.drop(columns=ss_cols).to_numpy()))
@@ -189,10 +196,10 @@ def compute_zone_intensity(df, context=None):
         debug(context, "[ZQI] ⚠️ All zone values zero or missing.")
         return 0.0
 
-    # Sum high-intensity zones (Z4–Z7)
+    # Sum Seiler zone 3 (Z5–Z7, above LT2 ≈ FTP)
     high_time = float(sum(
         zdf[c].sum() for c in zdf.columns
-        if any(tag in c.lower() for tag in ("z4", "z5", "z6", "z7"))
+        if any(c.lower().endswith(tag) for tag in ("z5", "z6", "z7"))
     ))
 
     # Compute ratio and percent
@@ -203,7 +210,7 @@ def compute_zone_intensity(df, context=None):
     debug(context, (
         f"[ZQI] High-intensity computation:\n"
         f"       → Detected zone cols={zcols}\n"
-        f"       → High (Z4-Z7)={high_time:.2f}s, Total={total_time:.2f}s\n"
+        f"       → High (Z5-Z7)={high_time:.2f}s, Total={total_time:.2f}s\n"
         f"       → Ratio={zqi_ratio:.4f} → ZQI={zqi_percent:.1f}%"
     ))
 
@@ -937,9 +944,11 @@ def compute_derived_metrics(df_events, context):
                 zones = zblock["hr"]
 
         if zones:
-            total = sum(float(v) for v in zones.values())
+            # Sweet Spot overlaps Z3/Z4, so it stays out of the total; keys may or may not carry a prefix.
+            ss_keys = {"z8", "sweetspot", "SS", "power_z8", "power_sweetspot"}
+            total = sum(float(v) for k, v in zones.items() if k not in ss_keys)
             if total > 0:
-                high = sum(float(zones.get(z, 0)) for z in ["power_z4","power_z5","power_z6","power_z7","hr_z4","hr_z5","hr_z6","hr_z7"])
+                high = sum(float(zones.get(z, 0)) for z in ["z5", "z6", "z7", "power_z5", "power_z6", "power_z7", "hr_z5", "hr_z6", "hr_z7"])
                 zqi = round(high / total * 100, 1)
                 debug(context, f"[ZQI] 🩵 Recomputed from zone distributions → {zqi}% (High={high:.1f} / Total={total:.1f})")
                 context["ZQI"] = zqi

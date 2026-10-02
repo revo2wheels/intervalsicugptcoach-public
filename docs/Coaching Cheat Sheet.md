@@ -39,9 +39,10 @@ Unified interpretation and reporting framework for endurance performance metrics
 
 | Metric | Formula | Range | Target |
 |:--|:--|:--|:--|
-| **Polarization Index (PI)** | `(Z1% + Z3%) / (2 × Z2%)` | 0–3 | >1.0 = polarized; <1.0 = pyramidal |
+| **Polarisation (Seiler 3-zone)** | % of time in Seiler Z1; Seiler Z1 = Z1+Z2, Z2 = Z3+Z4, Z3 = Z5–Z7 (renormalised to 1) | 0–100 % | Type from zone order (Intervals.icu rules, in order): hiit, polarised, base, pyramidal, threshold, else unique. Informational, no good/bad band. Power-based; Ride HR zones only when no power |
+| **Polarization Index (PI)** | Treff 2019: `log10((Z1 / Z2) × Z3 × 100)` on Seiler 3-zone fractions. Z2 = 0 → `log10(Z1 / 0.01 × (Z3 − 0.01) × 100)`; Z3 = 0 → 0; Z3 > Z1 → not calculated | — | > 2.00 = polarised; ≤ 2.00 = not polarised (informational). Power-based; Ride HR only when no power. Fused (dominant sport) and combined (all endurance, lower confidence) use the same index and cut-off |
 | **Zone Distribution** | Based on Power or HR zones | — | Endurance ≥ 60 % Z1–Z2 |
-| **SS Zone Fraction (Sweet Spot)** | Z3 proportion of total | 0–25 % | Overuse reduces recovery |
+| **SS Zone Fraction (Sweet Spot)** | Own % of the Z1–Z7 total; overlaps Z3/Z4, not added to the total (Z1–Z7 = 100 %) | 0–25 % | Overuse reduces recovery |
 
 ---
 
@@ -61,7 +62,7 @@ Unified interpretation and reporting framework for endurance performance metrics
 |:--|:--|:--|:--|
 | **HRV Trend (7-day)** | `%Δ HRV mean` | — | +ve trend = improved recovery |
 | **RestHR Trend** | `%Δ RestHR mean` | — | Rising = fatigue |
-| **Sleep Quality Index (ZQI)** | `(SleepScore × (SleepSecs / 8h)) / 100` | 0–1 | Proxy for sleep recovery potential |
+| **Sleep Quality Index** | `(SleepScore × (SleepSecs / 8h)) / 100` | 0–1 | Proxy for sleep recovery potential |
 | **Mood, Stress, Motivation** | Scaled 1–5 | — | Used in qualitative load state estimation |
 
 ---
@@ -82,7 +83,7 @@ Unified interpretation and reporting framework for endurance performance metrics
 |:--|:--:|:--|
 | Z1 | 30–60 % | Aerobic base, recovery |
 | Z2 | 25–40 % | Aerobic endurance |
-| Z3 | 10–20 % | Tempo / Sweet spot |
+| Z3 | 10–20 % | Tempo (Sweet Spot overlaps Z3/Z4) |
 | Z4 | 5–10 % | Threshold development |
 | Z5–Z7 | < 5 % | VO₂ / anaerobic capacity |
 
@@ -149,6 +150,9 @@ Unified interpretation and reporting framework for endurance performance metrics
 - Friel, J. *The Cyclist’s Training Bible.* 2022 Edition.  
 - Bannister, E. “Modeling Human Performance and Fatigue.” *Eur J Appl Physiol*, 1975.  
 - Impellizzeri et al. “Use of RPE and Load Metrics in Endurance Training.” *Sports Med*, 2019.  
+- Seiler, S. *Int J Sports Physiol Perform*, 2010 (80/20 counts sessions, not minutes). https://pubmed.ncbi.nlm.nih.gov/20861519/  
+- Stöggl & Sperlich. *Front Physiol*, 2015. https://pubmed.ncbi.nlm.nih.gov/26578968/  
+- Treff et al. *Front Physiol* 10:707, 2019 (Polarization Index). https://pubmed.ncbi.nlm.nih.gov/31249533/  
 - Intervals.icu Knowledge Base and API Schema Reference (2024).  
 - ChatGPT Coach Training State Heuristic Model (v16.17).
 
@@ -182,7 +186,7 @@ Unified interpretation and reporting framework for endurance performance metrics
 | **GR (Glucose Ratio)** | 0.5–2.0 | >2 = glycolytic bias |
 | **MES (Metabolic Efficiency Score)** | 20–100 | >20 = endurance economy |
 | **StressTolerance** | 2–8 | Sustainable strain capacity |
-| **ZQI (Zone Quality Index)** | 5–15 % | Balanced high-intensity exposure |
+| **ZQI (Zone Quality Index)** | Informational | % of time in Seiler zone 3 (Z5–Z7, above LT2 ≈ FTP). No good/bad bands (none are published); for reference, elites spend ~1–8 % of time above LT2 by time in zone, polarised blocks ~15–20 % by session goal |
 
 ### AI Load Summary Logic
 
@@ -199,7 +203,7 @@ Unified interpretation and reporting framework for endurance performance metrics
 | Metric | Formula | Scale | Notes |
 |:--|:--|:--|:--|
 | **Recovery Index (RI)** | `(HRV × Sleep × RestHR_baseline_ratio)` | 0–1 | Global readiness composite |
-| **Sleep Index (ZQI)** | `(SleepScore × (SleepSecs / 8 h)) / 100` | 0–1 | Proxy for recovery potential |
+| **Sleep Index** | `(SleepScore × (SleepSecs / 8 h)) / 100` | 0–1 | Proxy for recovery potential |
 | **RestHR Deviation** | `(RestHR − Baseline) / Baseline` | ± 10 % | > +10 % → fatigue; < −10 % → super-compensation |
 | **HRV Trend (7-day)** | `%Δ HRV mean` | — | ↓ persistent = maladaptation; ↑ = resilience |
 

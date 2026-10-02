@@ -35,7 +35,7 @@ Markdown rendering and presentation layers consume this JSON and are not sources
 
 | Coaching Framework | Semantic Metrics / Fields | Producing Modules |
 |:--|:--|:--|
-| **Seiler 80/20 Polarisation** | `intensity.polarisation_ratio`, `intensity.polarisation_index`, `sessions.quality_balance` | `tier2_derived_metrics.py`, `tier2_render_validator.py` |
+| **Seiler 80/20 Polarisation** | `Polarisation` (Seiler Z1 % + type), `PolarisationIndex` (Treff), `Polarisation_fused`, `Polarisation_combined`, `sessions.quality_balance` | `tier2_derived_metrics.py`, `tier2_render_validator.py` |
 | **Banister Fitness–Fatigue (TRIMP / ACWR)** | `load.acwr`, `load.strain`, `load.trimp`, `load.fatigue_trend` | `tier2_derived_metrics.py`, `tier2_actions.py` |
 | **Foster Monotony / Strain** | `load.monotony`, `load.strain`, `load.stress_tolerance` | `tier2_derived_metrics.py` |
 | **San Millán Metabolic Flexibility** | `metabolic.fat_oxidation_index (FOxI)`, `metabolic.fatox_efficiency`, `metabolic.cur`, `metabolic.gr`, `metabolic.mes` | `tier2_extended_metrics.py`, `tier2_derived_metrics.py` |
