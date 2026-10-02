@@ -420,16 +420,11 @@ def run_adaptive_decision_engine(context):
 
         if days_to_event is not None and p:
 
+            # Only A races are candidates here: taper governance is A-only by design.
             if p == "A":
                 if days_to_event <= 10:
                     taper_state = "taper"
                 elif days_to_event <= 21:
-                    taper_state = "pre_taper"
-
-            elif p == "B":
-                if days_to_event <= 5:
-                    taper_state = "taper"
-                elif days_to_event <= 10:
                     taper_state = "pre_taper"
 
             else:

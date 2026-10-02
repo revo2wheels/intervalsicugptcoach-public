@@ -981,13 +981,30 @@ def interpret_training_state(context):
     thermal_source = external.get("thermal_source")
 
     # --- Heat strain adjustment (ONLY valid external stressor) ---
+    # Current heat strain needs a hot ride (score > 1.0, i.e. device temp
+    # > 23 °C) in the 72 h before the report end. A hot ride earlier in the
+    # window is past context only. Without per-ride dates, no flag.
+    heat_recency = context.get("_heat_recency") or {}
+    recent_hot_rides = heat_recency.get("recent_hot_rides") or 0
+    older_hot_rides = heat_recency.get("older_hot_rides") or 0
+
     heat_flag = False
 
-    if heat_max is not None and heat_max > 1.0:
+    if heat_max is not None and heat_max > 1.0 and recent_hot_rides > 0:
         heat_flag = True
 
-    elif heat_load is not None and heat_load > 0.8:
-        heat_flag = True
+    heat_past_note = (not heat_flag) and older_hot_rides > 0
+
+    debug(
+        context,
+        "[T3-STATE] heat",
+        f"heat_max={heat_max}",
+        f"heat_load={heat_load}",
+        f"recent_hot_rides={recent_hot_rides}",
+        f"older_hot_rides={older_hot_rides}",
+        f"heat_flag={heat_flag}",
+        f"past_note={heat_past_note}"
+    )
 
     # Apply constraint (does NOT override TSB governor)
     if heat_flag:
@@ -1130,6 +1147,10 @@ def interpret_training_state(context):
     if heat_context_note:
         readiness += " Environmental heat strain is elevating cardiovascular load."
 
+    # Older heat in the window: past-tense context only, never current strain.
+    elif heat_past_note:
+        readiness += " Recent heat exposure earlier this week; no hot ride in the last 72 hours."
+
     # --------------------------------------------------
     # Operational coaching mode (2-state governance)
     # --------------------------------------------------
@@ -1204,7 +1225,7 @@ def compute_external_load_context(context, df_full):
         - Terrain = already captured in power/load → NOT a load metric
         - Efficiency drift = bridge between external → internal response
 
-    Heat is the only independent environmental stressor here; above ~18 °C cardiovascular strain rises and above ~23 °C performance degradation becomes significant (Cheuvront & Kenefick).
+    Heat is the only independent environmental stressor here; the 18 / 23 °C cut-offs are applied to the device temperature (see the note at the ambient-temp fallback below for why).
     Elevation/terrain does not add separate “load” because its metabolic cost is already captured in power/TSS; treating it as additional load double-counts stress.
     Terrain instead acts as a **modifier**, influencing internal response (e.g., HR–power decoupling, efficiency drift), not external load itself.
     The correct model is therefore: **heat = external load driver**, **terrain = contextual constraint**, **efficiency/HR response = physiological mediator of both**.
@@ -1232,6 +1253,20 @@ def compute_external_load_context(context, df_full):
 
     if temp is None:
         temp = _num(df_full.get("temperature"))
+
+    # Per-ride date, type and signed decoupling (same activity rows) for the
+    # heat recency and heat-drift checks below.
+    decoupling = _num(df_full.get("decoupling"))
+    ride_types = df_full.get("type")
+
+    ride_dates = pd.Series(pd.NaT, index=df_full.index)
+    if "start_date_local" in df_full.columns:
+        try:
+            ride_dates = pd.to_datetime(df_full["start_date_local"], errors="coerce")
+            if getattr(ride_dates.dt, "tz", None) is not None:
+                ride_dates = ride_dates.dt.tz_localize(None)
+        except Exception:
+            ride_dates = pd.Series(pd.NaT, index=df_full.index)
 
     # --------------------------------------------------
     # DERIVED CONTEXT SIGNALS (NOT LOAD)
@@ -1285,6 +1320,17 @@ def compute_external_load_context(context, df_full):
         # --------------------------------------------------
         # 3. AMBIENT TEMP (last fallback)
         # --------------------------------------------------
+        # Uses the head-unit sensor (average_temp), NOT modelled weather
+        # temperature (judged unreliable; deliberately not used).
+        # Score = (T - 18) / 5, clipped 0-2: 18 °C -> 0, 23 °C -> 1.
+        # The 18 / 23 °C cut-offs match the ACSM WBGT risk-flag bands
+        # (amber 18-23, red 23-28 °C WBGT; Armstrong et al., ACSM position
+        # stand, MSSE 1996;28(12)).
+        # They are kept on device temperature because, in sun, the sensor
+        # reads above air temperature: it picks up solar / radiant load,
+        # which WBGT's black-globe term also captures and air temperature
+        # does not. It has no humidity (wet-bulb) term, so it is not WBGT
+        # and the score stays "contextual" confidence.
         if temp is not None and temp.notna().any():
 
             series = ((temp - 18.0) / (23.0 - 18.0)).clip(lower=0, upper=2)
@@ -1391,13 +1437,113 @@ def compute_external_load_context(context, df_full):
     classification = _classify(heat_score)
 
     # --------------------------------------------------
+    # PER-RIDE HEAT EVIDENCE (RECENCY + DRIFT)
+    # --------------------------------------------------
+    # A "hot" ride scores > 1.0 (device temp > 23 °C on the ambient-temp
+    # source). Current heat strain (readiness heat_flag) needs a hot ride in
+    # the 72 h before the report end; older hot rides are past context only.
+    # "heat_induced" drift needs the SAME hot ride to show decoupling above
+    # the engine's 5% drift line (as ISDM high_drift_sessions_7d, Friel).
+
+    HEAT_HOT_SCORE = 1.0
+    HEAT_RECENT_HOURS = 72
+    DRIFT_THRESHOLD_PCT = 5.0
+
+    # Report end = end of the athlete's today (the window ends today,
+    # inclusive), or of an explicit user range end when that is earlier.
+    report_day = context.get("athlete_today")
+    if report_day is None:
+        # Defensive fallback; normal report execution supplies athlete_today.
+        report_day = pd.Timestamp.now()
+    report_day = pd.Timestamp(report_day)
+    if report_day.tzinfo is not None:
+        report_day = report_day.tz_localize(None)
+    report_day = report_day.normalize()
+
+    range_end = (context.get("range") or {}).get("light_end")
+    if range_end:
+        try:
+            range_day = pd.Timestamp(range_end)
+            if range_day.tzinfo is not None:
+                range_day = range_day.tz_localize(None)
+            range_day = range_day.normalize()
+            if range_day < report_day:
+                report_day = range_day
+        except Exception:
+            pass
+
+    report_end = report_day + pd.Timedelta(days=1)
+    recent_from = report_end - pd.Timedelta(hours=HEAT_RECENT_HOURS)
+
+    def _ride_val(series, i):
+        if series is None:
+            return None
+        v = series.iloc[i]
+        return None if pd.isna(v) else v
+
+    def _fmt(v, nd=1):
+        return round(float(v), nd) if v is not None else None
+
+    hot_rides = 0
+    recent_hot_rides = 0
+    older_hot_rides = 0
+    hot_rides_with_drift = 0
+
+    for i in range(len(df_full)):
+        ride_date = _ride_val(ride_dates, i)
+        ride_score = _ride_val(heat_index, i)
+        ride_drift = _ride_val(decoupling, i)
+
+        is_hot = bool(ride_score is not None and ride_score > HEAT_HOT_SCORE)
+        is_recent = bool(
+            is_hot and ride_date is not None
+            and recent_from <= ride_date < report_end
+        )
+        # Older only when dated before the window; a hot ride with no usable date is neither.
+        is_older = bool(is_hot and ride_date is not None and ride_date < recent_from)
+        has_drift = bool(
+            is_hot and ride_drift is not None
+            and ride_drift > DRIFT_THRESHOLD_PCT
+        )
+
+        hot_rides += int(is_hot)
+        recent_hot_rides += int(is_recent)
+        older_hot_rides += int(is_older)
+        hot_rides_with_drift += int(has_drift)
+
+        debug(
+            context,
+            "[T3][HEAT] ride",
+            f"date={ride_date}",
+            f"type={_ride_val(ride_types, i)}",
+            f"temp={_fmt(_ride_val(temp, i))}",
+            f"score={_fmt(ride_score, 2)}",
+            f"decoupling={_fmt(ride_drift)}",
+            f"hot={is_hot}",
+            f"recent={is_recent}",
+            f"hot_drift={has_drift}"
+        )
+
+    # Private (not serialised): read by interpret_training_state.
+    context["_heat_recency"] = {
+        "report_end": str(report_end),
+        "recent_from": str(recent_from),
+        "hot_rides": hot_rides,
+        "recent_hot_rides": recent_hot_rides,
+        "older_hot_rides": older_hot_rides,
+        "hot_rides_with_drift": hot_rides_with_drift,
+    }
+
+    # --------------------------------------------------
     # MODIFIERS (EXPOSURE-DRIVEN)
     # --------------------------------------------------
 
     modifiers = {}
 
-    # Heat-driven cardiovascular strain (use exposure, not mean)
-    if heat_max is not None and heat_max > 1.0:
+    # Heat-driven cardiovascular strain: only when the SAME hot ride also
+    # drifted (decoupling > 5%). Temperature alone does not prove the drift
+    # (duration and dehydration also cause it), so otherwise leave it unset.
+    if hot_rides_with_drift > 0:
         modifiers["cardiovascular_drift"] = "heat_induced"
 
     # Terrain only matters if it alters physiology
@@ -1419,10 +1565,18 @@ def compute_external_load_context(context, df_full):
 
     dominant = None
 
-    if heat_max is not None and heat_max > 1.0:
+    # "Acute" heat needs a hot ride in the last 72 h and moderate/high heat overall;
+    # older or low heat never makes acute_heat the stressor.
+    if (
+        heat_max is not None and heat_max > 1.0
+        and classification in ("moderate", "high")
+        and recent_hot_rides > 0
+    ):
         dominant = "acute_heat"
 
-    elif heat_score is not None:
+    # Heat is only named when it is actually moderate or high; a low heat
+    # score must not make heat the stressor (otherwise null).
+    elif classification in ("moderate", "high"):
         dominant = "heat"
 
     # --------------------------------------------------
@@ -1477,6 +1631,23 @@ def compute_external_load_context(context, df_full):
         "confidence": thermal_confidence or "contextual",
         "context_window": "7d"
     }
+
+    debug(
+        context,
+        "[T3][HEAT] totals",
+        f"source={thermal_source}",
+        f"rides_scored={int(heat_index.notna().sum()) if heat_index is not None else 0}",
+        f"mean_index={_r(heat_load)}",
+        f"heat_score={_r(heat_score)}",
+        f"heat_max={_r(heat_max)}",
+        f"class={classification}",
+        f"hot_rides={hot_rides}",
+        f"recent_hot={recent_hot_rides}",
+        f"hot_with_drift={hot_rides_with_drift}",
+        f"recent_window={recent_from} to {report_end}",
+        f"dominant={dominant}",
+        f"modifiers={modifiers}"
+    )
 
     # attach safely
     pi = context.setdefault("performance_intelligence", {})

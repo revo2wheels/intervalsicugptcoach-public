@@ -3225,16 +3225,12 @@ def build_semantic_json(context):
             # -----------------------------
             taper_state = "none"
 
+            # Taper governance applies to A races only (by design); B and C races stay "none".
             if days_to_event is not None:
                 if priority == "A":
                     if days_to_event <= 10:
                         taper_state = "taper"
                     elif days_to_event <= 21:
-                        taper_state = "pre_taper"
-                elif priority == "B":
-                    if days_to_event <= 5:
-                        taper_state = "taper"
-                    elif days_to_event <= 10:
                         taper_state = "pre_taper"
 
 
