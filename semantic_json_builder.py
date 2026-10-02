@@ -5919,12 +5919,15 @@ def build_semantic_json(context):
 
         taper_state = taper_governance.get("state")
 
-        has_taper_conflict = taper_state in {
+        # ADE's taper verdict is about the nearest A race; only that race's card takes it.
+        is_ade_target = next_event.get("priority") == "A"
+
+        has_taper_conflict = is_ade_target and taper_state in {
             "taper_load_conflict",
             "taper_load_risk",
         }
 
-        has_taper_sharpening = taper_state in {
+        has_taper_sharpening = is_ade_target and taper_state in {
             "taper_sharpening_required",
             "freshness_above_target",
         }
