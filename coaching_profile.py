@@ -410,7 +410,8 @@ RENDERER_PROFILES = {
             "Use emoji-based section headers only.",
             "Preserve section order exactly as defined by the contract.",
             "Metric context MUST be derived exclusively from each metric’s `context_window` and `confidence_model` fields.",
-            "When both wellness signals and performance_intelligence metrics are present, interpret recovery state as the physiological response to recent training stress. Insights should reconcile these layers rather than repeating them independently."
+            "When both wellness signals and performance_intelligence metrics are present, interpret recovery state as the physiological response to recent training stress. Insights should reconcile these layers rather than repeating them independently.",
+            "Display units follow meta.athlete.units (the athlete's Intervals.icu settings): measurement_preference 'feet' → miles, ft, mph and min/mile; otherwise km, m, km/h and min/km. weight_pref_lb true → lb, otherwise kg. fahrenheit true → °F, otherwise °C. Report values are metric: convert them for display only, never change or re-derive the underlying numbers. If meta.athlete.units is missing, use metric."
         ],
         "list_rules": [
             "If a section value is a JSON array (list), render it as a Markdown table.",

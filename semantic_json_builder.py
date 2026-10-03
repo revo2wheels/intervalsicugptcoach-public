@@ -2280,6 +2280,14 @@ def build_semantic_json(context):
         # NEW: expose global physiology
         "global": global_profile,
 
+        # Display units chosen in Intervals.icu settings, passed through as-is for the app and AI.
+        "units": {
+            "measurement_preference": athlete.get("measurement_preference"),
+            "weight_pref_lb": athlete.get("weight_pref_lb"),
+            "fahrenheit": athlete.get("fahrenheit"),
+            "height_units": athlete.get("height_units"),
+        },
+
     
         # -----------------------------------------------------
         # 🧠 CONTEXT (FOR CHATGPT INTENT ANALYSIS)
