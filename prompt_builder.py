@@ -241,7 +241,7 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
         - Why: the one or two signals that drive this, in plain words.
 
         WHAT NEXT RULES:
-        - "Today" is the date of meta.generated_at.local. If meta.recency.is_current is false, or meta.period ends more than one day before that date, the report covers an earlier week: give only the Why line.
+        - "Today" is the date of meta.generated_at.local. If meta.recency.is_current is false, the report covers an earlier week: give only the Why line. meta.period ends on the last day with an activity, so a period that ends before "Today" (rest days) does not make the report old.
         - Restate the final directive; never form a different decision. Final directive precedence: training_guidance > adaptive_summary.taper_governance.recommended_adjustment > adaptive_summary.directive.
         - If phase_alignment.alignment is aligned, the planned sessions already fit the required phase: say no changes are needed, unless taper_governance.recommended_adjustment or future_actions asks for one.
         - Use only planned sessions present in the data (planned_summary_by_date, planned_events_7d, events, future_actions, planned_summary_by_iso_week). Never invent a session, date, duration or number.
