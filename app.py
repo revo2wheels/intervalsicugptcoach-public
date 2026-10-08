@@ -1116,14 +1116,21 @@ async def run_audit_with_data(
                     except Exception:
                         pass
 
-                # If no start provided → derive most recent 7-day block from data
+                # If no start provided → the 7 days ending today, as a local report.py run does.
+                # Not the last activity day: after rest days that moved the window back, past the
+                # detailed activities the Worker fetched, and made a fresh report look old.
                 else:
-                    df_daily = prefetch_context.get("df_daily")
-                    if df_daily is not None and not df_daily.empty:
-                        dt_end = pd.to_datetime(df_daily["date"].max())
-                        dt_start = dt_end - pd.Timedelta(days=6)
-                        start = dt_start.strftime("%Y-%m-%d")
-                        end   = dt_end.strftime("%Y-%m-%d")
+                    utc_today = pd.Timestamp.now("UTC").tz_localize(None).normalize()
+                    athlete_today = pd.to_datetime(prefetch_context.get("athlete_today"), errors="coerce")
+                    if pd.notna(athlete_today):
+                        athlete_today = athlete_today.tz_localize(None) if athlete_today.tzinfo else athlete_today
+                        # Never past the UTC date: the normalisation below clips the end to it.
+                        dt_end = min(athlete_today.normalize(), utc_today)
+                    else:
+                        dt_end = utc_today
+                    dt_start = dt_end - pd.Timedelta(days=6)
+                    start = dt_start.strftime("%Y-%m-%d")
+                    end   = dt_end.strftime("%Y-%m-%d")
 
             # ---------------------------------------------------------
             # 🧭 FINAL DATE NORMALIZATION (must occur AFTER window resolution)
