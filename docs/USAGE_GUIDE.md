@@ -32,7 +32,7 @@ The controller currently executes:
 Current source versions:
 
 - Performance Intelligence: `PI_v1.62`
-- ESPE: `espe_v1.21`
+- ESPE: `espe_v1.23`
 - Adaptive Decision Engine: `ade_v2.21`
 
 ## Cloudflare Edge Services
@@ -45,8 +45,7 @@ It is not the canonical physiological calculation engine. Coaching computation a
 
 Local engineering uses the same core controller rather than a separate coaching implementation.
 
-- `report.py` — local CLI/report execution.
-- `report_api.py` — engineering-console/local API execution.
+- `report.py` — local CLI/report execution (`--direct` runs it on your own Intervals.icu data; see [Run Locally](RUN_LOCALLY.md)).
 - `audit_core/report_controller.py` — shared canonical execution controller.
 
 These entry points are distinct from Railway boot (`app.py`) but should converge on the same deterministic audit/intelligence logic.
@@ -77,7 +76,7 @@ For reporting use, presentation is downstream of the semantic result. The langua
 
 ## Legacy pre-Railway architecture
 
-`all-modules.md` and `api_github_com__jit_plugin/` belong to the earlier GPT/JIT orchestration model. They are not referenced by the current `app.py`, `report.py`, `report_api.py` or `audit_core` execution paths and should not be described as current Railway dependencies.
+The earlier GPT/JIT orchestration model has been removed from the repository. It is not part of the current `app.py`, `report.py` or `audit_core` execution paths and should not be described as a current Railway dependency.
 
 The same caution applies to older documentation that describes Tier-0 → Tier-2 as the complete coaching architecture. Tier-2 remains important, but the current controller continues into Performance Intelligence, ESPE, forecast and ADE before semantic output.
 

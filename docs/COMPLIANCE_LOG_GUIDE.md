@@ -38,7 +38,7 @@ The current controller executes these major stages:
 Current intelligence versions in source are:
 
 - `PI_v1.62`
-- `espe_v1.21`
+- `espe_v1.23`
 - `ade_v2.21`
 
 ## Compliance principles
@@ -61,7 +61,7 @@ Semantic output is intended to provide the governed contract consumed by reports
 
 ## Local engineering execution
 
-Local engineering entry points (`report.py` and `report_api.py`) should use the same canonical controller and preserve the same audit/intelligence semantics as Railway execution.
+The local engineering entry point (`report.py`, including its public `--direct` mode — see [RUN_LOCALLY.md](RUN_LOCALLY.md)) should use the same canonical controller and preserve the same audit/intelligence semantics as Railway execution.
 
 Local execution may provide additional developer-visible logging or artifacts, but those diagnostics do not change the coaching authority of the core engine.
 

@@ -10,7 +10,7 @@ Montis.icu does not expose raw Intervals.icu data directly to a language model a
 
 `Intervals.icu → Cloudflare Edge Services → Railway Engine → governed coaching intelligence → AI / app / API`
 
-The Railway backend starts from `app.py` and dispatches into `audit_core/report_controller.py`. Local engineering execution uses `report.py`.
+The Railway backend starts from `app.py` and dispatches into `audit_core/report_controller.py`. Local engineering execution uses `report.py`; to run it on your own Intervals.icu data, use `report.py --direct` (see [RUN_LOCALLY.md](RUN_LOCALLY.md)).
 
 The controller currently executes:
 
@@ -23,7 +23,7 @@ The controller currently executes:
 Current intelligence versions in source:
 
 - Performance Intelligence: `PI_v1.62`
-- ESPE: `espe_v1.21`
+- ESPE: `espe_v1.23`
 - Adaptive Decision Engine: `ade_v2.21`
 
 ## Current documentation

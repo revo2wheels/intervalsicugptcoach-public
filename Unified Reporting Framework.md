@@ -4,7 +4,7 @@ version: v16.13-EOD-003
 authors: Seiler | San Millán | Friel | Banister | Foster | Coggan | McGregor | Laursen | Marcora | Stellingwerff | Millet | Kiely
 scope: Weekly | Calendar | Season | Executive Summary
 integrity: verified
-last_updated: 2025-11-04
+last_updated: 2026-10-10
 audit_hash: auto
 ---
 
@@ -12,6 +12,8 @@ audit_hash: auto
 **Spec Alignment:** Seiler | San Millán | Friel | Banister | Foster | Coggan | McGregor | Laursen | Marcora | Stellingwerff | Millet | Kiely  
 **Patch ID:** v16.13-EOD-003  
 **Scope:** Weekly | Calendar | Season | Executive Summary  
+
+> **Note:** This is the original v5.1 design, from when the engine rendered Markdown reports itself. The engine now outputs semantic JSON only. Each report carries `renderer_instructions` (built in `semantic_json_builder.py`), and the AI client renders the report from those, so the Markdown templates below are kept for reference only. For how the engine runs today, see [docs/audit_chain_overview.md](docs/audit_chain_overview.md).
 
 header_mode: metadata_only
 header_allow_totals: false
@@ -29,10 +31,8 @@ Applies to:
 - **Season Report (≥ 42 days)** — for macro-cycle or periodised analysis.  
 - **Executive Summary** — for multi-report aggregation.  
 
-Refer to the **Report Triggers Clarification** section for operational definitions.  
-
 **Render Binding:**  
-- Renderer must confirm `context["render_source"] == "audit_tier2"`.  
+- Renderer must confirm `context["enforce_render_source"] == "tier2_enforced_totals"`.  
 - If absent or mismatched → ❌ Halt render.  
 - No fallback narrative generation permitted.
 
@@ -76,11 +76,11 @@ Audit: {auditStatus} | Integrity: {integrityFlag}
 
 | Key | Tier | Type | Description |
 |:--|:--|:--|:--|
-| **`tier1_eventTotals`** | Tier-1 | `dict` | Canonical event totals (`hours`, `tss`, `distance`) validated after Tier-1 dataset integrity check. Used for variance comparison. |
+| **`tier1_visibleTotals`** | Tier-1 | `dict` | Canonical event totals (`hours`, `tss`, `distance`) validated after Tier-1 dataset integrity check. Used for variance comparison. |
 | **`tier2_eventTotals_eventOnly`** | Tier-2 | `dict` | ✅ Final enforced event totals (Σ of event-level metrics from validated dataset). Primary source for URF Key Stats section. |
 | **`load_metrics`** | Tier-1 | `dict` | CTL / ATL / TSB / Form values merged from wellness feed for renderer and adaptive logic. |
 | **`outliers`** | Tier-1 | `list[dict]` | Detected TSS / IF outliers ± 1.5 σ (`{date, event, metric, observed, expected}`). |
-| **`zone_dist_power`**, **`zone_dist_hr`**, **`zone_dist_pace`** | Tier-2 | `dict` | Percent zone distributions expanded from normalized training zone arrays. |
+| **`zone_dist_power`**, **`zone_dist_hr`**, **`zone_dist_pace`** | Tier-1 | `dict` | Percent zone distributions expanded from normalized training zone arrays. |
 | **`recovery_flag`** | Tier-2 | `str` | Adaptive recovery classification from HRV ↔ Load correlation (`adaptive`, `neutral`, `poor`). |
 
 #### Renderer Context Binding (URF Runtime Contract)
@@ -248,26 +248,25 @@ Rules:
 
 ---
 
-## ⚙️ Orchestration Enforcement — `orchestrate_fetch_context()`
+## ⚙️ Orchestration Enforcement — `run_tier0_pre_audit()`
 
-**Purpose:** Guarantee that all required endpoints are fetched in the correct order for both ChatGPT (Worker-based) and local runs **before Tier-1 validation begins**.
+**Purpose:** Guarantee that all required endpoints are fetched for both hosted (Worker-based) and local runs **before Tier-1 validation begins**.
 
 ### Enforcement Rules
 
-1. **Execution Order (hard-coded):**
+1. **Required Endpoints:**
 - /athlete/0/profile
 - /athlete/0/activities_t0light ← 90-day lightweight
 - /athlete/0/wellness ← 42-day wellness
 - /athlete/0/activities ← 7-day full
 
-These four endpoints **must** be executed sequentially by the ChatGPT→Worker pipeline  
-(or locally via `run_tier0_pre_audit`) before Tier-1 starts.
+These four datasets **must** be fetched by the Cloudflare Worker  
+(or locally via `run_tier0_pre_audit` with `report.py --direct`, which reads `/athlete/0/activities` in place of the Worker-only `activities_t0light`) before Tier-1 starts.
 
-2. **Coverage Thresholds**
+2. **Missing Data**
 
-- Each dataset must return ≥ 85 % of expected event coverage by date range.  
-- If coverage < 85 %, the controller must retry that endpoint once.  
-- If still incomplete, halt execution with `AuditHalt: Tier-0 coverage failure`.
+- With `report.py --direct`, failed requests are retried up to twice (`fetch_with_retry`).  
+- If a required dataset is still missing, halt execution with `AuditHalt`.
 
 3. **Report-Type Invariance**
 
@@ -277,50 +276,22 @@ These four endpoints **must** be executed sequentially by the ChatGPT→Worker p
 
 4. **Worker Binding**
 
-- When invoked from ChatGPT, `loadAllRules()` exposes this orchestration map as  
-  `rules['enforcement']['orchestrate_fetch_context']`.
-- The ChatGPT app uses that list to call each Worker endpoint in order  
-  (`profile → activities_t0light → wellness → activities`).
+- In hosted runs, the Cloudflare Worker fetches this data from Intervals.icu and hands it to Railway (`app.py`)  
+  as a prefetched dataset; Railway never calls Intervals.icu itself.
 
 5. **Tier-1 Entry Gate**
 
 - Tier-1 (`run_tier1_controller`) only executes when  
-  `orchestrate_fetch_context()` returns `status: complete`.
+  `run_tier0_pre_audit()` completes without `AuditHalt`.
 
 6. **Local Runtime Mirror**
 
-- Local Python mode (`report.py`) mirrors the same sequence using the same ruleset,  
-  ensuring dual-mode parity (manifest_mode = dual).
+- Local Python mode (`report.py --direct`) fetches the same datasets itself with your own `ICU_API_KEY` or `ICU_OAUTH`  
+  and runs the same `audit_core` pipeline (see [docs/RUN_LOCALLY.md](docs/RUN_LOCALLY.md)).
 
 7. **Retry & Logging**
 
-- All retries logged under `Tier-0 Retry Sequence` in compliance logs.  
-- Failures escalate to `AuditCoreHalt` and prevent renderer activation.
-
----
-
-### Example `loadAllRules()` Output Snippet
-
-```json
-{
-"ruleset_version": "v16.17-AUDITCORE-SYNC",
-"enforcement": {
- "orchestrate_fetch_context": {
-   "sequence": [
-     "/athlete/0/profile",
-     "/athlete/0/activities_t0light",
-     "/athlete/0/wellness",
-     "/athlete/0/activities"
-   ],
-   "coverage_threshold": 0.85,
-   "retries": 1,
-   "reportType_locked": true
- }
-}
-}
-```
-audit_chain_source: intervalsicugptcoach.clive-a5a.workers.dev
-orchestration_mode: chained_auto
+- Failures escalate to `AuditHalt` and prevent renderer activation.
 
 ---
 

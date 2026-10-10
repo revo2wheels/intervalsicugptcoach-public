@@ -51,9 +51,7 @@ Typical evidence includes:
 
 Tier-2 performs the core audit and derived-metric work, including:
 
-- event completeness;
 - event-only totals enforcement;
-- calculation/wellness validation;
 - derived metrics;
 - deterministic actions;
 - extended metrics and additional analytical context.
@@ -70,7 +68,7 @@ Current source version: `PI_v1.62`.
 
 `tier3_espe.py` runs the Energy System Progression Engine when the required power-curve evidence is available.
 
-Current source version: `espe_v1.21`.
+Current source version: `espe_v1.23`.
 
 If the required power-curve block is absent, ESPE is skipped rather than inventing progression evidence.
 
@@ -120,7 +118,7 @@ Those five layers describe how Montis resolves coaching intelligence. Tier-0/Tie
 
 ## Local engineering execution
 
-Local engineering entry points are `report.py` and `report_api.py`. They should converge on the same `audit_core/report_controller.py` logic rather than maintaining a separate interpretation engine.
+The local entry point is `report.py`; `--direct` runs it on your own Intervals.icu data (see [docs/RUN_LOCALLY.md](RUN_LOCALLY.md)). It uses the same `audit_core/report_controller.py` logic rather than maintaining a separate interpretation engine.
 
 ## Legacy note
 
