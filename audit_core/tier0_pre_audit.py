@@ -1208,15 +1208,17 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
 
     # --direct fetches the full dataset itself: keep it to the last 7 days of the
     # window, like the hosted prefetch, rather than the whole season window.
-    full_oldest = oldest
+    # Plain dates, as in the weekly window, so the last day is included.
+    full_oldest, full_newest = oldest, newest
     if context.get("direct_intervals"):
-        full_oldest = max(oldest, newest - pd.Timedelta(days=6))
+        full_newest = pd.to_datetime(newest).date()
+        full_oldest = max(pd.to_datetime(oldest).date(), full_newest - timedelta(days=6))
 
     if "df_master" not in context:
         df_full = resolve_dataset(
             "full",
             lambda from_cache, context: fetch_activities_chunked(
-                athlete["id"], full_oldest, newest, headers, context, from_cache=from_cache
+                athlete["id"], full_oldest, full_newest, headers, context, from_cache=from_cache
             ),
             context,
         )
