@@ -38,3 +38,9 @@ __pycache__/
 /archive/
 /reports/
 /cloudflare/
+# Internal only (not for the public repo): GPT/OpenAI material, video scripts and storyboards
+OPENAI/
+docs/openaiissue.md
+docs/heygen/
+docs/*storyboard.md
+runtime-list.md

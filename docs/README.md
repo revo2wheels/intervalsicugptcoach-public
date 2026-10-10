@@ -38,11 +38,7 @@ Current intelligence versions in source:
 
 ## AI integration resources
 
-The `OPENAI/` directory contains configuration and knowledge resources used by the Montis ChatGPT integration.
-
-These resources are operational integration assets and are not part of the deterministic coaching engine execution path.
-
-Protected OpenAI resources are listed in [`runtime-list.md`](../runtime-list.md).
+The configuration and knowledge resources for the Montis ChatGPT integration are maintained privately. They are not part of the deterministic coaching engine execution path.
 
 Shared knowledge resources used by MCP clients are published separately through:
 

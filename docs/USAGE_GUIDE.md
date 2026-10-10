@@ -75,10 +75,6 @@ The AI interface is downstream of this intelligence stack.
 
 For reporting use, presentation is downstream of the semantic result. The language model may explain, summarize, question and discuss the result, but it is not the authority for the underlying athlete state or coaching decision.
 
-## Runtime resources
-
-Do not treat every Markdown file as ordinary documentation. The files listed in [`../runtime-list.md`](../runtime-list.md) are operational resources used by Cloudflare MCP or OpenAI GPT configuration and must retain their current names/paths unless the external configuration is changed at the same time.
-
 ## Legacy pre-Railway architecture
 
 `all-modules.md` and `api_github_com__jit_plugin/` belong to the earlier GPT/JIT orchestration model. They are not referenced by the current `app.py`, `report.py`, `report_api.py` or `audit_core` execution paths and should not be described as current Railway dependencies.
@@ -95,7 +91,6 @@ Production and staging should run the same core coaching code, while environment
 - [Audit Chain Overview](audit_chain_overview.md)
 - [Compliance Log Guide](COMPLIANCE_LOG_GUIDE.md)
 - [Unified Reporting Framework](../Unified%20Reporting%20Framework.md)
-- [Runtime Resource List](../runtime-list.md)
 
 Public product documentation:
 

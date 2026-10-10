@@ -90,4 +90,3 @@ This order prevents presentation-layer behaviour from being mistaken for a backe
 - [Documentation Index](README.md)
 - [Usage Guide](USAGE_GUIDE.md)
 - [Audit Chain Overview](audit_chain_overview.md)
-- [Runtime Resource List](../runtime-list.md)

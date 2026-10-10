@@ -101,16 +101,11 @@ The interfaces can differ in presentation, but they do not become the computatio
 
 ## AI integration resources
 
-The `OPENAI/` directory contains configuration and knowledge resources used by
-the Montis ChatGPT integration.
+The configuration and knowledge resources for the Montis ChatGPT integration are maintained privately. They are not part of the deterministic coaching engine execution path.
 
-These files are not part of the deterministic coaching engine execution path.
-
-Some shared knowledge resources are also published separately for MCP clients:
+Shared knowledge resources for MCP clients are published separately:
 
 https://github.com/revo2wheels/montis-mcp-resources
-
-See [`runtime-list.md`](runtime-list.md) for the protected OpenAI integration files.
 
 ## Documentation
 

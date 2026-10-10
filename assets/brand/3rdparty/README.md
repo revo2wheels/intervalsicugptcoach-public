@@ -59,5 +59,3 @@ Both are free Google Fonts.
 5. Upload the two Intelligence Stack images.
 
 HeyGen can also build a kit from www.montis.icu. If you do that, check the result against this page.
-
-The video scripts are in [`docs/heygen/`](../../docs/heygen/).
