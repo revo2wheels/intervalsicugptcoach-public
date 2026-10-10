@@ -190,7 +190,8 @@ def resolve_prefetched(name, context, fetch_fn=None, **kwargs):
         return pre[name]
 
     # ✅ 2. Never fetch in prefetched (Railway) mode
-    if "prefetched" in context:
+    #    (report.py --direct has nothing prefetched and reads Intervals.icu itself)
+    if "prefetched" in context and not context.get("direct_intervals"):
         debug(context, f"[PREFETCH] Skipping external fetch for '{name}' (prefetched mode)")
         return []
 

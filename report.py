@@ -31,17 +31,16 @@ The Worker acts as a unified API gateway.
 ENDPOINTS
 ───────────────────────────────────────────────
 
-Railway Production
-https://intervalsicugptcoach-public-production.up.railway.app
+The hosted service URLs are not stored in the code. Montis maintainers set
+them in the environment:
 
-Railway Staging
-https://intervalsicugptcoach-public-staging.up.railway.app
+MONTIS_WORKER_URL
+    Montis Worker (API gateway) for local, --prefetch and --debug runs.
 
-Cloudflare Worker (API Gateway)
-https://intervalsicugptcoach.clive-a5a.workers.dev
+MONTIS_STAGING_WORKER_URL
+    Staging Worker, used with --staging.
 
-Cloudflare Worker (Staging)
-https://intervalsicugptcoach-staging.clive-a5a.workers.dev
+--direct needs neither.
 
 
 ───────────────────────────────────────────────
@@ -281,9 +280,14 @@ sys.stdout.reconfigure(encoding="utf-8")
 #----------------------------------------------
 def get_worker_base(staging=False):
 
-    if staging:
-        return "https://staging.montis.icu"
-    return "https://montis.icu"
+    name = "MONTIS_STAGING_WORKER_URL" if staging else "MONTIS_WORKER_URL"
+    base = (os.getenv(name) or "").strip().rstrip("/")
+    if not base:
+        raise SystemExit(
+            f"[CONFIG] {name} is not set. The hosted modes are for Montis maintainers. "
+            "To run on your own data, use --direct (see docs/RUN_LOCALLY.md)."
+        )
+    return base
 
 #---------------------------------------------
 #  OPEN report helper
@@ -688,7 +692,7 @@ def generate_full_report(
         print(f"[DIRECT] Reading straight from Intervals.icu ({DIRECT_INTERVALS_API}) "
               f"with your {intervals_auth_kind()}")
         trace = {"type": "DIRECT", "intervals_api": DIRECT_INTERVALS_API}
-        prefetch_context = {}
+        prefetch_context = {"direct_intervals": True}
     else:
         print("[LOCAL] Running LOCAL compute with Worker dataset")
 

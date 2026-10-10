@@ -89,16 +89,27 @@ Each run writes a JSON file to the `reports` folder, for example `reports/report
 
 It reads your Intervals.icu profile, activities, wellness records, power curves and planned events for the next 14 days. A weekly report reads about 90 days of activities, and a season report reads more. It only reads; it never changes anything in Intervals.icu.
 
+## Intervals.icu API limits
+
+Intervals.icu limits how often a personal API key can call its API. In October 2026 the limits were 5,000 requests a day (reset at midnight UTC) and 2,500 in any 15 minutes, plus 10 requests a second from one IP address. The current figures are in the [API access post](https://forum.intervals.icu/t/api-access-to-intervals-icu/609) on the Intervals.icu forum.
+
+A report makes about 9 requests, one after another, so normal use stays far below the limits.
+
+- Run one report at a time. Don't run reports in a loop or from several terminals at once.
+- Other scripts and apps that use the same API key count towards the same limits.
+- If you go over, Intervals.icu answers `429 Too Many Requests`. The engine tries twice more straight away, then usually stops without saving a report. If only the power curves or planned events are refused, the report is saved without them.
+
 ## If something goes wrong
 
 | Message | What to do |
 |---|---|
 | `No Intervals.icu credentials` | Set `ICU_API_KEY` in the same terminal window, then run again. |
 | `401` or `403` from intervals.icu | The key is wrong or was regenerated. Copy it again from Settings → Developer Settings. |
+| `429` or `Too Many Requests` from intervals.icu | You've hit an [Intervals.icu API limit](#intervalsicu-api-limits). Wait a few minutes, or until after midnight UTC if you used the daily limit, then run one report at a time. |
 | `No activity data found for this period` | There are no activities in that window. Try `--start` with a week that has activities. |
 | `ModuleNotFoundError` | The environment isn't active. Run the activate line from step 3 again. |
 | `--direct runs everything on your computer…` | Leave out `--prefetch`, `--staging`, `--gpt`, `--debug` and `--strava-test`. Those options use Montis's own servers. |
 
 ## Other modes
 
-Without `--direct`, `report.py` uses the Montis hosted service, which needs Montis's private keys. Those modes are for Montis maintainers only.
+Without `--direct`, `report.py` uses the Montis hosted service. Those modes are for Montis maintainers only.

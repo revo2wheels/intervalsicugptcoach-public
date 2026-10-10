@@ -19,7 +19,8 @@ The language model is downstream of the engine. It receives governed semantic ou
 ```mermaid
 flowchart LR
     ICU[Intervals.icu] --> EDGE[Cloudflare Edge Services]
-    EDGE --> ENGINE[Railway Engine]
+    EDGE --> ENGINE["Coaching Engine (Railway, or your computer)"]
+    ICU -.->|"direct mode, your own API key"| ENGINE
     ENGINE --> T0[Tier-0 Data & Normalization]
     T0 --> T1[Tier-1 Integrity]
     T1 --> T2[Tier-2 Metrics & Actions]
@@ -34,8 +35,9 @@ flowchart LR
 ### Execution entry points
 
 - **Railway:** `app.py` is the backend service entry point and dispatches into `audit_core/report_controller.py`.
-- **Local CLI:** `report.py` is the local report execution entry point. It obtains a prefetched dataset through Cloudflare Edge, then runs the Montis coaching engine locally through `audit_core/report_controller.py`.
-- **Run it yourself:** `report.py --direct` reads your data straight from Intervals.icu with your own API key and runs the whole engine on your computer, with no Montis servers. See [docs/RUN_LOCALLY.md](docs/RUN_LOCALLY.md).
+- **Local CLI:** `report.py` is the local report execution entry point. It runs the Montis coaching engine through `audit_core/report_controller.py` and gets its data in one of two ways:
+  - **Run it yourself (`--direct`):** reads your data straight from Intervals.icu with your own API key and runs the whole engine on your computer, with no Montis servers. See [docs/RUN_LOCALLY.md](docs/RUN_LOCALLY.md).
+  - **Hosted modes (no flag, `--prefetch`, `--staging`):** get the data through the Montis hosted service (Cloudflare Edge, plus Railway for `--prefetch`). They are for Montis maintainers only.
 - **Canonical controller:** `audit_core/report_controller.py` executes the deterministic audit and intelligence chain.
 
 `app.py` imports `run_report` directly from `audit_core.report_controller`; the current Railway execution path does not load the historical `all-modules.md` manifest.

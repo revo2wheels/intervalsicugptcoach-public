@@ -204,7 +204,9 @@ def fetch_activities_chunked(
     # =================================================
 
     # --- Determine mode (authoritative) -----------------
-    light_mode = bool(context.get("force_light", False))
+    # --direct always needs the full 7-day dataset (Tier-0 invariant); force_light
+    # only sets its 90-day light window.
+    light_mode = bool(context.get("force_light", False)) and not context.get("direct_intervals")
 
     if light_mode:
         debug(context, "🧩 Tier-0: forced light dataset (90-day)")
@@ -325,10 +327,12 @@ def fetch_activities_chunked(
                     return None
         return x
 
+    sample_type = None
     for col in ["icu_zone_times", "icu_hr_zone_times", "pace_zone_times"]:
         if col in df_activities.columns:
             df_activities[col] = df_activities[col].apply(safe_eval_zones)
-            sample_type = type(df_activities["icu_zone_times"].iloc[0])
+            if col == "icu_zone_times" and len(df_activities):
+                sample_type = type(df_activities[col].iloc[0])
     debug(context, f"[T0-FIX] icu_zone_times type after patch → {sample_type}")
 
 
@@ -1139,7 +1143,7 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     # --- Step 1: Fetch athlete profile ---
     athlete, context = resolve_dataset(
         "athlete",
-        lambda from_cache, context: fetch_athlete_profile(headers, context)
+        lambda from_cache, context: fetch_athlete_profile(headers, context=context)
             if from_cache is None else (from_cache, context),
         context,
     )
@@ -1202,11 +1206,17 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     # - NEVER downgrade based on report_type
     # - Season vs Weekly differences are handled later (Tier-2 scope)
 
+    # --direct fetches the full dataset itself: keep it to the last 7 days of the
+    # window, like the hosted prefetch, rather than the whole season window.
+    full_oldest = oldest
+    if context.get("direct_intervals"):
+        full_oldest = max(oldest, newest - pd.Timedelta(days=6))
+
     if "df_master" not in context:
         df_full = resolve_dataset(
             "full",
             lambda from_cache, context: fetch_activities_chunked(
-                athlete["id"], oldest, newest, headers, context, from_cache=from_cache
+                athlete["id"], full_oldest, newest, headers, context, from_cache=from_cache
             ),
             context,
         )
