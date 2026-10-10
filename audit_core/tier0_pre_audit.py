@@ -12,7 +12,14 @@ from audit_core.utils import set_time_context
 
 INTERVALS_API = os.getenv("INTERVALS_API", "https://intervalsicugptcoach.clive-a5a.workers.dev")
 
-ICU_TOKEN = os.getenv("ICU_OAUTH")  # OAuth-only
+ICU_TOKEN = os.getenv("ICU_OAUTH")  # OAuth token (ICU_API_KEY also works, see intervals_auth)
+
+from audit_core.intervals_auth import intervals_auth_headers
+
+# report.py --direct: INTERVALS_API is Intervals.icu itself, so the Worker-only routes below are
+# swapped for the standard Intervals.icu ones.
+DIRECT_INTERVALS = "intervals.icu/api" in INTERVALS_API
+LIGHT_ACTIVITIES_PATH = "activities" if DIRECT_INTERVALS else "activities_t0light"
 
 def resolve_dataset(name: str, fetch_fn, context: dict):
     """
@@ -234,7 +241,7 @@ def fetch_activities_chunked(
 
                 if light_mode:
                     acts_url = (
-                        f"{INTERVALS_API}/athlete/{athlete_id}/activities_t0light?"
+                        f"{INTERVALS_API}/athlete/{athlete_id}/{LIGHT_ACTIVITIES_PATH}?"
                         f"oldest={chunk_start:%Y-%m-%d}&newest={chunk_end:%Y-%m-%d}"
                         "&fields=id,name,type,sport_type,start_date_local,distance,moving_time,icu_training_load,icu_atl,icu_ctl,icu_intensity,average_heartrate,VO2MaxGarmin,HrtLndLt1,HrtLndLt1p,icu_pm_w_prime,icu_max_wbal_depletion,icu_joules_above_ftp,decoupling,icu_w_prime,icu_rolling_w_prime,icu_efficiency_factor,icu_variability_index,polarization_index"
                     )
@@ -652,12 +659,23 @@ def fetch_power_curves(headers, context=None, from_cache=None):
 
         requested_curves = ",".join(requested_curve_ids)
 
-        url = (
-            f"{INTERVALS_API}/athlete/{athlete_id}/power-curves-ext"
-            f"?type={sport}"
-            f"&curves={requested_curves}"
-            f"&pmType={pm_type}"
-        )
+        if DIRECT_INTERVALS:
+            # Intervals.icu takes one curves parameter per curve and a PascalCase type
+            # (the Worker's /power-curves-ext does both).
+            sport_type = str(sport)[:1].upper() + str(sport)[1:].lower()
+            url = (
+                f"{INTERVALS_API}/athlete/{athlete_id}/power-curves"
+                f"?type={sport_type}"
+                + "".join(f"&curves={c.strip()}" for c in requested_curves.split(",") if c.strip())
+                + f"&pmType={pm_type}"
+            )
+        else:
+            url = (
+                f"{INTERVALS_API}/athlete/{athlete_id}/power-curves-ext"
+                f"?type={sport}"
+                f"&curves={requested_curves}"
+                f"&pmType={pm_type}"
+            )
 
         debug(
             context,
@@ -867,14 +885,14 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         debug(context, f"[T0-FORCE] CLI override enforced → start={start} end={end}")
 
     # If Railway has a token, send it; otherwise rely on Worker env.ICU_OAUTH
-    if ICU_TOKEN and ICU_TOKEN.strip():
-        headers["Authorization"] = f"Bearer {ICU_TOKEN.strip()}"
+    if intervals_auth_headers():
+        headers.update(intervals_auth_headers())
     else:
         # Only warn if we're using the Worker proxy
         if "workers.dev" in INTERVALS_API or "clive-a5a.workers.dev" in INTERVALS_API:
             debug(context, "[T0] ICU_OAUTH missing on Railway — relying on Worker-held token")
         else:
-            raise RuntimeError("Missing Intervals.icu OAuth token. Set ICU_OAUTH env var.")
+            raise RuntimeError("Missing Intervals.icu credentials. Set ICU_API_KEY (personal API key) or ICU_OAUTH (OAuth token).")
 
     # ============================================================
     # Tier-0 LIGHT DATASET (90d) — FETCH OR PREFETCH (IDENTICAL)
@@ -886,7 +904,7 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
     df_light_slice = pd.DataFrame()
 
     # --- REQUIRED: auth header + report type ---
-    headers = {"Authorization": f"Bearer {ICU_TOKEN}"}
+    headers = intervals_auth_headers() or {"Authorization": f"Bearer {ICU_TOKEN}"}
     context["report_type"] = (context.get("report_type") or "weekly").lower()
 
 
@@ -958,7 +976,7 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         debug(context, f"[T0-LIGHT] Using range oldest={oldest} newest={newest}")
 
         light_url = (
-            f"{INTERVALS_API}/athlete/0/activities_t0light?"
+            f"{INTERVALS_API}/athlete/0/{LIGHT_ACTIVITIES_PATH}?"
             f"oldest={oldest}&newest={newest}&fields={fields}"
         )
 

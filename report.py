@@ -109,12 +109,19 @@ test=strava*
 CLI MODES
 ───────────────────────────────────────────────
 
-LOCAL MODE
-    Runs the full pipeline directly in Python.
+DIRECT MODE (--direct, for anyone)
+    Runs the full pipeline on your computer and reads your data straight from
+    Intervals.icu with your own ICU_API_KEY (or ICU_OAUTH). No Montis servers or keys.
+    See docs/RUN_LOCALLY.md.
 
     Output files:
-        report_<range>_prod_semantic.json
-        report_<range>_prod_markdown.md
+        report_<range>_direct_intervals_semantic.json
+
+LOCAL MODE (Montis maintainers)
+    Runs the full pipeline in Python on a dataset fetched through the Montis Worker.
+
+    Output files:
+        report_<range>_local_prod_semantic.json
 
 
 PREFETCH MODE (REMOTE)
@@ -140,12 +147,11 @@ DEBUG MODE
 CLI USAGE EXAMPLES
 ───────────────────────────────────────────────
 
-Local semantic report
+Direct report from Intervals.icu (your own API key)
+python report.py --range weekly --direct
+
+Local semantic report (Montis Worker dataset)
 python report.py --range weekly
-
-
-Local markdown report
-python report.py --range weekly --format markdown
 
 
 Remote report (Worker → Railway)
@@ -233,7 +239,15 @@ import webbrowser
 from datetime import datetime
 from contextlib import redirect_stdout
 from pathlib import Path
+
+# --direct reads straight from Intervals.icu with your own credentials (no Montis servers).
+# The engine reads INTERVALS_API when it is imported, so it is set before the imports below.
+DIRECT_INTERVALS_API = "https://intervals.icu/api/v1"
+if "--direct" in sys.argv:
+    os.environ["INTERVALS_API"] = DIRECT_INTERVALS_API
+
 from app import normalize_prefetched_context
+from audit_core.intervals_auth import intervals_auth_headers, intervals_auth_kind
 from audit_core.errors import AuditHalt
 import pandas as pd
 
@@ -604,7 +618,8 @@ def generate_full_report(
     debug_mode=False,
     lite=False,
     overview=False,
-    workflow=False
+    workflow=False,
+    direct=False
 ):
     buffer = io.StringIO()
     logs = ""
@@ -660,6 +675,20 @@ def generate_full_report(
     # ============================================================
     # 💻 LOCAL MODE — Worker prefetch dataset → local run_report
     # ============================================================
+    elif direct:
+        # --------------------------------------------------------
+        # 🔌 DIRECT MODE — Tier-0 fetches from Intervals.icu itself
+        # (no Montis Worker, no Railway; your own ICU_API_KEY or ICU_OAUTH)
+        # --------------------------------------------------------
+        if not intervals_auth_headers():
+            raise SystemExit(
+                "[DIRECT] No Intervals.icu credentials. Set ICU_API_KEY (personal API key) "
+                "or ICU_OAUTH (OAuth token), then run again."
+            )
+        print(f"[DIRECT] Reading straight from Intervals.icu ({DIRECT_INTERVALS_API}) "
+              f"with your {intervals_auth_kind()}")
+        trace = {"type": "DIRECT", "intervals_api": DIRECT_INTERVALS_API}
+        prefetch_context = {}
     else:
         print("[LOCAL] Running LOCAL compute with Worker dataset")
 
@@ -681,6 +710,8 @@ def generate_full_report(
 
         prefetch_context = dict(prefetch_context)
         prefetch_context["prefetch_done"] = True
+
+    if not prefetch:
 
         # --------------------------------------------------------
         # 🗓️ LOCAL CLI WINDOW OVERRIDE
@@ -889,7 +920,7 @@ def generate_full_report(
                 severity="info"
             )
 
-        if light_empty and full_empty:
+        if light_empty and full_empty and not direct:
             raise AuditHalt(
                 "No activity data found for this period.",
                 code="NO_ACTIVITY_DATA",
@@ -987,8 +1018,8 @@ def generate_full_report(
         print("[SAFEGUARD] 🛑 Prefetch GPT detected — skipping local file writing entirely.")
         return None
 
-    mode = "prefetch" if prefetch else "local"
-    env_tag = "staging" if staging else "prod"
+    mode = "prefetch" if prefetch else "direct" if direct else "local"
+    env_tag = "intervals" if direct else "staging" if staging else "prod"
     gpt_tag = "_gpt" if gpt else ""
 
     base_name = f"report_{report_type}_{mode}_{env_tag}{gpt_tag}_{output_format}"
@@ -1042,11 +1073,13 @@ def main():
                         default="weekly")
     parser.add_argument("--output", type=str, default=None)
     parser.add_argument("--format", type=str.lower,
-                        choices=["markdown", "semantic"],
+                        choices=["semantic"],
                         default="semantic",
-                        help="Output format (default: semantic)")
+                        help="Output format: semantic JSON (the markdown format is no longer used)")
     parser.add_argument("--prefetch", action="store_true",
                         help="Use prehydrated dataset from Railway proxy (via Worker)")
+    parser.add_argument("--direct", action="store_true",
+                        help="Read your data straight from Intervals.icu with your own ICU_API_KEY or ICU_OAUTH (no Montis servers)")
     parser.add_argument("--staging", action="store_true",
                         help="Request staging environment (Worker will decide access)")
     parser.add_argument("--start", type=str, help="Custom start date (YYYY-MM-DD)")
@@ -1138,6 +1171,9 @@ def main():
         return
 
 
+    if args.direct and (args.prefetch or args.staging or args.gpt or args.debug or args.strava_test):
+        parser.error("--direct runs everything on your computer; it can't be combined with --prefetch, --staging, --gpt, --debug or --strava-test")
+
     # 🧩 Normal flow
     generate_full_report(
         report_type=args.range,
@@ -1154,7 +1190,8 @@ def main():
         debug_mode=args.debug,
         lite=args.lite,
         overview=args.overview,
-        workflow=args.workflow
+        workflow=args.workflow,
+        direct=args.direct
     )
 
 if __name__ == "__main__":

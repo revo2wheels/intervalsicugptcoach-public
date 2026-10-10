@@ -19,6 +19,7 @@ from coaching_cheat_sheet import CHEAT_SHEET
 
 CLOUDFLARE_BASE = os.getenv("CLOUDFLARE_BASE", "https://intervalsicugptcoach.clive-a5a.workers.dev")
 ICU_TOKEN = os.getenv("ICU_OAUTH")
+from audit_core.intervals_auth import intervals_auth_headers
 
 # ---------------------------------------------------------------------
 # ⚙️ Cloudflare Calendar Fallback Loader
@@ -27,10 +28,14 @@ def fetch_calendar_fallback(context, days=14, owner="intervals"):
     """Fetch planned events via Cloudflare Worker if not prefetched."""
     start = datetime.now().date().isoformat()
     end = (datetime.now().date() + timedelta(days=days)).isoformat()
-    url = f"{CLOUDFLARE_BASE}/calendar/read?start={start}&end={end}&owner={owner}"
+    intervals_api = os.getenv("INTERVALS_API", "")
+    if "intervals.icu/api" in intervals_api:
+        # report.py --direct: the standard Intervals.icu events list, as the Worker's /calendar/read returns.
+        url = f"{intervals_api}/athlete/0/events?oldest={start}&newest={end}"
+    else:
+        url = f"{CLOUDFLARE_BASE}/calendar/read?start={start}&end={end}&owner={owner}"
     headers = {"content-type": "application/json"}
-    if ICU_TOKEN:
-        headers["Authorization"] = f"Bearer {ICU_TOKEN}" 
+    headers.update(intervals_auth_headers()) 
 
     try:
         debug(context, f"[T3] 🔄 Fetching fallback calendar ({days}d)...")

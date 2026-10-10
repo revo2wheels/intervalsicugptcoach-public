@@ -35,6 +35,7 @@ flowchart LR
 
 - **Railway:** `app.py` is the backend service entry point and dispatches into `audit_core/report_controller.py`.
 - **Local CLI:** `report.py` is the local report execution entry point. It obtains a prefetched dataset through Cloudflare Edge, then runs the Montis coaching engine locally through `audit_core/report_controller.py`.
+- **Run it yourself:** `report.py --direct` reads your data straight from Intervals.icu with your own API key and runs the whole engine on your computer, with no Montis servers. See [docs/RUN_LOCALLY.md](docs/RUN_LOCALLY.md).
 - **Canonical controller:** `audit_core/report_controller.py` executes the deterministic audit and intelligence chain.
 
 `app.py` imports `run_report` directly from `audit_core.report_controller`; the current Railway execution path does not load the historical `all-modules.md` manifest.
