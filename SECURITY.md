@@ -8,7 +8,7 @@ Use GitHub's private reporting: on this repository, open **Security → Report a
 
 ## Your keys
 
-- Your Intervals.icu API key (`ICU_API_KEY`) or OAuth token (`ICU_OAUTH`) gives access to your Intervals.icu account. Keep it in your environment or a local `.env` file, and never commit or share it. `.env` files are ignored by git in this repository.
+- Your Intervals.icu API key (`ICU_API_KEY`) or OAuth token (`ICU_OAUTH`) gives access to your Intervals.icu account. Set it in your terminal, as [docs/RUN_LOCALLY.md](docs/RUN_LOCALLY.md) shows, and never commit or share it.
 - If a key has been exposed, generate a new one in Intervals.icu → Settings → Developer Settings. The old one then stops working.
 
 ## What the engine does with your data

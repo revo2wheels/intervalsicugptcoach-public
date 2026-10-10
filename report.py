@@ -242,7 +242,8 @@ from pathlib import Path
 # --direct reads straight from Intervals.icu with your own credentials (no Montis servers).
 # The engine reads INTERVALS_API when it is imported, so it is set before the imports below.
 DIRECT_INTERVALS_API = "https://intervals.icu/api/v1"
-if "--direct" in sys.argv:
+# argparse also accepts a unique prefix (--di, --dir, …), so match those too.
+if any(len(arg) >= 4 and "--direct".startswith(arg) for arg in sys.argv[1:]):
     os.environ["INTERVALS_API"] = DIRECT_INTERVALS_API
 
 from app import normalize_prefetched_context
@@ -1139,6 +1140,9 @@ def main():
         print("[CLI] --workflow selected; ignoring --lite")
         args.lite = False
 
+    if args.direct and (args.prefetch or args.staging or args.gpt or args.debug or args.strava_test):
+        parser.error("--direct runs everything on your computer; it can't be combined with --prefetch, --staging, --gpt, --debug or --strava-test")
+
     # 🧠 Debug + Prefetch → run BOTH (semantic + debug)
     if args.debug and args.prefetch:
 
@@ -1174,9 +1178,6 @@ def main():
 
         return
 
-
-    if args.direct and (args.prefetch or args.staging or args.gpt or args.debug or args.strava_test):
-        parser.error("--direct runs everything on your computer; it can't be combined with --prefetch, --staging, --gpt, --debug or --strava-test")
 
     # 🧩 Normal flow
     generate_full_report(

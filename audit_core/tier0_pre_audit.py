@@ -10,7 +10,9 @@ import json
 import numpy as np
 from audit_core.utils import set_time_context
 
-INTERVALS_API = os.getenv("INTERVALS_API", "https://intervalsicugptcoach.clive-a5a.workers.dev")
+# Railway and the hosted modes are handed prefetched data and never fetch, so there is
+# no default; report.py --direct sets this to Intervals.icu.
+INTERVALS_API = os.getenv("INTERVALS_API", "")
 
 ICU_TOKEN = os.getenv("ICU_OAUTH")  # OAuth token (ICU_API_KEY also works, see intervals_auth)
 
@@ -60,6 +62,11 @@ def resolve_report_trigger(user_cmd: str, context: dict):
 
 def fetch_with_retry(url: str, headers: dict, max_retries: int = 2):
     """Low-level retry for individual API calls."""
+    if not INTERVALS_API:
+        raise AuditHalt(
+            "❌ This dataset wasn't prefetched and INTERVALS_API isn't set. "
+            "To read Intervals.icu yourself, run report.py --direct."
+        )
     for attempt in range(max_retries + 1):
         resp = requests.get(url, headers=headers)
         if resp.status_code == 200:
@@ -888,15 +895,14 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         end = str(pd.to_datetime(context["range"]["light_end"]).date())
         debug(context, f"[T0-FORCE] CLI override enforced → start={start} end={end}")
 
-    # If Railway has a token, send it; otherwise rely on Worker env.ICU_OAUTH
+    # Only report.py --direct reads Intervals.icu itself and needs credentials here;
+    # Railway and the hosted modes are handed prefetched data.
     if intervals_auth_headers():
         headers.update(intervals_auth_headers())
+    elif context.get("direct_intervals"):
+        raise RuntimeError("Missing Intervals.icu credentials. Set ICU_API_KEY (personal API key) or ICU_OAUTH (OAuth token).")
     else:
-        # Only warn if we're using the Worker proxy
-        if "workers.dev" in INTERVALS_API or "clive-a5a.workers.dev" in INTERVALS_API:
-            debug(context, "[T0] ICU_OAUTH missing on Railway — relying on Worker-held token")
-        else:
-            raise RuntimeError("Missing Intervals.icu credentials. Set ICU_API_KEY (personal API key) or ICU_OAUTH (OAuth token).")
+        debug(context, "[T0] No Intervals.icu credentials — using prefetched data only")
 
     # ============================================================
     # Tier-0 LIGHT DATASET (90d) — FETCH OR PREFETCH (IDENTICAL)

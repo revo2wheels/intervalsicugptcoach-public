@@ -87,7 +87,7 @@ Each run writes a JSON file to the `reports` folder, for example `reports/report
 
 ## What the engine reads
 
-It reads your Intervals.icu profile, activities, wellness records, power curves and planned events for the next 14 days. A weekly report reads about 90 days of activities, and a season report reads more. It only reads; it never changes anything in Intervals.icu.
+It reads your Intervals.icu profile, activities, wellness records, power curves and planned events for the next 14 days. A weekly or season report reads about 90 days of activities, and a summary reads a year. It only reads; it never changes anything in Intervals.icu.
 
 ## Intervals.icu API limits
 
@@ -97,7 +97,7 @@ A report makes about 9 requests, one after another, so normal use stays far belo
 
 - Run one report at a time. Don't run reports in a loop or from several terminals at once.
 - Other scripts and apps that use the same API key count towards the same limits.
-- If you go over, Intervals.icu answers `429 Too Many Requests`. The engine tries twice more straight away, then usually stops without saving a report. If only the power curves or planned events are refused, the report is saved without them.
+- If you go over, Intervals.icu answers `429 Too Many Requests`. The engine retries a few times straight away, then usually stops without saving a report. If only the power curves or planned events are refused, the report is saved without them.
 
 ## If something goes wrong
 

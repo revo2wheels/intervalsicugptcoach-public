@@ -17,7 +17,7 @@ import os, requests, json, traceback
 from audit_core.utils import debug, resolve_prefetched
 from coaching_cheat_sheet import CHEAT_SHEET
 
-CLOUDFLARE_BASE = os.getenv("CLOUDFLARE_BASE", "https://intervalsicugptcoach.clive-a5a.workers.dev")
+CLOUDFLARE_BASE = os.getenv("CLOUDFLARE_BASE", "")
 ICU_TOKEN = os.getenv("ICU_OAUTH")
 from audit_core.intervals_auth import intervals_auth_headers
 
@@ -32,8 +32,11 @@ def fetch_calendar_fallback(context, days=14, owner="intervals"):
     if "intervals.icu/api" in intervals_api:
         # report.py --direct: the standard Intervals.icu events list, as the Worker's /calendar/read returns.
         url = f"{intervals_api}/athlete/0/events?oldest={start}&newest={end}"
-    else:
+    elif CLOUDFLARE_BASE:
         url = f"{CLOUDFLARE_BASE}/calendar/read?start={start}&end={end}&owner={owner}"
+    else:
+        debug(context, "[T3] Calendar not prefetched and CLOUDFLARE_BASE not set — no planned events")
+        return []
     headers = {"content-type": "application/json"}
     headers.update(intervals_auth_headers()) 
 
