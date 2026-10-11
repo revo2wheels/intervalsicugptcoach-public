@@ -1289,6 +1289,20 @@ RENDERER_PROFILES = {
                     "show me more command questions"
                 ]
             }
+        },
+        # Interactive dashboard when the AI app can draw one (e.g. Claude's Visualize); text layout otherwise.
+        "visual_presentation": {
+            "enabled": True,
+            "rules": [
+                "If your app can show interactive visuals (for example Claude's Visualize), present this report as one visual, interactive dashboard. If it can't, use the text layout below.",
+                "Show the main findings immediately: the training state, the adaptive decision (actions.0.adaptive_summary), and the season load, fitness and fatigue figures (training_volume, trend_metrics) as tiles. Use tabs or collapsible sections only for supporting detail.",
+                "Charts: phases_summary as a phase timeline (load and CTL by phase), trend_metrics as load, fitness and fatigue trends, and power progression from energy_system_progression (current against previous window). These charts are allowed even where the text layout forbids a section.",
+                "Keep completed training (phases_summary, training_volume) visibly separate from planned training (phases_future, future_actions, planned_summary_by_iso_week).",
+                "Preserve Montis values and classifications exactly, rounded only for display. Never recompute, estimate or fill in a value; show '—' where one is missing.",
+                "Label each figure with its window and flag any date windows that don't line up.",
+                "Make it readable on a phone: tiles stack and charts fit the screen width.",
+                "The dashboard adds visuals; it never replaces the coaching. Still write in full, as normal text outside the dashboard: the state banner, the coaching sentences for performance intelligence, energy system progression and the adaptive decision, the closing note, the closing reflection and the follow-up commands."
+            ]
         }
     },
 
@@ -1621,6 +1635,19 @@ RENDERER_PROFILES = {
                     "show me more command questions"
                 ]
             }
+        },
+        # Interactive dashboard when the AI app can draw one (e.g. Claude's Visualize); text layout otherwise.
+        "visual_presentation": {
+            "enabled": True,
+            "rules": [
+                "If your app can show interactive visuals (for example Claude's Visualize), present this report as one visual, interactive dashboard. If it can't, use the text layout below.",
+                "Show the main findings immediately: the period totals and current load state (training_volume) and the performance summary (performance_summary) as tiles. Use tabs or collapsible sections only for supporting detail.",
+                "Charts: phases (one row per week) as weekly load with CTL and ATL across the period, phases_summary as a phase timeline, and outliers marked on that timeline. These charts are allowed even where the text layout forbids a section.",
+                "Preserve Montis values and classifications exactly, rounded only for display. Never recompute, estimate or fill in a value; show '—' where one is missing.",
+                "Label each figure with its window and flag any date windows that don't line up.",
+                "Make it readable on a phone: tiles stack and charts fit the screen width.",
+                "The dashboard adds visuals; it never replaces the coaching. Still write in full, as normal text outside the dashboard: the state banner, the coaching sentences, the closing note, the closing reflection and the follow-up commands."
+            ]
         }
     }
 }
