@@ -1028,12 +1028,12 @@ RENDERER_PROFILES = {
         "framing": {
             "intent": "tactical_weekly_control"
         },
-        "question_rule": {
+        "question_rule": [
             "fatigue",
             "adaptation",
             "training load",
             "perceived exertion (RPE / feel)"
-        },
+        ],
         "closing_note": {
             "required": True,
             "verdict_rule": "State clearly whether last week’s training load was handled appropriately.",
@@ -1241,12 +1241,12 @@ RENDERER_PROFILES = {
         "framing": {
             "intent": "medium_term_block_assessment"
         },
-        "question_rule": {
+        "question_rule": [
             "adaptation",
             "training progression",
             "durability",
             "fatigue accumulation"
-        },
+        ],
         "closing_note": {
             "required": True,
             "verdict_rule": "Classify the training block adaptation trajectory.",
@@ -1441,12 +1441,12 @@ RENDERER_PROFILES = {
             "Autonomic suppression combined with elevated ATL indicates recovery pressure.",
             "Stable HRV despite elevated ATL indicates productive adaptation under load."
         ],
-        "question_rule": {
+        "question_rule": [
             "recovery",
             "fatigue perception",
             "sleep quality",
             "morning readiness"
-        },
+        ],
 
         # ----------------------------------------------------------
         # Closing note
@@ -1568,7 +1568,7 @@ RENDERER_PROFILES = {
         "interpretation_rules": [
             "If semantic.training_volume exists, render it under the header 'Training Volume' with three stacked metrics: Hours, Training Load (TSS), Distance.",
             "High-level descriptive interpretation only.",
-            "Avoid granular metrics or micro-coaching."
+            "Avoid granular metrics or micro-coaching.",
             "phases_summary MUST be rendered as a compact table (max 10 rows) with columns: Phase, Duration, Trend",
             "phases_summary should always be sequential dated phases"
         ],
@@ -1599,12 +1599,12 @@ RENDERER_PROFILES = {
         "framing": {
             "intent": "annual_system_health_review"
         },
-        "question_rule": {
+        "question_rule": [
             "long-term training sustainability",
             "adaptation progression",
             "training consistency",
             "fatigue management across the season"
-        },
+        ],
         "closing_note": {
             "required": True,
             "verdict_rule": "Deliver a clear system-level sustainability verdict.",
