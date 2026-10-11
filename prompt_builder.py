@@ -360,6 +360,11 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
         - Style: {state_presentation.get("style")}
         """).strip()
     #-----------------------------------------------------------------
+    visual_block = ""
+    visual_cfg = report_profile.get("visual_presentation", {})
+    if visual_cfg.get("enabled"):
+        visual_block = "VISUAL PRESENTATION:\n" + "\n".join(f"- {r}" for r in visual_cfg.get("rules", []))
+    #-----------------------------------------------------------------
     emphasis_block = ""
     if emphasis:
         emphasis_block = dedent(f"""
@@ -493,6 +498,8 @@ def build_system_prompt_from_header(report_type: str, header: dict) -> str:
     {fatigue_block}
 
     {state_presentation_block}
+
+    {visual_block}
 
     {emphasis_block}
 

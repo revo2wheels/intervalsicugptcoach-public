@@ -1476,6 +1476,19 @@ RENDERER_PROFILES = {
                     "show me more wellness command questions"
                 ]
             }
+        },
+        # Interactive dashboard when the AI app can draw one (e.g. Claude's Visualize); text layout otherwise.
+        "visual_presentation": {
+            "enabled": True,
+            "rules": [
+                "If your app can show interactive visuals (for example Claude's Visualize), present this report as one visual, interactive dashboard. If it can't, use the text layout below.",
+                "Show the main findings immediately: the STATE values as tiles and the SIGNALS as rows with their green/amber/red state. Use tabs or collapsible sections only for supporting detail (trend charts, recovery markers, subjective scores, training stress context).",
+                "Charts: wellness.hrv_series as a line against wellness.hrv.mean, and the sleep score, CTL and ATL from wellness.daily as trends. These charts are allowed even though the text layout forbids day-by-day tables.",
+                "Preserve Montis values and classifications exactly, rounded only for display. Never recompute, estimate or fill in a value; show '—' where one is missing.",
+                "Label each figure with its window (42-day, 14-day, 7-day) and flag any date windows that don't line up.",
+                "Make it readable on a phone: tiles stack and charts fit the screen width.",
+                "The dashboard adds visuals; it never replaces the coaching. Still write the state banner, interpretation bullets, coaching sentences, closing note, closing reflection and follow-up commands in full, as normal text outside the dashboard."
+            ]
         }
     },
 
