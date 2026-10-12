@@ -450,6 +450,21 @@ RENDERER_PROFILES = {
             ),
         },
 
+        # Interactive dashboard when the AI app can draw one (e.g. Claude's Visualize); text layout otherwise.
+        "visual_presentation": {
+            "enabled": True,
+            "rules": [
+                "If your app can show interactive visuals (for example Claude's Visualize), present this report as one visual, interactive dashboard. If it can't, use the text layout below.",
+                "Show the main findings immediately: the one-line verdict, the adaptive decision (ADE score and directive), readiness and recovery as tiles. Use tabs or collapsible sections only for supporting detail.",
+                "Charts: daily_load as completed load against what was planned (planned_events_7d, current_ISO_weekly_microcycle), the intensity distribution from zones, the recovery indicators from wellness, and power progression from energy_system_progression (current against previous window). These charts are allowed even where the text layout forbids a section.",
+                "Keep completed training (events, daily_load) visibly separate from planned training (planned_events_7d, planned_summary_by_iso_week, future_forecast).",
+                "Preserve Montis values and classifications exactly, rounded only for display. Never recompute, estimate or fill in a value; show '—' where one is missing.",
+                "Label each figure with its window and flag any date windows that don't line up.",
+                "Make it readable on a phone: tiles stack and charts fit the screen width.",
+                "The dashboard adds visuals; it never replaces the coaching. Still write in full, as normal text outside the dashboard: the one-line verdict, the coaching for performance intelligence, energy system progression and the adaptive decision, the closing note and the What next section."
+            ]
+        },
+
         "layout": {
             "style": "workflow_review",
             "required_sections": [
@@ -610,6 +625,21 @@ RENDERER_PROFILES = {
             "intent": "bento_weekly_overview",
             "purpose": "Compact ChatGPT weekly dashboard. Summarise, do not expand into full report.",
             "required_opening": "One-line state summary combining physiology + governance."
+        },
+
+        # Interactive dashboard when the AI app can draw one (e.g. Claude's Visualize); text layout otherwise.
+        "visual_presentation": {
+            "enabled": True,
+            "rules": [
+                "If your app can show interactive visuals (for example Claude's Visualize), present this overview as one visual, interactive dashboard. If it can't, use the text layout below.",
+                "Draw the overview's cards as dashboard tiles in the same card order, keeping each card's title and required fields; the Adaptive Decision Engine card with its ADE score stays first after Athlete Context. Use tabs or collapsible sections only for supporting detail.",
+                "Charts: daily_load as a daily training-load chart, the recovery indicators from wellness, and power progression from energy_system_progression (current against previous window). These charts are allowed even where the text layout forbids a section.",
+                "Keep completed training (training_volume, daily_load) visibly separate from planned training (planned_summary_by_iso_week, future_forecast, future_actions).",
+                "Preserve Montis values and classifications exactly, rounded only for display. Never recompute, estimate or fill in a value; show '—' where one is missing.",
+                "Label each figure with its window and flag any date windows that don't line up.",
+                "Make it readable on a phone: tiles stack and charts fit the screen width.",
+                "The dashboard adds visuals; it never replaces the coaching. Still write the one-line state summary and the What next section in full, as normal text outside the dashboard."
+            ]
         },
 
         "layout": {
