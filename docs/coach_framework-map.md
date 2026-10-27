@@ -128,29 +128,6 @@ This structure maximises aerobic development, improves metabolic efficiency, and
 
 ---
 
-## San Millán Metabolic Flexibility Model
-### Framework Description:
-This model focuses on **metabolic flexibility** and the ability of endurance athletes to adapt their fuel utilization (aerobic vs. anaerobic). It emphasizes training the body's ability to switch between energy systems.
-
-### Key Metrics:
-- **Audit Metrics**:
-  - **FatOxidationIndex** (Tier-2): Assesses the ability of an athlete to utilize fat for energy, indicating metabolic flexibility.
-  - **Strain** (Tier-2): Helps track overall metabolic stress, which can indicate the need for **lower-intensity aerobic training** to improve fat oxidation.
-
-### Derived Markers / Metrics:
-- **Aerobic Threshold**: A marker derived from the **FatOxidationIndex** and **Strain**, representing the point at which the body switches from predominantly fat-burning to glycogen-burning.
-- **Metabolic Flexibility Index**: A derived marker used to assess how efficiently the athlete can switch between aerobic and anaerobic energy systems.
-
-### Integration of Audit Outputs:
-- **FatOxidationIndex** is directly impacted by training intensity, which is monitored by **Strain**. This metric helps decide whether an athlete’s intensity should be adjusted to further develop **fat oxidation**.
-
-### Report Placement:
-- **FatOxidationIndex** appears in the **Metabolic Efficiency** section of the **Unified Report**.  
-- **Strain** is featured in the **Fatigue Resistance** section.
-- **Aerobic Threshold** and **Metabolic Flexibility Index** are placed in the **Metabolic Adaptation** section.
-
----
-
 ## Friel Periodisation Model
 ### Framework Description:
 **Periodisation** is the systematic planning of training to maximize performance and prevent overtraining. This framework divides the training cycle into distinct phases (e.g., base, build, peak).
@@ -208,6 +185,6 @@ The **Critical Power (CP) Model** involves the measurement of **Wprime** (work d
 
 
 ## Conclusion
-The **coaching framework** operates similarly in both Cloud and Local modes, using **audit-derived metrics** (ACWR, Strain, Monotony, FatOxidationIndex) to adjust **training load**, **fatigue resistance**, and **readiness**. The main difference lies in orchestration and runtime environment; audit logic and coaching semantics are identical. Both modes ensure coaches can make data-driven, adaptive decisions to optimize athlete training and performance.
+The **coaching framework** operates similarly in both Cloud and Local modes, using **audit-derived metrics** (ACWR, Strain, Monotony) to adjust **training load**, **fatigue resistance**, and **readiness**. The main difference lies in orchestration and runtime environment; audit logic and coaching semantics are identical. Both modes ensure coaches can make data-driven, adaptive decisions to optimize athlete training and performance.
 
 ---

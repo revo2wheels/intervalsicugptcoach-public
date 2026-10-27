@@ -569,7 +569,6 @@ Load → Physiology → Performance → Adaptation → Decision
                  │        Metrics           │
                  │  - ACWR                  │
                  │  - Monotony / Strain     │
-                 │  - FatOx / efficiency    │
                  │  - lactate calibration   │
                  └────────────┬─────────────┘
                               │

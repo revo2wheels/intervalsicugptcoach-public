@@ -46,11 +46,10 @@ Unified interpretation and reporting framework for endurance performance metrics
 
 ---
 
-## 5. FatOx & Efficiency Metrics
+## 5. Efficiency Metrics
 
 | Metric | Formula | Ideal Range | Notes |
 |:--|:--|:--|:--|
-| **FatOx Efficiency (FOxI)** | `Joules / kcal × aerobic_fraction` | 0.7–1.3 | Estimates aerobic efficiency |
 | **Efficiency Factor (EF)** | `NP / HR` | Contextual | Tracks aerobic endurance improvement |
 | **Decoupling (%)** | `|HR drift|` | < 5 % | Stability of effort |
 
@@ -105,17 +104,7 @@ Unified interpretation and reporting framework for endurance performance metrics
 
 ### Training Quality Index (TQI)
 
-| Metric | Formula | Target Range | Status |
-|:--|:--|:--|:--|
-| TQI | `(TSS / Hours) × FOxI × (Z2% + Z3%)` | 100–180 | Session efficiency and pacing execution |
-| FOxI | `FatOxEfficiency / 100` | 0.8–1.2 | Fat oxidation efficiency normalized factor |
-| Z2% + Z3% | Proportion of aerobic & tempo zone time | ≥ 60 % | Optimal endurance distribution |
-
-**Interpretation:**
-- `< 80`: Under-paced or incomplete session.  
-- `80–120`: Normal endurance session.  
-- `120–180`: High-quality aerobic or race-specific load.  
-- `> 180`: Over-reaching or pacing error; review plan.
+Retired with FOxI, which its formula used. The engine never calculated it.
 
 ## 11. 🧩 Periodisation Framework
 
@@ -178,13 +167,10 @@ Unified interpretation and reporting framework for endurance performance metrics
 
 ---
 
-### Metabolic Adaptation Metrics
+### Capacity & Intensity Metrics
 
 | Metric | Range | Meaning |
 |:--|:--:|:--|
-| **CUR (Carbohydrate Utilisation Ratio)** | 30–80 | Balanced substrate use |
-| **GR (Glucose Ratio)** | 0.5–2.0 | >2 = glycolytic bias |
-| **MES (Metabolic Efficiency Score)** | 20–100 | >20 = endurance economy |
 | **StressTolerance** | 2–8 | Sustainable strain capacity |
 | **ZQI (Zone Quality Index)** | Informational | % of time in Seiler zone 3 (Z5–Z7, above LT2 ≈ FTP). No good/bad bands (none are published); for reference, elites spend ~1–8 % of time above LT2 by time in zone, polarised blocks ~15–20 % by session goal |
 

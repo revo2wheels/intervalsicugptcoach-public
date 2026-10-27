@@ -36,11 +36,6 @@ CHEAT_SHEET["thresholds"] = {
     },
     "LIR": {"green": (0.8, 1.2), "amber": (0.6, 1.4), "red": (0.0, 0.6)},
     "EnduranceReserve": {"green": (1.2, 2.0), "amber": (0.8, 1.2), "red": (0.0, 0.8)},
-    "FatOxEfficiency": {"green": (0.4, 0.8), "amber": (0.3, 0.9)},
-    "FOxI": {"green": (30, 80), "amber": (20, 90)},          # FatOx Index %
-    "CUR": {"green": (30, 70), "amber": (20, 80)},        # Carbohydrate Utilisation Ratio
-    "GR": {"green": (0.5, 2.0), "amber": (0.3, 3.0)},         # Glucose Ratio
-    "MES": {"green": (20, 100), "amber": (10, 120)},          # Metabolic Efficiency Score
     "ACWR_Risk": {"green": (0, 1), "amber": (1, 1)},          # Placeholder to silence undefined
     "Durability": {"green": (0.9, 1.2),"amber": (0.7, 0.9),"red": (0.0, 0.7)},
     "IFDrift": {"green": (0.0, 0.05), "amber": (0.05, 0.10), "red": (0.10, 1.0)},
@@ -902,11 +897,6 @@ CHEAT_SHEET["context"] = {
         "load accumulation, and a negative value indicates unloading."
     ),
     "ZQI": "Zone Quality Index: % of training time in Seiler zone 3 (power Z5–Z7, above LT2 ≈ FTP; Ride HR zones only when no power). Informational, with no good/bad bands. For reference, elite endurance athletes typically spend about 1–8 % of their time above LT2 measured by time in zone (Seiler & Tønnessen 2009; Sylta et al. 2014); polarised blocks reach about 15–20 % when counted by session goal.",
-    "FatOxEfficiency": "0.4–0.8 means balanced fat oxidation; lower = carb dependence.",
-    "FOxI": "FatOx index %; higher values mean more efficient aerobic base.",
-    "CUR": "Carbohydrate Utilisation Ratio; 30–70 indicates balanced metabolic use.",
-    "GR": "Glucose Ratio; >2 indicates excess glycolytic bias.",
-    "MES": "Metabolic Efficiency Score; >20 is good endurance economy.",
     "ACWR_Risk": "Used internally for stability check.",
     "StressTolerance": (
         "Capacity-adjusted weekly load ratio (ΣTSS_7d / (CTL × 7)). "
@@ -1061,12 +1051,7 @@ CHEAT_SHEET["coaching_links"] = {
         "If FatigueTrend rises above +10%, recent load is accumulating relative "
         "to the prior baseline — monitor recovery, intensity density, and planned load."
     ),
-    "FatOxEfficiency": "If FatOxEfficiency is low (<0.6), focus on improving aerobic base with longer, low-intensity efforts.",
     "ZQI": "Read ZQI with the Seiler distribution type and the training phase: low values are normal in base or recovery blocks; higher values are expected when high-intensity work is prescribed. Time in zone understates high intensity compared with counting sessions.",
-    "FOxI": "If FOxI is increasing, continue to prioritize low-intensity work to enhance fat metabolism. If it decreases, consider increasing your Zone 2 training duration.",
-    "CUR": "If CUR is outside the green zone (30-70), adjust carbohydrate intake and fueling strategy to ensure balanced metabolic use during long sessions.",
-    "GR": "If GR exceeds 2.0, focus on reducing glycolytic intensity and increase aerobic work. Ensure sufficient recovery to avoid over-reliance on carbs.",
-    "MES": "If MES is below 20, work on improving metabolic efficiency by increasing endurance training with a focus on aerobic base and fat metabolism.",
     "StressTolerance": (
         "If StressTolerance >1.4, weekly load significantly exceeds chronic capacity — "
         "reduce volume or intensity and monitor recovery. "

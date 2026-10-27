@@ -6,7 +6,7 @@ Builds a FULL semantic DICT coaching graph based on the Unified Reporting
 Framework v5.1, Coaching Profile, Coaching Cheat Sheet, and all Tier-2/3 modules.
 
 """
-import json, math, copy
+import json, math, copy, numbers
 from datetime import datetime, date, timezone, timedelta
 import pandas as pd
 from math import isnan
@@ -527,6 +527,71 @@ def resolve_training_load_pattern(metrics_groups, cheat_sheet):
         "inputs": values
     }
 
+def build_vo2max_block(context, semantic):
+    """
+    physiology.vo2max — VO2max estimate (contract agreed with Clive, 2026-10-27).
+
+    Intervals.icu's vo2max_5m (Sitko et al. 2022 equation on the best 5-minute
+    power) of the current and previous Ride ESPE curves, kept unrounded, with
+    the exact 300 s effort behind the current one. Garmin's value is listed
+    apart and never combined with the estimate. Missing values are None
+    (JSON null), never NaN.
+    """
+
+    def number(value):
+        if isinstance(value, bool) or not isinstance(value, numbers.Real):
+            return None
+        if not math.isfinite(value):
+            return None
+        return int(value) if isinstance(value, numbers.Integral) else float(value)
+
+    ride_curves = (context.get("power_curve") or {}).get("Ride") or {}
+    vo2max_5m = ride_curves.get("vo2max_5m") or {}
+    effort = vo2max_5m.get("current_effort")
+
+    quality_flags = ["maximal_effort_unconfirmed"]
+
+    if isinstance(effort, dict):
+        effort = {
+            "power_w": number(effort.get("power_w")),
+            "weight_kg": number(effort.get("weight_kg")),
+            "duration_s": 300,
+            "activity_id": effort.get("activity_id"),
+            "date": effort.get("date") or None,
+        }
+        if effort["weight_kg"] is None:
+            quality_flags.append("missing_weight")
+        if effort["date"] is None:
+            quality_flags.append("missing_effort_date")
+    else:
+        effort = None
+        quality_flags.append("no_exact_5min_point")
+
+    ride_profile = (
+        ((semantic.get("meta") or {}).get("athlete") or {}).get("profiles") or {}
+    ).get("ride") or {}
+
+    return {
+        "value": number(vo2max_5m.get("current")),
+        "previous_value": number(vo2max_5m.get("previous")),
+        "unit": "ml/kg/min",
+        "tag": "estimated",
+        "method": "Best 5-minute power, Sitko et al. 2022 equation (Intervals.icu vo2max_5m)",
+        "source": "Sitko 2022; Intervals.icu",
+        "window_days": number(ride_curves.get("window_days")),
+        "effort": effort,
+        "quality_flags": quality_flags,
+        "garmin": {
+            "value": number(ride_profile.get("vo2max_garmin")),
+            "source": "Garmin (VO2MaxGarmin custom field, Ride)",
+            "note": "Method unpublished",
+        },
+        "interpretation": (
+            "Estimate from your best 5 minutes in the last 12 weeks. "
+            "Maximal effort not confirmed."
+        ),
+    }
+
 def resolve_physiology_state(wellness, cheat_sheet):
     """
     Resolve wellness-only physiology state.
@@ -821,21 +886,6 @@ def build_insights(semantic):
     polarisation_window = "7d"
 
     if report_type != "wellness":
-
-        # --- Metabolic (FOxI proxy) ---
-        foxi = semantic.get("metrics", {}).get("FOxI", {}).get("value")
-
-        if isinstance(foxi, (int, float)):
-            foxi_block = semantic_block_for_metric("FOxI", foxi, semantic)
-
-            insights["fat_oxidation_index"] = {
-                "value": foxi,
-                "window": window,
-                "basis": "FOxI",
-                "classification": foxi_block.get("classification"),
-                "interpretation": foxi_block.get("interpretation"),
-                "coaching_implication": foxi_block.get("coaching_implication"),
-            }
 
         # --- Fitness Phase (ACWR classification) ---
         acwr_val = semantic.get("metrics", {}).get("ACWR", {}).get("value")
@@ -3530,11 +3580,6 @@ def build_semantic_json(context):
         # Short-term / 7-day metrics
         "Polarisation": "7d",
         "PolarisationIndex": "7d",
-        "FatOxEfficiency": "7d",
-        "FOxI": "7d",
-        "MES": "7d",
-        "CUR": "7d",
-        "GR": "7d",
         "StressTolerance": "7d",
         "ZQI": "7d",
 
@@ -3574,13 +3619,6 @@ def build_semantic_json(context):
         },
         "variability": {
             "Monotony": semantic["metrics"].get("Monotony"),
-        },
-        "metabolic": {
-            "FOxI": semantic["metrics"].get("FOxI"),
-            "CUR": semantic["metrics"].get("CUR"),
-            "GR": semantic["metrics"].get("GR"),
-            "MES": semantic["metrics"].get("MES"),
-            "FatOxEfficiency": semantic["metrics"].get("FatOxEfficiency"),
         },
         "capacity": {
             "StressTolerance": semantic["metrics"].get("StressTolerance"),
@@ -4118,6 +4156,23 @@ def build_semantic_json(context):
     else:
 
         debug(context, "[SEMANTIC] energy_system_progression not present")
+
+    # ---------------------------------------------------------
+    # 🫁 VO2max estimate (physiology.vo2max)
+    # Every report that runs ESPE; sits beside physiology.lactate_calibration.
+    # ---------------------------------------------------------
+    if isinstance(espe, dict) and espe:
+
+        semantic.setdefault("physiology", {})
+        semantic["physiology"]["vo2max"] = build_vo2max_block(context, semantic)
+
+        debug(
+            context,
+            "[SEMANTIC] Injected physiology.vo2max → "
+            f"value={semantic['physiology']['vo2max']['value']} "
+            f"previous={semantic['physiology']['vo2max']['previous_value']} "
+            f"flags={semantic['physiology']['vo2max']['quality_flags']}"
+        )
 
     # ---------------------------------------------------------
     # ⚡ ESPE → Coaching Action(s)

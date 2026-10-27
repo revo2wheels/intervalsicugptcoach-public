@@ -6,9 +6,9 @@
 
 This coach blends **data-driven precision** with **evidence-based training principles**. By combining objective load metrics (TSS, CTL, ATL, HRV, VO₂max) with subjective feedback (RPE, mood, recovery), the coach delivers **personalized, phase-based training plans**.
 
-Using advanced markers like **ACWR, Monotony, Strain, Durability Index, Polarisation Index, FatOxidation Index, and BenchmarkIndex**, the coach quickly flags risks, tracks readiness, and ensures balance between **hard and easy days**.
+Using advanced markers like **ACWR, Monotony, Strain, Durability Index, Polarisation Index, and BenchmarkIndex**, the coach quickly flags risks, tracks readiness, and ensures balance between **hard and easy days**.
 
-With deep expertise across **triathlon, cycling, running, and endurance sports**, this coach applies frameworks like **Seiler’s 80/20 principle, Banister TRIMP load modeling, Foster’s Monotony/Strain, Iñigo San Millán’s Zone 2 fat-oxidation model, and Joe Friel’s periodisation and benchmarking protocols**. Whether preparing for Ironman, Gran Fondo, or Marathon, the coach ensures athletes peak at the right time while minimizing injury risk.
+With deep expertise across **triathlon, cycling, running, and endurance sports**, this coach applies frameworks like **Seiler’s 80/20 principle, Banister TRIMP load modeling, Foster’s Monotony/Strain, Iñigo San Millán’s Zone 2 model, and Joe Friel’s periodisation and benchmarking protocols**. Whether preparing for Ironman, Gran Fondo, or Marathon, the coach ensures athletes peak at the right time while minimizing injury risk.
 
 ---
 
@@ -18,8 +18,8 @@ With deep expertise across **triathlon, cycling, running, and endurance sports**
 |:--|:--|
 | **Load Management** | ACWR, Strain, Monotony (Foster), CTL/ATL/Form, TRIMP (Banister), W′/CP modeling (Skiba), load balance validation |
 | **Recovery Analysis** | Recovery Index (HRV + RestHR + Form), fatigue detection, sleep quality integration, readiness tracking (Noakes model), subjective recovery scaling |
-| **Training Quality** | Polarisation Index (Treff 2019; Seiler 3-zone), Durability Index (Sandbakk), Session Quality Ratio, FatOxidation Index (San Millán), training monotony harmonisation |
-| **Fat-Oxidation & Endurance Physiology** | Zone 2 metabolic profiling (Iñigo San Millán), HR–Power decoupling, FatOxidation Index computation, mitochondrial efficiency modeling, Recovery–Polarisation interaction mapping |
+| **Training Quality** | Polarisation Index (Treff 2019; Seiler 3-zone), Durability Index (Sandbakk), Session Quality Ratio, training monotony harmonisation |
+| **Endurance Physiology** | Zone 2 metabolic profiling (Iñigo San Millán), HR–Power decoupling, mitochondrial efficiency modeling, Recovery–Polarisation interaction mapping |
 | **Performance Benchmarking & Periodisation** | FTP/LT testing (Coggan), BenchmarkIndex, SpecificityIndex, consistency tracking, microcycle (3:1 / 2:1) load ratios, age-adapted ATL modeling (Joe Friel) |
 | **Frameworks Applied** | Seiler 80/20 Polarisation • Banister TRIMP • Foster Monotony–Strain • Iñigo San Millán Zone 2 • Joe Friel Periodisation • Sandbakk Durability • Skiba W′/Critical Power • Coggan Power Zones • Noakes Central Governor • Hybrid Polarised–Sweet Spot |
 | **Decision Rules** | Hard Days Hard / Easy Days Easy • Overload→Deload cycles • Consistency tracking • Load–Readiness modulation • Fatigue threshold gating |
@@ -28,36 +28,9 @@ With deep expertise across **triathlon, cycling, running, and endurance sports**
 
 ---
 
-## 🧬 Additional Marker Integration — Fat-Oxidation / Zone 2
+## 🧬 Zone 2 — San Millán Notes
 
-**Framework Source:** Iñigo San Millán, UAE Team Emirates physiological model  
-**Purpose:** Assess mitochondrial density and lipid metabolism efficiency through Zone 2 endurance profiling.  
-
-**Marker Definition**  
-- **`FatOxidationIndex`** → derived metric from Zone 2 rides using IF (0.65–0.75), decoupling %, and HRV trend.  
-- Formula (simplified):  
-  \[
-  FatOxidationIndex = (1 - |IF - 0.7| / 0.1) \times (1 - \text{Decoupling}/10)
-  \]  
-- Evaluates aerobic durability, substrate utilization, and recovery balance.  
-
-**Integration**  
-- Included in weekly and seasonal reports (Section Advanced → Efficiency).  
-- Uses existing markers:  
-  - `avgDecoupling` (Durability Index)  
-  - `PolarisationIndex` (Treff PI, informational)  
-  - `RecoveryIndex` (post-session adaptation)  
-  - `IF`, `RPE`, `Feel` (effort validation)  
-- Classified:  
-  - ✅ ≥ 0.80 = optimal fat oxidation  
-  - ⚠️ 0.60–0.79 = moderate adaptation  
-  - ❌ < 0.60 = glycolytic bias / low durability  
-
-**Weekly Report Placement**  
-- Added to *Training Quality* section alongside Polarisation Index and Durability Index.  
-- Render placeholder: `{fatOxidationIndexRaw}` + `{fatOxidationIndexEval}`
-
----
+The engine does not estimate fat oxidation from ride data. The notes below are background on Zone 2.
 
 ### 📖 Reference Notes — Iñigo San Millán Zone 2 Model
 
@@ -70,13 +43,6 @@ With deep expertise across **triathlon, cycling, running, and endurance sports**
 > “The talk-test—being able to speak in full sentences—is a practical field indicator of Zone 2 when laboratory testing is unavailable.”  
 
 > “Spending large amounts of time above LT1 limits mitochondrial adaptation and suppresses fat oxidation capacity.”  
-
-**Integration Summary**  
-These statements confirm the design of the `FatOxidationIndex` marker:  
-- Uses IF 0.65–0.75 (approximation of top-end Z2 below LT1).  
-- Validated by HR-Power decoupling ≤ 5 % and RPE ≤ 4.  
-- Focused on cumulative duration rather than acute load.  
-- Warns that excessive mid-intensity (grey-zone) work reduces aerobic adaptation efficiency.
 
 ---
 
@@ -93,12 +59,6 @@ Use HR-Power decoupling and recovery markers to adjust the Zone 2 target dynamic
 
 **3. Lactate & Adaptation Efficiency**  
 Sustained training above LT1 or decoupling > 5 % leads to higher lactate levels, which **impairs mitochondrial signaling and fat-oxidation capacity**.  
-Sessions flagged with repeated high drift or elevated RPE should be classed as glycolytic and excluded from FatOxidationIndex scoring.
-
-**Implementation in Marker Logic**  
-- `FatOxidationIndex` validated only if decoupling ≤ 5 % and RPE ≤ 4.  
-- Add parameter `{individualCalibration=True}` when athlete has validated metabolic test results.  
-- Weekly Zone 2 audit highlights over-intensity frequency to monitor for lactate-induced adaptation loss.
 
 ---
 
@@ -202,7 +162,7 @@ Target Z1 ≥ 60 %, Z2 ≤ 40 %, Z3 ≤ 10 %.
 - **Seiler, S. & Tønnessen, E. (2009).** *Intervals, Thresholds, and Long Slow Distance: The Role of Intensity and Duration in Endurance Training.* European Journal of Sport Science, 9(1), 3–13.  
 - **Banister, E. W. (1975).** *Modeling of Training and Overtraining.* In: *Proceedings of the First International Symposium on Biochemistry of Exercise.* University Park Press.  
 - **Foster, C. (1998).** *Monitoring Training in Athletes with Reference to Overtraining Syndrome.* Medicine & Science in Sports & Exercise, 30(7), 1164–1168.  
-- **San Millán, I. (2019).** *Metabolic Flexibility and Mitochondrial Function in Endurance Athletes.* Journal of Applied Physiology, 127(5), 1453–1461.  
+- **San Millán, I. (2019).** *Metabolic Flexibility and Mitochondrial Function in Endurance Athletes.* Journal of Applied Physiology, 127(5), 1453–1461. **Not found:** no record with this title in Europe PMC (search of 27 Oct 2026).  
 - **Friel, J. (2012).** *The Triathlete’s Training Bible (4th ed.).* VeloPress.  
 - **Sandbakk, Ø. & Holmberg, H. C. (2017).** *Physiological Capacity and Training Routines of Elite Endurance Athletes.* Scandinavian Journal of Medicine & Science in Sports, 27(7), 701–712.  
 - **Skiba, P. F. (2014).** *The Application of the Critical Power Model to Cycling.* European Journal of Applied Physiology, 114(11), 2441–2453.  

@@ -410,6 +410,73 @@ def normalize_prefetched_context(data):
                 for name, seconds in ANCHOR_SECONDS.items()
             }
 
+        def extract_5min_effort(block, activities):
+            # The effort behind Intervals' vo2max_5m. Intervals computes it from
+            # W/kg, so this is the W/kg winner, which can be a different ride
+            # from the watts winner. Exact 300 s only: a nearby duration is not
+            # a 5-minute effort.
+            if not isinstance(block, dict):
+                return None
+
+            secs = block.get("secs") or []
+
+            if not isinstance(secs, list) or 300 not in secs:
+                return None
+
+            idx = secs.index(300)
+            activities = activities if isinstance(activities, dict) else {}
+
+            def find_activity(activity_id):
+                return (
+                    activities.get(activity_id)
+                    or activities.get(str(activity_id or "")[1:])
+                    or {}
+                )
+
+            wkg = block.get("watts_per_kg")
+            wkg_acts = block.get("wkg_activity_id")
+
+            if (
+                isinstance(wkg, list)
+                and isinstance(wkg_acts, list)
+                and idx < len(wkg)
+                and idx < len(wkg_acts)
+                and wkg[idx] is not None
+                and wkg_acts[idx]
+            ):
+                activity_id = wkg_acts[idx]
+
+                if not str(activity_id).startswith("i"):
+                    activity_id = f"i{activity_id}"
+
+                activity = find_activity(activity_id)
+                weight = activity.get("icu_weight") or block.get("weight")
+
+                return {
+                    "power_w": round(wkg[idx] * weight) if weight else None,
+                    "weight_kg": weight,
+                    "duration_s": 300,
+                    "activity_id": activity_id,
+                    "date": str(activity.get("start_date_local") or "")[:10] or None,
+                }
+
+            # No W/kg arrays: the watts winner, with the curve's weight
+            anchor = extract_anchor(block, 300, allow_closest=False)
+
+            if not anchor or anchor.get("power") is None:
+                return None
+
+            activity_id = anchor.get("activity_id")
+            activity = find_activity(activity_id)
+
+            return {
+                "power_w": anchor.get("power"),
+                "weight_kg": block.get("weight") or activity.get("icu_weight"),
+                "duration_s": 300,
+                "activity_id": activity_id,
+                "date": str(activity.get("start_date_local") or "")[:10] or None,
+            }
+
         def extract_fft_model(block):
             if not isinstance(block, dict):
                 return None
@@ -566,6 +633,17 @@ def normalize_prefetched_context(data):
                         ),
                         "r2": (
                             (curr.get("mapPlot") or {}).get("poR2")
+                        ),
+                    },
+                    # Intervals' VO2max estimate from best 5-min power, per normal
+                    # curve and unrounded, with the effort behind the current one.
+                    # ESPE doesn't read it; the report's physiology.vo2max does.
+                    "vo2max_5m": {
+                        "current": curr.get("vo2max_5m"),
+                        "previous": prev.get("vo2max_5m"),
+                        "current_effort": extract_5min_effort(
+                            curr,
+                            payload.get("activities")
                         ),
                     },
                 }

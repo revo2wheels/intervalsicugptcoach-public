@@ -20,7 +20,7 @@ Markdown rendering and presentation layers consume this JSON and are not sources
 | **validate_event_completeness()** | `audit_core/tier2_event_completeness.py` | All | Rest day / current day semantic classification |
 | **enforce_event_only_totals()** | `audit_core/tier2_enforce_event_only_totals.py` | All | Canonical event-only totals |
 | **validate_calculation_integrity()** | `audit_core/tier2_calculation_integrity.py` | All | Variance and tolerance enforcement |
-| **compute_derived_metrics()** | `audit_core/tier2_derived_metrics.py` | Seiler, Banister, San Millán | Emits canonical load, fatigue, intensity, durability metrics |
+| **compute_derived_metrics()** | `audit_core/tier2_derived_metrics.py` | Seiler, Banister | Emits canonical load, fatigue, intensity, durability metrics |
 | **compute_extended_metrics()** | `audit_core/tier2_extended_metrics.py` | Friel, Skiba | Emits extended performance and metabolic metrics |
 | **evaluate_actions()** | `audit_core/tier2_actions.py` | All | Generates adaptive coaching actions |
 | **run_report()** | `audit_core/report_controller.py` | All | Orchestrates Tier-0 → Tier-2 and semantic assembly |
@@ -38,7 +38,6 @@ Markdown rendering and presentation layers consume this JSON and are not sources
 | **Seiler 80/20 Polarisation** | `Polarisation` (Seiler Z1 % + type), `PolarisationIndex` (Treff), `Polarisation_fused`, `Polarisation_combined`, `sessions.quality_balance` | `tier2_derived_metrics.py`, `tier2_render_validator.py` |
 | **Banister Fitness–Fatigue (TRIMP / ACWR)** | `load.acwr`, `load.strain`, `load.trimp`, `load.fatigue_trend` | `tier2_derived_metrics.py`, `tier2_actions.py` |
 | **Foster Monotony / Strain** | `load.monotony`, `load.strain`, `load.stress_tolerance` | `tier2_derived_metrics.py` |
-| **San Millán Metabolic Flexibility** | `metabolic.fat_oxidation_index (FOxI)`, `metabolic.fatox_efficiency`, `metabolic.cur`, `metabolic.gr`, `metabolic.mes` | `tier2_extended_metrics.py`, `tier2_derived_metrics.py` |
 | **Friel Periodisation & Recovery Logic** | `context.phase`, `context.endurance_reserve`, `context.fatigue_index`, `context.readiness`, `context.recovery_index` | `tier2_extended_metrics.py`, `tier2_actions.py`, `coaching_profile.py` |
 | **Sandbakk Durability** | `performance.durability_index`, `efficiency_drift`, `z2_stability` | `tier2_extended_metrics.py`, `tier2_actions.py` |
 | **Skiba Critical Power (CP / W′)** | `performance.cp`, `performance.wprime`, `performance.depletion_rate` | `tier2_extended_metrics.py` |

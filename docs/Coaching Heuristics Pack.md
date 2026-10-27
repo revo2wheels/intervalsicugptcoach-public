@@ -69,7 +69,6 @@ Flag recovery days > 20 % Z3/Z4 as violations.
 | Variable | Target | Interpretation |
 |:--|:--|:--|
 | **Zone 2 Volume Fraction** | ≥ 20 % weekly duration | sufficient mitochondrial stimulus |
-| **FatOxidation Index** | ≥ 0.7 | strong aerobic efficiency |
 | **HR–Power Decoupling** | ≤ 5 % | stable fat-oxidation |
 | **Z2 Deficit Rule** | if Z2 < 15 % → add 1 low-intensity session / week | |
 

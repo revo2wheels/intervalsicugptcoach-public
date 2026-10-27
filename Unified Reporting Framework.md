@@ -46,11 +46,10 @@ Every report inherits the following structure:
  3.1 **Event Cards and Relationship Model** — 1:1 mapping between Event Log rows and rendered Event Cards.  
 4. **Training Quality Section** — Zone distribution, endurance–quality ratio, and HIIT density index (Seiler, Laursen).  
 5. **Efficiency & Adaptation Section** — advanced markers (Benchmark, Specificity, Consistency, Durability).  
-6. **Metabolic Efficiency Section** — substrate oxidation, fuel balance, and efficiency metrics (San Millán, Stellingwerff).  
-7. **Recovery & Wellness Section** — HRV, RestHR, Sleep, Mood, Stress, RPE bias (Marcora).  
-8. **Load Balance Section (Banister / Foster)** — ACWR, Monotony, Strain, TSB integration (McGregor).  
-9. **Performance Insights** — automated interpretation logic (Seiler, San Millán, Friel, Kiely).  
-10. **Actions** — adaptive next steps (3–5 max) referencing all coaching models.  
+6. **Recovery & Wellness Section** — HRV, RestHR, Sleep, Mood, Stress, RPE bias (Marcora).  
+7. **Load Balance Section (Banister / Foster)** — ACWR, Monotony, Strain, TSB integration (McGregor).  
+8. **Performance Insights** — automated interpretation logic (Seiler, San Millán, Friel, Kiely).  
+9. **Actions** — adaptive next steps (3–5 max) referencing all coaching models.  
 
 ---
 
@@ -102,7 +101,6 @@ Tier-2 variables take precedence where overlap exists.
 | Monotony | {{ monotony | round(2) }} | — | {{ monotonyFlag }} |
 | Strain | {{ strain | round(0) }} | — | — |
 | Recovery Index | {{ recoveryIndex | round(2) }} | — | {{ recoveryStatus }} |
-| Fat Ox Index | {{ fatOxidationIndexRaw | round(2) }} | — | {{ fatOxidationIndexEval }} |
 | Polarisation Index | {{ polarisationIndex | round(2) }} | — | {{ polarisationFlag }} |
 | Durability Index | {{ durabilityIndex | round(2) }} | — | {{ durabilityFlag }} |
 | Benchmark Index | {{ benchmarkIndex | round(2) }} | {{ ΔBenchmark | round(2) }} | {{ benchmarkFlag }} |
@@ -157,7 +155,6 @@ Rules:
 |:--|--:|--:|:--|
 | Z1–Z2 (Endurance) | {z12h:.1f} | {z12pct:.0f}% | Target ≥ 70 % |
 | Z3–Z5 (Quality) | {z35h:.1f} | {z35pct:.0f}% | Limit ≤ 20 % |
-| Fat-Ox Sessions | {z2sessions} | — | {fatOxidationQualityNote} |
 
 **Reference:** Seiler 80/20 distribution applied for aerobic durability.  
 **Addition:** Laursen HIIT Integration — “High-Intensity Session Density Index (HIDI)” computed as Σ(Z4–Z5 sessions)/7.  
@@ -180,25 +177,7 @@ Rules:
 
 ---
 
-## 6. 🔋 Metabolic Efficiency Section  
-| Metric | Value | Units | Interpretation |
-|:--|--:|:--:|:--|
-| Fat Oxidation Index (FOxI) | {fat_oxidation_index:.2f} | % | % of total energy from fat oxidation |
-| Carb Use Rate (CUR) | {carb_use_rate:.1f} | g/h | Carbohydrate oxidation rate |
-| Glycogen Ratio (GR) | {glycogen_ratio:.2f} | — | CUR / FOxI |
-| Metabolic Efficiency Score (MES) | {metabolic_efficiency_score:.1f} | % | 100 × FOxI / (FOxI + CUR) |
-| Substrate Efficiency Balance (Stellingwerff Index) | {fuel_efficiency_ratio:.2f} | — | Carb-to-fat utilisation balance |
-
-**Interpretation Guide**  
-- FOxI ≥ 65 % → strong fat oxidation capacity.  
-- CUR ≤ 80 g/h → balanced substrate usage.  
-- MES > 50 % → efficient endurance metabolism.  
-- GR > 1.5 → carb-biased adaptation.  
-- Stellingwerff Index > 1.2 → energy balance optimal; < 0.9 → fuel deficit risk.  
-
----
-
-## 7. 💓 Recovery & Wellness Section  
+## 6. 💓 Recovery & Wellness Section  
 | Metric | Avg | Trend | Status |
 |:--|--:|--:|:--:|
 | HRV | {hrv} | {Δhrv} | {hrvFlag} |
@@ -214,7 +193,7 @@ Rules:
 
 ---
 
-## 8. ⚖️ Load Balance (Banister / Foster)  
+## 7. ⚖️ Load Balance (Banister / Foster)  
 | Marker | Current | 7-Day Δ | Status |
 |:--|--:|--:|:--:|
 | ACWR | {acwr:.2f} | {ΔAcwr:.2f} | {acwrFlag} |
@@ -228,20 +207,19 @@ Rules:
 
 ---
 
-## 9. 🧠 Performance Insights (Automated)  
+## 8. 🧠 Performance Insights (Automated)  
 | Model | Metric(s) | Status | Interpretation |
 |:--|:--|:--:|:--|
 | Seiler | Polarisation {polarisationIndex:.2f} | {polarisationFlag} | Endurance distribution |
-| San Millán | FatOx {fatOxidationIndex:.2f} / Decouple {avgDecoupling:.1f}% | {fatOxidationIndexEval} | Mitochondrial efficiency |
 | Friel | Benchmark Δ {ΔBenchmark:.2f} / Specificity Δ {ΔSpecificity:.2f} | {frielFlag} | Phase progression |
 | Banister / Foster | ACWR {acwr:.2f} / Monotony {monotony:.2f} | {banisterFlag} | Load variability |
 | Kiely | Adaptive Load Variance {adaptive_variance:.2f} | {adaptationFlag} | Load adaptation stability |
 
 ---
 
-## 10. 🪜 Actions (≤ 5)  
+## 9. 🪜 Actions (≤ 5)  
 1. Maintain ≥ 70 % Z1–Z2 volume (**Seiler 80/20**).  
-2. Keep **FOxI ≥ 0.80** and **Decoupling ≤ 5 %** (**San Millán Zone 2**).  
+2. Keep **Decoupling ≤ 5 %** (**San Millán Zone 2**).  
 3. Integrate **1–2 HIIT sessions/week** (**Laursen protocol**) maintaining HIDI < 0.35.  
 4. Track **RPE bias < 1.2** to ensure perceived effort aligns with objective load (**Marcora alignment**).  
 5. Validate **Fuel Efficiency (Stellingwerff)** during endurance sessions and refuel if Index < 1.0.  

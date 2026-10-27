@@ -300,8 +300,6 @@ def classify_marker(value, marker, context=None):
 
     # Canonical marker aliases
     marker_aliases = {
-        "FatOx": "FatOxEfficiency",
-        "FatOxidation": "FatOxEfficiency",
         #"Recovery": "LoadVariabilityIndex",
         "fatigue_trend": "FatigueTrend",
         "FatigueTrend": "FatigueTrend"
@@ -953,20 +951,6 @@ def compute_derived_metrics(df_events, context):
                 debug(context, f"[ZQI] 🩵 Recomputed from zone distributions → {zqi}% (High={high:.1f} / Total={total:.1f})")
                 context["ZQI"] = zqi
 
-    # --- ✅ 9. Fat oxidation efficiency ---
-    if_proxy = 0.7  # fallback when usable intensity data is unavailable
-
-    if "icu_intensity" in df_events.columns:
-        intensity = _normalise_icu_intensity(df_events["icu_intensity"])
-        valid_intensity = intensity.dropna()
-
-        if not valid_intensity.empty:
-            if_proxy = float(valid_intensity.mean())
-
-    fat_ox_eff = round(
-        float(np.clip(if_proxy * 0.9, 0.3, 0.8)),
-        3
-    )
     # ---------------------------------------------------------
     # 🧩 Polarisation Metrics (Seiler 3-zone + Treff PI)
     # ---------------------------------------------------------
@@ -1157,17 +1141,12 @@ def compute_derived_metrics(df_events, context):
 
 
 
-    # --- Other metabolic markers ---
-    foxi = round(fat_ox_eff * 100, 1)
-    cur = round(100 - foxi, 1)
-    gr = round(if_proxy * 2.4, 2)
-    mes = round((fat_ox_eff * 60) / (gr + 1e-6), 1)
+    # --- Load Variability Index (internal) ---
     lvi = round(np.clip(1 - (monotony / 5), 0, 1), 3)
 
     debug(context,
-        f"[DERIVED] IF_proxy={if_proxy:.3f}, FatOxEff={fat_ox_eff}, "
-        f"Polarisation={polarisation}, PolarisationIndex={polarisation_index}, "
-        f"MES={mes}, LVI={lvi}"
+        f"[DERIVED] Polarisation={polarisation}, PolarisationIndex={polarisation_index}, "
+        f"LVI={lvi}"
     )
 
     # --- ✅ 10. Classification (via COACH_PROFILE markers) ---
@@ -1179,15 +1158,10 @@ def compute_derived_metrics(df_events, context):
         "Strain": strain,
         "FatigueTrend": fatigue_trend,
         "ZQI": zqi,
-        "FatOxEfficiency": fat_ox_eff,
         "Polarisation": polarisation,
         "PolarisationIndex": polarisation_index,
         #"LoadVariabilityIndex": lvi,  #now internal only
         "StressTolerance": stress_tolerance,
-        "FOxI": foxi,
-        "CUR": cur,
-        "GR": gr,
-        "MES": mes,
     }
 
     classified = {}
@@ -1234,12 +1208,6 @@ def compute_derived_metrics(df_events, context):
             "icon": classified["ZQI"]["icon"],
             "desc": "Zone Quality Index",
         },
-        "FatOxEfficiency": {
-            "value": fat_ox_eff,
-            "classification": classified["FatOxEfficiency"]["state"],
-            "icon": classified["FatOxEfficiency"]["icon"],
-            "desc": "Fat oxidation efficiency",
-        },
         "Polarisation": {
             "value": polarisation,
             "classification": classified["Polarisation"]["state"],
@@ -1252,30 +1220,6 @@ def compute_derived_metrics(df_events, context):
             "classification": classified["PolarisationIndex"]["state"],
             "icon": classified["PolarisationIndex"]["icon"],
             "desc": "Treff 2019 Polarization-Index (polarised when > 2.00)",
-        },
-        "FOxI": {
-            "value": foxi,
-            "classification": classified["FOxI"]["state"],
-            "icon": classified["FOxI"]["icon"],
-            "desc": "Fat oxidation index",
-        },
-        "CUR": {
-            "value": cur,
-            "classification": classified["CUR"]["state"],
-            "icon": classified["CUR"]["icon"],
-            "desc": "Carbohydrate utilisation ratio",
-        },
-        "GR": {
-            "value": gr,
-            "classification": classified["GR"]["state"],
-            "icon": classified["GR"]["icon"],
-            "desc": "Glucose ratio",
-        },
-        "MES": {
-            "value": mes,
-            "classification": classified["MES"]["state"],
-            "icon": classified["MES"]["icon"],
-            "desc": "Metabolic efficiency score",
         },
         "StressTolerance": {
             "value": stress_tolerance,
@@ -1298,13 +1242,8 @@ def compute_derived_metrics(df_events, context):
     if context["hr_only_mode"]:
         debug(context, "[T2] ⚙️ HR-only fallback mode — metrics derived from HR zones or IF proxy.")
         context["derived_warnings"] = [
-            "⚙️ Using HR-only data — FatOx, MES, and Polarisation approximated.",
+            "⚙️ Using HR-only data — Polarisation approximated.",
             "Zone metrics derived from HR response (lag-corrected).",
-        ]
-    elif context["if_proxy_used"]:
-        debug(context, "[T2] ⚙️ IF proxy mode — no direct power or IF data available.")
-        context["derived_warnings"] = [
-            "⚙️ Intensity Factor proxy (0.7) used — metabolic scores approximate.",
         ]
     else:
         context["derived_warnings"] = []
@@ -1320,6 +1259,6 @@ def compute_derived_metrics(df_events, context):
     context["derived_metrics"] = derived
 
     debug(context, "[T2] ✅ Derived metrics fully computed and classified.")
-    debug(context, f"[SUMMARY] ACWR={acwr}, Monotony={monotony}, Strain={strain}, FatOxEff={fat_ox_eff}, ZQI={zqi}, StressTol={stress_tolerance}")
+    debug(context, f"[SUMMARY] ACWR={acwr}, Monotony={monotony}, Strain={strain}, ZQI={zqi}, StressTol={stress_tolerance}")
 
     return context

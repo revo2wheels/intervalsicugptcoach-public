@@ -12,7 +12,7 @@ Markdown rendering is a downstream presentation step derived from this JSON.
 | `wellness.HRV` | Intervals.icu API | Tier-2 Step-5: Wellness Validation | `recovery.recovery_index` | Recovery section | San Millán, Banister |
 | `wellness.restHR` | Intervals.icu API | Tier-2 Step-5: Wellness Validation | `recovery.recovery_index` | Recovery section | Foster, San Millán |
 | `wellness.sleep` | Intervals.icu API | Tier-2 Step-5: Wellness Validation | `recovery.recovery_index` | Recovery section | Foster, Fatigue Index |
-| `RPE`, `Feel` | Subjective Input | Tier-2 Step-6: Derived Metrics | `subjective.readiness`, `metabolic.fat_oxidation_index` | Training Quality | Coaching Heuristics |
+| `RPE`, `Feel` | Subjective Input | Tier-2 Step-6: Derived Metrics | `subjective.readiness` | Training Quality | Coaching Heuristics |
 | `power/HR` | Activity | Tier-2 Step-6: Derived Metrics | `load.acwr`, `load.monotony`, `load.strain`, `intensity.polarisation`, `durability.index` | Metrics Panel | Seiler, Banister, Foster |
 | `FTP`, `LT1`, `LT2` | Athlete Profile | Tier-2 Step-6: Derived Metrics | `benchmarks.*` | Seasonal Advanced Markers | Skiba CP, Friel |
 | `age` | Athlete Profile | Tier-2 Step-6: Derived Metrics | `context.age_factor_adjusted_atl` | Periodisation / Planning | Friel |
@@ -160,7 +160,6 @@ flowchart TD
     Calculation_Integrity -->|Outputs| TotalDistance
     Calculation_Integrity -->|Outputs| TotalTSS
     Wellness_Validation -->|Outputs| RecoveryIndex
-    Derived_Metrics -->|Outputs| FatOxidationIndex
     Derived_Metrics -->|Outputs| SubjectiveReadinessIndex
     Derived_Metrics -->|Outputs| ACWR
     Derived_Metrics -->|Outputs| Monotony
@@ -183,7 +182,6 @@ flowchart TD
     TotalDistance -->|Render| Weekly_Seasonal_Report_Summary
     TotalTSS -->|Render| Weekly_Seasonal_Report_Summary
     RecoveryIndex -->|Render| Weekly_Report_Recovery
-    FatOxidationIndex -->|Render| Weekly_Seasonal_Report_Training_Quality
     SubjectiveReadinessIndex -->|Render| Weekly_Seasonal_Report_Training_Quality
     ACWR -->|Render| Weekly_Seasonal_Report_Metrics_Panel
     Monotony -->|Render| Weekly_Seasonal_Report_Metrics_Panel

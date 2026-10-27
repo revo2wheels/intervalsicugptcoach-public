@@ -907,7 +907,7 @@ def evaluate_actions(context):
                 val = derived[k].get("value", np.nan)
                 if isinstance(val, (int, float)) and not np.isnan(val):
                     context[k] = float(val)
-    for k in ["Durability", "LoadIntensityRatio", "EnduranceReserve", "IFDrift", "FatOxidation"]:
+    for k in ["Durability", "LoadIntensityRatio", "EnduranceReserve", "IFDrift"]:
         if k in extended:
             context[k] = extended[k]
 
@@ -999,12 +999,9 @@ def evaluate_actions(context):
 
         elif ft_state == "balanced":
             metric_signals.append(f"✅ FatigueTrend {ft:.2f} — balanced load.")
-    # ---------------- Benchmark / FatMax ----------------
+    # ---------------- Benchmark ----------------
     if context.get("weeks_since_last_FTP", 0) >= 6:
         metric_signals.append("🔄 Retest FTP/LT1 for updated benchmarks.")
-    decoup = context.get("Decoupling")
-    if decoup is not None and abs(context.get("FatMaxDeviation", 1.0)) <= 0.05 and decoup <= 0.05:
-        metric_signals.append("✅ FatMax calibration verified (±5 %).")
 
     # ---------------- UI Flag ----------------
     if lvi < 0.6:
@@ -1019,25 +1016,6 @@ def evaluate_actions(context):
     th = CHEAT_SHEET["thresholds"]
 
     lvi = context.get("LoadVariabilityIndex", 1.0)
-    fox = context.get("FatOxidation")
-    decoup = context.get("Decoupling")
-
-    # ---- Metabolic efficiency ----
-    if fox is not None and decoup is not None:
-
-        if fox >= 0.8 and decoup <= 0.05:
-
-            metric_signals.append({
-                "metric": "FatOxidation",
-                "state": "efficient"
-            })
-
-        else:
-
-            metric_signals.append({
-                "metric": "FatOxidation",
-                "state": "needs_improvement"
-            })
 
     final_actions = []
 

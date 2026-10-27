@@ -842,7 +842,6 @@ RENDERER_PROFILES = {
                 "metrics_groups.load",
                 "metrics_groups.intensity",
                 "metrics_groups.variability",
-                "metrics_groups.metabolic",
                 "metrics_groups.capacity",
                 "daily_load",
                 "events",
@@ -1837,8 +1836,7 @@ COACH_PROFILE = {
             "Polarisation (Seiler 3-zone)",
             "PolarisationIndex (Treff 2019)",
             "DurabilityIndex",
-            "SessionQualityRatio",
-            "FatOxidationIndex"
+            "SessionQualityRatio"
         ],
         "performance_benchmarking": [
             "BenchmarkIndex", "SpecificityIndex", "ConsistencyIndex", "AgeFactor", "MicrocycleRecoveryWeek"
@@ -1942,73 +1940,6 @@ COACH_PROFILE = {
                 "low": "<0.4"
             },
             "related_metrics": ["Monotony"]
-        },
-        "FatOxidationIndex": {
-            "framework": "San Millán Zone 2 Model",
-            "formula": "(1 - |IF - 0.7| / 0.1) × (1 - Decoupling / 10)",
-            "criteria": {
-                "optimal": ">=0.80",
-                "moderate": "0.60–0.79",
-                "low": "<0.60"
-            },
-            "placement": "Training Quality section",
-        },
-        "FatOxEfficiency": {
-            "framework": "San Millán 2020",
-            "formula": "Derived from IF × 0.9",
-            "criteria": {
-                "optimal": "0.60–0.80",
-                "moderate": "0.50–0.59",
-                "low": "<0.50"
-            },
-            "related_metrics": ["IF"]
-        },
-
-        "FOxI": {
-            "framework": "Internal Derived Metric",
-            "formula": "FatOxEfficiency × 100",
-            "criteria": {
-                "optimal": ">=70",
-                "moderate": "50–69",
-                "low": "<50"
-            },
-            "related_metrics": ["FatOxEfficiency"]
-        },
-
-        "CUR": {
-            "framework": "Internal Derived Metric",
-            "formula": "100 - FOxI",
-            "criteria": {
-                "balanced": "30–70",
-                "moderate_low": "20–29",
-                "moderate_high": "71–80",
-                "low_carb_bias": "<20",
-                "high_carb_bias": ">80"
-            },
-            "related_metrics": ["FOxI", "GR"]
-        },
-
-        "GR": {
-            "framework": "Internal Derived Metric",
-            "formula": "IF × 2.4",
-            "criteria": {
-                "optimal": "1.5–2.1",
-                "moderate": "1.2–1.49",
-                "high": ">2.1",
-                "low": "<1.2"
-            },
-            "related_metrics": ["IF"]
-        },
-
-        "MES": {
-            "framework": "Internal Derived Metric",
-            "formula": "(FatOxEfficiency × 60) / GR",
-            "criteria": {
-                "optimal": ">=20",
-                "moderate": "10–19",
-                "low": "<10"
-            },
-            "related_metrics": ["FatOxEfficiency", "GR"]
         },
         "ZQI": {
             "framework": "Seiler 3-Zone Intensity Distribution (zone 3 share)",
