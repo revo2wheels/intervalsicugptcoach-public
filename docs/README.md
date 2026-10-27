@@ -38,11 +38,11 @@ Current intelligence versions in source:
 
 ## AI integration resources
 
-The configuration and knowledge resources for the Montis ChatGPT integration are maintained privately. They are not part of the deterministic coaching engine execution path.
-
-Shared knowledge resources used by MCP clients are published separately through:
+ChatGPT (the Montis plugin), Claude and other MCP clients use the same Montis MCP service. Their shared knowledge resources and skills are published at:
 
 https://github.com/revo2wheels/montis-mcp-resources
+
+Only the configuration of the legacy Montis GPT (until 11 December 2026) is kept privately. None of these resources are part of the deterministic coaching engine execution path.
 
 The hosted MCP implementation itself is part of the private Montis Cloudflare Edge infrastructure.
 

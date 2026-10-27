@@ -94,7 +94,7 @@ Key implementation principles include:
 Montis exposes the same governed intelligence through multiple interfaces:
 
 - **Montis App** — browser/PWA interface.
-- **ChatGPT** — GPT Actions / Montis integration.
+- **ChatGPT** — the Montis plugin (MCP). The legacy Montis GPT (GPT Actions) works until 11 December 2026.
 - **Claude and other MCP clients** — through the Montis MCP service.
 - **REST/API clients** — structured backend endpoints.
 - **Local tools** — CLI
@@ -103,11 +103,11 @@ The interfaces can differ in presentation, but they do not become the computatio
 
 ## AI integration resources
 
-The configuration and knowledge resources for the Montis ChatGPT integration are maintained privately. They are not part of the deterministic coaching engine execution path.
-
-Shared knowledge resources for MCP clients are published separately:
+ChatGPT (the Montis plugin), Claude and other MCP clients use the same Montis MCP service. Their shared knowledge resources and skills are published at:
 
 https://github.com/revo2wheels/montis-mcp-resources
+
+Only the configuration of the legacy Montis GPT (until 11 December 2026) is kept privately. None of these resources are part of the deterministic coaching engine execution path.
 
 ## Documentation
 

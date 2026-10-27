@@ -287,10 +287,10 @@ Once athletes are on your list, use them wherever you use Montis. Only athletes 
 - **Montis App** ([https://app.montis.icu](https://app.montis.icu)). In the sidebar, open **Coaches**:
   - **Coach Roster** lists your athletes. Choose one to work with their data (coach mode). **Primary Account** takes you back to your own data.
   - **Coach Cockpit** shows a weekly overview of your connected athletes, up to 25 at a time.
-- **ChatGPT** (**Open in ChatGPT** on the hub's **Apps** tab). Ask for your coached athletes, then name the athlete you want to work on.
+- **ChatGPT** (the Montis plugin; see the [ChatGPT setup page](https://www.montis.icu/setup-chatgpt.html)). Ask for your coached athletes, then name the athlete you want to work on.
 - **Claude** (the Montis connector, **Open Claude connectors** on the hub's **Apps** tab). **Coached Athletes** lists your athletes with their IDs. **Coach Cockpit** gives the weekly overview: 25 athletes by default, up to 50 if you ask.
 
-Coach Cockpit is only in Claude and the Montis App.
+Coach Cockpit is in the Montis App, Claude and the ChatGPT plugin. The legacy Montis GPT doesn't have it.
 
 Example requests in ChatGPT or Claude:
 
@@ -298,10 +298,5 @@ Example requests in ChatGPT or Claude:
 Show my coached athletes.
 Run the weekly report for Lena Brandt.
 Plan three easy runs next week for Sofia Lind.
-```
-
-In Claude only:
-
-```text
 Open the coach cockpit.
 ```
