@@ -1329,13 +1329,15 @@ def run_tier1_controller(df_master, wellness, context):
             tau_ctl = 42.0
             tau_atl = 7.0
 
-            # overnight decay only
+            # overnight decay only, as Intervals decays: × e^(−1/τ) (Intervals' own value for a day
+            # without load is exactly yesterday × e^(−1/τ); the short form × (1 − 1/τ) gave fatigue
+            # 0.6 lower than Intervals, e.g. 51.27 against 51.85)
             ctl_sunrise = float(
-                ctl_y - (ctl_y / tau_ctl)
+                ctl_y * np.exp(-1.0 / tau_ctl)
             )
 
             atl_sunrise = float(
-                atl_y - (atl_y / tau_atl)
+                atl_y * np.exp(-1.0 / tau_atl)
             )
 
             tsb_sunrise = (

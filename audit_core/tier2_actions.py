@@ -776,9 +776,10 @@ def build_future_projected_weeks(context, weekly_phases):
 
         days = max((end_day - last_day).days, 0)
 
+        # Zero-load days decay as Intervals decays: × e^(−1/τ)
         for _ in range(days):
-            ctl = ctl + ((0 - ctl) * (1 / 42))
-            atl = atl + ((0 - atl) * (1 / 7))
+            ctl = ctl * np.exp(-1.0 / 42.0)
+            atl = atl * np.exp(-1.0 / 7.0)
 
         return ctl, atl
 
