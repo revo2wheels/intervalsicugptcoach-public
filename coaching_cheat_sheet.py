@@ -285,7 +285,7 @@ CHEAT_SHEET["thresholds"] = {
 
     "phase_detection_v2": {
 
-        "version": "2.1",
+        "version": "2.2",
 
         # ============================================================
         # RAW LOAD-PATTERN CLASSIFIER
@@ -331,6 +331,19 @@ CHEAT_SHEET["thresholds"] = {
                 "trend_max": 0.30,
                 "acwr_max": 1.30
             }
+        },
+
+        # ============================================================
+        # PLANNED WEEKS: read from the plan's own load shape
+        # A planned 3:1 block has big steps down and back up, and its
+        # end-of-week ACWR is high after the long ride: neither is a
+        # different phase. "Transition" is only what is left over.
+        # ============================================================
+
+        "PlannedWeekRules": {
+            "recovery_drop": -0.30,      # a planned drop this big is a Recovery week
+            "return_to_load_min": 0.85,  # after Recovery: back to this share of the last loading week is Build
+            "build_acwr_warning": 1.30   # a Build week above this stays Build, with load_warning
         },
 
         # ============================================================

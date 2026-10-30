@@ -4972,7 +4972,8 @@ def build_semantic_json(context):
 
                 future_weeks = build_future_projected_weeks(
                     context=context,
-                    weekly_phases=df_weeks.to_dict(orient="records")
+                    weekly_phases=df_weeks.to_dict(orient="records"),
+                    current_week_tss=(semantic.get("current_ISO_weekly_microcycle") or {}).get("projected_total_tss")
                 )
 
                 # -----------------------------------------------------

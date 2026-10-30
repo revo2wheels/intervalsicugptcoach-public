@@ -506,11 +506,13 @@ def detect_phases(context, events):
     debug(context, "[PHASES] ---- Phase detection end ----")
     return context
 
-def classify_phase_v2(row, prev_phase_final=None):
+def classify_phase_v2(row, prev_phase_final=None, last_loading_tss=None):
     cfg = CHEAT_SHEET["thresholds"]["phase_detection_v2"]
 
     boundaries = cfg["PhaseBoundaries"]
+    planned = cfg["PlannedWeekRules"]
 
+    tss = float(row.get("tss", 0) or 0)
     delta = float(row.get("delta", 0) or 0)
     acwr = float(row.get("acwr", 1) or 1)
     tsb = float(row.get("tsb", 0) or 0)
@@ -521,7 +523,8 @@ def classify_phase_v2(row, prev_phase_final=None):
         if not (b["trend_min"] <= delta <= b["trend_max"]):
             continue
 
-        if acwr > b.get("acwr_max", 999):
+        # A high ACWR on a loading week is a load warning, not another phase
+        if phase != "Build" and acwr > b.get("acwr_max", 999):
             continue
 
         if "tsb_min" in b and tsb < b["tsb_min"]:
@@ -532,6 +535,20 @@ def classify_phase_v2(row, prev_phase_final=None):
 
         phase_raw = phase
         break
+
+    # Nothing matched: read the plan's own shape before leaving it as Transition
+    if phase_raw == "Transition":
+        if delta <= planned["recovery_drop"]:
+            phase_raw = "Recovery"
+        elif (
+            prev_phase_final in {"Recovery", "Deload"}
+            and last_loading_tss
+            and tss >= planned["return_to_load_min"] * last_loading_tss
+        ):
+            phase_raw = "Build"
+        elif boundaries["Base"]["trend_min"] <= delta <= boundaries["Base"]["trend_max"]:
+            # A steady week with a high ACWR: Base, checked last so rising weeks stay Build
+            phase_raw = "Base"
 
     phase_final = phase_raw
 
@@ -567,11 +584,12 @@ def classify_phase_v2(row, prev_phase_final=None):
 
     return phase_raw, phase_final
 
-def build_future_projected_weeks(context, weekly_phases):
+def build_future_projected_weeks(context, weekly_phases, current_week_tss=None):
     """
     Build projected future ISO weeks from planned calendar events.
 
     Uses calendar-provided icu_ctl / icu_atl as authoritative.
+    current_week_tss: this week's projected total, which the first future week is compared with.
     RETURNS: list[dict]
     """
 
@@ -785,6 +803,10 @@ def build_future_projected_weeks(context, weekly_phases):
 
     projected_rows = []
 
+    planned_rules = CHEAT_SHEET["thresholds"]["phase_detection_v2"]["PlannedWeekRules"]
+    current_week_tss = float(current_week_tss or 0)
+    last_loading_tss = current_week_tss or None
+
     for _, wk in future.iterrows():
 
         ctl = float(wk.get("ctl", 0) or 0)
@@ -805,11 +827,10 @@ def build_future_projected_weeks(context, weekly_phases):
 
         acwr = atl / ctl if ctl > 0 else 1.0
 
-        prev_tss = (
-            projected_rows[-1]["tss"]
-            if projected_rows and projected_rows[-1].get("tss", 0) > 0
-            else None
-        )
+        if projected_rows:
+            prev_tss = projected_rows[-1]["tss"] if projected_rows[-1].get("tss", 0) > 0 else None
+        else:
+            prev_tss = current_week_tss or None
 
         delta = (
             (tss - prev_tss) / prev_tss
@@ -825,12 +846,17 @@ def build_future_projected_weeks(context, weekly_phases):
 
         phase_raw, phase = classify_phase_v2(
             {
+                "tss": tss,
                 "delta": delta,
                 "acwr": acwr,
                 "tsb": tsb,
             },
-            prev_phase_final=prev_phase_final
+            prev_phase_final=prev_phase_final,
+            last_loading_tss=last_loading_tss
         )
+
+        if phase not in {"Recovery", "Deload", "Taper"} and tss > 0:
+            last_loading_tss = tss
 
         if tsb < -30:
             classification = "High_fatigue"
@@ -865,6 +891,7 @@ def build_future_projected_weeks(context, weekly_phases):
             "phase": phase,
             "classification": classification,
             "acwr": round(acwr, 2),
+            "load_warning": bool(phase == "Build" and acwr > planned_rules["build_acwr_warning"]),
             "delta": round(delta, 3)
         })
 
