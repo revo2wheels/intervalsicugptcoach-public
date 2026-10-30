@@ -2023,8 +2023,12 @@ def run_tier1_controller(df_master, wellness, context):
                 # -------------------------------------------------
                 scored = pd.DataFrame(rows)
 
+                # Only the directions CHEAT_SHEET["outliers"] keeps ("high": harder than usual)
+                outlier_directions = CHEAT_SHEET.get("outliers", {}).get("directions", ["high", "low"])
+
                 outliers = scored[
-                    scored["zscore"] >= 1.75
+                    (scored["zscore"] >= 1.75) &
+                    (scored["direction"].isin(outlier_directions))
                 ].copy()
 
                 if outliers.empty:

@@ -1737,6 +1737,13 @@ if "IFDrift" in CHEAT_SHEET["advice"]:
 if "IFDrift" in CHEAT_SHEET["thresholds"]:
     CHEAT_SHEET["thresholds"]["EfficiencyDrift"] = CHEAT_SHEET["thresholds"]["IFDrift"]
 
+# Outlier sessions (tier 1, last 365 days): which directions count. A session can score far from usual load
+# either way; "high" keeps only sessions harder than usual (TSS above the mean), as a coach wants from the list.
+# Far lighter sessions (recovery spins, short tests) are unusual but not coaching outliers.
+CHEAT_SHEET["outliers"] = {
+    "directions": ["high"],
+}
+
 CHEAT_SHEET["primary_messages"] = {
     "build_deload": {
         "status": (
