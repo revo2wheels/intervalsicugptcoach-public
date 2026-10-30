@@ -285,8 +285,9 @@ Montis [Privacy](https://www.montis.icu/privacy.html) · [Terms](https://www.mon
 Once athletes are on your list, use them wherever you use Montis. Only athletes marked **Signed in** can be opened.
 
 - **Montis App** ([https://app.montis.icu](https://app.montis.icu)). In the sidebar, open **Coaches**:
-  - **Coach Roster** lists your athletes. Choose one to work with their data (coach mode). **Primary Account** takes you back to your own data.
-  - **Coach Cockpit** shows a weekly overview of your connected athletes, up to 25 at a time.
+  - **Coach Roster** lists your athletes. Choose one to work with their data (coach mode). **Back to me** at the top, or **Primary Account** in the roster, takes you back to your own data.
+  - **Coach Cockpit** shows a weekly overview of your connected athletes, up to 25 at a time, and how each one is doing against their coach plan.
+  - **Coach Plans** builds a plan once in AI Builder v2 and assigns it to your athletes, or yourself, each in their own targets. Its **Events** tab puts a race, camp or holiday on several calendars at once.
 - **ChatGPT** (the Montis plugin; see the [ChatGPT setup page](https://www.montis.icu/setup-chatgpt.html)). Ask for your coached athletes, then name the athlete you want to work on.
 - **Claude** (the Montis connector, **Open Claude connectors** on the hub's **Apps** tab). **Coached Athletes** lists your athletes with their IDs. **Coach Cockpit** gives the weekly overview: 25 athletes by default, up to 50 if you ask.
 
