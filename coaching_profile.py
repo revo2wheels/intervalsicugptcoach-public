@@ -1270,12 +1270,7 @@ RENDERER_PROFILES = {
         "framing": {
             "intent": "medium_term_block_assessment"
         },
-        "question_rule": [
-            "adaptation",
-            "training progression",
-            "durability",
-            "fatigue accumulation"
-        ],
+        # No closing reflection question (Clive, 2026-11-01).
         "closing_note": {
             "required": True,
             "verdict_rule": "Classify the training block adaptation trajectory.",
@@ -1303,7 +1298,8 @@ RENDERER_PROFILES = {
         },
         "post_render": {
             "explore_deeper": {
-                "enabled": True,
+                # Follow-up command list switched off (Clive, 2026-11-01).
+                "enabled": False,
                 "style": "command_suggestions",
                 "placement": "after_report",
                 "commands": [
@@ -1470,12 +1466,7 @@ RENDERER_PROFILES = {
             "Autonomic suppression combined with elevated ATL indicates recovery pressure.",
             "Stable HRV despite elevated ATL indicates productive adaptation under load."
         ],
-        "question_rule": [
-            "recovery",
-            "fatigue perception",
-            "sleep quality",
-            "morning readiness"
-        ],
+        # No closing reflection question (Clive, 2026-11-01).
 
         # ----------------------------------------------------------
         # Closing note
@@ -1524,7 +1515,8 @@ RENDERER_PROFILES = {
         },
         "post_render": {
             "explore_deeper": {
-                "enabled": True,
+                # Follow-up command list switched off (Clive, 2026-11-01).
+                "enabled": False,
                 "style": "command_suggestions",
                 "placement": "after_report",
                 "commands": [
@@ -1628,12 +1620,7 @@ RENDERER_PROFILES = {
         "framing": {
             "intent": "annual_system_health_review"
         },
-        "question_rule": [
-            "long-term training sustainability",
-            "adaptation progression",
-            "training consistency",
-            "fatigue management across the season"
-        ],
+        # No closing reflection question (Clive, 2026-11-01).
         "closing_note": {
             "required": True,
             "verdict_rule": "Deliver a clear system-level sustainability verdict.",
@@ -1653,7 +1640,8 @@ RENDERER_PROFILES = {
         },
         "post_render": {
             "explore_deeper": {
-                "enabled": True,
+                # Follow-up command list switched off (Clive, 2026-11-01).
+                "enabled": False,
                 "style": "command_suggestions",
                 "placement": "after_report",
                 "commands": [
