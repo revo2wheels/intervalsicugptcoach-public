@@ -196,7 +196,6 @@ Synthetic STRAVA-only datasets can be simulated using the CLI flag
 | --strava-test 3      | test=strava3  | Activities missing key metrics             | Report runs with degraded metrics |
 | --strava-test 4      | test=strava4  | Partial wellness or athlete metadata       | Report runs with degraded data quality |
 | --strava-test 5      | test=strava5  | Mixed valid and stub activities            | Report runs with warnings |
-| --strava-test demo   | test=demo     | Demo dataset                               | Demo report generated |
 
 
 ───────────────────────────────────────────────
@@ -343,13 +342,11 @@ def fetch_remote_report(
         # Accept: stub, 1–5
         if strava_test == "stub":
             params.append("test=strava-stub")
-        elif strava_test == "demo":
-            params.append("test=demo")
         elif strava_test in ["0","1", "2", "3", "4", "5"]:
             params.append(f"test=strava{strava_test}")
         else:
             raise ValueError(
-                "Invalid --strava-test value. Use: stub, demo, 0,1,2,3,4,5"
+                "Invalid --strava-test value. Use: stub, 0,1,2,3,4,5"
             )
     if overview:
         params.append("overview=true")
@@ -1101,7 +1098,7 @@ def main():
     parser.add_argument(
         "--strava-test",
         type=str,
-        choices=["stub", "demo", "0", "1", "2", "3", "4", "5"],
+        choices=["stub", "0", "1", "2", "3", "4", "5"],
         help=(
             "Simulate Strava-only scenarios:\n"
             "  stub → all activities are STRAVA API stubs (hard stop)\n"
@@ -1111,7 +1108,6 @@ def main():
             "  3    → activities present but missing key metrics\n"
             "  4    → partial wellness or athlete metadata\n"
             "  5    → mixed valid + stub activities (degraded state)"
-            "  demo → demo"
         ),
     )
     parser.add_argument(

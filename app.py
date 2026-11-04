@@ -13,8 +13,7 @@ from datetime import datetime, timedelta, date
 from contextlib import redirect_stdout
 from audit_core.errors import AuditHalt
 from collections import Counter
-from demo_weekly import DEMO_WEEKLY
-import copy, traceback
+import traceback
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "audit_core"))
@@ -44,10 +43,7 @@ else:
 
 app = FastAPI(title="Montis.icu GPT Coach Railway API", version="2.0")
 
-NO_ACTIVITY_DATA_MESSAGE = (
-    "No activity data found for this period. "
-    "Run a weekly demo report to see what you are missing."
-)
+NO_ACTIVITY_DATA_MESSAGE = "No activity data found for this period."
 
 
 def _is_wellness_no_activity_response(payload):
@@ -1017,7 +1013,6 @@ def run_audit():
 @app.post("/run")
 async def run_audit_with_data(
     request: Request,
-    demo: bool = Query(False),
     debug: bool = Query(False),
     lite: bool = Query(False),
     overview: bool = Query(False),
@@ -1042,9 +1037,6 @@ async def run_audit_with_data(
         redirect_ctx.__enter__()
 
     try:
-
-        if demo or request.query_params.get("test") == "demo":
-            return load_demo_response("weekly", reason="MANUAL_DEMO")
 
         try:
 
@@ -1341,8 +1333,7 @@ async def run_audit_with_data(
                     if pd.isna(last_date):
                         msg = (
                             "Detailed activity data could not be retrieved. "
-                            "The latest activity date could not be parsed safely. "
-                            "Run 'weekly demo report' for an example."
+                            "The latest activity date could not be parsed safely."
                         )
                     else:
                         last_date_d = last_date.date()
@@ -1413,10 +1404,7 @@ async def run_audit_with_data(
 
                             msg = " ".join(msg_parts)
                 else:
-                    msg = (
-                        "Detailed activity data could not be retrieved. "
-                        "Run 'weekly demo report' for an example."
-                    )
+                    msg = "Detailed activity data could not be retrieved."
 
                 raise AuditHalt(
                     msg,
@@ -1429,8 +1417,7 @@ async def run_audit_with_data(
                 no_activity_payload = {
                     "status": "no_data",
                     "report_type": report_range,
-                    "message": NO_ACTIVITY_DATA_MESSAGE,
-                    "next_step": "run a weekly demo report"
+                    "message": NO_ACTIVITY_DATA_MESSAGE
                 }
 
                 if _is_wellness_no_activity_response(no_activity_payload):
@@ -1944,73 +1931,6 @@ def data_quality_audit(ctx: dict) -> dict:
         "strava_stub_detected": strava_stub_detected
     }
 
-def load_demo_response(report_range: str, reason: str, detail: str | None = None, debug_counts=None):
-
-    sys.stderr.write("\n🧪 DEMO RESPONSE GENERATED\n")
-    sys.stderr.write(f"Report: {report_range}\n")
-    sys.stderr.write(f"Reason code: {reason}\n")
-    sys.stderr.flush()
-
-    demo_sg = copy.deepcopy(DEMO_WEEKLY)
-
-    if report_range != "weekly":
-        demo_sg["meta"]["report_type"] = report_range
-
-    REASON_MAP = {
-        "OAUTH_NOT_CONFIGURED": "Account not connected." + " See www.montis.net/setup.html",
-        "ATHLETE_PROFILE_INVALID": "Invalid athlete profile."  + " See www.montis.net/setup.html",
-        "NO_ACTIVITIES_RANGE": "No activities found in requested period." + " See www.montis.net/setup.html",
-        "FULL_DATA_UNAVAILABLE": "Detailed activity data unavailable."  + " See www.montis.net/setup.html",
-        "FULL_FETCH_FAILED": "Failed to retrieve detailed activity data."  + " See www.montis.net/setup.html",
-        "LIGHT_ONLY_CONTEXT": "Only summary activity data available."  + " See www.montis.net/setup.html",
-        "STRAVA_API_RESTRICTED": "Strava API access restricted."  + " See www.montis.net/setup.html",
-        "MANUAL_DEMO": "Manual demo mode enabled." + " See www.montis.net/setup.html"
-    }
-
-    readable_reason = detail or REASON_MAP.get(
-        reason,
-        "Demo fallback. See www.montis.net/setup.html"
-    )
-
-    # ✅ Canonical location — root of semantic_graph
-    existing = demo_sg.get("renderer_instructions", "")
-
-    demo_block = f"""
-
-DEMO MODE NOTICE:
-- This is a demonstration report.
-- Triggered because: {readable_reason}.
-- Real athlete data was unavailable.
-- Render normally using the provided semantic data.
-"""
-
-    if "DEMO MODE NOTICE" not in existing:
-        demo_sg["renderer_instructions"] = existing.rstrip() + demo_block
-
-    # Flags stay in meta
-    meta = demo_sg.setdefault("meta", {})
-    meta["demo"] = True
-    meta["demo_reason"] = readable_reason
-    meta["demo_code"] = reason
-    meta["demo_mode"] = "fallback"
-
-    safe_payload = {
-        "status": "demo",
-        "report_type": report_range,
-        "report_header": meta.get("report_header"),
-        "output_format": "semantic_json",
-        "semantic_graph": demo_sg,
-        "compliance": {},
-        "debug_counts": debug_counts,
-        "logs": ""
-    }
-
-    clean = sanitize(safe_payload)
-    clean = json.loads(json.dumps(clean, ensure_ascii=False).encode("utf-8", "ignore").decode("utf-8"))
-
-    return JSONResponse(clean)
-
-   
 def handle_audit_halt(e, report_range, buffer=None, header=None, context=None):
 
     severity = getattr(e, "severity", "hard")
@@ -2070,17 +1990,9 @@ def handle_audit_halt(e, report_range, buffer=None, header=None, context=None):
             context.get("debug_counts")
         )
 
-    if severity == "info":
+    if severity in ("info", "soft"):
         return JSONResponse(
             e.to_ok_dict(report_type=report_range)
-        )
-
-    if severity == "soft":
-        return load_demo_response(
-            report_range,
-            reason=code,
-            detail=str(e),
-            debug_counts=context.get("debug_counts") if context else None
         )
 
     halt_payload = e.to_dict()

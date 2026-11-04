@@ -4,8 +4,8 @@ class AuditHalt(Exception):
 
     Supports:
     - hard  → real error
-    - soft  → demo fallback
-    - info  → graceful early return (no demo)
+    - soft  → data issue, shown as "not enough data" with the halt message
+    - info  → graceful early return, shown the same way
     """
 
     def __init__(self, message, code="DATA_INTEGRITY", severity="soft"):
@@ -15,7 +15,7 @@ class AuditHalt(Exception):
         self.severity = severity
 
     def to_dict(self):
-        if self.severity == "info":
+        if self.severity in ("info", "soft"):
             return self.to_ok_dict()
 
         return {
@@ -26,15 +26,19 @@ class AuditHalt(Exception):
         }
 
     def to_ok_dict(self, report_type=None):
-        """ used for graceful early exits (no demo, no error)"""
+        """ used for info and soft halts: the app shows message on its insufficient_data card"""
+        message = self._friendly_message()
         return {
             "status": "ok",
-            "message": self._friendly_message(),
+            "error_type": self.code,
+            "severity": self.severity,
+            "message": message,
             "report_type": report_type,
             "output_format": "semantic_json",
             "semantic_graph": {
                 "meta": {
-                    "note": "insufficient_data"
+                    "note": "insufficient_data",
+                    "message": message
                 }
             },
             "compliance": {},

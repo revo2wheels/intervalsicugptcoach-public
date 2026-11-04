@@ -810,7 +810,7 @@ def run_tier1_controller(df_master, wellness, context):
 
         if t1_hours <= 0 or t1_tss <= 0:
             warn_msg = (
-                "⚠️ Tier-1 detected missing or zero canonical totals.\n"
+                "No training load was recorded for this week, so the weekly report can't be built.\n"
                 "This often occurs if recent activities have no Training Load (TSS) or HR zone data.\n"
                 "If you're using a smartwatch such as Amazfit that only records HR, "
                 "Intervals.icu may not compute load metrics.\n\n"
@@ -824,7 +824,8 @@ def run_tier1_controller(df_master, wellness, context):
             context["tier1_warning"] = warn_msg
             debug(context, f"[T1-WARN] {warn_msg}")
 
-            raise AuditHalt("🚫 Audit Halt: Missing or Zero Canonical Totals")
+            # The halt message reaches the user, so carry the fix-it guidance
+            raise AuditHalt(warn_msg, code="NO_TRAINING_LOAD")
 
     # ✅ Summary does NOT gate on 7-day totals
 
