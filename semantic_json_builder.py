@@ -6178,7 +6178,8 @@ def build_semantic_json(context):
                 source = hidden_source_name(a["source"])
                 ev = {
                     "name": f"{source} activity not visible to Montis" if source else "Activity not visible to Montis",
-                    "type": None,
+                    # Intervals.icu's generic type: app screens read type unguarded, so never null
+                    "type": "Other",
                     "start_date_local": a["start_date_local"],
                     "activity_id": a["id"],
                     "source": a["source"] or None,
