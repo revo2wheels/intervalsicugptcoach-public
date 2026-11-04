@@ -3855,21 +3855,6 @@ def build_semantic_json(context):
                 f"[SEMANTIC] Injected load_distribution → rest_days={load_dist.get('rest_days')}"
             )
         # -----------------------------------------------------
-        # Z2 power ÷ heart rate, 6 weeks vs 6 weeks (from T3)
-        # -----------------------------------------------------
-
-        z2_power_hr = context.get("z2_power_hr")
-
-        if z2_power_hr:
-            semantic["performance_intelligence"]["z2_power_hr"] = copy.deepcopy(z2_power_hr)
-
-        # Heart-rate drift on steady rides of 90+ min, 6 weeks vs 6 weeks (from T3)
-        steady_drift = context.get("steady_drift")
-
-        if steady_drift:
-            semantic["performance_intelligence"]["steady_drift"] = copy.deepcopy(steady_drift)
-
-        # -----------------------------------------------------
         # External Load Context (SCIENCE-ALIGNED)
         # -----------------------------------------------------
 
