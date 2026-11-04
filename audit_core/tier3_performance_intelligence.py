@@ -1700,7 +1700,7 @@ def _trend_bounds(context, fallback_end):
 def _read_change(recent_values, previous_values, change, digits):
     """
     A change counts only when it is bigger than twice its standard error from the
-    ride-to-ride scatter of both windows (Buchheit 2014); each window needs Z2_MIN_RIDES.
+    ride-to-ride scatter of both windows (a Montis rule); each window needs Z2_MIN_RIDES.
     """
     block = {"change": None, "change_limit": None, "verdict": "not_enough_rides"}
     if len(recent_values) < Z2_MIN_RIDES or len(previous_values) < Z2_MIN_RIDES:
@@ -1721,9 +1721,9 @@ def compute_z2_power_hr(context, df_light):
     """
     Power ÷ heart rate in heart-rate zone 2, per ride (icu_power_hr_z2, weighted by
     icu_power_hr_z2_mins): the last 6 weeks against the 6 before, outdoor and indoor
-    rides apart. A change is read only when it is bigger than twice its standard
-    error from the athlete's own ride-to-ride scatter (Buchheit 2014: read a change
-    against the measure's error). Informational: no rating, no advice.
+    rides apart. In trained cyclists, power at a set heart rate went with time-trial
+    results (Lamberts 2011, a set test). A change is read only when it is bigger than
+    the athlete's own ride-to-ride spread (_read_change). Informational: no rating, no advice.
     """
     if df_light is None or df_light.empty or "icu_power_hr_z2" not in df_light.columns:
         return None
@@ -1767,11 +1767,11 @@ def compute_z2_power_hr(context, df_light):
         },
         "outdoor": compare(df[~virtual]),
         "indoor": compare(df[virtual]),
-        "source": "Power ÷ heart rate in heart-rate zone 2 per ride; a change read against the athlete's ride-to-ride scatter (Buchheit 2014)",
+        "source": "Power ÷ heart rate in heart-rate zone 2 per ride; power at a set heart rate went with time-trial results in trained cyclists (Lamberts 2011, set test); heat raises heart rate (Montain & Coyle 1992); a change read against the athlete's ride-to-ride spread",
         "interpretation": (
             "Watts per bpm in heart-rate zone 2: the last 6 weeks against the 6 before, "
             "outdoor and indoor rides apart. Higher means more power at the same heart rate. "
-            "Heat, hydration and indoor cooling move it too."
+            "Heat, drinking and an indoor fan move it too, so a summer-to-autumn change is partly weather."
         ),
         "classification": "informational",
     }
@@ -1787,17 +1787,17 @@ def compute_z2_power_hr(context, df_light):
 
 DRIFT_MIN_SECONDS = 5400  # steady rides of 90 minutes or more
 DRIFT_MAX_VI = 1.20       # ... with a variability index up to 1.20
-DRIFT_LINE = 5.0          # Friel's line for a ride where heart rate drifted (%)
 
 
 def compute_steady_drift(context, df_light):
     """
     Heart-rate drift (Pw:HR decoupling, signed: below zero means power ÷ heart rate
-    rose) on steady rides of 90+ minutes with VI up to 1.20, indoor and outdoor
-    together (drift compares a ride with itself): the last 6 weeks against the 6
-    before, with the rides over Friel's 5% line. Durability on long efforts: Maunder
-    2021; Smyth 2022. A change is read as for the zone 2 trend. Informational: the
-    durability state behind decisions is not changed.
+    rose in the second half) on steady rides of 90+ minutes with VI up to 1.20: the
+    last 6 weeks against the 6 before, outdoor and indoor rides apart, because cooling
+    differs indoors and heat raises drift (Montain & Coyle 1992, cyclists). In trained
+    cyclists, heart rate drifting against power on long rides went with a falling first
+    threshold (Rothschild 2025). A change is read as for the zone 2 trend. Informational:
+    the durability state behind decisions is not changed.
     """
     needed = ("decoupling", "moving_time", "icu_variability_index")
     if df_light is None or df_light.empty or any(c not in df_light.columns for c in needed):
@@ -1821,48 +1821,48 @@ def compute_steady_drift(context, df_light):
         return None
 
     end, recent_start, previous_start = _trend_bounds(context, df["date"].max())
-    recent_rows = df[(df["date"] >= recent_start) & (df["date"] <= end)]
-    previous_rows = df[(df["date"] >= previous_start) & (df["date"] < recent_start)]
 
     def window(rows):
         if not len(rows):
-            return {"value": None, "rides": 0, "over_line": 0}
-        return {
-            "value": round(float(rows["drift"].mean()), 1),
-            "rides": int(len(rows)),
-            "over_line": int((rows["drift"] > DRIFT_LINE).sum()),
-        }
+            return {"value": None, "rides": 0}
+        return {"value": round(float(rows["drift"].mean()), 1), "rides": int(len(rows))}
 
-    change = (
-        recent_rows["drift"].mean() - previous_rows["drift"].mean()
-        if len(recent_rows) and len(previous_rows) else None
-    )
+    def compare(rows):
+        recent_rows = rows[(rows["date"] >= recent_start) & (rows["date"] <= end)]
+        previous_rows = rows[(rows["date"] >= previous_start) & (rows["date"] < recent_start)]
+        change = (
+            recent_rows["drift"].mean() - previous_rows["drift"].mean()
+            if len(recent_rows) and len(previous_rows) else None
+        )
+        return {"recent": window(recent_rows), "previous": window(previous_rows),
+                **_read_change(recent_rows["drift"], previous_rows["drift"], change, 1)}
+
+    virtual = df["type"].str.startswith("Virtual")
     result = {
         "unit": "%",
         "window_days": Z2_WINDOW_DAYS,
         "min_minutes_per_ride": DRIFT_MIN_SECONDS // 60,
         "max_variability_index": DRIFT_MAX_VI,
-        "drift_line": DRIFT_LINE,
         "min_rides_per_window": Z2_MIN_RIDES,
         "recent_window": {"start": recent_start.strftime("%Y-%m-%d"), "end": end.strftime("%Y-%m-%d")},
         "previous_window": {
             "start": previous_start.strftime("%Y-%m-%d"),
             "end": (recent_start - pd.Timedelta(days=1)).strftime("%Y-%m-%d"),
         },
-        "recent": window(recent_rows),
-        "previous": window(previous_rows),
-        **_read_change(recent_rows["drift"], previous_rows["drift"], change, 1),
-        "source": "Pw:HR decoupling on steady rides of 90+ minutes (Maunder 2021; Smyth 2022); 5% line: Friel; a change read against the athlete's ride-to-ride scatter (Buchheit 2014)",
+        "outdoor": compare(df[~virtual]),
+        "indoor": compare(df[virtual]),
+        "source": "Pw:HR decoupling on steady rides of 90+ minutes; heart rate drifting against power on long rides went with a falling first threshold in trained cyclists (Rothschild 2025); heat and too little to drink raise drift (Montain & Coyle 1992); a change read against the athlete's ride-to-ride spread",
         "interpretation": (
-            "How much power ÷ heart rate falls from the first half of a ride to the second, on steady rides "
-            "of 90 minutes or more: the last 6 weeks against the 6 before. Below zero means it rose. "
-            "Heat and hydration raise it."
+            "How much your heart rate rises against your power from the first half of a ride to the second, "
+            "on steady rides of 90 minutes or more: the last 6 weeks against the 6 before, outdoor and indoor "
+            "rides apart. Below zero means it did not rise. Heat and too little to drink raise it, so a "
+            "summer-to-autumn change is partly weather."
         ),
         "classification": "informational",
     }
 
     debug(context, "[T3][DRIFT] Steady-ride drift",
-        f"recent={result['recent']}", f"previous={result['previous']}", f"verdict={result['verdict']}")
+        f"outdoor={result['outdoor']}", f"indoor={result['indoor']}")
 
     return result
 
