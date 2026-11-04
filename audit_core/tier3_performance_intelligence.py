@@ -71,6 +71,9 @@ def compute_performance_intelligence(context, contract_type="weekly"):
     context["performance_intelligence"] = result
     context["PI_VERSION"] = PI_VERSION
 
+    # Z2 power ÷ heart rate, 6 weeks vs 6 weeks (90-day LIGHT, every report type)
+    context["z2_power_hr"] = compute_z2_power_hr(context, df_light)
+
     #Enviornmental factors
     compute_external_load_context(
         context,
@@ -1660,6 +1663,108 @@ def compute_external_load_context(context, df_full):
     pi["external_load_context"] = block
 
     return block
+
+# ===========================================================
+# Z2 POWER ÷ HEART RATE (90-DAY LIGHT, 6 WEEKS VS 6 WEEKS)
+# ===========================================================
+
+Z2_WINDOW_DAYS = 42      # each window: 6 weeks
+Z2_MIN_MINUTES = 15      # a ride counts with at least 15 zone 2 minutes
+Z2_MIN_RIDES = 3         # each window needs 3 such rides before a change is read
+
+
+def _z2_window(rows):
+    minutes = float(rows["mins"].sum()) if len(rows) else 0.0
+    if minutes <= 0:
+        return {"value": None, "rides": 0, "minutes": 0}
+    return {
+        "value": round(float((rows["phr"] * rows["mins"]).sum() / minutes), 3),
+        "rides": int(len(rows)),
+        "minutes": int(round(minutes)),
+    }
+
+
+def compute_z2_power_hr(context, df_light):
+    """
+    Power ÷ heart rate in heart-rate zone 2, per ride (icu_power_hr_z2, weighted by
+    icu_power_hr_z2_mins): the last 6 weeks against the 6 before, outdoor and indoor
+    rides apart. A change is read only when it is bigger than twice its standard
+    error from the athlete's own ride-to-ride scatter (Buchheit 2014: read a change
+    against the measure's error). Informational: no rating, no advice.
+    """
+    if df_light is None or df_light.empty or "icu_power_hr_z2" not in df_light.columns:
+        return None
+
+    df = pd.DataFrame({
+        "date": pd.to_datetime(df_light.get("start_date_local"), errors="coerce").dt.normalize(),
+        "type": df_light.get("type").astype(str),
+        "phr": pd.to_numeric(df_light["icu_power_hr_z2"], errors="coerce"),
+        "mins": pd.to_numeric(df_light.get("icu_power_hr_z2_mins"), errors="coerce"),
+    })
+    df = df[
+        df["type"].str.contains("Ride")
+        & (df["phr"] > 0)
+        & (df["mins"] >= Z2_MIN_MINUTES)
+        & df["date"].notna()
+    ]
+    if df.empty:
+        return None
+
+    end = pd.to_datetime(context.get("window_end"), errors="coerce")
+    if pd.isna(end):
+        end = df["date"].max()
+    if getattr(end, "tzinfo", None) is not None:
+        end = end.tz_localize(None)
+    end = end.normalize()
+    recent_start = end - pd.Timedelta(days=Z2_WINDOW_DAYS - 1)
+    previous_start = recent_start - pd.Timedelta(days=Z2_WINDOW_DAYS)
+
+    def compare(rows):
+        recent_rows = rows[(rows["date"] >= recent_start) & (rows["date"] <= end)]
+        previous_rows = rows[(rows["date"] >= previous_start) & (rows["date"] < recent_start)]
+        recent = _z2_window(recent_rows)
+        previous = _z2_window(previous_rows)
+        block = {"recent": recent, "previous": previous,
+                 "change": None, "change_limit": None, "verdict": "not_enough_rides"}
+        if recent["rides"] >= Z2_MIN_RIDES and previous["rides"] >= Z2_MIN_RIDES:
+            scatter = float(pd.concat([recent_rows["phr"], previous_rows["phr"]]).std(ddof=1))
+            limit = 2 * scatter * np.sqrt(1 / recent["rides"] + 1 / previous["rides"])
+            change = recent["value"] - previous["value"]
+            block["change"] = round(change, 3)
+            block["change_limit"] = round(float(limit), 3)
+            block["verdict"] = (
+                "higher" if change > limit
+                else "lower" if change < -limit
+                else "no_clear_change"
+            )
+        return block
+
+    virtual = df["type"].str.startswith("Virtual")
+    result = {
+        "unit": "W/bpm",
+        "window_days": Z2_WINDOW_DAYS,
+        "min_minutes_per_ride": Z2_MIN_MINUTES,
+        "min_rides_per_window": Z2_MIN_RIDES,
+        "recent_window": {"start": recent_start.strftime("%Y-%m-%d"), "end": end.strftime("%Y-%m-%d")},
+        "previous_window": {
+            "start": previous_start.strftime("%Y-%m-%d"),
+            "end": (recent_start - pd.Timedelta(days=1)).strftime("%Y-%m-%d"),
+        },
+        "outdoor": compare(df[~virtual]),
+        "indoor": compare(df[virtual]),
+        "source": "Power ÷ heart rate in heart-rate zone 2 per ride; a change read against the athlete's ride-to-ride scatter (Buchheit 2014)",
+        "interpretation": (
+            "Watts per bpm in heart-rate zone 2: the last 6 weeks against the 6 before, "
+            "outdoor and indoor rides apart. Higher means more power at the same heart rate. "
+            "Heat, hydration and indoor cooling move it too."
+        ),
+        "classification": "informational",
+    }
+
+    debug(context, "[T3][Z2] Power ÷ HR in zone 2",
+        f"outdoor={result['outdoor']}", f"indoor={result['indoor']}")
+
+    return result
 
 # ===========================================================
 # Utilities
