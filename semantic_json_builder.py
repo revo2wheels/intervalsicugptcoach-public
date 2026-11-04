@@ -12,7 +12,7 @@ import pandas as pd
 from math import isnan
 from coaching_cheat_sheet import CHEAT_SHEET
 from coaching_profile import COACH_PROFILE, REPORT_HEADERS, REPORT_RESOLUTION, REPORT_CONTRACT, PRUNE_RULES
-from audit_core.utils import debug
+from audit_core.utils import debug, hidden_activities_in_period, hidden_source_name
 import numpy as np
 from math import isnan
 import pytz
@@ -6163,6 +6163,50 @@ def build_semantic_json(context):
             "power_curves": safe_len(context.get("power_curve")),
         }
     }
+
+    # ---------------------------------------------------------
+    # 🙈 Activities Intervals.icu can't share (listed, never counted)
+    # Added after every calculation that reads semantic["events"]
+    # ---------------------------------------------------------
+    if semantic["meta"].get("report_type") in ("weekly", "season"):
+        period = context.get("period") or {}
+        hidden = hidden_activities_in_period(context, period.get("start"), period.get("end"))
+
+        if hidden:
+            placeholders = []
+            for a in hidden:
+                source = hidden_source_name(a["source"])
+                ev = {
+                    "name": f"{source} activity not visible to Montis" if source else "Activity not visible to Montis",
+                    "type": None,
+                    "start_date_local": a["start_date_local"],
+                    "activity_id": a["id"],
+                    "source": a["source"] or None,
+                    "duration": None,
+                    "distance": None,
+                    "tss": None,
+                    "flags": ["not_visible_via_api"],
+                }
+                if a["source"].upper() == "STRAVA":
+                    ev["source_link"] = f"https://www.strava.com/activities/{a['id']}"
+                placeholders.append(ev)
+
+            # Keep the list's existing date order
+            events = semantic.get("events") or []
+            dates = [str(ev.get("start_date_local") or "") for ev in events]
+            semantic["events"] = sorted(
+                events + placeholders,
+                key=lambda ev: str(ev.get("start_date_local") or ""),
+                reverse=len(dates) < 2 or dates[0] >= dates[-1],
+            )
+
+            meta_events = semantic["meta"].setdefault(
+                "events", {"is_event_block": True, "event_block_count": 0, "render": True}
+            )
+            meta_events["not_visible_count"] = len(placeholders)
+
+            debug(context, f"[SEMANTIC] EVENTS: {len(placeholders)} activities not visible via the API listed")
+
     semantic = apply_report_type_contract(semantic)
     semantic["summary"] = summary
     return semantic

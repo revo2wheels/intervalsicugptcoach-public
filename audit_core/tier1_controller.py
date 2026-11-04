@@ -13,6 +13,7 @@ from audit_core.errors import AuditHalt
 from audit_core.utils import validate_dataset_integrity, validate_wellness_alignment
 from coaching_cheat_sheet import CHEAT_SHEET
 from audit_core.utils import set_time_context
+from audit_core.utils import hidden_activities_in_period, hidden_activities_sentence
 
 # ======================================================
 # 🧩 SPORT GROUP RESOLUTION (CHEAT_SHEET AUTHORITATIVE)
@@ -809,9 +810,20 @@ def run_tier1_controller(df_master, wellness, context):
     if report_type == "weekly":
 
         if t1_hours <= 0 or t1_tss <= 0:
+            period = context.get("period") or {}
+            hidden_note = hidden_activities_sentence(
+                hidden_activities_in_period(
+                    context,
+                    period.get("start") or context.get("start"),
+                    period.get("end") or context.get("end"),
+                ),
+                "this week",
+            )
+
             warn_msg = (
                 "No training load was recorded for this week, so the weekly report can't be built.\n"
-                "This often occurs if recent activities have no Training Load (TSS) or HR zone data.\n"
+                + (f"{hidden_note}\n\n" if hidden_note else "")
+                + "This often occurs if recent activities have no Training Load (TSS) or HR zone data.\n"
                 "If you're using a smartwatch such as Amazfit that only records HR, "
                 "Intervals.icu may not compute load metrics.\n\n"
                 "👉 Please check:\n"

@@ -19,7 +19,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "audit_core"))
 
 from audit_core.report_controller import run_report
-from audit_core.utils import debug
+from audit_core.utils import debug, hidden_activity_mask, hidden_activity_records, hidden_activities_in_period, hidden_activities_sentence
 from audit_core.tier0_pre_audit import expand_zones
 from audit_core.utils import set_time_context
 from i18n.translator import normalise_lang, translate_semantic_graph
@@ -260,15 +260,16 @@ def normalize_prefetched_context(data):
                     }
                 )
 
-        # 🔒 STRAVA STUB FILTER — detect and remove unusable API stub rows
+        # 🔒 API STUB FILTER — detect and remove unusable stub rows (Strava or any other source)
         strava_stub_detected = False
-        strava_note_text = "STRAVA activities are not available via the API"
 
         context.setdefault("debug_counts", {})
         context["debug_counts"].setdefault("prefilter", {})
 
         context["debug_counts"]["prefilter"]["df_light"] = len(df_light)
         context["debug_counts"]["prefilter"]["df_full"] = len(df_full)
+
+        context["hidden_activities"] = []
 
         if not df_light.empty and "_note" in df_light.columns:
 
@@ -282,29 +283,27 @@ def normalize_prefetched_context(data):
             context.setdefault("data_quality_flags", {})
             context["data_quality_flags"]["strava_stub_detected"] = strava_stub_detected
 
+            # --- Keep stubs from any source aside so reports can still list them ---
+            context["hidden_activities"] = hidden_activity_records(
+                pd.concat([df_light, df_full], ignore_index=True)
+            )
+
             # --- Remove stubs from LIGHT ---
             before_light = len(df_light)
-            df_light = df_light[
-                df_light["_note"].fillna("") != strava_note_text
-            ].copy()
+            df_light = df_light[~hidden_activity_mask(df_light)].copy()
             removed_light = before_light - len(df_light)
 
-            # --- Remove stubs from FULL (if column exists) ---
-            if "_note" in df_full.columns:
-                before_full = len(df_full)
-                df_full = df_full[
-                    df_full["_note"].fillna("") != strava_note_text
-                ].copy()
-                removed_full = before_full - len(df_full)
-            else:
-                removed_full = 0
+            # --- Remove stubs from FULL ---
+            before_full = len(df_full)
+            df_full = df_full[~hidden_activity_mask(df_full)].copy()
+            removed_full = before_full - len(df_full)
 
             if removed_light > 0:
                 context["debug_counts"]["prefilter"]["removed_light"] = removed_light
                 context["debug_counts"]["prefilter"]["removed_full"] = removed_full
                 debug(
                     context,
-                    f"[NORM] Removed {removed_light} STRAVA stub rows (light), "
+                    f"[NORM] Removed {removed_light} API stub rows (light), "
                     f"{removed_full} (full)"
                 )
 
@@ -1405,6 +1404,13 @@ async def run_audit_with_data(
                             msg = " ".join(msg_parts)
                 else:
                     msg = "Detailed activity data could not be retrieved."
+
+                hidden_note = hidden_activities_sentence(
+                    hidden_activities_in_period(prefetch_context, start_s, end_s),
+                    "in this period"
+                )
+                if hidden_note:
+                    msg = f"{hidden_note} {msg}"
 
                 raise AuditHalt(
                     msg,

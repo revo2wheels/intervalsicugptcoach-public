@@ -52,6 +52,87 @@ def set_time_context(context):
     return context
 
 
+# ------------------------------------------------------------
+# 🙈 Activities Intervals.icu can't share over its API
+# ------------------------------------------------------------
+# Intervals returns these as stub rows (id, date, source and a
+# "<SOURCE> activities are not available via the API" _note) with no metrics.
+# They are stripped from every calculation and listed separately.
+
+HIDDEN_ACTIVITY_NOTE = "not available via the API"
+
+SOURCE_NAMES = {
+    "STRAVA": "Strava",
+    "GARMIN_CONNECT": "Garmin",
+    "ZWIFT": "Zwift",
+    "WAHOO": "Wahoo",
+    "SUUNTO": "Suunto",
+    "COROS": "Coros",
+    "POLAR": "Polar",
+}
+
+
+def hidden_activity_mask(df):
+    """True for the stub rows Intervals.icu can't share over its API, whatever their source."""
+    if "_note" not in df.columns:
+        return pd.Series(False, index=df.index)
+    return df["_note"].fillna("").astype(str).str.contains(HIDDEN_ACTIVITY_NOTE, case=False, regex=False)
+
+
+def hidden_activity_records(df):
+    """Id, start time and source of each stub row, one per activity id."""
+    if not isinstance(df, pd.DataFrame) or df.empty:
+        return []
+
+    records = {}
+    for row in df[hidden_activity_mask(df)].to_dict(orient="records"):
+        activity_id = row.get("id")
+        if activity_id is None or pd.isna(activity_id):
+            continue
+        start = row.get("start_date_local")
+        record = records.setdefault(str(activity_id), {
+            "id": str(activity_id),
+            "start_date_local": "" if start is None or pd.isna(start) else str(start).replace(" ", "T"),
+            "source": "",
+        })
+        if not record["source"] and row.get("source"):
+            record["source"] = str(row["source"])
+    return list(records.values())
+
+
+def hidden_activities_in_period(context, start, end):
+    """Stub activities dated start..end (inclusive)."""
+    if not (start and end):
+        return []
+    first, last = str(start)[:10], str(end)[:10]
+    return [
+        a for a in context.get("hidden_activities") or []
+        if a["start_date_local"][:10] and first <= a["start_date_local"][:10] <= last
+    ]
+
+
+def hidden_source_name(source):
+    """Display name for an activity source, e.g. STRAVA → Strava; "" when unknown."""
+    source = str(source or "").upper()
+    return SOURCE_NAMES.get(source) or source.replace("_", " ").title()
+
+
+def hidden_activities_sentence(hidden, when):
+    """Why Montis can't see these activities, for halt messages; "" when there are none."""
+    if not hidden:
+        return ""
+    names = sorted({hidden_source_name(a["source"]) for a in hidden if a["source"]})
+    one = len(hidden) == 1
+    what = "1 activity" if one else f"{len(hidden)} activities"
+    origin = f" from {' and '.join(names)}" if names else ""
+    it = "it" if one else "them"
+    return (
+        f"{what}{origin} {when} can't be shared by Intervals.icu with other apps, "
+        f"so Montis can't see {it}. Connect your watch or bike computer directly to "
+        f"Intervals.icu (Settings → Connections), or upload the FIT files, to include {it}."
+    )
+
+
 
 # ------------------------------------------------------------
 # 🔎 Debug Logger (Auto-suppressed in Production)

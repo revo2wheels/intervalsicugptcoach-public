@@ -1042,6 +1042,7 @@ RENDERER_PROFILES = {
                 "Icons are additive only (no replacement/suppression of values or rows).",
                 "Append rpe_emoji + feel_emoji to TSS.",
                 "If activity_link exists, render as [name](link) with icons before link.",
+                "Rows flagged not_visible_via_api are activities Intervals.icu can't share: show the name as given (as [name](source_link) if source_link exists), leave metric cells empty, and never count them in totals.",
                 "Render a single legend line directly below the table."
             ]
         },

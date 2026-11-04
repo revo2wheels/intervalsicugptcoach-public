@@ -3,7 +3,7 @@ import os
 import sys
 import requests
 import pandas as pd
-from audit_core.utils import debug
+from audit_core.utils import debug, hidden_activity_mask, hidden_activity_records
 from datetime import datetime, timedelta
 from audit_core.errors import AuditHalt
 import json
@@ -1083,21 +1083,15 @@ def run_tier0_pre_audit(start: str, end: str, context: dict):
         df_light = pd.DataFrame(payload)
 
         # ------------------------------------------------------------
-        # 🔒 Strip STRAVA API stub rows (local canonical path)
+        # 🔒 Strip API stub rows from any source (local canonical path),
+        # kept aside so reports can still list them
         # ------------------------------------------------------------
-        if "_note" in df_light.columns:
-            strava_note_text = "STRAVA activities are not available via the API"
+        context["hidden_activities"] = hidden_activity_records(df_light)
 
-            before = len(df_light)
-
-            df_light = df_light[
-                df_light["_note"].fillna("") != strava_note_text
-            ].copy()
-
-            removed = before - len(df_light)
-
-            if removed > 0:
-                debug(context, f"[T0] Removed {removed} STRAVA stub rows (local canonical)")
+        stubs = hidden_activity_mask(df_light)
+        if stubs.any():
+            df_light = df_light[~stubs].copy()
+            debug(context, f"[T0] Removed {int(stubs.sum())} API stub rows (local canonical)")
 
         if "start_date_local" not in df_light.columns:
             raise AuditHalt("❌ Lightweight fetch missing 'start_date_local'")
