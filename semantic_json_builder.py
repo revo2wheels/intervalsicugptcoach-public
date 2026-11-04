@@ -3863,6 +3863,12 @@ def build_semantic_json(context):
         if z2_power_hr:
             semantic["performance_intelligence"]["z2_power_hr"] = copy.deepcopy(z2_power_hr)
 
+        # Heart-rate drift on steady rides of 90+ min, 6 weeks vs 6 weeks (from T3)
+        steady_drift = context.get("steady_drift")
+
+        if steady_drift:
+            semantic["performance_intelligence"]["steady_drift"] = copy.deepcopy(steady_drift)
+
         # -----------------------------------------------------
         # External Load Context (SCIENCE-ALIGNED)
         # -----------------------------------------------------

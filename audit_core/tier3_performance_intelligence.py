@@ -71,8 +71,9 @@ def compute_performance_intelligence(context, contract_type="weekly"):
     context["performance_intelligence"] = result
     context["PI_VERSION"] = PI_VERSION
 
-    # Z2 power ÷ heart rate, 6 weeks vs 6 weeks (90-day LIGHT, every report type)
+    # Z2 power ÷ heart rate and steady-ride drift, 6 weeks vs 6 weeks (90-day LIGHT, every report type)
     context["z2_power_hr"] = compute_z2_power_hr(context, df_light)
+    context["steady_drift"] = compute_steady_drift(context, df_light)
 
     #Enviornmental factors
     compute_external_load_context(
@@ -1684,6 +1685,38 @@ def _z2_window(rows):
     }
 
 
+def _trend_bounds(context, fallback_end):
+    """The last 6 weeks up to the report's end, and the 6 weeks before them."""
+    end = pd.to_datetime(context.get("window_end"), errors="coerce")
+    if pd.isna(end):
+        end = fallback_end
+    if getattr(end, "tzinfo", None) is not None:
+        end = end.tz_localize(None)
+    end = end.normalize()
+    recent_start = end - pd.Timedelta(days=Z2_WINDOW_DAYS - 1)
+    return end, recent_start, recent_start - pd.Timedelta(days=Z2_WINDOW_DAYS)
+
+
+def _read_change(recent_values, previous_values, change, digits):
+    """
+    A change counts only when it is bigger than twice its standard error from the
+    ride-to-ride scatter of both windows (Buchheit 2014); each window needs Z2_MIN_RIDES.
+    """
+    block = {"change": None, "change_limit": None, "verdict": "not_enough_rides"}
+    if len(recent_values) < Z2_MIN_RIDES or len(previous_values) < Z2_MIN_RIDES:
+        return block
+    scatter = float(pd.concat([recent_values, previous_values]).std(ddof=1))
+    limit = 2 * scatter * np.sqrt(1 / len(recent_values) + 1 / len(previous_values))
+    block["change"] = round(float(change), digits)
+    block["change_limit"] = round(float(limit), digits)
+    block["verdict"] = (
+        "higher" if change > limit
+        else "lower" if change < -limit
+        else "no_clear_change"
+    )
+    return block
+
+
 def compute_z2_power_hr(context, df_light):
     """
     Power ÷ heart rate in heart-rate zone 2, per ride (icu_power_hr_z2, weighted by
@@ -1710,34 +1743,16 @@ def compute_z2_power_hr(context, df_light):
     if df.empty:
         return None
 
-    end = pd.to_datetime(context.get("window_end"), errors="coerce")
-    if pd.isna(end):
-        end = df["date"].max()
-    if getattr(end, "tzinfo", None) is not None:
-        end = end.tz_localize(None)
-    end = end.normalize()
-    recent_start = end - pd.Timedelta(days=Z2_WINDOW_DAYS - 1)
-    previous_start = recent_start - pd.Timedelta(days=Z2_WINDOW_DAYS)
+    end, recent_start, previous_start = _trend_bounds(context, df["date"].max())
 
     def compare(rows):
         recent_rows = rows[(rows["date"] >= recent_start) & (rows["date"] <= end)]
         previous_rows = rows[(rows["date"] >= previous_start) & (rows["date"] < recent_start)]
         recent = _z2_window(recent_rows)
         previous = _z2_window(previous_rows)
-        block = {"recent": recent, "previous": previous,
-                 "change": None, "change_limit": None, "verdict": "not_enough_rides"}
-        if recent["rides"] >= Z2_MIN_RIDES and previous["rides"] >= Z2_MIN_RIDES:
-            scatter = float(pd.concat([recent_rows["phr"], previous_rows["phr"]]).std(ddof=1))
-            limit = 2 * scatter * np.sqrt(1 / recent["rides"] + 1 / previous["rides"])
-            change = recent["value"] - previous["value"]
-            block["change"] = round(change, 3)
-            block["change_limit"] = round(float(limit), 3)
-            block["verdict"] = (
-                "higher" if change > limit
-                else "lower" if change < -limit
-                else "no_clear_change"
-            )
-        return block
+        change = (recent["value"] - previous["value"]) if recent["rides"] and previous["rides"] else None
+        return {"recent": recent, "previous": previous,
+                **_read_change(recent_rows["phr"], previous_rows["phr"], change, 3)}
 
     virtual = df["type"].str.startswith("Virtual")
     result = {
@@ -1763,6 +1778,91 @@ def compute_z2_power_hr(context, df_light):
 
     debug(context, "[T3][Z2] Power ÷ HR in zone 2",
         f"outdoor={result['outdoor']}", f"indoor={result['indoor']}")
+
+    return result
+
+# ===========================================================
+# HEART-RATE DRIFT ON STEADY RIDES (90-DAY LIGHT, 6 WEEKS VS 6 WEEKS)
+# ===========================================================
+
+DRIFT_MIN_SECONDS = 5400  # steady rides of 90 minutes or more
+DRIFT_MAX_VI = 1.20       # ... with a variability index up to 1.20
+DRIFT_LINE = 5.0          # Friel's line for a ride where heart rate drifted (%)
+
+
+def compute_steady_drift(context, df_light):
+    """
+    Heart-rate drift (Pw:HR decoupling, signed: below zero means power ÷ heart rate
+    rose) on steady rides of 90+ minutes with VI up to 1.20, indoor and outdoor
+    together (drift compares a ride with itself): the last 6 weeks against the 6
+    before, with the rides over Friel's 5% line. Durability on long efforts: Maunder
+    2021; Smyth 2022. A change is read as for the zone 2 trend. Informational: the
+    durability state behind decisions is not changed.
+    """
+    needed = ("decoupling", "moving_time", "icu_variability_index")
+    if df_light is None or df_light.empty or any(c not in df_light.columns for c in needed):
+        return None
+
+    df = pd.DataFrame({
+        "date": pd.to_datetime(df_light.get("start_date_local"), errors="coerce").dt.normalize(),
+        "type": df_light.get("type").astype(str),
+        "drift": pd.to_numeric(df_light["decoupling"], errors="coerce"),
+        "secs": pd.to_numeric(df_light["moving_time"], errors="coerce"),
+        "vi": pd.to_numeric(df_light["icu_variability_index"], errors="coerce"),
+    })
+    df = df[
+        df["type"].str.contains("Ride")
+        & df["drift"].notna()
+        & (df["secs"] >= DRIFT_MIN_SECONDS)
+        & (df["vi"] <= DRIFT_MAX_VI)
+        & df["date"].notna()
+    ]
+    if df.empty:
+        return None
+
+    end, recent_start, previous_start = _trend_bounds(context, df["date"].max())
+    recent_rows = df[(df["date"] >= recent_start) & (df["date"] <= end)]
+    previous_rows = df[(df["date"] >= previous_start) & (df["date"] < recent_start)]
+
+    def window(rows):
+        if not len(rows):
+            return {"value": None, "rides": 0, "over_line": 0}
+        return {
+            "value": round(float(rows["drift"].mean()), 1),
+            "rides": int(len(rows)),
+            "over_line": int((rows["drift"] > DRIFT_LINE).sum()),
+        }
+
+    change = (
+        recent_rows["drift"].mean() - previous_rows["drift"].mean()
+        if len(recent_rows) and len(previous_rows) else None
+    )
+    result = {
+        "unit": "%",
+        "window_days": Z2_WINDOW_DAYS,
+        "min_minutes_per_ride": DRIFT_MIN_SECONDS // 60,
+        "max_variability_index": DRIFT_MAX_VI,
+        "drift_line": DRIFT_LINE,
+        "min_rides_per_window": Z2_MIN_RIDES,
+        "recent_window": {"start": recent_start.strftime("%Y-%m-%d"), "end": end.strftime("%Y-%m-%d")},
+        "previous_window": {
+            "start": previous_start.strftime("%Y-%m-%d"),
+            "end": (recent_start - pd.Timedelta(days=1)).strftime("%Y-%m-%d"),
+        },
+        "recent": window(recent_rows),
+        "previous": window(previous_rows),
+        **_read_change(recent_rows["drift"], previous_rows["drift"], change, 1),
+        "source": "Pw:HR decoupling on steady rides of 90+ minutes (Maunder 2021; Smyth 2022); 5% line: Friel; a change read against the athlete's ride-to-ride scatter (Buchheit 2014)",
+        "interpretation": (
+            "How much power ÷ heart rate falls from the first half of a ride to the second, on steady rides "
+            "of 90 minutes or more: the last 6 weeks against the 6 before. Below zero means it rose. "
+            "Heat and hydration raise it."
+        ),
+        "classification": "informational",
+    }
+
+    debug(context, "[T3][DRIFT] Steady-ride drift",
+        f"recent={result['recent']}", f"previous={result['previous']}", f"verdict={result['verdict']}")
 
     return result
 
