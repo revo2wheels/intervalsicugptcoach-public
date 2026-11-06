@@ -343,6 +343,8 @@ CHEAT_SHEET["thresholds"] = {
         "PlannedWeekRules": {
             "recovery_drop": -0.12,      # a planned drop below the Deload range (12% or more) is a Recovery week
             "return_to_load_min": 0.85,  # after Recovery: back to this share of the last loading week is Build
+            "small_dip_keeps": ["Base", "Build"],
+            "taper_race_window_days": 14,  # a drop is a Taper only when an A/B race follows within this many days (Clive 2026-11-06)  # a drop smaller than recovery_drop keeps the block's phase (Clive 2026-11-06)
             "build_acwr_warning": 1.30   # a Build week above this stays Build, with load_warning
         },
 

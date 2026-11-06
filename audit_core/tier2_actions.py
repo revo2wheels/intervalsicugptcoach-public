@@ -170,6 +170,15 @@ def detect_phases(context, events):
     phase_thresholds = CHEAT_SHEET["thresholds"]["PhaseBoundaries"]
     phase_advice     = CHEAT_SHEET["advice"]["PhaseAdvice"]
 
+    # --- A or B race dates, so a taper is only a taper before a race --------
+    planned_rules = CHEAT_SHEET["thresholds"]["phase_detection_v2"]["PlannedWeekRules"]
+    race_dates = []
+    for e in context.get("calendar") or []:
+        if isinstance(e, dict) and str(e.get("category") or "").upper() in ("RACE_A", "RACE_B"):
+            rd = pd.to_datetime(e.get("start_date_local") or e.get("date"), errors="coerce")
+            if pd.notna(rd):
+                race_dates.append(rd.normalize())
+
     # --- Phase classification (per-week) ----------------------------------
     labels, methods, traces = [], [], []
     for i in range(len(df_week)):
@@ -316,6 +325,21 @@ def detect_phases(context, events):
             else:
                 label = "Transition"
 
+
+        # -------------------------------------------------
+        # A real drop of recovery_drop or more is an unload week inside the block:
+        # Recovery, or Taper only when an A/B race follows within taper_race_window_days.
+        # Judged on the real week-to-week change; the smoothed delta hides it
+        # (Issurin 2010; Mujika et al. 2018; Bosquet et al. 2007)
+        # -------------------------------------------------
+        raw_change = float(df_week.iloc[i]["delta_raw"])
+        wk_start = pd.Timestamp(df_week.iloc[i]["week_start"]).normalize()
+        window_end = wk_start + pd.Timedelta(days=6 + planned_rules["taper_race_window_days"])
+        race_follows = any(wk_start <= rd <= window_end for rd in race_dates)
+        if i > 0 and raw_change <= planned_rules["recovery_drop"]:
+            label = "Taper" if race_follows else "Recovery"
+        elif label == "Taper" and not race_follows:
+            label = "Recovery"
 
         # -------------------------------------------------
         # 🧠 CANONICAL METHOD SOURCE (SINGLE SOURCE OF TRUTH)
@@ -549,6 +573,13 @@ def classify_phase_v2(row, prev_phase_final=None, last_loading_tss=None):
         elif boundaries["Base"]["trend_min"] <= delta <= boundaries["Base"]["trend_max"]:
             # A steady week with a high ACWR: Base, checked last so rising weeks stay Build
             phase_raw = "Base"
+        elif (
+            planned["recovery_drop"] < delta < 0
+            and prev_phase_final in planned["small_dip_keeps"]
+        ):
+            # A small dip is normal variation inside a block, not a new phase
+            # (Stone et al. 2021; Tønnessen et al. 2014; Solli et al. 2017)
+            phase_raw = prev_phase_final
 
     phase_final = phase_raw
 
@@ -894,6 +925,16 @@ def build_future_projected_weeks(context, weekly_phases, current_week_tss=None):
             "load_warning": bool(phase == "Build" and acwr > planned_rules["build_acwr_warning"]),
             "delta": round(delta, 3)
         })
+
+    # The first week has no planned week before it: a small dip there takes the next week's phase
+    if len(projected_rows) > 1:
+        first, nxt = projected_rows[0], projected_rows[1]
+        if (
+            first["phase"] == "Transition"
+            and planned_rules["recovery_drop"] < first["delta"] < 0
+            and nxt["phase"] in planned_rules["small_dip_keeps"]
+        ):
+            first["phase_raw"] = first["phase"] = nxt["phase"]
 
     debug(
         context,
