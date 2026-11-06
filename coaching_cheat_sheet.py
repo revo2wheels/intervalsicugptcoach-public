@@ -341,7 +341,7 @@ CHEAT_SHEET["thresholds"] = {
         # ============================================================
 
         "PlannedWeekRules": {
-            "recovery_drop": -0.30,      # a planned drop this big is a Recovery week
+            "recovery_drop": -0.12,      # a planned drop below the Deload range (12% or more) is a Recovery week
             "return_to_load_min": 0.85,  # after Recovery: back to this share of the last loading week is Build
             "build_acwr_warning": 1.30   # a Build week above this stays Build, with load_warning
         },
